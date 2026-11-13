@@ -2195,9 +2195,9 @@
     }
     const durMs = track ? parseDurationMs(track.duration || "05:00") : 3e5;
     const curMs = xNorm * durMs;
-    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    if (trimMs > 0 && curMs < trimMs) {
+    if (trimMs2 > 0 && curMs < trimMs2) {
       return { bass: 5e-3, drums: 5e-3, vocals: 5e-3, treble: 5e-3, isBreak: false, isSilence: true };
     }
     const bpm = track ? parseFloat(track.bpm || track.b) || 124 : 124;
@@ -2548,9 +2548,10 @@
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs2 = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99, downbeatMs / durMs * 100)) : null;
-    const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99, trimMs / durMs * 100)) : null;
+    const trimPct = trimMs2 > 0 ? Math.max(0.2, Math.min(99, trimMs2 / durMs * 100)) : null;
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
       const padNum = idx + 1;
       const existing = cues && cues[idx] ? cues[idx] : null;
@@ -2675,7 +2676,7 @@
           if (bx < 0 || bx > width) continue;
           const bIdx = Math.round((t - downbeatMs) / beatMs);
           const isBar = bIdx % 4 === 0;
-          const isSilent = trimMs > 0 && t < trimMs;
+          const isSilent = trimMs2 > 0 && t < trimMs2;
           ctx.beginPath();
           ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : isBar ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.05)";
           ctx.lineWidth = isBar ? 1 : 0.75;
@@ -2684,8 +2685,8 @@
           ctx.stroke();
         }
       }
-      if (trimMs > 0 && durMs > 0) {
-        const trimX = trimMs / durMs * width;
+      if (trimMs2 > 0 && durMs > 0) {
+        const trimX = trimMs2 / durMs * width;
         if (trimX > 0) {
           ctx.fillStyle = "rgba(239, 68, 68, 0.06)";
           ctx.fillRect(0, 0, trimX, height);
@@ -2900,7 +2901,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs2 = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
       const padNum = idx + 1;
       const existing = cues && cues[idx] ? cues[idx] : null;
@@ -3122,7 +3124,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           if (bx < 0 || bx > totalWidth) continue;
           const bIdx = Math.round((t - downbeatMs) / beatMs);
           const isBar = bIdx % 4 === 0;
-          const isSilent = trimMs > 0 && t < trimMs;
+          const isSilent = trimMs2 > 0 && t < trimMs2;
           ctx.beginPath();
           ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : isBar ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.08)";
           ctx.lineWidth = isBar ? 1 : 0.75;
@@ -3131,17 +3133,57 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           ctx.stroke();
         }
       }
-      if (trimMs > 0 && durMs > 0) {
-        const trimX = trimMs / durMs * totalWidth;
+      if (trimMs2 > 0 && durMs > 0) {
+        const trimX = trimMs2 / durMs * totalWidth;
         if (trimX > 0) {
-          ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+          ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
           ctx.fillRect(0, 0, trimX, height);
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.55)";
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.moveTo(trimX, 0);
           ctx.lineTo(trimX, height);
           ctx.stroke();
+          ctx.fillStyle = "#ef4444";
+          ctx.font = "bold 9px monospace";
+          ctx.fillText(`TRIM IN -${Math.round(trimMs2)}ms`, Math.max(2, trimX - 70), 10);
+        }
+      }
+      if (trimEndMs2 > 0 && trimEndMs2 < durMs && durMs > 0) {
+        const trimEndX = trimEndMs2 / durMs * totalWidth;
+        if (trimEndX < totalWidth) {
+          ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
+          ctx.fillRect(trimEndX, 0, totalWidth - trimEndX, height);
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(trimEndX, 0);
+          ctx.lineTo(trimEndX, height);
+          ctx.stroke();
+          ctx.fillStyle = "#ef4444";
+          ctx.font = "bold 9px monospace";
+          ctx.fillText("TRIM OUT", trimEndX + 4, 10);
+        }
+      }
+      if (downbeatMs > 0 && durMs > 0) {
+        const dbX = downbeatMs / durMs * totalWidth;
+        if (dbX >= 0 && dbX <= totalWidth) {
+          ctx.strokeStyle = "#06b6d4";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#06b6d4";
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(dbX, 0);
+          ctx.lineTo(dbX, height);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#06b6d4";
+          ctx.fillRect(dbX - 28, 0, 56, 13);
+          ctx.fillStyle = "#000000";
+          ctx.font = "bold 8.5px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("1.0.0 KICK", dbX, 9.5);
+          ctx.textAlign = "start";
         }
       }
       for (let x = 0; x <= totalWidth; x += 1.5) {
@@ -3358,7 +3400,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimMs2 = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs2 = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const [snapToGrid, setSnapToGrid] = useState5(true);
     const [showBeatgrid, setShowBeatgrid] = useState5(true);
     const [timeInputValue, setTimeInputValue] = useState5(currentCue.time || "00:00.00");
@@ -7912,7 +7955,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     isSimulationMode = false,
     onToggleSimulation,
     activeCrateFilter = null,
-    onClearCrateFilter
+    onClearCrateFilter,
+    onOpenBeatgridStudio
   }) => {
     var _a;
     const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
@@ -10860,8 +10904,57 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         visibleColumns.duration && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center text-gray-400 font-mono" }, row.duration),
         visibleColumns.bpm && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "ws-bpm text-[13px]" }, row.b || "--")),
         visibleColumns.key && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center", title: getHarmonicKeyDisplay(row.k) }, /* @__PURE__ */ React.createElement(CamelotKeyBadge, { value: row.k })),
-        visibleColumns.beatgrid_status && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, parseFloat(row.first_downbeat_ms || 0) > 0 ? /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60 shadow-sm", title: `Beatgrid 1.0.0 bloqueado al transitorio del primer golpe de bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms. Alineaci\xF3n de fase perfecta y cero deriva.` }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" }), `1.0.0 (${Number(row.first_downbeat_ms).toFixed(0)}ms)`) : /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 text-[10px] font-mono", title: "Beatgrid no auditado" }, "\u26AA Pendiente")),
-        visibleColumns.trim_silences && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, parseFloat(row.trim_start_ms || 0) > 0 ? /* @__PURE__ */ React.createElement("span", { className: `inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${parseFloat(row.trim_start_ms) > 150 ? "bg-amber-950/80 text-amber-300 border border-amber-800/60" : "bg-emerald-950/80 text-emerald-300 border border-emerald-800/60"}`, title: parseFloat(row.trim_start_ms) > 150 ? `\u26A0 Silencio Inicial Alto: -${Number(row.trim_start_ms).toFixed(1)}ms` : `Silencio inicial recortado: -${Number(row.trim_start_ms).toFixed(1)}ms` }, `-${Number(row.trim_start_ms).toFixed(0)}ms`) : /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 text-[10px] font-mono" }, "0ms")),
+        visibleColumns.beatgrid_status && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, parseFloat(row.first_downbeat_ms || 0) > 0 ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
+              else if (onNavigateTab) {
+                setSelectedTrack(row.id);
+                onNavigateTab("hotcues");
+              }
+            },
+            className: "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 hover:bg-blue-900 text-blue-300 hover:text-white border border-blue-800/60 shadow-sm cursor-pointer transition-all active:scale-95",
+            title: `Beatgrid 1.0.0 bloqueado al transitorio del primer golpe de bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms. Clic para editar en el Estudio.`
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" }),
+          `1.0.0 (${Number(row.first_downbeat_ms).toFixed(0)}ms)`
+        ) : /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
+              else if (onNavigateTab) {
+                setSelectedTrack(row.id);
+                onNavigateTab("hotcues");
+              }
+            },
+            className: "text-zinc-500 hover:text-zinc-300 text-[10px] font-mono cursor-pointer underline-offset-2 hover:underline",
+            title: "Beatgrid no auditado. Clic para calibrar manualmente en el Estudio."
+          },
+          "\u26AA Calibrar"
+        )),
+        visibleColumns.trim_silences && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
+              else if (onNavigateTab) {
+                setSelectedTrack(row.id);
+                onNavigateTab("hotcues");
+              }
+            },
+            className: "inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95",
+            title: "Clic para ajustar recorte manual de silencios (Trim In / Trim Out) en el Estudio"
+          },
+          parseFloat(row.trim_start_ms || 0) > 0 ? /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${parseFloat(row.trim_start_ms) > 150 ? "bg-amber-950/80 text-amber-300 border border-amber-800/60" : "bg-emerald-950/80 text-emerald-300 border border-emerald-800/60"}` }, `-${Number(row.trim_start_ms).toFixed(0)}ms`) : /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 hover:text-zinc-300 text-[10px] font-mono hover:underline" }, "0ms")
+        )),
         visibleColumns.cues && /* @__PURE__ */ React.createElement("td", { className: "py-2 px-1.5 text-center" }, /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -12030,8 +12123,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     t = (k) => k,
     currentFolder = "",
     setCurrentFolder,
-    audioRef
+    audioRef,
+    studioMode: propsStudioMode = "cues",
+    onSetStudioMode
   }) => {
+    const [studioMode, setStudioMode] = useState5(propsStudioMode || "cues");
+    useEffect6(() => {
+      if (propsStudioMode) setStudioMode(propsStudioMode);
+    }, [propsStudioMode]);
+    const [tapTimes, setTapTimes] = useState5([]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const handleRemoveTrackFromHotCues = (trackId, e) => {
       if (e && e.stopPropagation) e.stopPropagation();
@@ -12122,6 +12222,83 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       setAutoMappingStatus("\xA1Plantilla Club Extended auto-generada con \xE9xito en los 8 pads!");
       setTimeout(() => setAutoMappingStatus(""), 4e3);
+    };
+    const handleNudgeBeatgridMs = (deltaMs) => {
+      if (!currentTrack) return;
+      const currentDb = currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+      const newDb = Math.max(0, Math.round((currentDb + deltaMs) * 10) / 10);
+      updateCurrentTrackField("first_downbeat_ms", newDb);
+      if (activeCues && activeCues.length > 0) {
+        const newPct = durMs > 0 ? newDb / durMs : 0;
+        updateCues(activeCues.map((c, i) => i === 0 ? { ...c, pos_ms: Math.round(newDb), time: formatMsToTime(newDb), pct: newPct } : c));
+      }
+      setSaveStatus(`\u2713 Ancla Beatgrid 1.0.0 desplazada a ${newDb.toFixed(1)} ms`);
+      setTimeout(() => setSaveStatus(""), 2500);
+    };
+    const handleSetDownbeatAtPlayhead = () => {
+      if (!currentTrack) return;
+      const playheadMs = Math.round(playProgress * durMs * 10) / 10;
+      updateCurrentTrackField("first_downbeat_ms", playheadMs);
+      if (activeCues && activeCues.length > 0) {
+        const newPct = durMs > 0 ? playheadMs / durMs : 0;
+        updateCues(activeCues.map((c, i) => i === 0 ? { ...c, pos_ms: Math.round(playheadMs), time: formatMsToTime(playheadMs), pct: newPct } : c));
+      }
+      setSaveStatus(`\u{1F3AF} Downbeat 1.0.0 anclado al transitorio en ${playheadMs.toFixed(1)} ms`);
+      setTimeout(() => setSaveStatus(""), 3e3);
+    };
+    const handleNudgeBpm = (deltaBpm) => {
+      if (!currentTrack) return;
+      const currentB = currentTrack.bpm || currentTrack.b ? parseFloat(currentTrack.bpm || currentTrack.b) : 128;
+      const newB = Math.max(40, Math.min(220, Math.round((currentB + deltaBpm) * 100) / 100));
+      updateCurrentTrackField("bpm", newB);
+      updateCurrentTrackField("b", newB);
+      setSaveStatus(`\u2713 Tempo Beatgrid: ${newB.toFixed(2)} BPM`);
+      setTimeout(() => setSaveStatus(""), 2e3);
+    };
+    const handleTapTempo = () => {
+      const now = performance.now();
+      const newTaps = [...tapTimes, now].filter((t2) => now - t2 < 3e3);
+      setTapTimes(newTaps);
+      if (newTaps.length >= 3) {
+        const intervals = [];
+        for (let i = 1; i < newTaps.length; i++) {
+          intervals.push(newTaps[i] - newTaps[i - 1]);
+        }
+        const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        if (avgMs > 250 && avgMs < 1500) {
+          const tappedBpm = Math.round(6e4 / avgMs * 10) / 10;
+          updateCurrentTrackField("bpm", tappedBpm);
+          updateCurrentTrackField("b", tappedBpm);
+          setSaveStatus(`\u{1F941} TAP Tempo: ${tappedBpm.toFixed(1)} BPM`);
+          setTimeout(() => setSaveStatus(""), 2e3);
+        }
+      }
+    };
+    const handleSetTrimStartAtPlayhead = () => {
+      if (!currentTrack) return;
+      const playheadMs = Math.round(playProgress * durMs * 10) / 10;
+      updateCurrentTrackField("trim_start_ms", playheadMs);
+      setSaveStatus(`\u2702\uFE0F Corte Inicio (Trim In) fijado en ${playheadMs.toFixed(1)} ms`);
+      setTimeout(() => setSaveStatus(""), 3e3);
+    };
+    const handleResetTrimStart = () => {
+      if (!currentTrack) return;
+      updateCurrentTrackField("trim_start_ms", 0);
+      setSaveStatus(`\u21BA Corte Inicio restablecido a 0 ms`);
+      setTimeout(() => setSaveStatus(""), 2e3);
+    };
+    const handleSetTrimEndAtPlayhead = () => {
+      if (!currentTrack) return;
+      const playheadMs = Math.round(playProgress * durMs * 10) / 10;
+      updateCurrentTrackField("trim_end_ms", playheadMs);
+      setSaveStatus(`\u2702\uFE0F Corte Cola (Trim Out) fijado en ${formatMsToTime(playheadMs)}`);
+      setTimeout(() => setSaveStatus(""), 3e3);
+    };
+    const handleResetTrimEnd = () => {
+      if (!currentTrack) return;
+      updateCurrentTrackField("trim_end_ms", durMs);
+      setSaveStatus(`\u21BA Corte Cola restablecido al final`);
+      setTimeout(() => setSaveStatus(""), 2e3);
     };
     const handlePitchChange = (newPitch) => {
       const clamped = Math.max(-pitchRange, Math.min(pitchRange, Math.round(newPitch * 100) / 100));
@@ -12507,7 +12684,33 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       return (t2.title || t2.t || "").toLowerCase().includes(q) || (t2.artist || t2.a || "").toLowerCase().includes(q) || (t2.bpm || t2.b || "").toLowerCase().includes(q) || (t2.key || t2.k || "").toLowerCase().includes(q);
     });
     const isCurrentPlayingThis = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack == null ? void 0 : currentTrack.id) || nowPlayingTrack.path === (currentTrack == null ? void 0 : currentTrack.path) || nowPlayingTrack.f === (currentTrack == null ? void 0 : currentTrack.f));
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Cue, title: "Hot Cues", accent: "Studio" }), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]", title: currentFolder }, /* @__PURE__ */ React.createElement(Icons.Folder, null), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, currentFolder ? currentFolder.split("/").pop() || currentFolder : "Sin carpeta")), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Cue, title: "Studio", accent: studioMode === "beatgrid" ? "Beatgrid" : "Hot Cues" }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#101018] p-1 rounded-xl border border-djzinc-750 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setStudioMode("cues");
+          if (onSetStudioMode) onSetStudioMode("cues");
+        },
+        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${studioMode === "cues" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-md font-black" : "text-gray-400 hover:text-white hover:bg-djzinc-800"}`,
+        title: "Modo 8 Hot Cues T\xE1cticos"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Cue, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "8 Hot Cues")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setStudioMode("beatgrid");
+          if (onSetStudioMode) onSetStudioMode("beatgrid");
+        },
+        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${studioMode === "beatgrid" ? "bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 text-black shadow-md font-black" : "text-gray-400 hover:text-white hover:bg-djzinc-800"}`,
+        title: "Modo Calibraci\xF3n de Beatgrid 1.0.0 & Recorte Manual de Silencios"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Grid, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Beatgrid & Silencios")
+    ))), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 min-w-0 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]", title: currentFolder }, /* @__PURE__ */ React.createElement(Icons.Folder, null), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, currentFolder ? currentFolder.split("/").pop() || currentFolder : "Sin carpeta")), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -12970,7 +13173,144 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         height: 160,
         lang
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400 pt-2 border-t border-djzinc-800/80 mt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_6px_#2563eb]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-rose-500 ", "aria-hidden": "true" }), " Sub/Bass (<150Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_6px_#dc2626]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-orange-400 ", "aria-hidden": "true" }), " Low-Mid / Drums (150-800Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-400 ", "aria-hidden": "true" }), " Mid-High / Vocales (800-4kHz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-sky-400 ", "aria-hidden": "true" }), " Treble / Platos (>4kHz)")), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 font-mono" }, "Desplazamiento horizontal milim\xE9trico \u2022 Rejilla Serato/Rekordbox"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#0a0a10] border border-djzinc-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-md overflow-x-auto no-scrollbar whitespace-nowrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2 py-1 rounded border border-djcyan-700/60 shrink-0" }, "PAD ", selectedCueId), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400 pt-2 border-t border-djzinc-800/80 mt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_6px_#2563eb]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-rose-500 ", "aria-hidden": "true" }), " Sub/Bass (<150Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_6px_#dc2626]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-orange-400 ", "aria-hidden": "true" }), " Low-Mid / Drums (150-800Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-emerald-400 ", "aria-hidden": "true" }), " Mid-High / Vocales (800-4kHz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]" }), " ", /* @__PURE__ */ React.createElement("span", { className: "inline-block w-2 h-2 rounded-full bg-sky-400 ", "aria-hidden": "true" }), " Treble / Platos (>4kHz)")), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 font-mono" }, "Desplazamiento horizontal milim\xE9trico \u2022 Rejilla Serato/Rekordbox"))), studioMode === "beatgrid" ? /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0f19] border-2 border-cyan-500/50 rounded-xl p-3 shadow-xl flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 bg-[#060911] p-2 rounded-lg border border-cyan-800/60 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] uppercase font-bold text-cyan-400 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse" }), "Ancla 1.0.0 Kick"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-white font-mono" }, downbeatMs > 0 ? `${downbeatMs.toFixed(1)} ms` : "0.0 ms")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleSetDownbeatAtPlayhead,
+        className: "px-2.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs rounded-md shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1",
+        title: "Fijar el transitorio 1.0.0 exactamente en el cabezal de reproducci\xF3n actual"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Pin, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Fijar 1.0.0")
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-0.5 ml-1" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBeatgridMs(-10),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer",
+        title: "Mover rejilla -10ms"
+      },
+      "-10ms"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBeatgridMs(-1),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 rounded border border-cyan-800/80 font-bold active:scale-95 cursor-pointer",
+        title: "Mover rejilla -1ms (micro-fase)"
+      },
+      "-1ms"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBeatgridMs(1),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 rounded border border-cyan-800/80 font-bold active:scale-95 cursor-pointer",
+        title: "Mover rejilla +1ms (micro-fase)"
+      },
+      "+1ms"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBeatgridMs(10),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer",
+        title: "Mover rejilla +10ms"
+      },
+      "+10ms"
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 bg-[#060911] p-2 rounded-lg border border-djzinc-800 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] uppercase font-bold text-amber-400" }, "Tempo Grid"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-amber-300 font-mono" }, bpm.toFixed(2), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-400 font-normal" }, "BPM"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-0.5" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBpm(-0.1),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer",
+        title: "Reducir BPM -0.1"
+      },
+      "-0.1"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBpm(-0.01),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-amber-300 rounded border border-amber-900/60 font-bold active:scale-95 cursor-pointer",
+        title: "Micro-estiramiento BPM -0.01"
+      },
+      "-0.01"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBpm(0.01),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-amber-300 rounded border border-amber-900/60 font-bold active:scale-95 cursor-pointer",
+        title: "Micro-estiramiento BPM +0.01"
+      },
+      "+0.01"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleNudgeBpm(0.1),
+        className: "px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer",
+        title: "Aumentar BPM +0.1"
+      },
+      "+0.1"
+    )), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleTapTempo,
+        className: "px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 rounded font-black text-xs active:scale-90 cursor-pointer shadow-sm",
+        title: "Pulsa repetidamente al ritmo de la m\xFAsica para calcular el tempo"
+      },
+      "\u{1F941} TAP"
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 bg-[#060911] p-2 rounded-lg border border-red-900/40 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] uppercase font-bold text-red-400" }, "Trim In"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white" }, trimMs > 0 ? `-${Math.round(trimMs)}ms` : "0ms")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleSetTrimStartAtPlayhead,
+        className: "px-2 py-1 bg-red-950 hover:bg-red-900 text-red-200 border border-red-700/70 rounded text-[11px] font-bold cursor-pointer active:scale-95",
+        title: "Fijar corte de silencio inicial en el cabezal actual"
+      },
+      "\u2702\uFE0F Cortar In"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleResetTrimStart,
+        className: "p-1 text-gray-400 hover:text-white rounded hover:bg-djzinc-800 text-[10px] cursor-pointer",
+        title: "Restablecer Trim In a 0ms"
+      },
+      "\u21BA"
+    )), /* @__PURE__ */ React.createElement("div", { className: "w-[1px] h-6 bg-djzinc-800 mx-0.5" }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] uppercase font-bold text-red-400" }, "Trim Out"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white" }, trimEndMs > 0 && trimEndMs < durMs ? formatMsToTime(trimEndMs) : "Fin")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleSetTrimEndAtPlayhead,
+        className: "px-2 py-1 bg-red-950 hover:bg-red-900 text-red-200 border border-red-700/70 rounded text-[11px] font-bold cursor-pointer active:scale-95",
+        title: "Fijar corte de silencio final (cola) en el cabezal actual"
+      },
+      "\u2702\uFE0F Cortar Out"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleResetTrimEnd,
+        className: "p-1 text-gray-400 hover:text-white rounded hover:bg-djzinc-800 text-[10px] cursor-pointer",
+        title: "Restablecer Trim Out al final del archivo"
+      },
+      "\u21BA"
+    ))), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleGuardarPista,
+        className: "px-3.5 py-2 bg-gradient-to-r from-emerald-400 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-black font-black text-xs rounded-lg shadow-lg cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5 shrink-0",
+        title: "Inyectar y guardar beatgrid 1.0.0, Serato Markers2 y silencios recortados en disco"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Save, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Guardar en Disco")
+    )) : /* @__PURE__ */ React.createElement("div", { className: "bg-[#0a0a10] border border-djzinc-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-md overflow-x-auto no-scrollbar whitespace-nowrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2 py-1 rounded border border-djcyan-700/60 shrink-0" }, "PAD ", selectedCueId), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -12989,7 +13329,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         value: cueTimeInput,
         onChange: handleTimeInputChange,
         placeholder: "00:00.00",
-        className: "w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
+        className: "w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
       }
     )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 font-mono text-xs overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-bold uppercase mr-1 shrink-0" }, "Nudge:"), /* @__PURE__ */ React.createElement(
       "button",
@@ -24668,6 +25008,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     });
     const [isSimulationMode, setIsSimulationMode] = useState5(false);
     const [currentFolder, setCurrentFolder] = useState5("");
+    const [studioMode, setStudioMode] = useState5("cues");
     const [auditTracks, setAuditTracks] = useState5([]);
     const [setBuilderTracks, setSetBuilderTracks] = useState5([]);
     const [spotifyTracks, setSpotifyTracks] = useState5([]);
@@ -25702,6 +26043,17 @@ ${res.path}`);
         console.error("Error al cargar directorio:", e);
       }
     };
+    const handleOpenBeatgridStudio = (trackId) => {
+      if (trackId) {
+        setSelectedTrack(trackId);
+        const found = auditTracks.find((t2) => String(t2.id) === String(trackId));
+        if (found && handlePlayTrack) {
+          handlePlayTrack(found, 0, false);
+        }
+      }
+      setStudioMode("beatgrid");
+      setActiveTab("hotcues");
+    };
     if (cinematicIntroOpen) {
       return /* @__PURE__ */ React.createElement(
         AppCinematicIntro,
@@ -25896,7 +26248,8 @@ ${res.path}`);
         isSimulationMode,
         onToggleSimulation: handleToggleSimulation,
         activeCrateFilter,
-        onClearCrateFilter: () => setActiveCrateFilter(null)
+        onClearCrateFilter: () => setActiveCrateFilter(null),
+        onOpenBeatgridStudio: handleOpenBeatgridStudio
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "hotcues" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       HotCuesWorkspace,
@@ -25918,7 +26271,9 @@ ${res.path}`);
         t,
         currentFolder,
         setCurrentFolder,
-        audioRef
+        audioRef,
+        studioMode,
+        onSetStudioMode: setStudioMode
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "spotify" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       SpotifyWorkspace,

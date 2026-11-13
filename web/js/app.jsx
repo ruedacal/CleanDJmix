@@ -981,6 +981,7 @@ const RekordboxWaveform = ({
     const barMs = beatMs * 4.0;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99.0, (downbeatMs / durMs) * 100)) : null;
     const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99.0, (trimMs / durMs) * 100)) : null;
 
@@ -1434,6 +1435,7 @@ const ZoomableRekordboxWaveform = ({
     const barMs = beatMs * 4.0;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
 
     // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
@@ -1708,18 +1710,64 @@ const ZoomableRekordboxWaveform = ({
             }
         }
 
-        // Sombreado de silencio inicial recortado
+        // Sombreado de silencio inicial recortado (Trim In)
         if (trimMs > 0 && durMs > 0) {
             const trimX = (trimMs / durMs) * totalWidth;
             if (trimX > 0) {
-                ctx.fillStyle = "rgba(239, 68, 68, 0.08)";
+                ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
                 ctx.fillRect(0, 0, trimX, height);
-                ctx.strokeStyle = "rgba(239, 68, 68, 0.55)";
+                ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(trimX, 0);
                 ctx.lineTo(trimX, height);
                 ctx.stroke();
+                ctx.fillStyle = "#ef4444";
+                ctx.font = "bold 9px monospace";
+                ctx.fillText(`TRIM IN -${Math.round(trimMs)}ms`, Math.max(2, trimX - 70), 10);
+            }
+        }
+
+        // Sombreado de silencio final recortado (Trim Out / Cola)
+        if (trimEndMs > 0 && trimEndMs < durMs && durMs > 0) {
+            const trimEndX = (trimEndMs / durMs) * totalWidth;
+            if (trimEndX < totalWidth) {
+                ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
+                ctx.fillRect(trimEndX, 0, totalWidth - trimEndX, height);
+                ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(trimEndX, 0);
+                ctx.lineTo(trimEndX, height);
+                ctx.stroke();
+                ctx.fillStyle = "#ef4444";
+                ctx.font = "bold 9px monospace";
+                ctx.fillText("TRIM OUT", trimEndX + 4, 10);
+            }
+        }
+
+        // Marcador Especial Ancla 1.0.0 Beatgrid (Transitorio de Bombo / Downbeat)
+        if (downbeatMs > 0 && durMs > 0) {
+            const dbX = (downbeatMs / durMs) * totalWidth;
+            if (dbX >= 0 && dbX <= totalWidth) {
+                ctx.strokeStyle = "#06b6d4";
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = "#06b6d4";
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(dbX, 0);
+                ctx.lineTo(dbX, height);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Bandera distintiva Downbeat 1.0.0
+                ctx.fillStyle = "#06b6d4";
+                ctx.fillRect(dbX - 28, 0, 56, 13);
+                ctx.fillStyle = "#000000";
+                ctx.font = "bold 8.5px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText("1.0.0 KICK", dbX, 9.5);
+                ctx.textAlign = "start";
             }
         }
 
@@ -2429,6 +2477,7 @@ const HotCueStudioModal = ({
     const barMs = beatMs * 4.0;
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
+    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
 
     const [snapToGrid, setSnapToGrid] = useState(true);
     const [showBeatgrid, setShowBeatgrid] = useState(true);
@@ -9292,7 +9341,8 @@ const AuditWorkspace = ({
     isSimulationMode = false,
     onToggleSimulation,
     activeCrateFilter = null,
-    onClearCrateFilter
+    onClearCrateFilter,
+    onOpenBeatgridStudio
 }) => {
     const [localRutaOrigen, setLocalRutaOrigen] = useState('');
     const rutaOrigen = currentFolder || localRutaOrigen;
@@ -13087,24 +13137,55 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                         {visibleColumns.beatgrid_status && (
                                             <td className="py-2 px-1.5 text-center">
                                                 {parseFloat(row.first_downbeat_ms || 0) > 0 ? (
-                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-800/60 shadow-sm" title={`Beatgrid 1.0.0 bloqueado al transitorio del primer golpe de bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms. Alineación de fase perfecta y cero deriva.`}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
+                                                            else if (onNavigateTab) { setSelectedTrack(row.id); onNavigateTab('hotcues'); }
+                                                        }}
+                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 hover:bg-blue-900 text-blue-300 hover:text-white border border-blue-800/60 shadow-sm cursor-pointer transition-all active:scale-95"
+                                                        title={`Beatgrid 1.0.0 bloqueado al transitorio del primer golpe de bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms. Clic para editar en el Estudio.`}
+                                                    >
                                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
                                                         {`1.0.0 (${Number(row.first_downbeat_ms).toFixed(0)}ms)`}
-                                                    </span>
+                                                    </button>
                                                 ) : (
-                                                    <span className="text-zinc-500 text-[10px] font-mono" title="Beatgrid no auditado">⚪ Pendiente</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
+                                                            else if (onNavigateTab) { setSelectedTrack(row.id); onNavigateTab('hotcues'); }
+                                                        }}
+                                                        className="text-zinc-500 hover:text-zinc-300 text-[10px] font-mono cursor-pointer underline-offset-2 hover:underline"
+                                                        title="Beatgrid no auditado. Clic para calibrar manualmente en el Estudio."
+                                                    >
+                                                        ⚪ Calibrar
+                                                    </button>
                                                 )}
                                             </td>
                                         )}
                                         {visibleColumns.trim_silences && (
                                             <td className="py-2 px-1.5 text-center">
-                                                {parseFloat(row.trim_start_ms || 0) > 0 ? (
-                                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${parseFloat(row.trim_start_ms) > 150 ? 'bg-amber-950/80 text-amber-300 border border-amber-800/60' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'}`} title={parseFloat(row.trim_start_ms) > 150 ? `⚠ Silencio Inicial Alto: -${Number(row.trim_start_ms).toFixed(1)}ms` : `Silencio inicial recortado: -${Number(row.trim_start_ms).toFixed(1)}ms`}>
-                                                        {`-${Number(row.trim_start_ms).toFixed(0)}ms`}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-zinc-500 text-[10px] font-mono">0ms</span>
-                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
+                                                        else if (onNavigateTab) { setSelectedTrack(row.id); onNavigateTab('hotcues'); }
+                                                    }}
+                                                    className="inline-flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                                                    title="Clic para ajustar recorte manual de silencios (Trim In / Trim Out) en el Estudio"
+                                                >
+                                                    {parseFloat(row.trim_start_ms || 0) > 0 ? (
+                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${parseFloat(row.trim_start_ms) > 150 ? 'bg-amber-950/80 text-amber-300 border border-amber-800/60' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'}`}>
+                                                            {`-${Number(row.trim_start_ms).toFixed(0)}ms`}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-zinc-500 hover:text-zinc-300 text-[10px] font-mono hover:underline">0ms</span>
+                                                    )}
+                                                </button>
                                             </td>
                                         )}
                                         {visibleColumns.cues && (
@@ -15082,8 +15163,16 @@ const HotCuesWorkspace = ({
     t = (k) => k,
     currentFolder = "",
     setCurrentFolder,
-    audioRef
+    audioRef,
+    studioMode: propsStudioMode = 'cues',
+    onSetStudioMode
 }) => {
+    const [studioMode, setStudioMode] = useState(propsStudioMode || 'cues');
+    useEffect(() => {
+        if (propsStudioMode) setStudioMode(propsStudioMode);
+    }, [propsStudioMode]);
+    const [tapTimes, setTapTimes] = useState([]);
+
     const currentTrack = (tracks && tracks.length > 0)
         ? (tracks.find(t => String(t.id) === String(selectedTrack)) || tracks[0])
         : null;
@@ -15195,6 +15284,92 @@ const HotCuesWorkspace = ({
         }
         setAutoMappingStatus("¡Plantilla Club Extended auto-generada con éxito en los 8 pads!");
         setTimeout(() => setAutoMappingStatus(''), 4000);
+    };
+
+    // Handlers de Calibración de Beatgrid 1.0.0 & Recorte Manual de Silencios
+    const handleNudgeBeatgridMs = (deltaMs) => {
+        if (!currentTrack) return;
+        const currentDb = currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+        const newDb = Math.max(0, Math.round((currentDb + deltaMs) * 10) / 10);
+        updateCurrentTrackField('first_downbeat_ms', newDb);
+        if (activeCues && activeCues.length > 0) {
+            const newPct = durMs > 0 ? (newDb / durMs) : 0;
+            updateCues(activeCues.map((c, i) => i === 0 ? { ...c, pos_ms: Math.round(newDb), time: formatMsToTime(newDb), pct: newPct } : c));
+        }
+        setSaveStatus(`✓ Ancla Beatgrid 1.0.0 desplazada a ${newDb.toFixed(1)} ms`);
+        setTimeout(() => setSaveStatus(''), 2500);
+    };
+
+    const handleSetDownbeatAtPlayhead = () => {
+        if (!currentTrack) return;
+        const playheadMs = Math.round(playProgress * durMs * 10) / 10;
+        updateCurrentTrackField('first_downbeat_ms', playheadMs);
+        if (activeCues && activeCues.length > 0) {
+            const newPct = durMs > 0 ? (playheadMs / durMs) : 0;
+            updateCues(activeCues.map((c, i) => i === 0 ? { ...c, pos_ms: Math.round(playheadMs), time: formatMsToTime(playheadMs), pct: newPct } : c));
+        }
+        setSaveStatus(`🎯 Downbeat 1.0.0 anclado al transitorio en ${playheadMs.toFixed(1)} ms`);
+        setTimeout(() => setSaveStatus(''), 3000);
+    };
+
+    const handleNudgeBpm = (deltaBpm) => {
+        if (!currentTrack) return;
+        const currentB = (currentTrack.bpm || currentTrack.b) ? parseFloat(currentTrack.bpm || currentTrack.b) : 128.0;
+        const newB = Math.max(40.0, Math.min(220.0, Math.round((currentB + deltaBpm) * 100) / 100));
+        updateCurrentTrackField('bpm', newB);
+        updateCurrentTrackField('b', newB);
+        setSaveStatus(`✓ Tempo Beatgrid: ${newB.toFixed(2)} BPM`);
+        setTimeout(() => setSaveStatus(''), 2000);
+    };
+
+    const handleTapTempo = () => {
+        const now = performance.now();
+        const newTaps = [...tapTimes, now].filter(t => now - t < 3000);
+        setTapTimes(newTaps);
+        if (newTaps.length >= 3) {
+            const intervals = [];
+            for (let i = 1; i < newTaps.length; i++) {
+                intervals.push(newTaps[i] - newTaps[i - 1]);
+            }
+            const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            if (avgMs > 250 && avgMs < 1500) {
+                const tappedBpm = Math.round((60000.0 / avgMs) * 10) / 10;
+                updateCurrentTrackField('bpm', tappedBpm);
+                updateCurrentTrackField('b', tappedBpm);
+                setSaveStatus(`🥁 TAP Tempo: ${tappedBpm.toFixed(1)} BPM`);
+                setTimeout(() => setSaveStatus(''), 2000);
+            }
+        }
+    };
+
+    const handleSetTrimStartAtPlayhead = () => {
+        if (!currentTrack) return;
+        const playheadMs = Math.round(playProgress * durMs * 10) / 10;
+        updateCurrentTrackField('trim_start_ms', playheadMs);
+        setSaveStatus(`✂️ Corte Inicio (Trim In) fijado en ${playheadMs.toFixed(1)} ms`);
+        setTimeout(() => setSaveStatus(''), 3000);
+    };
+
+    const handleResetTrimStart = () => {
+        if (!currentTrack) return;
+        updateCurrentTrackField('trim_start_ms', 0.0);
+        setSaveStatus(`↺ Corte Inicio restablecido a 0 ms`);
+        setTimeout(() => setSaveStatus(''), 2000);
+    };
+
+    const handleSetTrimEndAtPlayhead = () => {
+        if (!currentTrack) return;
+        const playheadMs = Math.round(playProgress * durMs * 10) / 10;
+        updateCurrentTrackField('trim_end_ms', playheadMs);
+        setSaveStatus(`✂️ Corte Cola (Trim Out) fijado en ${formatMsToTime(playheadMs)}`);
+        setTimeout(() => setSaveStatus(''), 3000);
+    };
+
+    const handleResetTrimEnd = () => {
+        if (!currentTrack) return;
+        updateCurrentTrackField('trim_end_ms', durMs);
+        setSaveStatus(`↺ Corte Cola restablecido al final`);
+        setTimeout(() => setSaveStatus(''), 2000);
     };
 
     // Ajuste en tiempo real de velocidad y tono (Pitch Shifting)
@@ -15647,7 +15822,37 @@ const HotCuesWorkspace = ({
         <div className="ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200">
             {/* BARRA SUPERIOR: RUTA DE CARPETA, SELECTOR DE PISTAS Y ACCIONES */}
             <header className="border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm">
-                <SectionTitle icon={Icons.Cue} title="Hot Cues" accent="Studio" />
+                <div className="flex items-center gap-3">
+                    <SectionTitle icon={Icons.Cue} title="Studio" accent={studioMode === 'beatgrid' ? "Beatgrid" : "Hot Cues"} />
+                    <div className="flex items-center gap-1 bg-[#101018] p-1 rounded-xl border border-djzinc-750 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => { setStudioMode('cues'); if (onSetStudioMode) onSetStudioMode('cues'); }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                studioMode === 'cues'
+                                    ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-md font-black'
+                                    : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                            }`}
+                            title="Modo 8 Hot Cues Tácticos"
+                        >
+                            <Icons.Cue size={13} />
+                            <span>8 Hot Cues</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setStudioMode('beatgrid'); if (onSetStudioMode) onSetStudioMode('beatgrid'); }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                studioMode === 'beatgrid'
+                                    ? 'bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 text-black shadow-md font-black'
+                                    : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                            }`}
+                            title="Modo Calibración de Beatgrid 1.0.0 & Recorte Manual de Silencios"
+                        >
+                            <Icons.Grid size={13} />
+                            <span>Beatgrid & Silencios</span>
+                        </button>
+                    </div>
+                </div>
                 {/* Directorio Actual & Botón Cambiar Carpeta (Versión Desktop) */}
                 <div className="hidden md:flex items-center gap-2 min-w-0 shrink-0">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={currentFolder}>
@@ -16434,96 +16639,274 @@ const HotCuesWorkspace = ({
                         </div>
                     </div>
 
-                    {/* BARRA DE MICRO-AJUSTE (NUDGE) & EDICIÓN DEL CUE SELECCIONADO CON SCROLL TÁCTIL */}
-                    <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-md overflow-x-auto no-scrollbar whitespace-nowrap">
-                        <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2 py-1 rounded border border-djcyan-700/60 shrink-0">
-                                PAD {selectedCueId}
-                            </span>
-                            <input
-                                type="text"
-                                value={cueNameInput}
-                                onChange={(e) => {
-                                    setCueNameInput(e.target.value);
-                                    updateSingleCue({ name: e.target.value, short_name: e.target.value });
-                                }}
-                                placeholder="Nombre del punto (ej. Drop A)"
-                                className="w-32 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-white font-mono outline-none shrink-0"
-                            />
-                            <input
-                                type="text"
-                                value={cueTimeInput}
-                                onChange={handleTimeInputChange}
-                                placeholder="00:00.00"
-                                className="w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
-                            />
-                        </div>
+                    {/* BARRA DE MICRO-AJUSTE (NUDGE) & EDICIÓN DEL CUE O CALIBRACIÓN DE BEATGRID SEGÚN MODO */}
+                    {studioMode === 'beatgrid' ? (
+                        <div className="bg-[#0b0f19] border-2 border-cyan-500/50 rounded-xl p-3 shadow-xl flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 text-xs font-mono">
+                            {/* BLOQUE 1: CALIBRACIÓN FASE & DOWNBEAT 1.0.0 */}
+                            <div className="flex items-center gap-2 bg-[#060911] p-2 rounded-lg border border-cyan-800/60 shrink-0">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] uppercase font-bold text-cyan-400 flex items-center gap-1">
+                                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                                        Ancla 1.0.0 Kick
+                                    </span>
+                                    <span className="text-sm font-black text-white font-mono">
+                                        {downbeatMs > 0 ? `${downbeatMs.toFixed(1)} ms` : '0.0 ms'}
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleSetDownbeatAtPlayhead}
+                                    className="px-2.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs rounded-md shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                                    title="Fijar el transitorio 1.0.0 exactamente en el cabezal de reproducción actual"
+                                >
+                                    <Icons.Pin size={13} />
+                                    <span>Fijar 1.0.0</span>
+                                </button>
+                                <div className="flex items-center gap-0.5 ml-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBeatgridMs(-10)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer"
+                                        title="Mover rejilla -10ms"
+                                    >
+                                        -10ms
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBeatgridMs(-1)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 rounded border border-cyan-800/80 font-bold active:scale-95 cursor-pointer"
+                                        title="Mover rejilla -1ms (micro-fase)"
+                                    >
+                                        -1ms
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBeatgridMs(1)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 rounded border border-cyan-800/80 font-bold active:scale-95 cursor-pointer"
+                                        title="Mover rejilla +1ms (micro-fase)"
+                                    >
+                                        +1ms
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBeatgridMs(10)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer"
+                                        title="Mover rejilla +10ms"
+                                    >
+                                        +10ms
+                                    </button>
+                                </div>
+                            </div>
 
-                        {/* Botones de Micro-Ajuste Nudge con Scroll Táctil */}
-                        <div className="flex items-center gap-1 font-mono text-xs overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 shrink-0">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase mr-1 shrink-0">Nudge:</span>
+                            {/* BLOQUE 2: TEMPO / GRID STRETCH (BPM FINO & TAP) */}
+                            <div className="flex items-center gap-2 bg-[#060911] p-2 rounded-lg border border-djzinc-800 shrink-0">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] uppercase font-bold text-amber-400">Tempo Grid</span>
+                                    <span className="text-sm font-black text-amber-300 font-mono">
+                                        {bpm.toFixed(2)} <span className="text-[9px] text-gray-400 font-normal">BPM</span>
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBpm(-0.1)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer"
+                                        title="Reducir BPM -0.1"
+                                    >
+                                        -0.1
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBpm(-0.01)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-amber-300 rounded border border-amber-900/60 font-bold active:scale-95 cursor-pointer"
+                                        title="Micro-estiramiento BPM -0.01"
+                                    >
+                                        -0.01
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBpm(0.01)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-amber-300 rounded border border-amber-900/60 font-bold active:scale-95 cursor-pointer"
+                                        title="Micro-estiramiento BPM +0.01"
+                                    >
+                                        +0.01
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleNudgeBpm(0.1)}
+                                        className="px-1.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 font-bold active:scale-95 cursor-pointer"
+                                        title="Aumentar BPM +0.1"
+                                    >
+                                        +0.1
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleTapTempo}
+                                    className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 rounded font-black text-xs active:scale-90 cursor-pointer shadow-sm"
+                                    title="Pulsa repetidamente al ritmo de la música para calcular el tempo"
+                                >
+                                    🥁 TAP
+                                </button>
+                            </div>
+
+                            {/* BLOQUE 3: RECORTE MANUAL DE SILENCIOS (AUTO-TRIM IN / OUT) */}
+                            <div className="flex items-center gap-2 bg-[#060911] p-2 rounded-lg border border-red-900/40 shrink-0">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] uppercase font-bold text-red-400">Trim In</span>
+                                        <span className="text-xs font-mono font-bold text-white">
+                                            {trimMs > 0 ? `-${Math.round(trimMs)}ms` : '0ms'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSetTrimStartAtPlayhead}
+                                        className="px-2 py-1 bg-red-950 hover:bg-red-900 text-red-200 border border-red-700/70 rounded text-[11px] font-bold cursor-pointer active:scale-95"
+                                        title="Fijar corte de silencio inicial en el cabezal actual"
+                                    >
+                                        ✂️ Cortar In
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleResetTrimStart}
+                                        className="p-1 text-gray-400 hover:text-white rounded hover:bg-djzinc-800 text-[10px] cursor-pointer"
+                                        title="Restablecer Trim In a 0ms"
+                                    >
+                                        ↺
+                                    </button>
+                                </div>
+
+                                <div className="w-[1px] h-6 bg-djzinc-800 mx-0.5"></div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] uppercase font-bold text-red-400">Trim Out</span>
+                                        <span className="text-xs font-mono font-bold text-white">
+                                            {trimEndMs > 0 && trimEndMs < durMs ? formatMsToTime(trimEndMs) : 'Fin'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleSetTrimEndAtPlayhead}
+                                        className="px-2 py-1 bg-red-950 hover:bg-red-900 text-red-200 border border-red-700/70 rounded text-[11px] font-bold cursor-pointer active:scale-95"
+                                        title="Fijar corte de silencio final (cola) en el cabezal actual"
+                                    >
+                                        ✂️ Cortar Out
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleResetTrimEnd}
+                                        className="p-1 text-gray-400 hover:text-white rounded hover:bg-djzinc-800 text-[10px] cursor-pointer"
+                                        title="Restablecer Trim Out al final del archivo"
+                                    >
+                                        ↺
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* BLOQUE 4: ACCIÓN INYECTAR EN DISCO */}
                             <button
                                 type="button"
-                                onClick={() => handleNudgeMs(-barMs)}
-                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
-                                title="Retroceder 1 compás (4 beats)"
+                                onClick={handleGuardarPista}
+                                className="px-3.5 py-2 bg-gradient-to-r from-emerald-400 to-cyan-500 hover:from-emerald-300 hover:to-cyan-400 text-black font-black text-xs rounded-lg shadow-lg cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5 shrink-0"
+                                title="Inyectar y guardar beatgrid 1.0.0, Serato Markers2 y silencios recortados en disco"
                             >
-                                -1c
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleNudgeMs(-beatMs)}
-                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
-                                title="Retroceder 1 beat (negra)"
-                            >
-                                -1b
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleNudgeMs(-10)}
-                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
-                                title="Retroceder 10 milisegundos"
-                            >
-                                -10ms
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleNudgeMs(10)}
-                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
-                                title="Avanzar 10 milisegundos"
-                            >
-                                +10ms
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleNudgeMs(beatMs)}
-                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
-                                title="Avanzar 1 beat (negra)"
-                            >
-                                +1b
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleNudgeMs(barMs)}
-                                className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
-                                title="Avanzar 1 compás (4 beats)"
-                            >
-                                +1c
+                                <Icons.Save size={14} className="inline-block align-[-2px]" />
+                                <span>Guardar en Disco</span>
                             </button>
                         </div>
+                    ) : (
+                        <div className="bg-[#0a0a10] border border-djzinc-800 rounded-xl p-2.5 sm:p-3 flex items-center justify-between gap-2.5 shadow-md overflow-x-auto no-scrollbar whitespace-nowrap">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-xs font-bold text-djcyan-400 font-mono bg-djcyan-950/80 px-2 py-1 rounded border border-djcyan-700/60 shrink-0">
+                                    PAD {selectedCueId}
+                                </span>
+                                <input
+                                    type="text"
+                                    value={cueNameInput}
+                                    onChange={(e) => {
+                                        setCueNameInput(e.target.value);
+                                        updateSingleCue({ name: e.target.value, short_name: e.target.value });
+                                    }}
+                                    placeholder="Nombre del punto (ej. Drop A)"
+                                    className="w-32 sm:w-48 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-white font-mono outline-none shrink-0"
+                                />
+                                <input
+                                    type="text"
+                                    value={cueTimeInput}
+                                    onChange={handleTimeInputChange}
+                                    placeholder="00:00.00"
+                                    className="w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
+                                />
+                            </div>
 
-                        {/* Botón Anclar en Playhead actual */}
-                        <button
-                            type="button"
-                            onClick={handleSetCueAtPlayhead}
-                            className="px-3 sm:px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
-                            title="Fijar el Pad seleccionado en la posición actual de reproducción"
-                        >
-                            <Icons.Pin size={14} className="inline-block align-[-2px]" />
-                            <span className="hidden sm:inline">Fijar Pad {selectedCueId} en Playhead</span>
-                            <span className="sm:hidden">Fijar en Playhead</span>
-                        </button>
-                    </div>
+                            {/* Botones de Micro-Ajuste Nudge con Scroll Táctil */}
+                            <div className="flex items-center gap-1 font-mono text-xs overflow-x-auto no-scrollbar whitespace-nowrap py-0.5 shrink-0">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mr-1 shrink-0">Nudge:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudgeMs(-barMs)}
+                                    className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
+                                    title="Retroceder 1 compás (4 beats)"
+                                >
+                                    -1c
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudgeMs(-beatMs)}
+                                    className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
+                                    title="Retroceder 1 beat (negra)"
+                                >
+                                    -1b
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudgeMs(-10)}
+                                    className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
+                                    title="Retroceder 10 milisegundos"
+                                >
+                                    -10ms
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudgeMs(10)}
+                                    className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
+                                    title="Avanzar 10 milisegundos"
+                                >
+                                    +10ms
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudgeMs(beatMs)}
+                                    className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
+                                    title="Avanzar 1 beat (negra)"
+                                >
+                                    +1b
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleNudgeMs(barMs)}
+                                    className="px-2 sm:px-2.5 py-1 bg-djzinc-900 hover:bg-djzinc-800 text-gray-300 hover:text-white rounded border border-djzinc-750 font-bold cursor-pointer shadow-sm active:scale-95 transition-colors shrink-0"
+                                    title="Avanzar 1 compás (4 beats)"
+                                >
+                                    +1c
+                                </button>
+                            </div>
+
+                            {/* Botón Anclar en Playhead actual */}
+                            <button
+                                type="button"
+                                onClick={handleSetCueAtPlayhead}
+                                className="px-3 sm:px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+                                title="Fijar el Pad seleccionado en la posición actual de reproducción"
+                            >
+                                <Icons.Pin size={14} className="inline-block align-[-2px]" />
+                                <span className="hidden sm:inline">Fijar Pad {selectedCueId} en Playhead</span>
+                                <span className="sm:hidden">Fijar en Playhead</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* SECCIÓN DE INTELIGENCIA ACÚSTICA: ATMÓSFERA (MOOD) Y COMENTARIO TÁCTICO PROFESIONAL */}
                     <div className="bg-[#0c0c14] border border-djzinc-800 rounded-xl p-4 shadow-lg space-y-3">
@@ -34417,6 +34800,7 @@ const App = () => {
     });
     const [isSimulationMode, setIsSimulationMode] = useState(false);
     const [currentFolder, setCurrentFolder] = useState('');
+    const [studioMode, setStudioMode] = useState('cues');
     const [auditTracks, setAuditTracks] = useState([]);
     const [setBuilderTracks, setSetBuilderTracks] = useState([]);
     const [spotifyTracks, setSpotifyTracks] = useState([]);
@@ -35540,6 +35924,18 @@ const App = () => {
         }
     };
 
+    const handleOpenBeatgridStudio = (trackId) => {
+        if (trackId) {
+            setSelectedTrack(trackId);
+            const found = auditTracks.find(t => String(t.id) === String(trackId));
+            if (found && handlePlayTrack) {
+                handlePlayTrack(found, 0, false);
+            }
+        }
+        setStudioMode('beatgrid');
+        setActiveTab('hotcues');
+    };
+
     // CUANDO LA INTRO ESTÁ ACTIVA: SE RENDERIZA ÚNICA Y EXCLUSIVAMENTE LA INTRO A PANTALLA COMPLETA
     if (cinematicIntroOpen) {
         return (
@@ -35758,6 +36154,7 @@ const App = () => {
                         onToggleSimulation={handleToggleSimulation}
                         activeCrateFilter={activeCrateFilter}
                         onClearCrateFilter={() => setActiveCrateFilter(null)}
+                        onOpenBeatgridStudio={handleOpenBeatgridStudio}
                     />
                 </div>
                 <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
@@ -35780,6 +36177,8 @@ const App = () => {
                         currentFolder={currentFolder}
                         setCurrentFolder={setCurrentFolder}
                         audioRef={audioRef}
+                        studioMode={studioMode}
+                        onSetStudioMode={setStudioMode}
                     />
                 </div>
                 <div style={{ display: activeTab === 'spotify' ? 'flex' : 'none' }} className="w-full h-full">
