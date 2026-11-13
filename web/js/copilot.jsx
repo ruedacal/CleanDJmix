@@ -1,7 +1,7 @@
 const { useState, useEffect, useRef } = React;
 
 // Carátula por defecto (SVG Vinilo Minimalista DJ)
-const DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
+const DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
 
 function getValidCover(c) {
     if (!c || typeof c !== 'string') return DEFAULT_VINYL_SVG;
@@ -247,7 +247,7 @@ const CopilotSeratoWaveform = ({
         { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck." },
         { id: 4, name: "MAIN DROP", color: "#10b981", pct: 0.48, time: "03:12.00", directive: "Clímax 100% de potencia. Corta totalmente los graves del deck saliente." },
         { id: 5, name: "Breakdown", color: "#06b6d4", pct: 0.62, time: "04:16.00", directive: "Parón melódico sin bombo. Ventana idónea para transiciones vocales." },
-        { id: 6, name: "Climax 2", color: "#3b82f6", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mantén energía alta." },
+        { id: 6, name: "Climax 2", color: "#22d3ee", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mantén energía alta." },
         { id: 7, name: "Outro 32b", color: "#8b5cf6", pct: 0.86, time: "06:08.00", directive: "Se retiran capas rítmicas. Zona recomendada para mezclar track entrante." },
         { id: 8, name: "Cut / Fade", color: "#ec4899", pct: 0.96, time: "07:15.00", directive: "Final de pista. Fade-out o corte antes del silencio." }
     ];
@@ -361,7 +361,7 @@ const CopilotSeratoWaveform = ({
 
                 // 1. Sub-Bass & Bombo (<200Hz) en Azul Cobalto Intenso
                 const bassAmp = bass * maxAmp * 0.95;
-                ctx.fillStyle = '#2563eb';
+                ctx.fillStyle = '#22d3ee';
                 ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
 
                 // 2. Medios y Vocales (200Hz - 2.5kHz) en Ámbar Cálido
@@ -463,7 +463,7 @@ const CopilotSeratoWaveform = ({
                 const bAmp = bass * (mHalf - 2);
                 const tAmp = treble * (mHalf - 3);
 
-                oCtx.fillStyle = '#2563eb';
+                oCtx.fillStyle = '#22d3ee';
                 oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
 
                 oCtx.fillStyle = '#06b6d4';
@@ -624,7 +624,7 @@ const CopilotSeratoWaveform = ({
 
                     {/* LEYENDA VISUAL DE FRECUENCIAS SERATO 3-BAND */}
                     <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400">
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]"></span>Graves (&lt;200Hz)</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]"></span>Graves (&lt;200Hz)</span>
                         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>Medios</span>
                         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ffffff]"></span>Agudos</span>
                     </div>
@@ -956,7 +956,7 @@ const DEFAULT_COPILOT_STATE = {
             {
                 "id": 6,
                 "name": "Climax 2",
-                "color": "#3b82f6",
+                "color": "#22d3ee",
                 "pct": 0.74,
                 "time": "05:04.00"
             },
@@ -1106,7 +1106,7 @@ const DEFAULT_COPILOT_STATE = {
             {
                 "id": 6,
                 "name": "Second Drop",
-                "color": "#3b82f6",
+                "color": "#22d3ee",
                 "pct": 0.76,
                 "time": "05:12.00"
             },
@@ -1782,7 +1782,7 @@ function LiveCopilotApp() {
                         {renderPlatformLogo(platform || 'serato', 16)}
                         <strong style={{ color: platform_color || '#00d1e8' }}>{platform_name || 'DJ LINK'}</strong>
                         <span className="text-zinc-600">|</span>
-                        <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-blue-400' : 'text-amber-400 font-bold'}>
+                        <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
                             {platform_status || (isLive ? 'LIVE' : 'STANDBY')}
                         </span>
                     </div>
@@ -2304,7 +2304,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                         { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
                         { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
                         { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
-                        { id: 6, name: "Climax", color: "#3b82f6", time: "05:04" },
+                        { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
                         { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
                         { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
                     ]).map((cue, cIdx) => (

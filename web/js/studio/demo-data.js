@@ -1,4 +1,4 @@
-export const CUE_COLORS = ["#f43f5e", "#fb923c", "#facc15", "#4ade80", "#22d3ee", "#3b82f6", "#a855f7", "#ec4899"];
+export const CUE_COLORS = ["#f43f5e", "#fb923c", "#facc15", "#4ade80", "#22d3ee", "#22d3ee", "#a855f7", "#ec4899"];
 
 const CUE_TEMPLATE = [
     { name: "Intro / Downbeat", bar: 1 },

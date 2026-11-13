@@ -38,12 +38,12 @@ const NV2_COLORS = [
     { id: 3, name: "Bassline", color: "#eab308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", time: "00:30.005" },
     { id: 4, name: "Main Break", color: "#22c55e", text: "text-green-400", border: "border-green-500/50", bg: "bg-green-500/10", time: "01:00.120" },
     { id: 5, name: "Drop 1 (Climax)", color: "#06b6d4", text: "text-cyan-400", border: "border-cyan-500/50", bg: "bg-cyan-500/10", time: "01:30.240" },
-    { id: 6, name: "Mid Break", color: "#3b82f6", text: "text-blue-400", border: "border-blue-500/50", bg: "bg-blue-500/10", time: "02:30.400" },
+    { id: 6, name: "Mid Break", color: "#22d3ee", text: "text-cyan-400", border: "border-blue-500/50", bg: "bg-blue-500/10", time: "02:30.400" },
     { id: 7, name: "Drop 2 (Re-Kick)", color: "#a855f7", text: "text-purple-400", border: "border-purple-500/50", bg: "bg-purple-500/10", time: "03:00.510" },
     { id: 8, name: "Outro Mix Point", color: "#ec4899", text: "text-pink-400", border: "border-pink-500/50", bg: "bg-pink-500/10", time: "04:15.000" }
 ];
 
-const DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#3b82f6" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
+const DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
 
 function getValidCover(c) {
     if (!c || typeof c !== 'string') return DEFAULT_VINYL_SVG;
@@ -891,7 +891,7 @@ const TableHarmonicWaveform = React.memo(
 
 // Leyenda oficial de bandas espectrales Rekordbox / Pioneer DJ
 const WAVEFORM_COLOR_LEGEND = [
-    { name: "Bass / Sub", color: "#2563eb", rgb: [37, 99, 235], hex: "#2563EB", desc: "Subgraves y pegada de bombos (<150Hz)", text: "text-blue-400", dot: "bg-blue-500" },
+    { name: "Bass / Sub", color: "#22d3ee", rgb: [37, 99, 235], hex: "#2563EB", desc: "Subgraves y pegada de bombos (<150Hz)", text: "text-cyan-400", dot: "bg-blue-500" },
     { name: "Drums / Impact", color: "#ef4444", rgb: [239, 68, 68], hex: "#EF4444", desc: "Cajas, claps y transitorios rítmicos (150-1kHz)", text: "text-red-400", dot: "bg-red-500" },
     { name: "Vocal / Synth", color: "#10b981", rgb: [16, 185, 129], hex: "#10B981", desc: "Vocales, pads y sintetizadores melódicos (1k-5kHz)", text: "text-emerald-400", dot: "bg-emerald-500" },
     { name: "Hi-Hat / Treble", color: "#22d3ee", rgb: [34, 211, 238], hex: "#22D3EE", desc: "Platos, shakers y brillo aéreo (>5kHz)", text: "text-djcyan-400", dot: "bg-djcyan-400" }
@@ -904,7 +904,7 @@ const DJ_PAD_PALETTE = [
     { id: 3, name: "Bassline", color: "#eab308", hex: "#EAB308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", rgb: [234, 179, 8] },
     { id: 4, name: "Main Break", color: "#22c55e", hex: "#22C55E", text: "text-green-400", border: "border-green-500/50", bg: "bg-green-500/10", rgb: [34, 197, 94] },
     { id: 5, name: "Drop 1 (Climax)", color: "#06b6d4", hex: "#06B6D4", text: "text-cyan-400", border: "border-cyan-500/50", bg: "bg-cyan-500/10", rgb: [6, 182, 212] },
-    { id: 6, name: "Mid Break", color: "#3b82f6", hex: "#3B82F6", text: "text-blue-400", border: "border-blue-500/50", bg: "bg-blue-500/10", rgb: [59, 130, 246] },
+    { id: 6, name: "Mid Break", color: "#22d3ee", hex: "#3B82F6", text: "text-cyan-400", border: "border-blue-500/50", bg: "bg-blue-500/10", rgb: [59, 130, 246] },
     { id: 7, name: "Drop 2 (Re-Kick)", color: "#a855f7", hex: "#A855F7", text: "text-purple-400", border: "border-purple-500/50", bg: "bg-purple-500/10", rgb: [168, 85, 247] },
     { id: 8, name: "Outro Mix Point", color: "#ec4899", hex: "#EC4899", text: "text-pink-400", border: "border-pink-500/50", bg: "bg-pink-500/10", rgb: [236, 72, 153] },
     { id: 9, name: "Blanco Serato", color: "#f8fafc", hex: "#F8FAFC", text: "text-slate-100", border: "border-slate-400/50", bg: "bg-slate-400/10", rgb: [248, 250, 252] }
@@ -3214,7 +3214,7 @@ const CAMELOT_WHEEL_DATA = {
     "1B": { classical: "B", name: "Si Mayor", rel: "1A", up: "2B", down: "12B", color: "#38bdf8" },
     "2A": { classical: "D#m", name: "Re# menor", rel: "2B", up: "3A", down: "1A", color: "#0284c7" },
     "2B": { classical: "F#", name: "Fa# Mayor", rel: "2A", up: "3B", down: "1B", color: "#0369a1" },
-    "3A": { classical: "A#m", name: "La# menor", rel: "3B", up: "4A", down: "2A", color: "#2563eb" },
+    "3A": { classical: "A#m", name: "La# menor", rel: "3B", up: "4A", down: "2A", color: "#22d3ee" },
     "3B": { classical: "Db", name: "Re♭ Mayor", rel: "3A", up: "4B", down: "2B", color: "#1d4ed8" },
     "4A": { classical: "Fm", name: "Fa menor", rel: "4B", up: "5A", down: "3A", color: "#4f46e5" },
     "4B": { classical: "Ab", name: "La♭ Mayor", rel: "4A", up: "5B", down: "3B", color: "#4338ca" },
@@ -3889,7 +3889,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
             items: [
                 { key: "fftLossless", title: "Inspección FFT Lossless Real", desc: "Análisis espectral por FFT para cazar transcodificaciones falsas a 16kHz/19kHz.", badge: "FFT 4096", badgeColor: "text-djcyan-400 bg-djcyan-950/80 border-djcyan-800/60" },
                 { key: "trimSilences", title: "Zero-Crossing Silence Auto-Trim (Cabecera & Cola)", desc: "Elimina espacios en blanco y silencios muertos cortando a cruce por cero a -48 dBFS al inicio y fin.", badge: "Trim 2-Way", badgeColor: "text-djgreen-400 bg-djgreen-950/80 border-djgreen-800/60" },
-                { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0 (Anti-Trote)", desc: "Ancla el Beatgrid al primer bombo real post-trim para eliminar derivas y trotes de sincro.", badge: "Grid 1.0.0", badgeColor: "text-blue-400 bg-blue-950/80 border-blue-800/60" },
+                { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0 (Anti-Trote)", desc: "Ancla el Beatgrid al primer bombo real post-trim para eliminar derivas y trotes de sincro.", badge: "Grid 1.0.0", badgeColor: "text-cyan-400 bg-blue-950/80 border-blue-800/60" },
                 { key: "detectDuplicates", title: "Buscar & Deduplicar por Calidad", desc: "Compara pistas duplicadas por Nyquist FFT, formato y tamaño para depurar biblioteca.", badge: "Lossless Win", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" }
             ]
         },
@@ -6620,7 +6620,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     { x: 0.48, y: 0.45, col: '#0ea5e9', k: '9A', bpm: 135 },
                     { x: 0.16, y: 0.32, col: '#eab308', k: '7B', bpm: 125 },
                     { x: 0.35, y: 0.62, col: '#06b6d4', k: '8A', bpm: 128 },
-                    { x: 0.52, y: 0.60, col: '#3b82f6', k: '9B', bpm: 130 },
+                    { x: 0.52, y: 0.60, col: '#22d3ee', k: '9B', bpm: 130 },
                     { x: 0.42, y: 0.72, col: '#10b981', k: '8B', bpm: 128 },
                     { x: 0.55, y: 0.28, col: '#ec4899', k: '11A', bpm: 140 }
                 ];
@@ -6756,7 +6756,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 const rInner = rOuter * 0.55;
 
                 const camelotKeys = ['1A','2A','3A','4A','5A','6A','7A','8A','9A','10A','11A','12A'];
-                const colors = ['#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#10b981'];
+                const colors = ['#06b6d4', '#0ea5e9', '#22d3ee', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#10b981'];
 
                 for (let i = 0; i < 12; i++) {
                     const startA = (i * Math.PI) / 6 - Math.PI / 2;
@@ -6810,7 +6810,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                 // Nodos de la Curva de Energía con Datos Reales
                 const setNodes = [
                     { x: w * 0.12, y: boxY + boxH * 0.74, tag: '01 WARM-UP', title: 'Jon Hopkins - Singularity', bpm: '120 BPM', key: '7A', energy: '⚡61%', col: '#06b6d4' },
-                    { x: w * 0.35, y: boxY + boxH * 0.56, tag: '02 BUILD', title: 'Kölsch - Mirage', bpm: '126 BPM', key: '7A', energy: '⚡69%', col: '#3b82f6', match: 'Clave Idéntica ✨' },
+                    { x: w * 0.35, y: boxY + boxH * 0.56, tag: '02 BUILD', title: 'Kölsch - Mirage', bpm: '126 BPM', key: '7A', energy: '⚡69%', col: '#22d3ee', match: 'Clave Idéntica ✨' },
                     { x: w * 0.63, y: boxY + boxH * 0.36, tag: '03 PEAK MAIN', title: 'Charlotte - Tales', bpm: '132 BPM', key: '8A', energy: '⚡88%', col: '#a855f7', match: '+1 Armónico 🚀' },
                     { x: w * 0.88, y: boxY + boxH * 0.20, tag: '04 CLIMAX', title: 'Chlär - Burning Sky', bpm: '138 BPM', key: '9A', energy: '⚡93%', col: '#f43f5e' }
                 ];
@@ -6949,7 +6949,7 @@ const InteractiveManualModal = ({ isOpen, onClose, initialSection = 'audit', onN
                     { num: 5, label: 'DROP 1', col: '#ef4444' },
                     { num: 6, label: 'DROP 2', col: '#a855f7' },
                     { num: 7, label: 'BRIDGE', col: '#ec4899' },
-                    { num: 8, label: 'OUTRO', col: '#3b82f6' }
+                    { num: 8, label: 'OUTRO', col: '#22d3ee' }
                 ];
 
                 const activePadIdx = Math.floor(((t * 35) % (w - 32)) / (padW));
@@ -8219,7 +8219,7 @@ const FOLDER_COLORS = [
     { id: 'purple', name: 'Púrpura Deep', bg: 'bg-purple-500', text: 'text-purple-400', border: 'border-purple-500', dot: 'bg-purple-400' },
     { id: 'amber', name: 'Ámbar Warm', bg: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500', dot: 'bg-amber-400' },
     { id: 'rose', name: 'Rosa Festival', bg: 'bg-rose-500', text: 'text-rose-400', border: 'border-rose-500', dot: 'bg-rose-400' },
-    { id: 'blue', name: 'Azul Eléctrico', bg: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500', dot: 'bg-blue-400' },
+    { id: 'blue', name: 'Azul Eléctrico', bg: 'bg-blue-500', text: 'text-cyan-400', border: 'border-blue-500', dot: 'bg-blue-400' },
     { id: 'indigo', name: 'Índigo Techno', bg: 'bg-indigo-500', text: 'text-indigo-400', border: 'border-indigo-500', dot: 'bg-indigo-400' },
     { id: 'orange', name: 'Naranja Sunset', bg: 'bg-orange-500', text: 'text-orange-400', border: 'border-orange-500', dot: 'bg-orange-400' }
 ];
@@ -12508,7 +12508,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                     </th>
                                 )}
                                 {visibleColumns.beatgrid_status && (
-                                    <th className="py-2.5 px-1.5 text-center text-blue-400 font-mono text-[11px]" title="Alineación del Beatgrid 1.0.0 al primer bombo real y detección de deriva de tempo (Grid Drift)">
+                                    <th className="py-2.5 px-1.5 text-center text-cyan-400 font-mono text-[11px]" title="Alineación del Beatgrid 1.0.0 al primer bombo real y detección de deriva de tempo (Grid Drift)">
                                         Beatgrid
                                     </th>
                                 )}
@@ -13144,7 +13144,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                                             if (onOpenBeatgridStudio) onOpenBeatgridStudio(row.id);
                                                             else if (onNavigateTab) { setSelectedTrack(row.id); onNavigateTab('hotcues'); }
                                                         }}
-                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 hover:bg-blue-900 text-blue-300 hover:text-white border border-blue-800/60 shadow-sm cursor-pointer transition-all active:scale-95"
+                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-950/80 hover:bg-blue-900 text-cyan-400 hover:text-white border border-blue-800/60 shadow-sm cursor-pointer transition-all active:scale-95"
                                                         title={`Beatgrid 1.0.0 bloqueado al transitorio del primer golpe de bombo real a ${Number(row.first_downbeat_ms).toFixed(1)} ms. Clic para editar en el Estudio.`}
                                                     >
                                                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
@@ -14420,7 +14420,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                                             height: `${heightPct}%`,
                                                             backgroundColor: isHighFreq 
                                                                 ? (fftAnalysisData.cutoff_khz >= 20.0 ? '#06b6d4' : '#ef4444')
-                                                                : (i < 15 ? '#3b82f6' : '#f59e0b')
+                                                                : (i < 15 ? '#22d3ee' : '#f59e0b')
                                                         }}
                                                         title={`Banda #${i + 1}: ${Math.round((i / 64) * 24)} kHz (${heightPct}%)`}
                                                     ></div>
@@ -16632,7 +16632,7 @@ const HotCuesWorkspace = ({
                         {/* Leyenda Espectral de Frecuencias */}
                         <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 pt-2 border-t border-djzinc-800/80 mt-2">
                             <div className="flex items-center gap-4">
-                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_6px_#2563eb]"></span> <span className="inline-block w-2 h-2 rounded-full bg-rose-500 " aria-hidden="true" /> Sub/Bass (&lt;150Hz)</span>
+                                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_6px_#22d3ee]"></span> <span className="inline-block w-2 h-2 rounded-full bg-rose-500 " aria-hidden="true" /> Sub/Bass (&lt;150Hz)</span>
                                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-600 shadow-[0_0_6px_#dc2626]"></span> <span className="inline-block w-2 h-2 rounded-full bg-orange-400 " aria-hidden="true" /> Low-Mid / Drums (150-800Hz)</span>
                                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_6px_#f59e0b]"></span> <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 " aria-hidden="true" /> Mid-High / Vocales (800-4kHz)</span>
                                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></span> <span className="inline-block w-2 h-2 rounded-full bg-sky-400 " aria-hidden="true" /> Treble / Platos (&gt;4kHz)</span>
@@ -19718,7 +19718,7 @@ const SpotifyWorkspace = ({
                                                         <span>Taxonomía</span>
                                                     </span>
                                                 ) : row.origin === 'shazam' ? (
-                                                    <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-950 text-blue-300 border border-blue-600 inline-flex items-center gap-1">
+                                                    <span className="px-2 py-0.5 rounded text-[9.5px] font-mono font-bold bg-blue-950 text-cyan-400 border border-blue-600 inline-flex items-center gap-1">
                                                         <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                                         <span>Radar</span>
                                                     </span>
@@ -22676,7 +22676,7 @@ const TaxonomyWorkspace = ({
                                     className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
                                         isRouting || tracks.length === 0
                                             ? 'bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60'
-                                            : 'bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-blue-300 shadow hover:shadow-blue-500/20 active:scale-95'
+                                            : 'bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-cyan-400 shadow hover:shadow-blue-500/20 active:scale-95'
                                     }`}
                                     title="Genera archivo rekordbox.xml estándar Pioneer DJ con Hot Cues y playlists"
                                 >
@@ -25620,7 +25620,7 @@ function evaluateHarmonicTransition(keyA, keyB) {
         return {
             type: 'DIAGONAL',
             badge: '🔷 Diagonal (±1 A/B)',
-            color: 'bg-blue-950/90 text-blue-300 border-blue-600',
+            color: 'bg-blue-950/90 text-cyan-400 border-blue-600',
             score: 70,
             desc: 'Modulación diagonal: Transición cruzada armónicamente aceptable con frases largas.'
         };
@@ -27770,7 +27770,7 @@ const SetBuilderWorkspace = ({
 const MAP_CAMELOT_COLORS = {
     "1A": "#00e5ff", "1B": "#00b4d8",
     "2A": "#00a6fb", "2B": "#0077b6",
-    "3A": "#3b82f6", "3B": "#1d4ed8",
+    "3A": "#22d3ee", "3B": "#1d4ed8",
     "4A": "#8b5cf6", "4B": "#7c3aed",
     "5A": "#d946ef", "5B": "#c026d3",
     "6A": "#ef4444", "6B": "#dc2626",
@@ -27788,7 +27788,7 @@ const MAP_GENRE_COLORS = {
     "Afro House": "#f59e0b",
     "Peak Time Techno": "#a855f7",
     "Techno": "#9333ea",
-    "Deep House": "#3b82f6",
+    "Deep House": "#22d3ee",
     "House": "#38bdf8",
     "Indie Dance": "#ec4899",
     "Drum & Bass": "#ef4444",
@@ -28508,7 +28508,7 @@ const MapWorkspace = ({
                     nodeColor = MAP_CAMELOT_COLORS[node.keyStr] || '#a855f7';
                 } else if (colorMode === 'energy') {
                     const e = node.energy;
-                    nodeColor = e >= 90 ? '#ef4444' : (e >= 75 ? '#f59e0b' : (e >= 50 ? '#06b6d4' : '#3b82f6'));
+                    nodeColor = e >= 90 ? '#ef4444' : (e >= 75 ? '#f59e0b' : (e >= 50 ? '#06b6d4' : '#22d3ee'));
                 } else if (colorMode === 'quality') {
                     const isFakeOrBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
                     nodeColor = isFakeOrBad ? '#ef4444' : '#10b981';
@@ -28671,7 +28671,7 @@ const MapWorkspace = ({
                         nodeColor = MAP_CAMELOT_COLORS[node.keyStr] || '#a855f7';
                     } else if (colorMode === 'energy') {
                         const e = node.energy;
-                        nodeColor = e >= 90 ? '#ef4444' : (e >= 75 ? '#f59e0b' : (e >= 50 ? '#06b6d4' : '#3b82f6'));
+                        nodeColor = e >= 90 ? '#ef4444' : (e >= 75 ? '#f59e0b' : (e >= 50 ? '#06b6d4' : '#22d3ee'));
                     } else if (colorMode === 'quality') {
                         const isFakeOrBad = t.es_fake || (t.calidad && String(t.calidad).includes('Baja'));
                         nodeColor = isFakeOrBad ? '#ef4444' : '#10b981';
@@ -29673,7 +29673,7 @@ const BEATWAVE_MASTER_GLOSSARY = [
         term: "Rumble Sub-Bass Ratio (20–60 Hz vs 60–140 Hz)",
         category: "DSP & Acústica",
         tag: "SUB-GRAVES",
-        color: "#3b82f6",
+        color: "#22d3ee",
         icon: "🔊",
         definition: "Cociente entre la energía sub-grave continua (cola de rumble generada con reverb/retraso filtrado) y el golpe seco del bombo (punch). Crucial en el Techno contemporáneo: permite discernir si un track tiene un subgrave rodante masivo (Hard/Raw Techno) o una línea de bajo corta y punteada (Tech House / Melodic).",
         formula: "Ratio = E(20–60 Hz) / E(60–140 Hz)",
@@ -31601,7 +31601,7 @@ const CopilotSeratoWaveform = ({
         { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck." },
         { id: 4, name: "MAIN DROP", color: "#10b981", pct: 0.48, time: "03:12.00", directive: "Clímax 100% de potencia. Corta totalmente los graves del deck saliente." },
         { id: 5, name: "Breakdown", color: "#06b6d4", pct: 0.62, time: "04:16.00", directive: "Parón melódico sin bombo. Ventana idónea para transiciones vocales." },
-        { id: 6, name: "Climax 2", color: "#3b82f6", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mantén energía alta." },
+        { id: 6, name: "Climax 2", color: "#22d3ee", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mantén energía alta." },
         { id: 7, name: "Outro 32b", color: "#8b5cf6", pct: 0.86, time: "06:08.00", directive: "Se retiran capas rítmicas. Zona recomendada para mezclar track entrante." },
         { id: 8, name: "Cut / Fade", color: "#ec4899", pct: 0.96, time: "07:15.00", directive: "Final de pista. Fade-out o corte antes del silencio." }
     ];
@@ -31718,7 +31718,7 @@ const CopilotSeratoWaveform = ({
 
                 // 1. Sub-Bass & Bombo (<200Hz) en Azul Cobalto Intenso
                 const bassAmp = bass * maxAmp * 0.95;
-                ctx.fillStyle = '#2563eb';
+                ctx.fillStyle = '#22d3ee';
                 ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
 
                 // 2. Medios y Vocales (200Hz - 2.5kHz) en Ámbar Cálido
@@ -31821,7 +31821,7 @@ const CopilotSeratoWaveform = ({
                 const bAmp = bass * (mHalf - 2);
                 const tAmp = treble * (mHalf - 3);
 
-                oCtx.fillStyle = '#2563eb';
+                oCtx.fillStyle = '#22d3ee';
                 oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
 
                 oCtx.fillStyle = '#06b6d4';
@@ -31984,7 +31984,7 @@ const CopilotSeratoWaveform = ({
 
                     {/* LEYENDA VISUAL DE FRECUENCIAS SERATO 3-BAND */}
                     <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400">
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#2563eb]"></span>Graves (&lt;200Hz)</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]"></span>Graves (&lt;200Hz)</span>
                         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>Medios</span>
                         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ffffff]"></span>Agudos</span>
                     </div>
@@ -32234,7 +32234,7 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                         { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
                         { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
                         { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
-                        { id: 6, name: "Climax", color: "#3b82f6", time: "05:04" },
+                        { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
                         { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
                         { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
                     ]).map((cue, cIdx) => (
@@ -32579,7 +32579,7 @@ const DEFAULT_COPILOT_STATE = {
             {
                 "id": 6,
                 "name": "Climax 2",
-                "color": "#3b82f6",
+                "color": "#22d3ee",
                 "pct": 0.74,
                 "time": "05:04.00"
             },
@@ -32729,7 +32729,7 @@ const DEFAULT_COPILOT_STATE = {
             {
                 "id": 6,
                 "name": "Second Drop",
-                "color": "#3b82f6",
+                "color": "#22d3ee",
                 "pct": 0.76,
                 "time": "05:12.00"
             },
@@ -33402,7 +33402,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         {renderPlatformLogo(state.platform || 'serato', 13)}
                         <strong style={{ color: state.platform_color || '#00d1e8' }}>{state.platform_name || 'DJ LINK'}</strong>
                         <span className="text-zinc-600">|</span>
-                        <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-blue-400' : 'text-amber-400 font-bold'}>
+                        <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
                             {state.platform_status || (isLive ? 'LIVE' : 'STANDBY')}
                         </span>
                     </div>

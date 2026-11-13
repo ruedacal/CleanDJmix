@@ -86,7 +86,7 @@ export const BeatWaveLogoLockup = ({ size = 'sm', isAnimated = true, showSubtitl
                 <div className={`flex items-center ${isLg ? 'gap-3 sm:gap-4' : 'gap-2'} leading-none`}>
                     <span className={`font-syne font-black tracking-[0.02em] leading-none select-none ${
                         isLg 
-                            ? 'text-4xl sm:text-6xl md:text-7xl lg:text-[76px] mb-16 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]' 
+                            ? 'text-3xl sm:text-4xl block mb-16 mb-16 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]' 
                             : 'text-xl sm:text-2xl'
                     }`}>
                         <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.85)]">WAVE</span>
