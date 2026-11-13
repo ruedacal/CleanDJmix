@@ -326,11 +326,15 @@ def _emitir_log_ui(mensaje: str):
 
 def _emitir_progreso_batch(pct: int, msg: str):
     try:
+        clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
         if hasattr(eel, "actualizar_progreso_batch"):
-            clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
             eel.actualizar_progreso_batch(int(pct), clean_msg)
-    except Exception:
-        pass
+        try:
+            eel.sleep(0.001)
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"[PROGRESS ERROR] {e}")
 
 @eel.expose
 def reproducir_pista_mac(nombre_archivo):

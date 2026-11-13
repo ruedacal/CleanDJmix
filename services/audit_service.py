@@ -724,6 +724,7 @@ class AuditService:
 
         # Detección inmediata de contenedor fraudulento / extensión errónea (ej. MP3 o M4A renombrado como .flac)
         if ext in (".flac", ".wav", ".aiff", ".aif") and real_fmt in ("mp3", "m4a", "aac", "ogg"):
+            sr_val = round(samplerate / 1000.0, 1) if samplerate else 44.1
             return {
                 "calidad": f"Baja (Origen {real_fmt.upper()})",
                 "estado": f"{format_clean} FAKE ({real_fmt.upper()})",
@@ -733,9 +734,11 @@ class AuditService:
                 "perdida_pct": 35.0,
                 "compresion": f"Contenedor {real_fmt.upper()} renombrado a .{format_clean.lower()}",
                 "cutoff_khz": cutoff_khz if cutoff_khz > 0 else (20.5 if bitrate_kbps >= 310 else 18.5),
-                "samplerate_khz": round(samplerate / 1000.0, 1) if samplerate else 44.1,
+                "samplerate_khz": sr_val,
+                "sample_rate_khz": sr_val,
                 "bitrate_kbps": bitrate_kbps or 320,
                 "bit_depth": bit_depth or 16,
+                "format": format_clean,
                 "badge_color": "red"
             }
 
@@ -1453,7 +1456,7 @@ return folderPath'''
         if total_pending > 0:
             # PASO 4: Procesamiento paralelo multinúcleo dinámico para auditoría DSP en background
             num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
-            emit_step = max(1, min(25, total_pending // 20))
+            emit_step = max(1, min(10, total_pending // 40))
 
             def _procesar_un_delta(task_tuple):
                 if self._cancelar_proceso:

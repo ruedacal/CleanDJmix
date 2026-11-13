@@ -9440,25 +9440,38 @@ const AuditWorkspace = ({
     };
 
     useEffect(() => {
+        const handleAuditEvt = (e) => {
+            if (!e.detail) return;
+            const { pct, msg } = e.detail;
+            if (!msg || msg.includes('detenid') || msg.includes('cancelad')) {
+                setBatchProgress(0);
+                setBatchStatusMsg('');
+                setIsAuditing(false);
+                setIsLoadingDir(false);
+                setIsInjecting(false);
+                setIsExporting(false);
+                if (typeof onAuditProgressChange === 'function') {
+                    onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+                }
+                return;
+            }
+            if (pct > 0 && pct < 100) {
+                setIsAuditing(true);
+            }
+            setBatchProgress(pct);
+            setBatchStatusMsg(msg);
+        };
+        window.addEventListener('bw:audit_progress', handleAuditEvt);
+
         if (window.eel && typeof window.eel.expose === 'function') {
             window.actualizar_progreso_batch = (pct, msg) => {
-                if (!msg || msg.includes('detenid') || msg.includes('cancelad')) {
-                    setBatchProgress(0);
-                    setBatchStatusMsg('');
-                    setIsAuditing(false);
-                    setIsLoadingDir(false);
-                    setIsInjecting(false);
-                    setIsExporting(false);
-                    if (typeof onAuditProgressChange === 'function') {
-                        onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
-                    }
-                    return;
-                }
-                setBatchProgress(pct);
-                setBatchStatusMsg(msg);
+                window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
             };
-            window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+            try {
+                window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+            } catch (err) {}
         }
+        return () => window.removeEventListener('bw:audit_progress', handleAuditEvt);
     }, [onAuditProgressChange]);
 
     // Notificar al componente raíz (App) para persistir estado y mostrar progreso entre pestañas
@@ -25488,8 +25501,10 @@ const SetBuilderWorkspace = ({
             setFolderLoading(true);
             setFolderProgress({ pct: 5, msg: 'Examinando carpeta de música en disco...' });
 
+            const prevHandler = window.actualizar_progreso_batch;
             window.actualizar_progreso_batch = (pct, msg) => {
                 setFolderProgress({ pct: Math.min(100, Math.max(5, pct)), msg: msg || '' });
+                window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
             };
 
             let res = null;
@@ -34453,29 +34468,40 @@ const App = () => {
 
     // Listener Global de Progreso de Carga y Auditoría para TopBar y Workspaces
     useEffect(() => {
+        const handleGlobalAuditEvt = (e) => {
+            if (!e.detail) return;
+            const { pct, msg } = e.detail;
+            if (!msg || msg.includes('detenid') || msg.includes('cancelad')) {
+                setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
+                return;
+            }
+            const isLoading = msg.toLowerCase().includes('leyendo') || msg.toLowerCase().includes('carga') || msg.toLowerCase().includes('tags') || msg.toLowerCase().includes('archivo');
+            setGlobalAuditInfo({
+                isAuditing: !isLoading && pct < 100,
+                isLoadingDir: isLoading,
+                progress: pct,
+                statusMsg: msg
+            });
+            if (pct >= 100) {
+                setTimeout(() => {
+                    setGlobalAuditInfo(prev => ({ ...prev, isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' }));
+                }, 2500);
+            }
+        };
+
+        window.addEventListener('bw:audit_progress', handleGlobalAuditEvt);
+
+        window.actualizar_progreso_batch = (pct, msg) => {
+            window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
+        };
+
         if (window.eel && typeof window.eel.expose === 'function') {
-            window.actualizar_progreso_batch = (pct, msg) => {
-                if (!msg || msg.includes('detenid') || msg.includes('cancelad')) {
-                    setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
-                    return;
-                }
-                const isLoading = msg.toLowerCase().includes('leyendo') || msg.toLowerCase().includes('carga') || msg.toLowerCase().includes('tags') || msg.toLowerCase().includes('archivo');
-                setGlobalAuditInfo({
-                    isAuditing: !isLoading,
-                    isLoadingDir: isLoading,
-                    progress: pct,
-                    statusMsg: msg
-                });
-                if (pct >= 100) {
-                    setTimeout(() => {
-                        setGlobalAuditInfo(prev => ({ ...prev, isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' }));
-                    }, 2500);
-                }
-            };
             try {
                 window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
             } catch (err) {}
         }
+
+        return () => window.removeEventListener('bw:audit_progress', handleGlobalAuditEvt);
     }, []);
     const [tutorialOpen, setTutorialOpen] = useState(false);
     const [tutorialInitialMode, setTutorialInitialMode] = useState('launcher');
