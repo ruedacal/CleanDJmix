@@ -62,7 +62,7 @@ export function Social({ go, toast }) {
 
             <div className="grid g-main">
                 <Card title={`Crecimiento de seguidores · ${current.name}`} action={<span className="faint mono">30 días</span>}>
-                    <LineChart data={current.series} labels={DAYS} />
+                    <LineChart data={current.series} labels={DAYS} seriesLabel="Seguidores" />
                 </Card>
                 <Card title="Cola de publicación" bodyClass="list">
                     {posts.map((p) => (
@@ -329,7 +329,7 @@ export function ContentStudio({ toast }) {
     const [filter, setFilter] = useState('Todo');
 
     const onCreate = (item, msg) => {
-        setLibrary((l) => [{ id: `c${Date.now()}`, author: 'Carlos R.', views: 0, ...item }, ...l]);
+        setLibrary((l) => [{ id: `c${Date.now()}`, author: 'Víctor R.', views: 0, ...item }, ...l]);
         toast(msg);
     };
     const rows = filter === 'Todo' ? library : library.filter((c) => c.type === filter);

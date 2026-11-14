@@ -72,3 +72,29 @@
 @media (max-width: 1100px) {
     .q-layout { grid-template-columns: 1fr; }
 }
+
+/* Interactive line chart */
+.lc { display: flex; flex-direction: column; gap: 10px; }
+.lc-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.lc-dates, .lc-zoom { display: flex; align-items: center; gap: 6px; }
+.lc-date { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--bw-text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.lc-date input { background: var(--bw-surface-2); border: 1px solid var(--bw-line-strong); border-radius: var(--bw-radius-sm); color: var(--bw-white); font-family: var(--font-mono); font-size: 12px; padding: 5px 8px; color-scheme: dark; }
+.lc-date input:focus-visible { outline: 2px solid var(--bw-cyan); outline-offset: 1px; }
+.lc-zoom .btn { min-width: 30px; justify-content: center; }
+.lc-zoom .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.lc-plot { position: relative; }
+.lc-svg { cursor: crosshair; touch-action: none; user-select: none; border-radius: var(--bw-radius-sm); }
+.lc-svg:focus-visible { outline: 2px solid var(--bw-cyan); outline-offset: 2px; }
+.lc-tip { position: absolute; top: 8px; transform: translateX(12px); min-width: 190px; padding: 10px 12px; background: var(--bw-surface-3); border: 1px solid var(--bw-line-strong); border-radius: var(--bw-radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.45); pointer-events: none; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--bw-text-2); z-index: 2; }
+.lc-tip.left { transform: translateX(calc(-100% - 12px)); }
+.lc-tip-date { color: var(--bw-white); font-weight: 500; text-transform: capitalize; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lc-tip-pin { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--bw-cyan); border: 1px solid rgba(34,211,238,0.4); border-radius: 4px; padding: 1px 5px; }
+.lc-tip-row { display: flex; align-items: center; gap: 6px; }
+.lc-tip-row strong { margin-left: auto; color: var(--bw-white); font-family: var(--font-mono); font-weight: 500; }
+.lc-sw { width: 10px; height: 2px; background: var(--bw-cyan); border-radius: 2px; }
+.lc-sw.cmp { background: var(--bw-text-3); }
+.lc-tip-delta { font-family: var(--font-mono); font-size: 11px; }
+.lc-tip-delta.up { color: var(--bw-cyan); }
+.lc-tip-delta.down { color: var(--bw-danger); }
+.lc-tip-sub { font-size: 11px; color: var(--bw-text-3); border-top: 1px solid var(--bw-line); padding-top: 5px; }
+.lc-hint { margin: 0; font-size: 11px; color: var(--bw-text-3); }

@@ -85,9 +85,9 @@ function AdminApp() {
                     ))}
                 </nav>
                 <div className="adm-side-foot">
-                    <div className="adm-avatar">CR</div>
+                    <div className="adm-avatar">VR</div>
                     <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 500 }}>Carlos Rueda</div>
+                        <div style={{ fontWeight: 500 }}>Víctor Rueda</div>
                         <div className="faint" style={{ fontSize: 11 }}>Propietario</div>
                     </div>
                 </div>

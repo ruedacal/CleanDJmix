@@ -18,7 +18,7 @@ export function Analytics() {
                 <Stat label="Pistas analizadas" value="186.420" delta="22,5%" />
             </div>
             <Card title="Tendencia" action={<Chips label="Métrica" options={['Sesiones', 'Usuarios activos']} value={metric} onChange={setMetric} />}>
-                <LineChart data={series} labels={DAYS} />
+                <LineChart data={series} labels={DAYS} seriesLabel={metric} />
             </Card>
             <div className="grid g-2">
                 <Card title="Uso por sección">
@@ -143,7 +143,7 @@ export function Billing({ toast }) {
                 </div>
             </Card>
             <Card title="Ingresos diarios">
-                <LineChart data={REVENUE} labels={DAYS} height={180} />
+                <LineChart data={REVENUE} labels={DAYS} height={180} format={eur} seriesLabel="Ingresos" />
             </Card>
         </>
     );
@@ -206,7 +206,7 @@ export function Settings({ toast }) {
         ['twofa', '2FA obligatorio para admins', 'Exige segundo factor en este panel.'],
         ['betas', 'Funciones beta', 'Activa funciones experimentales para usuarios STUDIO.'],
     ];
-    const admins = [['Carlos Rueda', 'admin@beatwave.pro', 'Propietario'], ['Laura M.', 'laura@beatwave.pro', 'Marketing'], ['Soporte', 'soporte@beatwave.pro', 'Solo lectura']];
+    const admins = [['Víctor Rueda', 'admin@beatwave.pro', 'Propietario'], ['Laura M.', 'laura@beatwave.pro', 'Marketing'], ['Soporte', 'soporte@beatwave.pro', 'Solo lectura']];
     return (
         <>
             <SectionHeader eyebrow="Sistema" title="Ajustes" desc="Interruptores globales de la plataforma y equipo con acceso al panel." />

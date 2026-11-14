@@ -249,7 +249,7 @@ export function Behavior({ go }) {
 
             <div className="grid g-main">
                 <Card title="Duración media de sesión (min)" action={<span className="faint mono">{range}</span>}>
-                    <LineChart data={AVG_SESSION_TREND} labels={DAYS} />
+                    <LineChart data={AVG_SESSION_TREND} labels={DAYS} format={(v) => `${String(v).replace(".", ",")} min`} seriesLabel="Tiempo medio" />
                 </Card>
                 <Card title="Sesiones por dispositivo">
                     <Bars items={DEVICE_SPLIT} format={num} />

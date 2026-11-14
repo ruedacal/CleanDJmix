@@ -114,33 +114,179 @@ export function Chips({ options, value, onChange, label }) {
     );
 }
 
-export function LineChart({ data, labels, height = 220, compare }) {
-    const w = 640, h = height, pad = 28;
-    const all = compare ? data.concat(compare) : data;
-    const max = Math.max(...all) * 1.1, min = 0;
-    const x = (i) => pad + (i * (w - pad * 2)) / (data.length - 1);
-    const y = (v) => h - pad - ((v - min) / (max - min)) * (h - pad * 2);
-    const path = (arr) => arr.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-    const area = `${path(data)} L${x(data.length - 1)},${h - pad} L${x(0)},${h - pad} Z`;
+const CHART_YEAR = 2026;
+const labelToIso = (label, i) => {
+    const m = /^(\d{1,2})\/(\d{1,2})$/.exec(String(label));
+    const d = m ? new Date(CHART_YEAR, Number(m[2]) - 1, Number(m[1])) : new Date(CHART_YEAR, 9, 12 + i);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const longDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+let chartSeq = 0;
+
+export function LineChart({ data, labels, height = 220, compare, format = (v) => num(v), seriesLabel = 'Periodo actual', compareLabel = 'Periodo anterior' }) {
+    const { useMemo, useRef } = React;
+    const n = data.length;
+    const isoDates = useMemo(() => (labels || data.map((_, i) => i)).map(labelToIso), [labels, n]);
+    const gradId = useMemo(() => `lc-fill-${++chartSeq}`, []);
+    const [range, setRange] = useState([0, n - 1]);
+    const [hover, setHover] = useState(null);
+    const [pinned, setPinned] = useState(null);
+    const [drag, setDrag] = useState(null);
+    const svgRef = useRef(null);
+
+    const [lo, hi] = range;
+    const len = hi - lo + 1;
+    const view = data.slice(lo, hi + 1);
+    const viewCmp = compare ? compare.slice(lo, hi + 1) : null;
+    const w = 640, h = height, padX = 44, padY = 24;
+    const max = Math.max(...(viewCmp ? view.concat(viewCmp) : view)) * 1.1 || 1;
+    const x = (i) => padX + (len === 1 ? (w - padX * 2) / 2 : ((i - lo) * (w - padX * 2)) / (len - 1));
+    const y = (v) => h - padY - (v / max) * (h - padY * 2);
+    const path = (arr) => arr.map((v, k) => `${k ? 'L' : 'M'}${x(lo + k).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const area = `${path(view)} L${x(hi)},${h - padY} L${x(lo)},${h - padY} Z`;
+    const step = Math.max(1, Math.ceil(len / 7));
+
+    const active = hover ?? pinned;
+    const zoomed = lo !== 0 || hi !== n - 1;
+
+    const idxFromEvent = (e) => {
+        const r = svgRef.current.getBoundingClientRect();
+        const px = ((e.clientX - r.left) / r.width) * w;
+        const rel = len === 1 ? 0 : Math.round(((px - padX) / (w - padX * 2)) * (len - 1));
+        return lo + clamp(rel, 0, len - 1);
+    };
+    const applyRange = (a, b) => {
+        let s = clamp(Math.min(a, b), 0, n - 1), e = clamp(Math.max(a, b), 0, n - 1);
+        if (e - s < 1) { if (e < n - 1) e += 1; else s -= 1; }
+        setRange([s, e]);
+        if (pinned !== null && (pinned < s || pinned > e)) setPinned(null);
+    };
+    const zoomBy = (factor) => {
+        const center = active ?? Math.round((lo + hi) / 2);
+        const half = Math.max(1, Math.round((len * factor) / 2));
+        applyRange(center - half, center + half);
+    };
+
+    const onPointerDown = (e) => {
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        const i = idxFromEvent(e);
+        setDrag({ a: i, b: i });
+    };
+    const onPointerMove = (e) => {
+        const i = idxFromEvent(e);
+        setHover(i);
+        if (drag) setDrag((d) => ({ ...d, b: i }));
+    };
+    const onPointerUp = () => {
+        if (!drag) return;
+        if (Math.abs(drag.b - drag.a) >= 1) applyRange(drag.a, drag.b);
+        else setPinned((p) => (p === drag.a ? null : drag.a));
+        setDrag(null);
+    };
+    const onKeyDown = (e) => {
+        const cur = active ?? lo;
+        if (e.key === 'ArrowRight') { e.preventDefault(); setPinned(clamp(cur + 1, lo, hi)); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); setPinned(clamp(cur - 1, lo, hi)); }
+        else if (e.key === '+' || e.key === '=') zoomBy(0.5);
+        else if (e.key === '-') zoomBy(2);
+        else if (e.key === 'Escape') { setPinned(null); setRange([0, n - 1]); }
+    };
+    const onDateChange = (which, value) => {
+        const idx = isoDates.findIndex((d) => d >= value);
+        const target = idx === -1 ? n - 1 : which === 'to' && isoDates[idx] !== value ? Math.max(0, idx - 1) : idx;
+        if (which === 'from') applyRange(target, Math.max(target + 1, hi));
+        else applyRange(Math.min(lo, target - 1), target);
+    };
+
+    const tipLeftPct = active !== null ? (x(active) / w) * 100 : 0;
+    const delta = active !== null && compare && compare[active] ? ((data[active] - compare[active]) / compare[active]) * 100 : null;
+    const fmtDelta = (d) => `${d >= 0 ? '+' : ''}${d.toFixed(1).replace('.', ',')}%`;
+
     return (
-        <svg className="chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Gráfico de evolución">
-            <defs>
-                <linearGradient id="lc-fill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stopColor="#22d3ee" stopOpacity="0.22" />
-                    <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
-                </linearGradient>
-            </defs>
-            {[0, 1, 2, 3].map((i) => {
-                const yy = pad + (i * (h - pad * 2)) / 3;
-                return <line key={i} x1={pad} x2={w - pad} y1={yy} y2={yy} stroke="rgba(255,255,255,0.06)" />;
-            })}
-            {compare && <path d={path(compare)} fill="none" stroke="#71717a" strokeWidth="1.5" strokeDasharray="4 4" />}
-            <path d={area} fill="url(#lc-fill)" />
-            <path d={path(data)} fill="none" stroke="#22d3ee" strokeWidth="2" />
-            {labels && labels.map((l, i) => (i % Math.ceil(labels.length / 7) === 0 ? (
-                <text key={i} x={x(i)} y={h - 8} fill="#71717a" fontSize="10" textAnchor="middle" fontFamily="JetBrains Mono">{l}</text>
-            ) : null))}
-        </svg>
+        <div className="lc">
+            <div className="lc-toolbar">
+                <div className="lc-dates">
+                    <label className="lc-date">
+                        <span>Desde</span>
+                        <input type="date" value={isoDates[lo]} min={isoDates[0]} max={isoDates[n - 2]} onChange={(e) => e.target.value && onDateChange('from', e.target.value)} />
+                    </label>
+                    <label className="lc-date">
+                        <span>Hasta</span>
+                        <input type="date" value={isoDates[hi]} min={isoDates[1]} max={isoDates[n - 1]} onChange={(e) => e.target.value && onDateChange('to', e.target.value)} />
+                    </label>
+                </div>
+                <div className="lc-zoom" role="group" aria-label="Zoom del gráfico">
+                    <button type="button" className="btn btn-sm" onClick={() => zoomBy(0.5)} disabled={len <= 2} aria-label="Acercar">+</button>
+                    <button type="button" className="btn btn-sm" onClick={() => zoomBy(2)} disabled={!zoomed} aria-label="Alejar">−</button>
+                    <button type="button" className="btn btn-sm" onClick={() => { setRange([0, n - 1]); setPinned(null); }} disabled={!zoomed}>Restablecer</button>
+                </div>
+            </div>
+
+            <div className="lc-plot">
+                <svg
+                    ref={svgRef}
+                    className="chart lc-svg"
+                    viewBox={`0 0 ${w} ${h}`}
+                    role="img"
+                    tabIndex={0}
+                    aria-label={`Gráfico de evolución del ${longDate(isoDates[lo])} al ${longDate(isoDates[hi])}. Flechas para recorrer días, + y − para zoom.`}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerLeave={() => { setHover(null); }}
+                    onDoubleClick={() => { setRange([0, n - 1]); setPinned(null); }}
+                    onKeyDown={onKeyDown}
+                >
+                    <defs>
+                        <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stopColor="#22d3ee" stopOpacity="0.22" />
+                            <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+                        </linearGradient>
+                    </defs>
+                    {[0, 1, 2, 3].map((i) => {
+                        const yy = padY + (i * (h - padY * 2)) / 3;
+                        const val = max - (i * max) / 3;
+                        return (
+                            <g key={i}>
+                                <line x1={padX} x2={w - padX} y1={yy} y2={yy} stroke="rgba(255,255,255,0.06)" />
+                                <text x={padX - 8} y={yy + 3} fill="#71717a" fontSize="9" textAnchor="end" fontFamily="JetBrains Mono">{format(Math.round(val * 10) / 10)}</text>
+                            </g>
+                        );
+                    })}
+                    {drag && drag.a !== drag.b && (
+                        <rect x={x(Math.min(drag.a, drag.b))} y={padY} width={Math.abs(x(drag.b) - x(drag.a))} height={h - padY * 2} fill="rgba(34,211,238,0.1)" stroke="rgba(34,211,238,0.4)" />
+                    )}
+                    {viewCmp && <path d={path(viewCmp)} fill="none" stroke="#71717a" strokeWidth="1.5" strokeDasharray="4 4" />}
+                    <path d={area} fill={`url(#${gradId})`} />
+                    <path d={path(view)} fill="none" stroke="#22d3ee" strokeWidth="2" />
+                    {active !== null && (
+                        <g pointerEvents="none">
+                            <line x1={x(active)} x2={x(active)} y1={padY} y2={h - padY} stroke="rgba(250,250,250,0.25)" />
+                            {viewCmp && <circle cx={x(active)} cy={y(compare[active])} r="3.5" fill="#09090b" stroke="#71717a" strokeWidth="1.5" />}
+                            <circle cx={x(active)} cy={y(data[active])} r="4.5" fill="#09090b" stroke="#22d3ee" strokeWidth="2" />
+                        </g>
+                    )}
+                    {pinned !== null && pinned !== hover && pinned >= lo && pinned <= hi && (
+                        <circle cx={x(pinned)} cy={y(data[pinned])} r="4.5" fill="#22d3ee" pointerEvents="none" />
+                    )}
+                    {labels && labels.slice(lo, hi + 1).map((l, k) => (k % step === 0 ? (
+                        <text key={k} x={x(lo + k)} y={h - 6} fill="#71717a" fontSize="10" textAnchor="middle" fontFamily="JetBrains Mono">{l}</text>
+                    ) : null))}
+                </svg>
+
+                {active !== null && (
+                    <div className={`lc-tip ${tipLeftPct > 60 ? 'left' : ''}`} style={{ left: `${tipLeftPct}%` }} role="status">
+                        <div className="lc-tip-date">{longDate(isoDates[active])}{pinned === active && <span className="lc-tip-pin">fijado</span>}</div>
+                        <div className="lc-tip-row"><span className="lc-sw" />{seriesLabel}<strong>{format(data[active])}</strong></div>
+                        {compare && <div className="lc-tip-row"><span className="lc-sw cmp" />{compareLabel}<strong>{format(compare[active])}</strong></div>}
+                        {delta !== null && <div className={`lc-tip-delta ${delta >= 0 ? 'up' : 'down'}`}>{fmtDelta(delta)} vs. anterior</div>}
+                        {active > 0 && <div className="lc-tip-sub">Día anterior: {format(data[active - 1])}</div>}
+                    </div>
+                )}
+            </div>
+            <p className="lc-hint">Pasa el ratón para ver el detalle · clic para fijar · arrastra para hacer zoom · doble clic para restablecer</p>
+        </div>
     );
 }
 

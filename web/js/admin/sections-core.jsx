@@ -18,7 +18,7 @@ export function Overview({ go }) {
             </div>
             <div className="grid g-main">
                 <Card title="Ingresos diarios" action={<span className="faint" style={{ fontSize: 12 }}>— periodo anterior</span>}>
-                    <LineChart data={REVENUE} compare={REVENUE_PREV} labels={DAYS} />
+                    <LineChart data={REVENUE} compare={REVENUE_PREV} labels={DAYS} format={eur} seriesLabel="Ingresos" />
                 </Card>
                 <Card title="Accesos rápidos">
                     <div className="stack">

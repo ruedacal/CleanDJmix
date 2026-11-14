@@ -152,10 +152,10 @@ export const SCHEDULED_POSTS = [
 ];
 
 export const CONTENT_LIBRARY = [
-    { id: 'c1', type: 'Blog', title: '10 errores al mezclar en clave (y cómo evitarlos)', status: 'publicado', author: 'Carlos R.', date: '2026-11-08', views: 4820 },
+    { id: 'c1', type: 'Blog', title: '10 errores al mezclar en clave (y cómo evitarlos)', status: 'publicado', author: 'Víctor R.', date: '2026-11-08', views: 4820 },
     { id: 'c2', type: 'Academia', title: 'Módulo 3 · Transiciones por energía', status: 'publicado', author: 'Equipo edu', date: '2026-11-05', views: 2310 },
     { id: 'c3', type: 'Redes', title: 'Reel: auditoría de un set en 30 s', status: 'programado', author: 'Lucía M.', date: '2026-11-13', views: 0 },
-    { id: 'c4', type: 'Blog', title: 'Guía de BPM por género 2026', status: 'borrador', author: 'Carlos R.', date: '2026-11-10', views: 0 },
+    { id: 'c4', type: 'Blog', title: 'Guía de BPM por género 2026', status: 'borrador', author: 'Víctor R.', date: '2026-11-10', views: 0 },
     { id: 'c5', type: 'Academia', title: 'Lección · Cue points para warm-up', status: 'revisión', author: 'Equipo edu', date: '2026-11-11', views: 0 },
 ];
 
