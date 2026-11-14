@@ -10544,52 +10544,101 @@ const AuditWorkspace = ({
         }
     };
 
+    const fetchDirectoryListing = async (path) => {
+        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+            try {
+                const res = await window.eel.listar_subcarpetas_sistema(path)();
+                if (res && (res.folders || res.files || res.current)) return res;
+            } catch (e) {
+                console.warn("Eel listar_subcarpetas falló, reintentando por API:", e);
+            }
+        }
+        try {
+            const r = await fetch('/api/listar_subcarpetas?ruta=' + encodeURIComponent(path || ''));
+            if (r.ok) {
+                const data = await r.json();
+                if (data && (data.folders || data.files || data.current)) return data;
+            }
+        } catch (e) {}
+        try {
+            const r = await fetch('/api/rpc/listar_subcarpetas_sistema', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ args: [path || ''] })
+            });
+            if (r.ok) {
+                const data = await r.json();
+                return data.result || data;
+            }
+        } catch (e) {}
+        return null;
+    };
+
+    const handleAbrirDialogoNativo = async () => {
+        try {
+            let target = null;
+            if (window.eel && window.eel.seleccionar_directorio) {
+                try {
+                    target = await window.eel.seleccionar_directorio()();
+                } catch (e) {}
+            }
+            if (!target || target === 'cancelado') {
+                try {
+                    const r = await fetch('/api/seleccionar_directorio');
+                    if (r.ok) {
+                        const d = await r.json();
+                        target = d.path;
+                    }
+                } catch (e) {}
+            }
+            if (target && target !== 'cancelado') {
+                setFsBrowserOpen(false);
+                handleSeleccionarCarpetaUI(target);
+            }
+        } catch (err) {
+            console.error("Error abriendo diálogo nativo:", err);
+        }
+    };
+
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
         setFsBrowserOpen(true);
         setFsLoading(true);
         const startPath = initialPath || (typeof rutaOrigen === 'string' && !rutaOrigen.includes('pista') ? rutaOrigen : "") || "";
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
-            try {
-                const res = await window.eel.listar_subcarpetas_sistema(startPath)();
-                if (res) {
-                    setFsCurrentPath(res.current || "");
-                    setFsParentPath(res.parent || "");
-                    setFsFolders(res.folders || []);
-                    setFsFiles(res.files || []);
-                    if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
-                        setFsActiveTab('files');
-                    }
+        try {
+            const res = await fetchDirectoryListing(startPath);
+            if (res) {
+                setFsCurrentPath(res.current || "");
+                setFsParentPath(res.parent || "");
+                setFsFolders(res.folders || []);
+                setFsFiles(res.files || []);
+                if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
+                    setFsActiveTab('files');
                 }
-            } catch (err) {
-                console.error("Error al listar carpetas:", err);
-            } finally {
-                setFsLoading(false);
             }
-        } else {
+        } catch (err) {
+            console.error("Error al listar carpetas:", err);
+        } finally {
             setFsLoading(false);
         }
     };
 
     const handleNavegarACarpeta = async (targetPath) => {
         setFsLoading(true);
-        // Mantiene intacta la cesta acumulativa de stagedFolders y stagedFiles al navegar
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
-            try {
-                const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
-                if (res) {
-                    setFsCurrentPath(res.current || "");
-                    setFsParentPath(res.parent || "");
-                    setFsFolders(res.folders || []);
-                    setFsFiles(res.files || []);
-                    if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
-                        setFsActiveTab('files');
-                    }
+        try {
+            const res = await fetchDirectoryListing(targetPath);
+            if (res) {
+                setFsCurrentPath(res.current || "");
+                setFsParentPath(res.parent || "");
+                setFsFolders(res.folders || []);
+                setFsFiles(res.files || []);
+                if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
+                    setFsActiveTab('files');
                 }
-            } catch (err) {
-                console.error("Error navegando:", err);
-            } finally {
-                setFsLoading(false);
             }
+        } catch (err) {
+            console.error("Error navegando:", err);
+        } finally {
+            setFsLoading(false);
         }
     };
 
@@ -14947,7 +14996,18 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                     <Icons.Library /> Explorador de Biblioteca & Selección de Archivos
                                 </span>
                             </div>
-                            <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleAbrirDialogoNativo}
+                                    className="px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white rounded text-[11px] font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95"
+                                    title="Abrir ventana nativa del Finder de macOS para seleccionar carpeta"
+                                >
+                                    <Icons.Folder size={13} />
+                                    <span>Abrir Finder (macOS)</span>
+                                </button>
+                                <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
+                            </div>
                         </div>
 
                         <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
@@ -36489,7 +36549,18 @@ const App = () => {
             let target = pathOverride;
             if (!target) {
                 if (window.eel && window.eel.seleccionar_directorio) {
-                    target = await window.eel.seleccionar_directorio()();
+                    try {
+                        target = await window.eel.seleccionar_directorio()();
+                    } catch (e) {}
+                }
+                if (!target || target === 'cancelado') {
+                    try {
+                        const r = await fetch('/api/seleccionar_directorio');
+                        if (r.ok) {
+                            const d = await r.json();
+                            target = d.path;
+                        }
+                    } catch (e) {}
                 }
             }
             if (!target || target === 'cancelado') {
@@ -36500,24 +36571,42 @@ const App = () => {
             setAuditTracks([]);
             setSelectedTrack(null);
             setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: 'Iniciando lectura de archivos en carpeta...' });
+
+            let res = null;
             if (window.eel && window.eel.cargar_metadatos_directorio) {
-                const res = await window.eel.cargar_metadatos_directorio(target)();
-                if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
-                    setAuditTracks(res.tracks);
-                    if (res.tracks[0] && res.tracks[0].id) {
-                        setSelectedTrack(res.tracks[0].id);
+                try {
+                    res = await window.eel.cargar_metadatos_directorio(target)();
+                } catch (e) {}
+            }
+            if (!res) {
+                try {
+                    const r = await fetch('/api/rpc/cargar_metadatos_directorio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ args: [target] })
+                    });
+                    if (r.ok) {
+                        const d = await r.json();
+                        res = d.result || d;
                     }
-                    setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 100, statusMsg: `✓ ${res.tracks.length} pistas cargadas correctamente.` });
-                    setTimeout(() => {
-                        setGlobalAuditInfo(prev => ({ ...prev, progress: 0, statusMsg: '' }));
-                    }, 2500);
-                    return;
-                } else {
-                    setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: 'No se encontraron pistas de audio en la carpeta.' });
-                    setTimeout(() => {
-                        setGlobalAuditInfo(prev => ({ ...prev, statusMsg: '' }));
-                    }, 3000);
+                } catch (e) {}
+            }
+
+            const rawTracks = (res && Array.isArray(res.tracks)) ? res.tracks : (Array.isArray(res) ? res : []);
+            if (rawTracks.length > 0) {
+                setAuditTracks(rawTracks);
+                if (rawTracks[0] && rawTracks[0].id) {
+                    setSelectedTrack(rawTracks[0].id);
                 }
+                setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 100, statusMsg: `✓ ${rawTracks.length} pistas cargadas correctamente.` });
+                setTimeout(() => {
+                    setGlobalAuditInfo(prev => ({ ...prev, progress: 0, statusMsg: '' }));
+                }, 2500);
+            } else {
+                setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: 'No se encontraron pistas de audio en la carpeta.' });
+                setTimeout(() => {
+                    setGlobalAuditInfo(prev => ({ ...prev, statusMsg: '' }));
+                }, 3000);
             }
         } catch (e) {
             console.error("Error al cargar directorio:", e);
@@ -36729,7 +36818,7 @@ const App = () => {
                             setActiveTab('audit');
                         }}
                         onNavigateTab={setActiveTab}
-                        onLoadFolderFromDisk={handleCargarDirectorioGlobal}
+                        onLoadFolderFromDisk={() => handleAbrirNavegadorCarpetas()}
                         currentFolder={currentFolder}
                     />
                 </div>
@@ -36817,7 +36906,7 @@ const App = () => {
                             setActiveTab('audit');
                         }}
                         onNavigateTab={setActiveTab}
-                        onLoadFolderFromDisk={handleCargarDirectorioGlobal}
+                        onLoadFolderFromDisk={() => handleAbrirNavegadorCarpetas()}
                         currentFolder={currentFolder}
                     />
                 </div>

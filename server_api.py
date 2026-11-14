@@ -97,7 +97,7 @@ _main_event_loop = None
 
 def get_main_web():
     global _main_web_module
-    if _main_web_module is None:
+    if not _main_web_module:
         try:
             import main_web
             _main_web_module = main_web
@@ -119,7 +119,7 @@ def get_main_web():
             print(f"[FastAPI Engine] Enlazadas {len(_main_web_module.eel._exposed_functions)} funciones RPC locales.")
         except Exception as e:
             print(f"[FastAPI Engine] Error importando main_web: {e}")
-            _main_web_module = False
+            _main_web_module = None
     return _main_web_module if _main_web_module else None
 
 @app.on_event("startup")
@@ -181,9 +181,68 @@ async def sync_status():
 
 @app.get("/eel.js")
 async def serve_eel_shim():
-    """Shim para que el tag <script src='eel.js'> resuelva 200 OK en entornos web/FastAPI sin error."""
-    js_content = "/* BeatWave PRO Eel Shim */ window.eel = window.eel || {};"
+    """Shim y Proxy universal transparente para que window.eel resuelva llamadas RPC sobre FastAPI."""
+    js_content = """/* BeatWave PRO Eel Universal RPC Proxy */
+window.eel = new Proxy(window.eel || {}, {
+    get(target, prop) {
+        if (typeof prop === 'string' && prop in target) {
+            return target[prop];
+        }
+        return function(...args) {
+            return async function(cb) {
+                try {
+                    const resp = await fetch('/api/rpc/' + encodeURIComponent(prop), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ args: args })
+                    });
+                    const json = await resp.json();
+                    const res = json.result !== undefined ? json.result : json;
+                    if (typeof cb === 'function') cb(res);
+                    return res;
+                } catch (e) {
+                    console.error('[Eel Proxy RPC Error] ' + prop + ':', e);
+                    if (typeof cb === 'function') cb(null);
+                    return null;
+                }
+            };
+        };
+    }
+});"""
     return Response(content=js_content, media_type="application/javascript")
+
+@app.api_route("/api/listar_subcarpetas", methods=["GET", "POST", "OPTIONS"])
+async def api_listar_subcarpetas_fastapi(request: Request):
+    """Fallback REST directo para el explorador de carpetas y ficheros de audio."""
+    ruta = ""
+    if request.method == "GET":
+        ruta = request.query_params.get("ruta", "")
+    elif request.method == "POST":
+        try:
+            body = await request.json()
+            ruta = body.get("ruta") or (body.get("args") and body.get("args")[0]) or ""
+        except Exception:
+            pass
+    try:
+        from services.audit_service import audit_service
+        return audit_service.listar_subcarpetas_sistema(ruta)
+    except Exception:
+        try:
+            import main_web
+            return main_web.audit_svc.listar_subcarpetas_sistema(ruta)
+        except Exception as e:
+            return {"current": ruta, "parent": "", "folders": [], "files": [], "error": str(e)}
+
+@app.api_route("/api/seleccionar_directorio", methods=["GET", "POST", "OPTIONS"])
+async def api_seleccionar_directorio_fastapi():
+    """Abre el diálogo nativo del sistema operativo (Finder en macOS) para elegir directorio."""
+    loop = asyncio.get_running_loop()
+    try:
+        from services.audit_service import audit_service
+        res = await loop.run_in_executor(None, lambda: audit_service.seleccionar_directorio())
+        return {"status": "ok", "path": res or ""}
+    except Exception as e:
+        return {"status": "error", "path": "", "msg": str(e)}
 
 @app.post("/api/rpc/{method_name}")
 async def handle_rpc(method_name: str, payload: RpcPayload):

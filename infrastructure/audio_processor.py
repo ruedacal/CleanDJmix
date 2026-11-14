@@ -317,9 +317,22 @@ class AudioProcessorService:
 
             final_bpm = round(refined_bpm, 2)
 
-            # Si el bpm_hint es prácticamente idéntico al medido (<0.04 de diferencia), respetarlo
-            if bpm_hint and abs(float(bpm_hint) - final_bpm) < 0.04:
-                return round(float(bpm_hint), 2)
+            # En música de club y electrónica, los temas se producen con reloj MIDI/DAW rígido (Ableton, Logic, FL).
+            # 1. Si existe un bpm_hint oficial en metadatos y la diferencia acústica es menor a 0.45 BPM, PREVALECE el tag oficial.
+            if bpm_hint and float(bpm_hint) > 40.0:
+                hint_f = float(bpm_hint)
+                if abs(hint_f - final_bpm) <= 0.45:
+                    return round(hint_f, 2)
+
+            # 2. Cuantización de reloj de estudio: si el valor medido está a ±0.25 de un entero, anclar al entero
+            nearest_int = round(final_bpm)
+            if abs(final_bpm - nearest_int) <= 0.25:
+                return float(nearest_int)
+
+            # 3. Cuantización a semi-tempo (.50):
+            half_step = int(final_bpm) + 0.5
+            if abs(final_bpm - half_step) <= 0.15:
+                return float(half_step)
 
             return final_bpm
         except Exception:
@@ -353,8 +366,8 @@ class AudioProcessorService:
             if b_est <= 40.0:
                 b_est = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
 
-            # Cargar los primeros 25 segundos para cubrir intros atmosféricas
-            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=25.0)
+            # Cargar hasta 50 segundos para cubrir intros atmosféricas y drops tardíos
+            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=50.0)
             if mono_head is None or len(mono_head) == 0:
                 return (0.0, 0.0, dur_total_ms) if incluir_cola else (0.0, 0.0)
 
@@ -402,7 +415,7 @@ class AudioProcessorService:
                         onset = np.concatenate(([0], onset))
 
                         beat_samples = (60.0 / b_est) * target_fs
-                        num_beats_eval = min(32, int(len(onset) / beat_samples) - 1)
+                        num_beats_eval = min(48, int(len(onset) / beat_samples) - 1)
 
                         best_phase = 0.0
                         best_score = -1.0
@@ -426,6 +439,11 @@ class AudioProcessorService:
                             downbeat_ms = round(float(loc_peak) / sr_head * 1000.0, 1)
                         else:
                             downbeat_ms = round(candidate_sec * 1000.0, 1)
+
+                        # Si el downbeat quedó antes del trim audible, proyectar un beat hacia adelante
+                        beat_dur_ms = (60.0 / b_est) * 1000.0
+                        while downbeat_ms < trim_start_ms - 15.0:
+                            downbeat_ms = round(downbeat_ms + beat_dur_ms, 1)
                     else:
                         downbeat_ms = trim_start_ms
                 else:
@@ -667,7 +685,7 @@ class AudioProcessorService:
         if bpm <= 20.0 or not fast_mode:
             try:
                 bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
-                if bpm <= 20.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.05):
+                if bpm <= 20.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.45):
                     bpm = bpm_acustico
             except Exception:
                 pass

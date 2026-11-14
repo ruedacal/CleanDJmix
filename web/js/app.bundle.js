@@ -8994,50 +8994,102 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         onPlayTrack(currentTrack, 0, true, offsetSec);
       }
     };
-    const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
+    const fetchDirectoryListing = async (path) => {
+      if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        try {
+          const res = await window.eel.listar_subcarpetas_sistema(path)();
+          if (res && (res.folders || res.files || res.current)) return res;
+        } catch (e) {
+          console.warn("Eel listar_subcarpetas fall\xF3, reintentando por API:", e);
+        }
+      }
+      try {
+        const r = await fetch("/api/listar_subcarpetas?ruta=" + encodeURIComponent(path || ""));
+        if (r.ok) {
+          const data = await r.json();
+          if (data && (data.folders || data.files || data.current)) return data;
+        }
+      } catch (e) {
+      }
+      try {
+        const r = await fetch("/api/rpc/listar_subcarpetas_sistema", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ args: [path || ""] })
+        });
+        if (r.ok) {
+          const data = await r.json();
+          return data.result || data;
+        }
+      } catch (e) {
+      }
+      return null;
+    };
+    const handleAbrirDialogoNativo = async () => {
+      try {
+        let target = null;
+        if (window.eel && window.eel.seleccionar_directorio) {
+          try {
+            target = await window.eel.seleccionar_directorio()();
+          } catch (e) {
+          }
+        }
+        if (!target || target === "cancelado") {
+          try {
+            const r = await fetch("/api/seleccionar_directorio");
+            if (r.ok) {
+              const d = await r.json();
+              target = d.path;
+            }
+          } catch (e) {
+          }
+        }
+        if (target && target !== "cancelado") {
+          setFsBrowserOpen(false);
+          handleSeleccionarCarpetaUI(target);
+        }
+      } catch (err) {
+        console.error("Error abriendo di\xE1logo nativo:", err);
+      }
+    };
+    const handleAbrirNavegadorCarpetas2 = async (initialPath = "") => {
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || (typeof rutaOrigen === "string" && !rutaOrigen.includes("pista") ? rutaOrigen : "") || "";
-      if (window.eel && window.eel.listar_subcarpetas_sistema) {
-        try {
-          const res = await window.eel.listar_subcarpetas_sistema(startPath)();
-          if (res) {
-            setFsCurrentPath(res.current || "");
-            setFsParentPath(res.parent || "");
-            setFsFolders(res.folders || []);
-            setFsFiles(res.files || []);
-            if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
-              setFsActiveTab("files");
-            }
+      try {
+        const res = await fetchDirectoryListing(startPath);
+        if (res) {
+          setFsCurrentPath(res.current || "");
+          setFsParentPath(res.parent || "");
+          setFsFolders(res.folders || []);
+          setFsFiles(res.files || []);
+          if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
+            setFsActiveTab("files");
           }
-        } catch (err) {
-          console.error("Error al listar carpetas:", err);
-        } finally {
-          setFsLoading(false);
         }
-      } else {
+      } catch (err) {
+        console.error("Error al listar carpetas:", err);
+      } finally {
         setFsLoading(false);
       }
     };
     const handleNavegarACarpeta = async (targetPath) => {
       setFsLoading(true);
-      if (window.eel && window.eel.listar_subcarpetas_sistema) {
-        try {
-          const res = await window.eel.listar_subcarpetas_sistema(targetPath)();
-          if (res) {
-            setFsCurrentPath(res.current || "");
-            setFsParentPath(res.parent || "");
-            setFsFolders(res.folders || []);
-            setFsFiles(res.files || []);
-            if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
-              setFsActiveTab("files");
-            }
+      try {
+        const res = await fetchDirectoryListing(targetPath);
+        if (res) {
+          setFsCurrentPath(res.current || "");
+          setFsParentPath(res.parent || "");
+          setFsFolders(res.folders || []);
+          setFsFiles(res.files || []);
+          if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
+            setFsActiveTab("files");
           }
-        } catch (err) {
-          console.error("Error navegando:", err);
-        } finally {
-          setFsLoading(false);
         }
+      } catch (err) {
+        console.error("Error navegando:", err);
+      } finally {
+        setFsLoading(false);
       }
     };
     const toggleStageFolder = (folderPath) => {
@@ -9108,11 +9160,11 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     };
     const handleExplorar = async () => {
       setIsAppendMode(false);
-      handleAbrirNavegadorCarpetas(rutaOrigen);
+      handleAbrirNavegadorCarpetas2(rutaOrigen);
     };
     const handleAnadirMas = () => {
       setIsAppendMode(true);
-      handleAbrirNavegadorCarpetas(rutaOrigen);
+      handleAbrirNavegadorCarpetas2(rutaOrigen);
     };
     const resolveAuditTargets = (pathOverride) => {
       if (pathOverride) return pathOverride;
@@ -12087,7 +12139,17 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         className: "px-4 py-1.5 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-mono font-bold text-xs cursor-pointer transition-colors shadow"
       },
       "Cerrar"
-    )))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " Explorador de Biblioteca & Selecci\xF3n de Archivos")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate", title: fsCurrentPath }, fsCurrentPath || "Cargando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, fsCurrentPath && /* @__PURE__ */ React.createElement(
+    )))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " Explorador de Biblioteca & Selecci\xF3n de Archivos")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleAbrirDialogoNativo,
+        className: "px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white rounded text-[11px] font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95",
+        title: "Abrir ventana nativa del Finder de macOS para seleccionar carpeta"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Finder (macOS)")
+    ), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate", title: fsCurrentPath }, fsCurrentPath || "Cargando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, fsCurrentPath && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -14518,7 +14580,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         setIsExportingXls(false);
       }
     };
-    const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
+    const handleAbrirNavegadorCarpetas2 = async (initialPath = "") => {
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || destDir || "";
@@ -15237,7 +15299,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       });
     };
     const handleCambiarCarpeta = () => {
-      handleAbrirNavegadorCarpetas(destDir);
+      handleAbrirNavegadorCarpetas2(destDir);
     };
     return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-spotify flex w-full h-full max-w-full bg-[#09090c] text-gray-300 font-sans select-none overflow-x-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col gap-2.5 shrink-0 w-full max-w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Download, title: "Record Pool", accent: "& Ingesta", badge: "AUDIO HQ" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-400 font-sans hidden md:inline" }, "B\xFAsqueda, descarga de alta fidelidad y extracci\xF3n autom\xE1tica de stems")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-1 min-w-[320px] max-w-full lg:max-w-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded-lg flex items-center overflow-hidden shadow-inner" }, /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1.5 text-xs font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-bold shrink-0 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "B\xDASQUEDA")), /* @__PURE__ */ React.createElement(
       "input",
@@ -26582,7 +26644,20 @@ ${res.path}`);
         let target = pathOverride;
         if (!target) {
           if (window.eel && window.eel.seleccionar_directorio) {
-            target = await window.eel.seleccionar_directorio()();
+            try {
+              target = await window.eel.seleccionar_directorio()();
+            } catch (e) {
+            }
+          }
+          if (!target || target === "cancelado") {
+            try {
+              const r = await fetch("/api/seleccionar_directorio");
+              if (r.ok) {
+                const d = await r.json();
+                target = d.path;
+              }
+            } catch (e) {
+            }
           }
         }
         if (!target || target === "cancelado") {
@@ -26593,24 +26668,42 @@ ${res.path}`);
         setAuditTracks([]);
         setSelectedTrack(null);
         setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: "Iniciando lectura de archivos en carpeta..." });
+        let res = null;
         if (window.eel && window.eel.cargar_metadatos_directorio) {
-          const res = await window.eel.cargar_metadatos_directorio(target)();
-          if (res && Array.isArray(res.tracks) && res.tracks.length > 0) {
-            setAuditTracks(res.tracks);
-            if (res.tracks[0] && res.tracks[0].id) {
-              setSelectedTrack(res.tracks[0].id);
-            }
-            setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 100, statusMsg: `\u2713 ${res.tracks.length} pistas cargadas correctamente.` });
-            setTimeout(() => {
-              setGlobalAuditInfo((prev) => ({ ...prev, progress: 0, statusMsg: "" }));
-            }, 2500);
-            return;
-          } else {
-            setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "No se encontraron pistas de audio en la carpeta." });
-            setTimeout(() => {
-              setGlobalAuditInfo((prev) => ({ ...prev, statusMsg: "" }));
-            }, 3e3);
+          try {
+            res = await window.eel.cargar_metadatos_directorio(target)();
+          } catch (e) {
           }
+        }
+        if (!res) {
+          try {
+            const r = await fetch("/api/rpc/cargar_metadatos_directorio", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ args: [target] })
+            });
+            if (r.ok) {
+              const d = await r.json();
+              res = d.result || d;
+            }
+          } catch (e) {
+          }
+        }
+        const rawTracks = res && Array.isArray(res.tracks) ? res.tracks : Array.isArray(res) ? res : [];
+        if (rawTracks.length > 0) {
+          setAuditTracks(rawTracks);
+          if (rawTracks[0] && rawTracks[0].id) {
+            setSelectedTrack(rawTracks[0].id);
+          }
+          setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 100, statusMsg: `\u2713 ${rawTracks.length} pistas cargadas correctamente.` });
+          setTimeout(() => {
+            setGlobalAuditInfo((prev) => ({ ...prev, progress: 0, statusMsg: "" }));
+          }, 2500);
+        } else {
+          setGlobalAuditInfo({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "No se encontraron pistas de audio en la carpeta." });
+          setTimeout(() => {
+            setGlobalAuditInfo((prev) => ({ ...prev, statusMsg: "" }));
+          }, 3e3);
         }
       } catch (e) {
         console.error("Error al cargar directorio:", e);
@@ -26816,7 +26909,7 @@ ${res.path}`);
           setActiveTab("audit");
         },
         onNavigateTab: setActiveTab,
-        onLoadFolderFromDisk: handleCargarDirectorioGlobal,
+        onLoadFolderFromDisk: () => handleAbrirNavegadorCarpetas(),
         currentFolder
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "audit" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
@@ -26904,7 +26997,7 @@ ${res.path}`);
           setActiveTab("audit");
         },
         onNavigateTab: setActiveTab,
-        onLoadFolderFromDisk: handleCargarDirectorioGlobal,
+        onLoadFolderFromDisk: () => handleAbrirNavegadorCarpetas(),
         currentFolder
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "taxonomy" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
