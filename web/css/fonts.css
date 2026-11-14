@@ -105,3 +105,11 @@
   src: url('../fonts/syne-800.woff2') format('woff2'), local('Syne');
 }
 
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('../fonts/syne-800.woff2') format('woff2'), local('Syne');
+}
+

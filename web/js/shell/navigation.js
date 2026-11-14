@@ -32,7 +32,7 @@ export const NAV_GROUPS = [
 ];
 
 export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Turntable', hint: 'Monitor en vivo de cabina' };
-export const LIBRARY_ITEM = { id: 'library', fallback: 'Librería', icon: 'Library', hint: 'Gestor y creador de librerías persistentes' };
+export const LIBRARY_ITEM = { id: 'library', fallback: 'Colección', icon: 'Library', hint: 'Gestor y explorador de colecciones guardadas' };
 
 export const MOBILE_PRIMARY_TABS = ['audit', 'hotcues', 'shazam', 'setbuilder'];
 

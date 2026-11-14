@@ -57,7 +57,7 @@ export const SideRail = ({
                     {expanded && <span className="bw-kbd ml-auto">LIVE</span>}
                 </button>
 
-                {/* Sección de menú Librería debajo de Copilot */}
+                {/* Sección de menú Colección debajo de Copilot */}
                 <button
                     type="button"
                     onClick={() => {
@@ -65,13 +65,13 @@ export const SideRail = ({
                         else if (onOpenLibrary) onOpenLibrary();
                     }}
                     aria-current={activeTab === 'library' || isLibraryOpen ? 'page' : undefined}
-                    title="Librería — Gestor y creador de bibliotecas persistentes"
+                    title="Colección — Gestor y creador de colecciones persistentes"
                     className={`bw-rail-item group ${activeTab === 'library' || isLibraryOpen ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
                 >
                     <span className="bw-led" aria-hidden="true" />
                     <ShellIcons.Library size={18} className={activeTab === 'library' || isLibraryOpen ? "text-cyan-400" : "text-gray-400 group-hover:text-white"} />
-                    <span className="bw-rail-label">Librería</span>
-                    <span className="bw-rail-caption">Librería</span>
+                    <span className="bw-rail-label">Colección</span>
+                    <span className="bw-rail-caption">Colección</span>
                     {libraryCount > 0 && <span className="bw-rail-badge">{libraryCount}</span>}
                 </button>
             </div>

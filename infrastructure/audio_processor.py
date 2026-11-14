@@ -455,7 +455,7 @@ class AudioProcessorService:
             return (0.0, 0.0, 0.0) if incluir_cola else (0.0, 0.0)
 
     @staticmethod
-    def analizar_track_avanzado(ruta: str, verificar_beatgrid: bool = True) -> dict:
+    def analizar_track_avanzado(ruta: str, verificar_beatgrid: bool = False, fast_mode: bool = True) -> dict:
         filename = os.path.basename(ruta)
         ext = os.path.splitext(filename)[1].lower()
         artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
@@ -648,16 +648,14 @@ class AudioProcessorService:
 
         missing_meta = (bpm <= 0.0 or not key)
 
-        # Verificación acústica de BPM para eliminar drift rítmico y falsos valores de tags
-        if verificar_beatgrid:
+        # Verificación acústica de BPM solo si no existe en tags o si se solicita de forma intensiva
+        if (verificar_beatgrid and not fast_mode) or bpm <= 0.0:
             try:
                 bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
                 if bpm <= 0.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.4):
                     bpm = bpm_acustico
             except Exception:
                 pass
-        elif bpm <= 0.0:
-            bpm = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=0.0)
 
         if bpm <= 0.0:
             bpm = 128.0
@@ -669,7 +667,12 @@ class AudioProcessorService:
             except Exception:
                 key = "8A"
 
-        trim_start_ms, first_downbeat_ms, trim_end_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm, incluir_cola=True)
+        trim_end_ms = 0.0
+        if not fast_mode or (trim_start_ms <= 0.0 and first_downbeat_ms <= 0.0 and verificar_beatgrid):
+            try:
+                trim_start_ms, first_downbeat_ms, trim_end_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm, incluir_cola=True)
+            except Exception:
+                pass
 
         # El Downbeat siempre debe ser >= trim_start_ms
         if first_downbeat_ms < trim_start_ms:
@@ -684,11 +687,12 @@ class AudioProcessorService:
             danceability_val = min(98, max(50, int(92 - abs(bpm - 126.0) * 0.9)))
 
         dur_ms = int(duration_sec * 1000) if duration_sec > 0 else 300000
+        # En modo rápido (auditoría de catálogo) calculamos el fraseo 4/4 matemáticamente en <0.05ms
         cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
             duration_ms=dur_ms,
             bpm=bpm,
             downbeat_ms=int(first_downbeat_ms),
-            ruta=ruta,
+            ruta=(ruta if not fast_mode else None),
             trim_start_ms=int(trim_start_ms),
             trim_end_ms=int(trim_end_ms)
         )

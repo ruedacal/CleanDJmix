@@ -324,11 +324,29 @@ def _emitir_log_ui(mensaje: str):
     except Exception:
         pass
 
+_GLOBAL_BATCH_PROGRESS = {"pct": 0, "msg": "", "active": False, "ts": time.time()}
+
 def _emitir_progreso_batch(pct: int, msg: str):
+    global _GLOBAL_BATCH_PROGRESS
     try:
         clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-        if hasattr(eel, "actualizar_progreso_batch"):
-            eel.actualizar_progreso_batch(int(pct), clean_msg)
+        _GLOBAL_BATCH_PROGRESS["pct"] = int(pct)
+        _GLOBAL_BATCH_PROGRESS["msg"] = clean_msg
+        _GLOBAL_BATCH_PROGRESS["active"] = (int(pct) > 0 and int(pct) < 100)
+        _GLOBAL_BATCH_PROGRESS["ts"] = time.time()
+
+        try:
+            if hasattr(eel, "actualizar_progreso_batch"):
+                eel.actualizar_progreso_batch(int(pct), clean_msg)
+            elif hasattr(eel, "_import_js_function"):
+                fn = eel._import_js_function("actualizar_progreso_batch")
+                if fn:
+                    fn(int(pct), clean_msg)
+            elif hasattr(eel, "_js_call"):
+                eel._js_call("actualizar_progreso_batch", (int(pct), clean_msg))
+        except Exception:
+            pass
+
         try:
             eel.sleep(0.001)
         except Exception:
@@ -392,6 +410,15 @@ def api_load_directory():
     _registrar_directorio_autorizado(path)
     res = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
     return _sanitize_for_json(res)
+
+@bottle.route('/api/audit/progress', method=['GET', 'OPTIONS'])
+def api_audit_progress():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    bottle.response.content_type = 'application/json'
+    return json.dumps(_GLOBAL_BATCH_PROGRESS)
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio, opts=None):

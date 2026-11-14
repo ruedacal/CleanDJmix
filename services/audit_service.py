@@ -1462,7 +1462,7 @@ return folderPath'''
         if total_pending > 0:
             # PASO 4: Procesamiento paralelo multinúcleo dinámico para auditoría DSP en background
             num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
-            emit_step = max(1, min(10, total_pending // 40))
+            emit_step = max(1, min(4, total_pending // 25))
 
             def _procesar_un_delta(task_tuple):
                 if self._cancelar_proceso:
@@ -1479,7 +1479,7 @@ return folderPath'''
                 if c_met and isinstance(c_met, dict):
                     info = dict(c_met)
                 else:
-                    info = AudioProcessorService.analizar_track_avanzado(full_path, verificar_beatgrid=opt_beatgrid)
+                    info = AudioProcessorService.analizar_track_avanzado(full_path, verificar_beatgrid=opt_beatgrid, fast_mode=True)
 
                 bpm_val = info.get("bpm") or info.get("b")
                 key_val = info.get("key") or info.get("k")

@@ -9217,14 +9217,14 @@ const LibraryWorkspace = ({
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h3 className="text-base sm:text-lg font-sans font-bold uppercase text-white tracking-wider">
-                                LIBRERÍA & BIBLIOTECAS PERSONALIZADAS
+                                COLECCIÓN & CRATES PERSONALIZADOS
                             </h3>
                             <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold">
-                                {totalTracksInLib} PISTAS EN CATÁLOGO
+                                {totalTracksInLib} PISTAS EN COLECCIÓN
                             </span>
                         </div>
                         <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                            GESTOR AVANZADO DE CARPETAS VIRTUALES, AGRUPACIONES POR GÉNERO Y MATERIALIZACIÓN FÍSICA EN DISCO / USB
+                            GESTOR AVANZADO DE COLECCIÓN, CARPETAS VIRTUALES, AGRUPACIONES POR GÉNERO Y MATERIALIZACIÓN FÍSICA EN DISCO / USB
                         </p>
                     </div>
                 </div>
@@ -9621,6 +9621,9 @@ const CustomLibraryModal = LibraryWorkspace;
 const AuditWorkspace = ({ 
     tracks: externalTracks, 
     setTracks: setExternalTracks, 
+    customLibraries = [],
+    onSaveCustomLibraries,
+    activeCustomLibId,
     selectedTrack, 
     setSelectedTrack, 
     onPlayTrack, 
@@ -9842,6 +9845,116 @@ const AuditWorkspace = ({
         }
         return () => window.removeEventListener('bw:audit_progress', handleAuditEvt);
     }, [onAuditProgressChange]);
+
+    // Polling redundante de alta precisión para barra de progreso (/api/audit/progress)
+    const startProgressPolling = () => {
+        if (window._bw_audit_poll) clearInterval(window._bw_audit_poll);
+        window._bw_audit_poll = setInterval(async () => {
+            try {
+                const res = await fetch('/api/audit/progress');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && typeof data.pct === 'number') {
+                        if (data.pct > 0) {
+                            setBatchProgress(data.pct);
+                            if (data.msg) setBatchStatusMsg(data.msg);
+                            if (data.pct >= 100) {
+                                clearInterval(window._bw_audit_poll);
+                                window._bw_audit_poll = null;
+                            }
+                        }
+                    }
+                }
+            } catch (_) {}
+        }, 200);
+    };
+
+    const stopProgressPolling = () => {
+        if (window._bw_audit_poll) {
+            clearInterval(window._bw_audit_poll);
+            window._bw_audit_poll = null;
+        }
+    };
+
+    // Cargar la colección guardada de la app en la tabla de auditoría
+    const handleCargarColeccionGuardada = () => {
+        const activeLib = (customLibraries || []).find(l => l.id === activeCustomLibId) || (customLibraries && customLibraries[0]);
+        const colTracks = [];
+        const seenKeys = new Set();
+        if (activeLib && activeLib.folders) {
+            activeLib.folders.forEach(f => {
+                (f.tracks || []).forEach(tr => {
+                    const key = tr.path || tr.filepath || tr.f || tr.id;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        colTracks.push(tr);
+                    }
+                });
+            });
+        }
+        if (colTracks.length > 0) {
+            setTracks(colTracks);
+            setSelectedTrack(colTracks[0]?.id || null);
+            setSaveFeedback(lang === 'en' ? `✓ Loaded ${colTracks.length} tracks from Colección` : `✓ Colección cargada (${colTracks.length} pistas)`);
+        } else {
+            setSaveFeedback(lang === 'en' ? "Your saved Colección is empty. Add tracks with 'Llevar a Colección'." : "Tu Colección guardada está vacía. Añade pistas con 'Llevar a Colección'.");
+        }
+        setTimeout(() => setSaveFeedback(''), 3500);
+    };
+
+    // Llevar pistas auditadas a la colección guardada de la app
+    const handleLlevarAColeccion = () => {
+        const sourceTracks = selectedAuditIds.size > 0 
+            ? tracks.filter(t => selectedAuditIds.has(t.id)) 
+            : tracks;
+        if (!sourceTracks || sourceTracks.length === 0) {
+            setSaveFeedback(lang === 'en' ? "No tracks available to add to Colección." : "No hay pistas para añadir a la Colección.");
+            setTimeout(() => setSaveFeedback(''), 3000);
+            return;
+        }
+
+        const activeLib = (customLibraries || []).find(l => l.id === activeCustomLibId) || (customLibraries && customLibraries[0]) || {
+            id: 'lib_default',
+            name: 'Mi Colección Principal',
+            folders: [{ id: 'f_audit', name: '01 - Auditoría', tracks: [] }]
+        };
+
+        const targetFolder = (activeLib.folders && activeLib.folders.length > 0) 
+            ? activeLib.folders[0] 
+            : { id: 'f_audit', name: '01 - Auditoría', tracks: [] };
+
+        const existingPaths = new Set((targetFolder.tracks || []).map(t => t.path || t.filepath || t.f || t.id));
+        let addedCount = 0;
+        const newFolderTracks = [...(targetFolder.tracks || [])];
+
+        sourceTracks.forEach(t => {
+            const key = t.path || t.filepath || t.f || t.id;
+            if (!existingPaths.has(key)) {
+                existingPaths.add(key);
+                newFolderTracks.push(t);
+                addedCount++;
+            }
+        });
+
+        const updatedFolders = (activeLib.folders && activeLib.folders.length > 0)
+            ? activeLib.folders.map(f => f.id === targetFolder.id ? { ...f, tracks: newFolderTracks } : f)
+            : [{ ...targetFolder, tracks: newFolderTracks }];
+
+        const updatedLib = { ...activeLib, folders: updatedFolders };
+        const updatedLibs = (customLibraries && customLibraries.length > 0)
+            ? customLibraries.map(l => l.id === updatedLib.id ? updatedLib : l)
+            : [updatedLib];
+
+        if (typeof onSaveCustomLibraries === 'function') {
+            onSaveCustomLibraries(updatedLibs, updatedLib.id);
+        }
+
+        setSaveFeedback(lang === 'en' 
+            ? `✓ Added ${addedCount} tracks to Colección (${targetFolder.name})` 
+            : `✓ ${addedCount} pistas añadidas a tu Colección (${targetFolder.name})`
+        );
+        setTimeout(() => setSaveFeedback(''), 4000);
+    };
 
     // Notificar al componente raíz (App) para persistir estado y mostrar progreso entre pestañas
     useEffect(() => {
@@ -10595,7 +10708,8 @@ const AuditWorkspace = ({
         }
         if (window.eel && window.eel.cargar_metadatos_directorio) {
             setIsLoadingDir(true);
-            setBatchProgress(5);
+            setBatchProgress(0);
+            startProgressPolling();
             const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
             setBatchStatusMsg(isAppend ? `Añadiendo metadatos de ${targetDesc}...` : `Leyendo metadatos de ${targetDesc}...`);
             try {
@@ -10647,6 +10761,7 @@ const AuditWorkspace = ({
                 console.error("Fallo carga metadatos de directorio:", e);
                 setBatchStatusMsg("Error al leer metadatos del directorio.");
             } finally {
+                stopProgressPolling();
                 setIsAppendMode(false);
                 setIsLoadingDir(false);
                 setBatchProgress(0);
@@ -10666,7 +10781,8 @@ const AuditWorkspace = ({
         }
         if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
             setIsAuditing(true);
-            setBatchProgress(5);
+            setBatchProgress(0);
+            startProgressPolling();
             const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
             setBatchStatusMsg(`Iniciando auditoría acústica avanzada en ${targetDesc}...`);
             try {
@@ -10709,12 +10825,15 @@ const AuditWorkspace = ({
                 console.error("Fallo auditoría:", e);
                 setBatchStatusMsg("Error durante la auditoría.");
             } finally {
-                setIsAuditing(false); 
-                setBatchProgress(0); 
-                setBatchStatusMsg(''); 
-                if (typeof onAuditProgressChange === 'function') {
-                    onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
-                }
+                stopProgressPolling();
+                setTimeout(() => {
+                    setIsAuditing(false); 
+                    setBatchProgress(0); 
+                    setBatchStatusMsg(''); 
+                    if (typeof onAuditProgressChange === 'function') {
+                        onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+                    }
+                }, 800);
             }
         }
     };
@@ -10722,12 +10841,13 @@ const AuditWorkspace = ({
     const handleEjecutarAuditoriaLote = async (overrideOpts = null) => {
         const target = resolveAuditTargets();
         if (!target || (Array.isArray(target) && target.length === 0)) {
-            alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Analizar biblioteca'.");
+            alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Cargar Colección'.");
             return;
         }
         const opts = overrideOpts || batchConfigOpts || {};
         setIsAuditing(true);
-        setBatchProgress(5);
+        setBatchProgress(0);
+        startProgressPolling();
         const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
         setBatchStatusMsg(`Ejecutando auditoría avanzada con ajustes seleccionados en ${targetDesc}...`);
         try {
@@ -10761,6 +10881,7 @@ const AuditWorkspace = ({
                         setBatchStatusMsg("Normalizando nombres de archivo y títulos...");
                         await window.eel.sanitizar_metadatos_pistas(res.tracks, false)();
                     }
+                    setBatchProgress(100);
                     setSaveFeedback(`✓ Análisis completado con éxito (${res.tracks.length} pistas)`);
                     setTimeout(() => setSaveFeedback(''), 4000);
                     if (typeof registrarEnBitacora === 'function') {
@@ -10783,6 +10904,7 @@ const AuditWorkspace = ({
             console.error("Error al ejecutar auditoría en lote:", e);
             setBatchStatusMsg("Error al procesar lote.");
         } finally {
+            stopProgressPolling();
             setTimeout(() => {
                 setIsAuditing(false);
                 setBatchProgress(0);
@@ -12225,7 +12347,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                 {/* DS 3.0 · Barra de herramientas unificada de la biblioteca */}
                 <div className="ws-toolbar select-none" role="toolbar" aria-label="Acciones de biblioteca">
                     <div className="ws-toolbar-group">
-                        <WsButton variant="primary" icon={Icons.Folder} label="Cargar biblioteca" onClick={handleExplorar} title="Cargar carpetas completas o pistas" />
+                        <WsButton variant="primary" icon={Icons.Folder} label="Cargar Colección" onClick={handleExplorar} title="Cargar carpetas completas o pistas desde el explorador" />
+                        <WsButton icon={Icons.Layers} label="Colección" onClick={handleCargarColeccionGuardada} title="Cargar la colección guardada en la app en la tabla de auditoría" />
+                        <WsButton icon={Icons.Plus} label="Llevar a Colección" onClick={handleLlevarAColeccion} title="Llevar pistas auditadas a tu colección guardada" />
                         <WsButton icon={Icons.Plus} label="Añadir" onClick={handleAnadirMas} title="Añadir más carpetas o pistas sin vaciar la selección" />
                         <WsButton compact icon={Icons.Refresh} label="Recargar selección" onClick={() => handleCargarDirectorio(resolveAuditTargets())} />
                         {onToggleSimulation && (
@@ -12293,12 +12417,12 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                 {(isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && (
                     <div className="bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all">
                         <div className="flex justify-between items-center text-xs font-mono">
-                            <span className="text-djcyan-400 font-semibold truncate flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${isAuditPaused ? 'bg-amber-400' : 'bg-djcyan-400'} animate-pulse`}></span>
-                                {isAuditPaused ? "⏸ Auditoría en pausa (cero pérdida de datos, puedes reanudar cuando quieras)" : (batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando..."))}
+                            <span className="text-emerald-400 font-semibold truncate flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${isAuditPaused ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`}></span>
+                                {isAuditPaused ? "⏸ Auditoría en pausa (cero pérdida de datos, puedes reanudar cuando quieras)" : (batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando colección..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando..."))}
                             </span>
                             <div className="flex items-center gap-2.5">
-                                <span className="text-gray-300 font-bold">{batchProgress}%</span>
+                                <span className="text-emerald-400 font-bold font-mono">{batchProgress}%</span>
                                 <button
                                     type="button"
                                     onClick={handleTogglePausaProceso}
@@ -12324,8 +12448,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         </div>
                         <div className="w-full bg-djzinc-950 h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner">
                             <div 
-                                className="bg-gradient-to-r from-djcyan-500 to-djgreen-400 h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50" 
-                                style={{ width: `${Math.max(5, Math.min(100, batchProgress))}%` }}
+                                className="bg-emerald-500 h-full transition-all duration-200 ease-out shadow-lg shadow-emerald-500/50" 
+                                style={{ width: `${Math.min(100, Math.max(0, batchProgress))}%` }}
                             ></div>
                         </div>
                     </div>
@@ -34695,7 +34819,7 @@ const CleanLineKineticStudioStage = () => {
                 .hero-slide { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; text-align: center; will-change: transform, opacity, filter; margin: 0 auto; }
                 .hero-title { font-family: 'Inter', -apple-system, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; color: #ffffff !important; white-space: nowrap !important; will-change: transform, opacity, filter; }
                 @media (max-width: 768px) { .hero-title { white-space: normal !important; } }
-                .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #00A3FF !important; text-shadow: 0 0 14px rgba(0, 163, 255, 0.8) !important; font-weight: 700 !important; }
+                .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #22d3ee !important; text-shadow: 0 0 16px rgba(34, 211, 238, 0.95), 0 0 32px rgba(6, 182, 212, 0.7) !important; font-weight: 700 !important; }
                 .glyph-locked { color: #ffffff !important; text-shadow: 0 0 24px rgba(56, 189, 248, 0.16) !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; }
                 .title-fly-in { animation: titleStreakFromRight 560ms cubic-bezier(0.08, 0.96, 0.18, 1.14) forwards; }
                 @keyframes titleStreakFromRight {
@@ -34705,16 +34829,16 @@ const CleanLineKineticStudioStage = () => {
                   100% { opacity: 1; transform: translateX(0px) scaleX(1) skewX(0deg); filter: blur(0px); }
                 }
                 .hero-subtitle { max-width: 760px; color: #cbd5e1 !important; font-weight: 400 !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
-                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(0, 163, 255, 0.14), inset 0 0 12px rgba(0, 163, 255, 0.08) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
-                .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(0, 163, 255, 0.35) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
+                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
+                .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.45) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
                 .badge-sweep-run .badge-shimmer-bar { animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
                 @keyframes badgeLightPass { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
                 .choreo-01-exit { animation: c01WarpOut 520ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important; }
                 @keyframes c01WarpOut { 0% { opacity: 1; transform: scale(1) translateZ(0px); filter: blur(0px); } 100% { opacity: 0; transform: scale(1.12) translateZ(80px); filter: blur(22px); } }
                 .page-dot { height: 8px !important; width: 8px !important; border-radius: 9999px !important; background-color: #475569 !important; transition: all 380ms cubic-bezier(0.16, 1, 0.3, 1) !important; cursor: pointer !important; border: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; display: inline-block !important; }
                 .page-dot:hover { background-color: #94a3b8 !important; }
-                .page-dot.is-active { width: 34px !important; background: linear-gradient(90deg, #0066FF, #38BDF8) !important; box-shadow: 0 0 14px rgba(0, 163, 255, 0.75) !important; }
-                .laser-trail { position: absolute; height: 1px; background: linear-gradient(90deg, transparent 0%, #0066FF 40%, #38BDF8 85%, transparent 100%); box-shadow: 0 0 12px rgba(0, 163, 255, 0.65); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+                .page-dot.is-active { width: 34px !important; background: linear-gradient(90deg, #0891b2, #22d3ee) !important; box-shadow: 0 0 16px rgba(34, 211, 238, 0.85) !important; }
+                .laser-trail { position: absolute; height: 1px; background: linear-gradient(90deg, transparent 0%, #0891b2 40%, #22d3ee 85%, transparent 100%); box-shadow: 0 0 14px rgba(34, 211, 238, 0.75); opacity: 0; pointer-events: none; will-change: transform, opacity; }
                 .trail-active .laser-trail.t1 { top: calc(50% - 76px); width: 45vw; animation: trailShoot 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 .trail-active .laser-trail.t2 { top: calc(50% - 22px); width: 34vw; animation: trailShoot 480ms cubic-bezier(0.16, 1, 0.3, 1) 40ms forwards; }
                 @keyframes trailShoot { 0% { opacity: 0; transform: translateX(100vw) scaleX(2.4); } 35% { opacity: 0.9; transform: translateX(5vw) scaleX(2.8); } 100% { opacity: 0; transform: translateX(-75vw) scaleX(0.4); } }
@@ -34751,7 +34875,7 @@ const CleanLineKineticStudioStage = () => {
                         <svg className="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="4 10.5 8 14.5 16 6" />
                         </svg>
-                        <span className="font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-[#00A3FF]">
+                        <span className="font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">
                             {currentSlide.badge}
                         </span>
                     </div>
@@ -34990,23 +35114,26 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
 
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
-                    {/* Logo Oficial + Tipografía Proporcional a Escala de Cabecera (Idéntica Proporción 1:1) con Mayor Espaciado */}
-                    <div className="flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-12 sm:mb-16 md:mb-20">
-                        <BeatWaveLogoBadge size="lg" />
-                        <div className="flex flex-col justify-center select-none pr-1">
-                            <div className="flex items-center gap-2 sm:gap-3 leading-none">
-                                <span className="font-syne font-black text-3xl sm:text-5xl md:text-6xl lg:text-[70px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
-                                    <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]">WAVE</span>
+                    {/* Logo Oficial + Tipografía Idéntica al Header (Misma Tipografía Syne, Diseño y Proporción 1:1) Separado del Carrusel */}
+                    <div className="flex flex-row items-center justify-center gap-3.5 sm:gap-5 md:gap-6 select-none group mt-2 sm:mt-4 mb-20 sm:mb-24 md:mb-32">
+                        <BeatWaveLogoBadge size="hero" />
+                        <div className="flex flex-col justify-center select-none text-left shrink-0">
+                            <div className="flex items-center gap-2 sm:gap-3 md:gap-3.5 leading-none">
+                                <span 
+                                    className="font-syne font-black text-3xl sm:text-5xl md:text-[56px] lg:text-[62px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]"
+                                    style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800 }}
+                                >
+                                    <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_24px_rgba(34,211,238,0.9)]">WAVE</span>
                                 </span>
-                                <span className="text-xs sm:text-xl md:text-2xl lg:text-[31px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-md sm:rounded-xl md:rounded-[18px] border-[1.5px] sm:border-[2.5px] md:border-[3px] border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
+                                <span className="text-xs sm:text-lg md:text-xl lg:text-[22px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-3.5 py-0.5 sm:py-1 rounded-[8px] sm:rounded-[12px] md:rounded-[14px] border-[1.5px] sm:border-[2px] md:border-[2.5px] border-cyan-400 text-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
                                     PRO
                                 </span>
                             </div>
-                            <div className="w-full flex justify-between items-center text-[10px] sm:text-base md:text-xl lg:text-[27px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none">
+                            <div className="w-full flex justify-between items-center text-[10px] sm:text-sm md:text-base lg:text-[17.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none">
                                 <span>PRECISION</span>
-                                <span className="text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none">•</span>
+                                <span className="text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none">•</span>
                                 <span>AUDIO</span>
-                                <span className="text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none">•</span>
+                                <span className="text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none">•</span>
                                 <span>INTELLIGENCE</span>
                             </div>
                         </div>
@@ -36533,6 +36660,9 @@ const App = () => {
                     <AuditWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
+                        customLibraries={customLibraries}
+                        onSaveCustomLibraries={saveCustomLibraries}
+                        activeCustomLibId={activeCustomLibId}
                         selectedTrack={selectedTrack} 
                         setSelectedTrack={setSelectedTrack} 
                         onPlayTrack={handlePlayTrack} 

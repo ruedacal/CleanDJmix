@@ -152,7 +152,7 @@
     }
   ];
   var COPILOT_ITEM = { id: "copilot", fallback: "Copilot", icon: "Turntable", hint: "Monitor en vivo de cabina" };
-  var LIBRARY_ITEM = { id: "library", fallback: "Librer\xEDa", icon: "Library", hint: "Gestor y creador de librer\xEDas persistentes" };
+  var LIBRARY_ITEM = { id: "library", fallback: "Colecci\xF3n", icon: "Library", hint: "Gestor y explorador de colecciones guardadas" };
   var MOBILE_PRIMARY_TABS = ["audit", "hotcues", "shazam", "setbuilder"];
   var ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: "En vivo" }, { ...LIBRARY_ITEM, group: "Gesti\xF3n" }];
   var findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[0];
@@ -226,13 +226,13 @@
             else if (onOpenLibrary) onOpenLibrary();
           },
           "aria-current": activeTab === "library" || isLibraryOpen ? "page" : void 0,
-          title: "Librer\xEDa \u2014 Gestor y creador de bibliotecas persistentes",
+          title: "Colecci\xF3n \u2014 Gestor y creador de colecciones persistentes",
           className: `bw-rail-item group ${activeTab === "library" || isLibraryOpen ? "is-active" : ""} ${expanded ? "is-expanded" : ""}`
         },
         /* @__PURE__ */ React.createElement("span", { className: "bw-led", "aria-hidden": "true" }),
         /* @__PURE__ */ React.createElement(ShellIcons.Library, { size: 18, className: activeTab === "library" || isLibraryOpen ? "text-cyan-400" : "text-gray-400 group-hover:text-white" }),
-        /* @__PURE__ */ React.createElement("span", { className: "bw-rail-label" }, "Librer\xEDa"),
-        /* @__PURE__ */ React.createElement("span", { className: "bw-rail-caption" }, "Librer\xEDa"),
+        /* @__PURE__ */ React.createElement("span", { className: "bw-rail-label" }, "Colecci\xF3n"),
+        /* @__PURE__ */ React.createElement("span", { className: "bw-rail-caption" }, "Colecci\xF3n"),
         libraryCount > 0 && /* @__PURE__ */ React.createElement("span", { className: "bw-rail-badge" }, libraryCount)
       )),
       /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3" }, NAV_GROUPS.map((group) => /* @__PURE__ */ React.createElement("div", { key: group.id, className: "flex flex-col gap-0.5", role: "group", "aria-label": group.label }, /* @__PURE__ */ React.createElement("span", { className: `bw-eyebrow px-2 pb-1 pt-2 ${expanded ? "block" : "hidden"}` }, group.label), /* @__PURE__ */ React.createElement("span", { className: `mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? "hidden" : ""}`, "aria-hidden": "true" }), group.items.map((item) => {
@@ -370,13 +370,7 @@
       },
       /* @__PURE__ */ React.createElement(ShellIcons.Globe, { size: 16 }),
       /* @__PURE__ */ React.createElement("span", { className: "uppercase" }, lang)
-    ), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenUser, className: "bw-user-chip", title: "Centro de control DJ: perfil, sesiones y preferencias" }, /* @__PURE__ */ React.createElement("span", { className: "flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/15" }, userProfile && userProfile.avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: userProfile.avatarUrl, alt: "", className: "h-full w-full object-cover" }) : /* @__PURE__ */ React.createElement(ShellIcons.User, { size: 14, className: "text-zinc-300" })), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline max-w-[110px] truncate text-sm text-white" }, alias), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline bw-pro-tag" }, "PRO"))), auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-0 left-0 w-full h-[2px] bg-zinc-800/80 overflow-hidden pointer-events-none" }, /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-200 ease-out shadow-[0_0_8px_rgba(6,182,212,0.8)]",
-        style: { width: `${Math.min(100, Math.max(0, auditInfo.progress || 0))}%` }
-      }
-    )));
+    ), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onOpenUser, className: "bw-user-chip", title: "Centro de control DJ: perfil, sesiones y preferencias" }, /* @__PURE__ */ React.createElement("span", { className: "flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/15" }, userProfile && userProfile.avatarUrl ? /* @__PURE__ */ React.createElement("img", { src: userProfile.avatarUrl, alt: "", className: "h-full w-full object-cover" }) : /* @__PURE__ */ React.createElement(ShellIcons.User, { size: 14, className: "text-zinc-300" })), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline max-w-[110px] truncate text-sm text-white" }, alias), /* @__PURE__ */ React.createElement("span", { className: "hidden xl:inline bw-pro-tag" }, "PRO"))));
   };
 
   // web/js/shell/MobileNav.jsx
@@ -7832,7 +7826,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       var _a2;
       return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
     }, 0);
-    return /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070812" }, className: "w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#0d0f1e", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }, className: "px-6 py-4 flex items-center justify-between shrink-0 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base sm:text-lg font-sans font-bold uppercase text-white tracking-wider" }, "LIBRER\xCDA & BIBLIOTECAS PERSONALIZADAS"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold" }, totalTracksInLib, " PISTAS EN CAT\xC1LOGO")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono mt-0.5" }, "GESTOR AVANZADO DE CARPETAS VIRTUALES, AGRUPACIONES POR G\xC9NERO Y MATERIALIZACI\xD3N F\xCDSICA EN DISCO / USB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), onLoadFolderFromDisk && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070812" }, className: "w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#0d0f1e", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }, className: "px-6 py-4 flex items-center justify-between shrink-0 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base sm:text-lg font-sans font-bold uppercase text-white tracking-wider" }, "COLECCI\xD3N & CRATES PERSONALIZADOS"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold" }, totalTracksInLib, " PISTAS EN COLECCI\xD3N")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono mt-0.5" }, "GESTOR AVANZADO DE COLECCI\xD3N, CARPETAS VIRTUALES, AGRUPACIONES POR G\xC9NERO Y MATERIALIZACI\xD3N F\xCDSICA EN DISCO / USB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), onLoadFolderFromDisk && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -8107,6 +8101,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var AuditWorkspace = ({
     tracks: externalTracks,
     setTracks: setExternalTracks,
+    customLibraries = [],
+    onSaveCustomLibraries,
+    activeCustomLibId,
     selectedTrack,
     setSelectedTrack,
     onPlayTrack,
@@ -8309,6 +8306,94 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       return () => window.removeEventListener("bw:audit_progress", handleAuditEvt);
     }, [onAuditProgressChange]);
+    const startProgressPolling = () => {
+      if (window._bw_audit_poll) clearInterval(window._bw_audit_poll);
+      window._bw_audit_poll = setInterval(async () => {
+        try {
+          const res = await fetch("/api/audit/progress");
+          if (res.ok) {
+            const data = await res.json();
+            if (data && typeof data.pct === "number") {
+              if (data.pct > 0) {
+                setBatchProgress(data.pct);
+                if (data.msg) setBatchStatusMsg(data.msg);
+                if (data.pct >= 100) {
+                  clearInterval(window._bw_audit_poll);
+                  window._bw_audit_poll = null;
+                }
+              }
+            }
+          }
+        } catch (_) {
+        }
+      }, 200);
+    };
+    const stopProgressPolling = () => {
+      if (window._bw_audit_poll) {
+        clearInterval(window._bw_audit_poll);
+        window._bw_audit_poll = null;
+      }
+    };
+    const handleCargarColeccionGuardada = () => {
+      var _a2;
+      const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      const colTracks = [];
+      const seenKeys = /* @__PURE__ */ new Set();
+      if (activeLib && activeLib.folders) {
+        activeLib.folders.forEach((f) => {
+          (f.tracks || []).forEach((tr) => {
+            const key = tr.path || tr.filepath || tr.f || tr.id;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              colTracks.push(tr);
+            }
+          });
+        });
+      }
+      if (colTracks.length > 0) {
+        setTracks(colTracks);
+        setSelectedTrack(((_a2 = colTracks[0]) == null ? void 0 : _a2.id) || null);
+        setSaveFeedback(lang === "en" ? `\u2713 Loaded ${colTracks.length} tracks from Colecci\xF3n` : `\u2713 Colecci\xF3n cargada (${colTracks.length} pistas)`);
+      } else {
+        setSaveFeedback(lang === "en" ? "Your saved Colecci\xF3n is empty. Add tracks with 'Llevar a Colecci\xF3n'." : "Tu Colecci\xF3n guardada est\xE1 vac\xEDa. A\xF1ade pistas con 'Llevar a Colecci\xF3n'.");
+      }
+      setTimeout(() => setSaveFeedback(""), 3500);
+    };
+    const handleLlevarAColeccion = () => {
+      const sourceTracks = selectedAuditIds.size > 0 ? tracks.filter((t2) => selectedAuditIds.has(t2.id)) : tracks;
+      if (!sourceTracks || sourceTracks.length === 0) {
+        setSaveFeedback(lang === "en" ? "No tracks available to add to Colecci\xF3n." : "No hay pistas para a\xF1adir a la Colecci\xF3n.");
+        setTimeout(() => setSaveFeedback(""), 3e3);
+        return;
+      }
+      const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0] || {
+        id: "lib_default",
+        name: "Mi Colecci\xF3n Principal",
+        folders: [{ id: "f_audit", name: "01 - Auditor\xEDa", tracks: [] }]
+      };
+      const targetFolder = activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders[0] : { id: "f_audit", name: "01 - Auditor\xEDa", tracks: [] };
+      const existingPaths = new Set((targetFolder.tracks || []).map((t2) => t2.path || t2.filepath || t2.f || t2.id));
+      let addedCount = 0;
+      const newFolderTracks = [...targetFolder.tracks || []];
+      sourceTracks.forEach((t2) => {
+        const key = t2.path || t2.filepath || t2.f || t2.id;
+        if (!existingPaths.has(key)) {
+          existingPaths.add(key);
+          newFolderTracks.push(t2);
+          addedCount++;
+        }
+      });
+      const updatedFolders = activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders.map((f) => f.id === targetFolder.id ? { ...f, tracks: newFolderTracks } : f) : [{ ...targetFolder, tracks: newFolderTracks }];
+      const updatedLib = { ...activeLib, folders: updatedFolders };
+      const updatedLibs = customLibraries && customLibraries.length > 0 ? customLibraries.map((l) => l.id === updatedLib.id ? updatedLib : l) : [updatedLib];
+      if (typeof onSaveCustomLibraries === "function") {
+        onSaveCustomLibraries(updatedLibs, updatedLib.id);
+      }
+      setSaveFeedback(
+        lang === "en" ? `\u2713 Added ${addedCount} tracks to Colecci\xF3n (${targetFolder.name})` : `\u2713 ${addedCount} pistas a\xF1adidas a tu Colecci\xF3n (${targetFolder.name})`
+      );
+      setTimeout(() => setSaveFeedback(""), 4e3);
+    };
     useEffect6(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
@@ -8958,7 +9043,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       if (window.eel && window.eel.cargar_metadatos_directorio) {
         setIsLoadingDir(true);
-        setBatchProgress(5);
+        setBatchProgress(0);
+        startProgressPolling();
         const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
         setBatchStatusMsg(isAppend ? `A\xF1adiendo metadatos de ${targetDesc}...` : `Leyendo metadatos de ${targetDesc}...`);
         try {
@@ -9010,6 +9096,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
           console.error("Fallo carga metadatos de directorio:", e);
           setBatchStatusMsg("Error al leer metadatos del directorio.");
         } finally {
+          stopProgressPolling();
           setIsAppendMode(false);
           setIsLoadingDir(false);
           setBatchProgress(0);
@@ -9028,7 +9115,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
         setIsAuditing(true);
-        setBatchProgress(5);
+        setBatchProgress(0);
+        startProgressPolling();
         const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
         setBatchStatusMsg(`Iniciando auditor\xEDa ac\xFAstica avanzada en ${targetDesc}...`);
         try {
@@ -9079,12 +9167,15 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
           console.error("Fallo auditor\xEDa:", e);
           setBatchStatusMsg("Error durante la auditor\xEDa.");
         } finally {
-          setIsAuditing(false);
-          setBatchProgress(0);
-          setBatchStatusMsg("");
-          if (typeof onAuditProgressChange === "function") {
-            onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
-          }
+          stopProgressPolling();
+          setTimeout(() => {
+            setIsAuditing(false);
+            setBatchProgress(0);
+            setBatchStatusMsg("");
+            if (typeof onAuditProgressChange === "function") {
+              onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
+            }
+          }, 800);
         }
       }
     };
@@ -9092,12 +9183,13 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
       var _a2, _b, _c;
       const target = resolveAuditTargets();
       if (!target || Array.isArray(target) && target.length === 0) {
-        alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Analizar biblioteca'.");
+        alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Cargar Colecci\xF3n'.");
         return;
       }
       const opts = overrideOpts || batchConfigOpts || {};
       setIsAuditing(true);
-      setBatchProgress(5);
+      setBatchProgress(0);
+      startProgressPolling();
       const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
       setBatchStatusMsg(`Ejecutando auditor\xEDa avanzada con ajustes seleccionados en ${targetDesc}...`);
       try {
@@ -9131,6 +9223,7 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
               setBatchStatusMsg("Normalizando nombres de archivo y t\xEDtulos...");
               await window.eel.sanitizar_metadatos_pistas(res.tracks, false)();
             }
+            setBatchProgress(100);
             setSaveFeedback(`\u2713 An\xE1lisis completado con \xE9xito (${res.tracks.length} pistas)`);
             setTimeout(() => setSaveFeedback(""), 4e3);
             if (typeof registrarEnBitacora === "function") {
@@ -9157,6 +9250,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         console.error("Error al ejecutar auditor\xEDa en lote:", e);
         setBatchStatusMsg("Error al procesar lote.");
       } finally {
+        stopProgressPolling();
         setTimeout(() => {
           setIsAuditing(false);
           setBatchProgress(0);
@@ -10454,7 +10548,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_cancel") || "Cancelar")
-    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar select-none", role: "toolbar", "aria-label": "Acciones de biblioteca" }, /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(WsButton, { variant: "primary", icon: Icons.Folder, label: "Cargar biblioteca", onClick: handleExplorar, title: "Cargar carpetas completas o pistas" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "A\xF1adir", onClick: handleAnadirMas, title: "A\xF1adir m\xE1s carpetas o pistas sin vaciar la selecci\xF3n" }), /* @__PURE__ */ React.createElement(WsButton, { compact: true, icon: Icons.Refresh, label: "Recargar selecci\xF3n", onClick: () => handleCargarDirectorio(resolveAuditTargets()) }), onToggleSimulation && /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar select-none", role: "toolbar", "aria-label": "Acciones de biblioteca" }, /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(WsButton, { variant: "primary", icon: Icons.Folder, label: "Cargar Colecci\xF3n", onClick: handleExplorar, title: "Cargar carpetas completas o pistas desde el explorador" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Layers, label: "Colecci\xF3n", onClick: handleCargarColeccionGuardada, title: "Cargar la colecci\xF3n guardada en la app en la tabla de auditor\xEDa" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "Llevar a Colecci\xF3n", onClick: handleLlevarAColeccion, title: "Llevar pistas auditadas a tu colecci\xF3n guardada" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "A\xF1adir", onClick: handleAnadirMas, title: "A\xF1adir m\xE1s carpetas o pistas sin vaciar la selecci\xF3n" }), /* @__PURE__ */ React.createElement(WsButton, { compact: true, icon: Icons.Refresh, label: "Recargar selecci\xF3n", onClick: () => handleCargarDirectorio(resolveAuditTargets()) }), onToggleSimulation && /* @__PURE__ */ React.createElement(
       WsButton,
       {
         compact: true,
@@ -10510,7 +10604,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           { id: "xlsx", label: "Informe Excel", ext: ".XLSX", desc: "Hojas por destino y auditor\xEDa", Logo: null, onClick: handleExportarXLS }
         ]
       }
-    ))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAuditPaused ? "bg-amber-400" : "bg-djcyan-400"} animate-pulse` }), isAuditPaused ? "\u23F8 Auditor\xEDa en pausa (cero p\xE9rdida de datos, puedes reanudar cuando quieras)" : batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando biblioteca..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300 font-bold" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
+    ))), (isAuditing || isLoadingDir || isExporting || isInjecting || batchProgress > 0) && /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border-b border-djzinc-800 px-4 py-2.5 flex flex-col gap-1.5 shrink-0 transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold truncate flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAuditPaused ? "bg-amber-400" : "bg-emerald-400"} animate-pulse` }), isAuditPaused ? "\u23F8 Auditor\xEDa en pausa (cero p\xE9rdida de datos, puedes reanudar cuando quieras)" : batchStatusMsg || (isLoadingDir ? "Leyendo metadatos de archivos..." : isAuditing ? "Auditando colecci\xF3n..." : isExporting ? "Generando Excel..." : isInjecting ? "Inyectando metadatos..." : "Procesando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold font-mono" }, batchProgress, "%"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -10532,8 +10626,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     ))), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-950 h-2 rounded-full overflow-hidden border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "bg-gradient-to-r from-djcyan-500 to-djgreen-400 h-full transition-all duration-300 ease-out shadow-lg shadow-djcyan-500/50",
-        style: { width: `${Math.max(5, Math.min(100, batchProgress))}%` }
+        className: "bg-emerald-500 h-full transition-all duration-200 ease-out shadow-lg shadow-emerald-500/50",
+        style: { width: `${Math.min(100, Math.max(0, batchProgress))}%` }
       }
     ))), metricsCollapsed ? /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-[#08080d] border-b border-djzinc-800 flex items-center justify-between text-xs font-mono shrink-0 select-none shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 overflow-x-auto no-scrollbar" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400" }), (metrics.total || 0).toLocaleString(), " pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-djzinc-600" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, metrics.total > 0 ? Math.max(0, Math.min(100, Math.round((metrics.total - (badQualityTracks.length + metrics.missing + metrics.duplicates)) / metrics.total * 100))) : 100, "% Salud"), /* @__PURE__ */ React.createElement("span", { className: "text-djzinc-600" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: badQualityTracks.length > 0 ? "text-amber-400 font-bold" : "text-gray-400" }, badQualityTracks.length.toLocaleString(), " ", t("kpi_bad_quality") || "mala calidad"), /* @__PURE__ */ React.createElement("span", { className: "text-djzinc-600" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300" }, (metrics.missing || 0).toLocaleString(), " ", t("kpi_missing_bpm_key") || "falta BPM/Key"), /* @__PURE__ */ React.createElement("span", { className: "text-djzinc-600" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, tracks.filter((t2) => t2.cutoff_khz && !String(t2.status || "").includes("Fake")).length, " Lossless")), /* @__PURE__ */ React.createElement(
       "button",
@@ -24911,7 +25005,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 .hero-slide { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; text-align: center; will-change: transform, opacity, filter; margin: 0 auto; }
                 .hero-title { font-family: 'Inter', -apple-system, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; color: #ffffff !important; white-space: nowrap !important; will-change: transform, opacity, filter; }
                 @media (max-width: 768px) { .hero-title { white-space: normal !important; } }
-                .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #00A3FF !important; text-shadow: 0 0 14px rgba(0, 163, 255, 0.8) !important; font-weight: 700 !important; }
+                .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #22d3ee !important; text-shadow: 0 0 16px rgba(34, 211, 238, 0.95), 0 0 32px rgba(6, 182, 212, 0.7) !important; font-weight: 700 !important; }
                 .glyph-locked { color: #ffffff !important; text-shadow: 0 0 24px rgba(56, 189, 248, 0.16) !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; }
                 .title-fly-in { animation: titleStreakFromRight 560ms cubic-bezier(0.08, 0.96, 0.18, 1.14) forwards; }
                 @keyframes titleStreakFromRight {
@@ -24921,16 +25015,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
                   100% { opacity: 1; transform: translateX(0px) scaleX(1) skewX(0deg); filter: blur(0px); }
                 }
                 .hero-subtitle { max-width: 760px; color: #cbd5e1 !important; font-weight: 400 !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
-                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(0, 163, 255, 0.14), inset 0 0 12px rgba(0, 163, 255, 0.08) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
-                .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(0, 163, 255, 0.35) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
+                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
+                .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.45) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
                 .badge-sweep-run .badge-shimmer-bar { animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
                 @keyframes badgeLightPass { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
                 .choreo-01-exit { animation: c01WarpOut 520ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important; }
                 @keyframes c01WarpOut { 0% { opacity: 1; transform: scale(1) translateZ(0px); filter: blur(0px); } 100% { opacity: 0; transform: scale(1.12) translateZ(80px); filter: blur(22px); } }
                 .page-dot { height: 8px !important; width: 8px !important; border-radius: 9999px !important; background-color: #475569 !important; transition: all 380ms cubic-bezier(0.16, 1, 0.3, 1) !important; cursor: pointer !important; border: none !important; outline: none !important; padding: 0 !important; margin: 0 !important; display: inline-block !important; }
                 .page-dot:hover { background-color: #94a3b8 !important; }
-                .page-dot.is-active { width: 34px !important; background: linear-gradient(90deg, #0066FF, #38BDF8) !important; box-shadow: 0 0 14px rgba(0, 163, 255, 0.75) !important; }
-                .laser-trail { position: absolute; height: 1px; background: linear-gradient(90deg, transparent 0%, #0066FF 40%, #38BDF8 85%, transparent 100%); box-shadow: 0 0 12px rgba(0, 163, 255, 0.65); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+                .page-dot.is-active { width: 34px !important; background: linear-gradient(90deg, #0891b2, #22d3ee) !important; box-shadow: 0 0 16px rgba(34, 211, 238, 0.85) !important; }
+                .laser-trail { position: absolute; height: 1px; background: linear-gradient(90deg, transparent 0%, #0891b2 40%, #22d3ee 85%, transparent 100%); box-shadow: 0 0 14px rgba(34, 211, 238, 0.75); opacity: 0; pointer-events: none; will-change: transform, opacity; }
                 .trail-active .laser-trail.t1 { top: calc(50% - 76px); width: 45vw; animation: trailShoot 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 .trail-active .laser-trail.t2 { top: calc(50% - 22px); width: 34vw; animation: trailShoot 480ms cubic-bezier(0.16, 1, 0.3, 1) 40ms forwards; }
                 @keyframes trailShoot { 0% { opacity: 0; transform: translateX(100vw) scaleX(2.4); } 35% { opacity: 0.9; transform: translateX(5vw) scaleX(2.8); } 100% { opacity: 0; transform: translateX(-75vw) scaleX(0.4); } }
@@ -24950,7 +25044,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           className: "hero-subtitle text-sm sm:text-base md:text-[18px] mb-6 px-2 text-center"
         },
         currentSlide.subtitle
-      ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6" }, /* @__PURE__ */ React.createElement("div", { ref: badgeRef, className: "tech-pill-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-shimmer-bar" }), /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4 text-emerald-400 shrink-0", viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("polyline", { points: "4 10.5 8 14.5 16 6" })), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-[#00A3FF]" }, currentSlide.badge)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5" }, HERO_SHOWCASE_SLIDES.map((_, dotIdx) => /* @__PURE__ */ React.createElement(
+      ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6" }, /* @__PURE__ */ React.createElement("div", { ref: badgeRef, className: "tech-pill-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-shimmer-bar" }), /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4 text-emerald-400 shrink-0", viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("polyline", { points: "4 10.5 8 14.5 16 6" })), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" }, currentSlide.badge)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5" }, HERO_SHOWCASE_SLIDES.map((_, dotIdx) => /* @__PURE__ */ React.createElement(
         "button",
         {
           key: dotIdx,
@@ -25140,7 +25234,15 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
           /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
         ))),
-        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-row items-center justify-center gap-2.5 sm:gap-3.5 max-w-4xl select-none group mb-12 sm:mb-16 md:mb-20" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "lg" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center select-none pr-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-3xl sm:text-5xl md:text-6xl lg:text-[70px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_30px_rgba(34,211,238,0.9)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-xl md:text-2xl lg:text-[31px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-md sm:rounded-xl md:rounded-[18px] border-[1.5px] sm:border-[2.5px] md:border-[3px] border-cyan-400 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[10px] sm:text-base md:text-xl lg:text-[27px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-lg md:text-2xl lg:text-[28px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-row items-center justify-center gap-3.5 sm:gap-5 md:gap-6 select-none group mt-2 sm:mt-4 mb-20 sm:mb-24 md:mb-32" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "hero" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center select-none text-left shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 md:gap-3.5 leading-none" }, /* @__PURE__ */ React.createElement(
+          "span",
+          {
+            className: "font-syne font-black text-3xl sm:text-5xl md:text-[56px] lg:text-[62px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]",
+            style: { fontFamily: "'Syne', sans-serif", fontWeight: 800 }
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"),
+          /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_24px_rgba(34,211,238,0.9)]" }, "WAVE")
+        ), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-lg md:text-xl lg:text-[22px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-3.5 py-0.5 sm:py-1 rounded-[8px] sm:rounded-[12px] md:rounded-[14px] border-[1.5px] sm:border-[2px] md:border-[2.5px] border-cyan-400 text-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[10px] sm:text-sm md:text-base lg:text-[17.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
@@ -26521,6 +26623,9 @@ ${res.path}`);
       {
         tracks: auditTracks,
         setTracks: setAuditTracks,
+        customLibraries,
+        onSaveCustomLibraries: saveCustomLibraries,
+        activeCustomLibId,
         selectedTrack,
         setSelectedTrack,
         onPlayTrack: handlePlayTrack,

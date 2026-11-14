@@ -177,15 +177,6 @@ export const TopBar = ({
                     <span className="hidden xl:inline bw-pro-tag">PRO</span>
                 </button>
             </div>
-
-            {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
-                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-800/80 overflow-hidden pointer-events-none">
-                    <div 
-                        className="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-200 ease-out shadow-[0_0_8px_rgba(6,182,212,0.8)]"
-                        style={{ width: `${Math.min(100, Math.max(0, auditInfo.progress || 0))}%` }}
-                    />
-                </div>
-            )}
         </header>
     );
 };
