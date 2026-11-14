@@ -34631,14 +34631,15 @@ const BeatWaveBrandIdentity = ({
 }) => {
     const isHero = variant === 'hero';
     const badgeSize = isHero ? 'hero' : 'sm'; // hero: 76px / sm: 36px
-    const titleSize = isHero ? 48 : 24;       // font-size en px
-    const proSize = isHero ? 19 : 10.5;       // font-size de PRO en px
+    const titleSize = isHero ? 48 : 24;       // font-size en px (Syne 800)
+    const proSize = isHero ? 19 : 10.5;       // font-size de PRO en px (Inter 900)
     const proBorder = isHero ? 2.5 : 1.5;     // grosor del borde
     const proRadius = isHero ? 12 : 8;        // radio del borde
     const proPx = isHero ? 12 : 7;            // padding horizontal
     const proPy = isHero ? 3 : 1.5;           // padding vertical
-    const subSize = isHero ? 15 : 9;          // font-size de PRECISION • AUDIO • INTELLIGENCE
-    const subGap = isHero ? 6 : 3;            // margen entre título y subtítulo
+    const subSize = isHero ? 18.5 : 11;       // font-size de PRECISION • AUDIO • INTELLIGENCE (más grande y nítida)
+    const dotSize = isHero ? 28 : 17;         // puntos separadores notablemente más grandes
+    const subGap = isHero ? 7 : 3.5;          // margen entre título y subtítulo
     const mainGap = isHero ? 22 : 12;         // espacio entre el badge y el texto
 
     return (
@@ -34650,15 +34651,13 @@ const BeatWaveBrandIdentity = ({
             {/* 1. Badge Circular Oficial */}
             <BeatWaveLogoBadge size={badgeSize} />
 
-            {/* 2. Bloque Tipográfico con Proporción Áurea 1:1 */}
+            {/* 2. Bloque Tipográfico Limpio Sin Efectos de Texto con Proporción 1:1 */}
             <div className="flex flex-col justify-center text-left shrink-0 select-none">
-                {/* Fila 1: BEATWAVE + PRO */}
+                {/* Fila 1: BEATWAVE + PRO (Sin sombras ni halos de texto) */}
                 <div className="flex items-center leading-none" style={{ gap: isHero ? '12px' : '7px' }}>
                     <span 
-                        className={`font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-300 ${
-                            isTechnoActive 
-                                ? 'anim-soundwave drop-shadow-[0_0_24px_rgba(34,211,238,0.95)]' 
-                                : 'drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)]'
+                        className={`font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${
+                            isTechnoActive ? 'anim-soundwave' : ''
                         }`}
                         style={{ 
                             fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -34668,7 +34667,7 @@ const BeatWaveBrandIdentity = ({
                         }}
                     >
                         <span className="text-white">BEAT</span>
-                        <span className="text-cyan-400" style={{ textShadow: '0 0 16px rgba(34, 211, 238, 0.9)' }}>WAVE</span>
+                        <span className="text-cyan-400">WAVE</span>
                     </span>
                     <span 
                         className="font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase"
@@ -34679,7 +34678,6 @@ const BeatWaveBrandIdentity = ({
                             padding: `${proPy}px ${proPx}px`,
                             borderRadius: `${proRadius}px`,
                             border: `${proBorder}px solid #22d3ee`,
-                            boxShadow: '0 0 12px rgba(34, 211, 238, 0.55)',
                             lineHeight: 1
                         }}
                     >
@@ -34687,22 +34685,32 @@ const BeatWaveBrandIdentity = ({
                     </span>
                 </div>
 
-                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE */}
+                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE (Tipografía mayor y puntos grandes centrados) */}
                 <div 
-                    className="w-full flex justify-between items-center text-cyan-200/90 select-none leading-none"
+                    className="w-full flex justify-between items-center text-cyan-200 select-none leading-none"
                     style={{
                         fontFamily: "Inter, -apple-system, sans-serif",
                         fontWeight: 800,
                         fontSize: `${subSize}px`,
-                        letterSpacing: '0.14em',
+                        letterSpacing: '0.11em',
                         marginTop: `${subGap}px`,
                         lineHeight: 1
                     }}
                 >
                     <span>PRECISION</span>
-                    <span className="text-cyan-400 font-black" style={{ fontSize: `${subSize * 1.15}px` }}>•</span>
+                    <span 
+                        className="text-cyan-400 font-black inline-flex items-center justify-center select-none" 
+                        style={{ fontSize: `${dotSize}px`, lineHeight: 0, transform: 'translateY(-1px)' }}
+                    >
+                        •
+                    </span>
                     <span>AUDIO</span>
-                    <span className="text-cyan-400 font-black" style={{ fontSize: `${subSize * 1.15}px` }}>•</span>
+                    <span 
+                        className="text-cyan-400 font-black inline-flex items-center justify-center select-none" 
+                        style={{ fontSize: `${dotSize}px`, lineHeight: 0, transform: 'translateY(-1px)' }}
+                    >
+                        •
+                    </span>
                     <span>INTELLIGENCE</span>
                 </div>
             </div>
@@ -34919,7 +34927,7 @@ const CleanLineKineticStudioStage = () => {
 
     return (
         <div 
-            className="w-full flex flex-col items-center justify-center relative select-none my-4 sm:my-6 hero-stage"
+            className="w-full flex flex-col items-center justify-center relative select-none hero-stage"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
@@ -35231,8 +35239,10 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <BeatWaveBrandIdentity variant="hero" />
                     </div>
 
-                    {/* ESCENARIO LIBRE SIN MARCOS NI TARJETAS: CLEAN-LINE KINETIC SCRAMBLE STUDIO */}
-                    <CleanLineKineticStudioStage />
+                    {/* ESCENARIO LIBRE SIN MARCOS NI TARJETAS: CLEAN-LINE KINETIC SCRAMBLE STUDIO (MISMO ESPACIO INFERIOR DE 84PX) */}
+                    <div className="w-full flex flex-col items-center justify-center select-none" style={{ marginBottom: '84px' }}>
+                        <CleanLineKineticStudioStage />
+                    </div>
 
                     {/* BOTONES DE CONVERSIÓN & ACCESO A LICENCIA */}
                     <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2">
@@ -35340,6 +35350,7 @@ const App = () => {
     const [cinematicIntroOpen, setCinematicIntroOpen] = useState(() => {
         try {
             const p = new URLSearchParams(window.location.search);
+            if (p.get('intro') === '1' || p.get('portal') === '1') return true;
             if (p.get('skipintro') === '1' || p.get('nointro') === '1') return false;
             return !sessionStorage.getItem('bw_intro_viewed');
         } catch (e) {

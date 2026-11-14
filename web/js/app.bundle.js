@@ -24959,8 +24959,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const proRadius = isHero ? 12 : 8;
     const proPx = isHero ? 12 : 7;
     const proPy = isHero ? 3 : 1.5;
-    const subSize = isHero ? 15 : 9;
-    const subGap = isHero ? 6 : 3;
+    const subSize = isHero ? 18.5 : 11;
+    const dotSize = isHero ? 28 : 17;
+    const subGap = isHero ? 7 : 3.5;
     const mainGap = isHero ? 22 : 12;
     return /* @__PURE__ */ React.createElement(
       "div",
@@ -24973,7 +24974,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center text-left shrink-0 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center leading-none", style: { gap: isHero ? "12px" : "7px" } }, /* @__PURE__ */ React.createElement(
         "span",
         {
-          className: `font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-300 ${isTechnoActive ? "anim-soundwave drop-shadow-[0_0_24px_rgba(34,211,238,0.95)]" : "drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)]"}`,
+          className: `font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${isTechnoActive ? "anim-soundwave" : ""}`,
           style: {
             fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
             fontWeight: 800,
@@ -24982,7 +24983,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         },
         /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"),
-        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400", style: { textShadow: "0 0 16px rgba(34, 211, 238, 0.9)" } }, "WAVE")
+        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400" }, "WAVE")
       ), /* @__PURE__ */ React.createElement(
         "span",
         {
@@ -24994,7 +24995,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
             padding: `${proPy}px ${proPx}px`,
             borderRadius: `${proRadius}px`,
             border: `${proBorder}px solid #22d3ee`,
-            boxShadow: "0 0 12px rgba(34, 211, 238, 0.55)",
             lineHeight: 1
           }
         },
@@ -25002,20 +25002,34 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )), /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "w-full flex justify-between items-center text-cyan-200/90 select-none leading-none",
+          className: "w-full flex justify-between items-center text-cyan-200 select-none leading-none",
           style: {
             fontFamily: "Inter, -apple-system, sans-serif",
             fontWeight: 800,
             fontSize: `${subSize}px`,
-            letterSpacing: "0.14em",
+            letterSpacing: "0.11em",
             marginTop: `${subGap}px`,
             lineHeight: 1
           }
         },
         /* @__PURE__ */ React.createElement("span", null, "PRECISION"),
-        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black", style: { fontSize: `${subSize * 1.15}px` } }, "\u2022"),
+        /* @__PURE__ */ React.createElement(
+          "span",
+          {
+            className: "text-cyan-400 font-black inline-flex items-center justify-center select-none",
+            style: { fontSize: `${dotSize}px`, lineHeight: 0, transform: "translateY(-1px)" }
+          },
+          "\u2022"
+        ),
         /* @__PURE__ */ React.createElement("span", null, "AUDIO"),
-        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black", style: { fontSize: `${subSize * 1.15}px` } }, "\u2022"),
+        /* @__PURE__ */ React.createElement(
+          "span",
+          {
+            className: "text-cyan-400 font-black inline-flex items-center justify-center select-none",
+            style: { fontSize: `${dotSize}px`, lineHeight: 0, transform: "translateY(-1px)" }
+          },
+          "\u2022"
+        ),
         /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")
       ))
     );
@@ -25195,7 +25209,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "w-full flex flex-col items-center justify-center relative select-none my-4 sm:my-6 hero-stage",
+        className: "w-full flex flex-col items-center justify-center relative select-none hero-stage",
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => setIsHovered(false)
       },
@@ -25440,7 +25454,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
             style: { marginTop: "16px", marginBottom: "84px" }
           },
           /* @__PURE__ */ React.createElement(BeatWaveBrandIdentity, { variant: "hero" })
-        ), /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
+        ), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none", style: { marginBottom: "84px" } }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
@@ -25519,6 +25533,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [cinematicIntroOpen, setCinematicIntroOpen] = useState5(() => {
       try {
         const p = new URLSearchParams(window.location.search);
+        if (p.get("intro") === "1" || p.get("portal") === "1") return true;
         if (p.get("skipintro") === "1" || p.get("nointro") === "1") return false;
         return !sessionStorage.getItem("bw_intro_viewed");
       } catch (e) {
