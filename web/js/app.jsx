@@ -28481,7 +28481,10 @@ const MapWorkspace = ({
     const [selectedTrack, setSelectedTrack] = useState(null);
     const [selectedMapTracks, setSelectedMapTracks] = useState([]);
     const [hoveredTrack, setHoveredTrack] = useState(null);
-    const [mouseScreenPos, setMouseScreenPos] = useState({ x: -100, y: -100 });
+    const tooltipRef = useRef(null);
+    const mousePosRef = useRef({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef(null);
+    const zoomTrailingRef = useRef(null);
     const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState(true);
     const [isNavOverlayOpen, setIsNavOverlayOpen] = useState(true);
     const [zoomDisplay, setZoomDisplay] = useState(1.0);
@@ -28509,6 +28512,14 @@ const MapWorkspace = ({
         setFilterMinValence(0);
         setFilterQualityMode('ALL');
         setSelectedKeyFilter('ALL');
+    }, []);
+
+    // Limpieza de temporizadores de throttling del zoom al desmontar
+    useEffect(() => {
+        return () => {
+            if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
+            if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
+        };
     }, []);
 
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== 'ALL' || selectedKeyFilter !== 'ALL' || Boolean(searchQuery);
@@ -28905,44 +28916,56 @@ const MapWorkspace = ({
             const effScale = t.targetScale || 1.0;
             const currentNodes = nodesRef.current || [];
 
-            if (currentNodes.length > 0) {
+            if (currentNodes.length > 0 && Number.isFinite(effScale) && effScale > 0) {
                 let minNx = 1.0, maxNx = 0.0, minNy = 1.0, maxNy = 0.0;
+                let validCount = 0;
                 for (let i = 0; i < currentNodes.length; i++) {
                     const cn = currentNodes[i];
-                    const nx = cn.currX;
-                    const ny = cn.currY;
-                    if (nx < minNx) minNx = nx;
-                    if (nx > maxNx) maxNx = nx;
-                    if (ny < minNy) minNy = ny;
-                    if (ny > maxNy) maxNy = ny;
-                }
-                const focusNx = (minNx + maxNx) * 0.5;
-                const focusNy = (minNy + maxNy) * 0.5;
-
-                // Margen dinámico para garantizar siempre pistas visibles
-                const marginX = Math.min(w * 0.35, 160);
-                const marginY = Math.min(h * 0.35, 160);
-
-                const minAllowedPanX = marginX - w * 0.5 - (maxNx - 0.5) * spanX * effScale;
-                const maxAllowedPanX = w * 0.5 - marginX - (minNx - 0.5) * spanX * effScale;
-                const minAllowedPanY = marginY - h * 0.5 - (maxNy - 0.5) * spanY * effScale;
-                const maxAllowedPanY = h * 0.5 - marginY - (minNy - 0.5) * spanY * effScale;
-
-                if (minAllowedPanX <= maxAllowedPanX) {
-                    t.targetPanX = Math.max(minAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
-                } else {
-                    t.targetPanX = (0.5 - focusNx) * spanX * effScale;
+                    if (Number.isFinite(cn.currX) && Number.isFinite(cn.currY)) {
+                        if (cn.currX < minNx) minNx = cn.currX;
+                        if (cn.currX > maxNx) maxNx = cn.currX;
+                        if (cn.currY < minNy) minNy = cn.currY;
+                        if (cn.currY > maxNy) maxNy = cn.currY;
+                        validCount++;
+                    }
                 }
 
-                if (minAllowedPanY <= maxAllowedPanY) {
-                    t.targetPanY = Math.max(minAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
-                } else {
-                    t.targetPanY = (0.5 - focusNy) * spanY * effScale;
+                if (validCount > 0 && minNx <= maxNx && minNy <= maxNy) {
+                    const focusNx = (minNx + maxNx) * 0.5;
+                    const focusNy = (minNy + maxNy) * 0.5;
+
+                    // Margen dinámico para garantizar siempre pistas visibles
+                    const marginX = Math.min(w * 0.35, 160);
+                    const marginY = Math.min(h * 0.35, 160);
+
+                    const minAllowedPanX = marginX - w * 0.5 - (maxNx - 0.5) * spanX * effScale;
+                    const maxAllowedPanX = w * 0.5 - marginX - (minNx - 0.5) * spanX * effScale;
+                    const minAllowedPanY = marginY - h * 0.5 - (maxNy - 0.5) * spanY * effScale;
+                    const maxAllowedPanY = h * 0.5 - marginY - (minNy - 0.5) * spanY * effScale;
+
+                    if (minAllowedPanX <= maxAllowedPanX) {
+                        t.targetPanX = Math.max(minAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
+                    } else {
+                        t.targetPanX = (0.5 - focusNx) * spanX * effScale;
+                    }
+
+                    if (minAllowedPanY <= maxAllowedPanY) {
+                        t.targetPanY = Math.max(minAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+                    } else {
+                        t.targetPanY = (0.5 - focusNy) * spanY * effScale;
+                    }
                 }
-            } else {
+            } else if (currentNodes.length === 0) {
                 t.targetPanX = 0;
                 t.targetPanY = 0;
             }
+
+            if (!Number.isFinite(t.targetPanX)) t.targetPanX = 0;
+            if (!Number.isFinite(t.targetPanY)) t.targetPanY = 0;
+            if (!Number.isFinite(t.targetScale) || t.targetScale <= 0) t.targetScale = 1.0;
+            if (!Number.isFinite(t.panX)) t.panX = t.targetPanX;
+            if (!Number.isFinite(t.panY)) t.panY = t.targetPanY;
+            if (!Number.isFinite(t.scale) || t.scale <= 0) t.scale = t.targetScale;
 
             t.panX += (t.targetPanX - t.panX) * 0.22;
             t.panY += (t.targetPanY - t.panY) * 0.22;
@@ -29417,7 +29440,12 @@ const MapWorkspace = ({
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-        setMouseScreenPos({ x: e.clientX, y: e.clientY });
+        mousePosRef.current = { x: e.clientX, y: e.clientY };
+        if (tooltipRef.current) {
+            const left = Math.min(window.innerWidth - 280, e.clientX + 16);
+            const top = Math.min(window.innerHeight - 200, e.clientY + 16);
+            tooltipRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        }
 
         if (toolMode === 'pan' && transformRef.current.isDragging) {
             const nx = mouseX - transformRef.current.dragStartX;
@@ -29545,49 +29573,63 @@ const MapWorkspace = ({
         }
     };
 
-    // Zoom cinemático suave con rueda centrado en contenido (Anti-pantalla en blanco)
-    const handleWheel = (e) => {
-        e.preventDefault();
+    // Zoom cinemático suave y exacto con rueda/trackpad anclado al puntero (60 FPS sin bloqueos)
+    const handleWheel = useCallback((e) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        if (w <= 0 || h <= 0) return;
+
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        const zoomFactor = Math.exp(-Math.max(-60, Math.min(60, e.deltaY)) * 0.0025);
-        const currentScale = transformRef.current.targetScale || transformRef.current.scale;
-        const newScale = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, currentScale * zoomFactor));
+        const tr = transformRef.current;
+        tr.isContinuousPanning = false;
 
-        const w = rect.width;
-        const h = rect.height;
-        const cx = w / 2 + transformRef.current.targetPanX;
-        const cy = h / 2 + transformRef.current.targetPanY;
+        // Calibración adaptativa: clamping de deltaY para soportar tanto rueda física como trackpad de macOS
+        const delta = Math.max(-100, Math.min(100, e.deltaY));
+        const zoomFactor = Math.exp(-delta * 0.0022);
 
-        const nodes = nodesRef.current || [];
-        let zoomCenterScreenX = mouseX;
-        let zoomCenterScreenY = mouseY;
+        const oldScale = tr.targetScale || tr.scale || 1.0;
+        const newScale = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, oldScale * zoomFactor));
+        if (Math.abs(newScale - oldScale) < 0.0001) return;
 
-        // Si el puntero no apunta a un nodo, anclar el zoom hacia el centroide de pistas para que nunca se pierda el contenido
-        if (!hoveredTrack && nodes.length > 0) {
-            let avgNx = 0, avgNy = 0;
-            for (let i = 0; i < nodes.length; i++) {
-                avgNx += nodes[i].currX;
-                avgNy += nodes[i].currY;
-            }
-            avgNx /= nodes.length;
-            avgNy /= nodes.length;
-            const side = radialView ? Math.min(w, h) : null;
-            const centroidScreenX = w / 2 + transformRef.current.targetPanX + (avgNx - 0.5) * (side || w) * currentScale;
-            const centroidScreenY = h / 2 + transformRef.current.targetPanY + (avgNy - 0.5) * (side || h) * currentScale;
-            zoomCenterScreenX = mouseX * 0.4 + centroidScreenX * 0.6;
-            zoomCenterScreenY = mouseY * 0.4 + centroidScreenY * 0.6;
+        const ratio = newScale / oldScale;
+        // Invariante geométrico exacto: el punto del mapa situado bajo el cursor permanece fijo
+        tr.targetPanX = (mouseX - w / 2) - (mouseX - w / 2 - tr.targetPanX) * ratio;
+        tr.targetPanY = (mouseY - h / 2) - (mouseY - h / 2 - tr.targetPanY) * ratio;
+        tr.targetScale = newScale;
+
+        // Desacoplar la actualización de estado de React (throttle a 80ms + trailing) para no saturar el hilo principal
+        if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
+        zoomTrailingRef.current = setTimeout(() => {
+            setZoomDisplay(transformRef.current.targetScale);
+        }, 120);
+
+        if (!zoomThrottleRef.current) {
+            zoomThrottleRef.current = setTimeout(() => {
+                setZoomDisplay(transformRef.current.targetScale);
+                zoomThrottleRef.current = null;
+            }, 80);
         }
+    }, []);
 
-        transformRef.current.targetPanX = zoomCenterScreenX - (zoomCenterScreenX - cx) * (newScale / currentScale) - w / 2;
-        transformRef.current.targetPanY = zoomCenterScreenY - (zoomCenterScreenY - cy) * (newScale / currentScale) - h / 2;
-        transformRef.current.targetScale = newScale;
-        setZoomDisplay(newScale);
-    };
+    // Listener nativo no-pasivo en canvas para prevenir overscroll del navegador y garantizar 60 FPS
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const onWheelNative = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleWheel(e);
+        };
+        canvas.addEventListener('wheel', onWheelNative, { passive: false });
+        return () => {
+            canvas.removeEventListener('wheel', onWheelNative);
+        };
+    }, [handleWheel]);
 
     // Clic en nodo: Solo SELECCIONAR pista e iluminar su tonalidad en la Rueda Camelot. NO reproducir hasta dar al Play.
     const handleClick = () => {
@@ -29824,7 +29866,6 @@ const MapWorkspace = ({
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={() => { if (transformRef.current.isDragging) handleMouseUp(); setHoveredTrack(null); }}
-                    onWheel={handleWheel}
                     onClick={handleClick}
                     className={`w-full h-full block ${
                         toolMode === 'pan'
@@ -29914,10 +29955,10 @@ const MapWorkspace = ({
                 {/* HUD FLOTANTE TRASLÚCIDO AL PASAR EL RATÓN SOBRE UNA PISTA */}
                 {hoveredTrack && (
                     <div
-                        className="fixed pointer-events-none z-50 bg-[#0c0d16]/95 border border-djzinc-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-xl max-w-xs animate-fadeIn font-mono text-xs"
+                        ref={tooltipRef}
+                        className="fixed pointer-events-none z-50 bg-[#0c0d16]/95 border border-djzinc-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-xl max-w-xs animate-fadeIn font-mono text-xs top-0 left-0"
                         style={{
-                            left: Math.min(window.innerWidth - 280, mouseScreenPos.x + 16),
-                            top: Math.min(window.innerHeight - 200, mouseScreenPos.y + 16)
+                            transform: `translate3d(${Math.min(window.innerWidth - 280, mousePosRef.current.x + 16)}px, ${Math.min(window.innerHeight - 200, mousePosRef.current.y + 16)}px, 0)`
                         }}
                     >
                         <div className="flex items-center gap-2.5 mb-2">

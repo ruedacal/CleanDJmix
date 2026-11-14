@@ -21071,7 +21071,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [selectedTrack, setSelectedTrack] = useState5(null);
     const [selectedMapTracks, setSelectedMapTracks] = useState5([]);
     const [hoveredTrack, setHoveredTrack] = useState5(null);
-    const [mouseScreenPos, setMouseScreenPos] = useState5({ x: -100, y: -100 });
+    const tooltipRef = useRef6(null);
+    const mousePosRef = useRef6({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef6(null);
+    const zoomTrailingRef = useRef6(null);
     const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState5(true);
     const [isNavOverlayOpen, setIsNavOverlayOpen] = useState5(true);
     const [zoomDisplay, setZoomDisplay] = useState5(1);
@@ -21094,6 +21097,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setFilterMinValence(0);
       setFilterQualityMode("ALL");
       setSelectedKeyFilter("ALL");
+    }, []);
+    useEffect6(() => {
+      return () => {
+        if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
+        if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
+      };
     }, []);
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== "ALL" || selectedKeyFilter !== "ALL" || Boolean(searchQuery);
     const canvasRef = useRef6(null);
@@ -21429,39 +21438,49 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const spanY = side || h;
         const effScale = t.targetScale || 1;
         const currentNodes = nodesRef.current || [];
-        if (currentNodes.length > 0) {
+        if (currentNodes.length > 0 && Number.isFinite(effScale) && effScale > 0) {
           let minNx = 1, maxNx = 0, minNy = 1, maxNy = 0;
+          let validCount = 0;
           for (let i = 0; i < currentNodes.length; i++) {
             const cn = currentNodes[i];
-            const nx = cn.currX;
-            const ny = cn.currY;
-            if (nx < minNx) minNx = nx;
-            if (nx > maxNx) maxNx = nx;
-            if (ny < minNy) minNy = ny;
-            if (ny > maxNy) maxNy = ny;
+            if (Number.isFinite(cn.currX) && Number.isFinite(cn.currY)) {
+              if (cn.currX < minNx) minNx = cn.currX;
+              if (cn.currX > maxNx) maxNx = cn.currX;
+              if (cn.currY < minNy) minNy = cn.currY;
+              if (cn.currY > maxNy) maxNy = cn.currY;
+              validCount++;
+            }
           }
-          const focusNx = (minNx + maxNx) * 0.5;
-          const focusNy = (minNy + maxNy) * 0.5;
-          const marginX = Math.min(w * 0.35, 160);
-          const marginY = Math.min(h * 0.35, 160);
-          const minAllowedPanX = marginX - w * 0.5 - (maxNx - 0.5) * spanX * effScale;
-          const maxAllowedPanX = w * 0.5 - marginX - (minNx - 0.5) * spanX * effScale;
-          const minAllowedPanY = marginY - h * 0.5 - (maxNy - 0.5) * spanY * effScale;
-          const maxAllowedPanY = h * 0.5 - marginY - (minNy - 0.5) * spanY * effScale;
-          if (minAllowedPanX <= maxAllowedPanX) {
-            t.targetPanX = Math.max(minAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
-          } else {
-            t.targetPanX = (0.5 - focusNx) * spanX * effScale;
+          if (validCount > 0 && minNx <= maxNx && minNy <= maxNy) {
+            const focusNx = (minNx + maxNx) * 0.5;
+            const focusNy = (minNy + maxNy) * 0.5;
+            const marginX = Math.min(w * 0.35, 160);
+            const marginY = Math.min(h * 0.35, 160);
+            const minAllowedPanX = marginX - w * 0.5 - (maxNx - 0.5) * spanX * effScale;
+            const maxAllowedPanX = w * 0.5 - marginX - (minNx - 0.5) * spanX * effScale;
+            const minAllowedPanY = marginY - h * 0.5 - (maxNy - 0.5) * spanY * effScale;
+            const maxAllowedPanY = h * 0.5 - marginY - (minNy - 0.5) * spanY * effScale;
+            if (minAllowedPanX <= maxAllowedPanX) {
+              t.targetPanX = Math.max(minAllowedPanX, Math.min(maxAllowedPanX, t.targetPanX));
+            } else {
+              t.targetPanX = (0.5 - focusNx) * spanX * effScale;
+            }
+            if (minAllowedPanY <= maxAllowedPanY) {
+              t.targetPanY = Math.max(minAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
+            } else {
+              t.targetPanY = (0.5 - focusNy) * spanY * effScale;
+            }
           }
-          if (minAllowedPanY <= maxAllowedPanY) {
-            t.targetPanY = Math.max(minAllowedPanY, Math.min(maxAllowedPanY, t.targetPanY));
-          } else {
-            t.targetPanY = (0.5 - focusNy) * spanY * effScale;
-          }
-        } else {
+        } else if (currentNodes.length === 0) {
           t.targetPanX = 0;
           t.targetPanY = 0;
         }
+        if (!Number.isFinite(t.targetPanX)) t.targetPanX = 0;
+        if (!Number.isFinite(t.targetPanY)) t.targetPanY = 0;
+        if (!Number.isFinite(t.targetScale) || t.targetScale <= 0) t.targetScale = 1;
+        if (!Number.isFinite(t.panX)) t.panX = t.targetPanX;
+        if (!Number.isFinite(t.panY)) t.panY = t.targetPanY;
+        if (!Number.isFinite(t.scale) || t.scale <= 0) t.scale = t.targetScale;
         t.panX += (t.targetPanX - t.panX) * 0.22;
         t.panY += (t.targetPanY - t.panY) * 0.22;
         t.scale += (t.targetScale - t.scale) * 0.22;
@@ -21843,7 +21862,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      setMouseScreenPos({ x: e.clientX, y: e.clientY });
+      mousePosRef.current = { x: e.clientX, y: e.clientY };
+      if (tooltipRef.current) {
+        const left = Math.min(window.innerWidth - 280, e.clientX + 16);
+        const top = Math.min(window.innerHeight - 200, e.clientY + 16);
+        tooltipRef.current.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      }
       if (toolMode === "pan" && transformRef.current.isDragging) {
         const nx = mouseX - transformRef.current.dragStartX;
         const ny = mouseY - transformRef.current.dragStartY;
@@ -21957,42 +21981,50 @@ Respuesta: ${qa.a}`).join("\n\n"),
         selectionRef.current.boxStart = null;
       }
     };
-    const handleWheel = (e) => {
-      e.preventDefault();
+    const handleWheel = useCallback((e) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const zoomFactor = Math.exp(-Math.max(-60, Math.min(60, e.deltaY)) * 25e-4);
-      const currentScale = transformRef.current.targetScale || transformRef.current.scale;
-      const newScale = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, currentScale * zoomFactor));
       const w = rect.width;
       const h = rect.height;
-      const cx = w / 2 + transformRef.current.targetPanX;
-      const cy = h / 2 + transformRef.current.targetPanY;
-      const nodes = nodesRef.current || [];
-      let zoomCenterScreenX = mouseX;
-      let zoomCenterScreenY = mouseY;
-      if (!hoveredTrack && nodes.length > 0) {
-        let avgNx = 0, avgNy = 0;
-        for (let i = 0; i < nodes.length; i++) {
-          avgNx += nodes[i].currX;
-          avgNy += nodes[i].currY;
-        }
-        avgNx /= nodes.length;
-        avgNy /= nodes.length;
-        const side = radialView ? Math.min(w, h) : null;
-        const centroidScreenX = w / 2 + transformRef.current.targetPanX + (avgNx - 0.5) * (side || w) * currentScale;
-        const centroidScreenY = h / 2 + transformRef.current.targetPanY + (avgNy - 0.5) * (side || h) * currentScale;
-        zoomCenterScreenX = mouseX * 0.4 + centroidScreenX * 0.6;
-        zoomCenterScreenY = mouseY * 0.4 + centroidScreenY * 0.6;
+      if (w <= 0 || h <= 0) return;
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const tr = transformRef.current;
+      tr.isContinuousPanning = false;
+      const delta = Math.max(-100, Math.min(100, e.deltaY));
+      const zoomFactor = Math.exp(-delta * 22e-4);
+      const oldScale = tr.targetScale || tr.scale || 1;
+      const newScale = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, oldScale * zoomFactor));
+      if (Math.abs(newScale - oldScale) < 1e-4) return;
+      const ratio = newScale / oldScale;
+      tr.targetPanX = mouseX - w / 2 - (mouseX - w / 2 - tr.targetPanX) * ratio;
+      tr.targetPanY = mouseY - h / 2 - (mouseY - h / 2 - tr.targetPanY) * ratio;
+      tr.targetScale = newScale;
+      if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
+      zoomTrailingRef.current = setTimeout(() => {
+        setZoomDisplay(transformRef.current.targetScale);
+      }, 120);
+      if (!zoomThrottleRef.current) {
+        zoomThrottleRef.current = setTimeout(() => {
+          setZoomDisplay(transformRef.current.targetScale);
+          zoomThrottleRef.current = null;
+        }, 80);
       }
-      transformRef.current.targetPanX = zoomCenterScreenX - (zoomCenterScreenX - cx) * (newScale / currentScale) - w / 2;
-      transformRef.current.targetPanY = zoomCenterScreenY - (zoomCenterScreenY - cy) * (newScale / currentScale) - h / 2;
-      transformRef.current.targetScale = newScale;
-      setZoomDisplay(newScale);
-    };
+    }, []);
+    useEffect6(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const onWheelNative = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleWheel(e);
+      };
+      canvas.addEventListener("wheel", onWheelNative, { passive: false });
+      return () => {
+        canvas.removeEventListener("wheel", onWheelNative);
+      };
+    }, [handleWheel]);
     const handleClick = () => {
       if (hoveredTrack) {
         setSelectedTrack(hoveredTrack);
@@ -22180,7 +22212,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
           if (transformRef.current.isDragging) handleMouseUp();
           setHoveredTrack(null);
         },
-        onWheel: handleWheel,
         onClick: handleClick,
         className: `w-full h-full block ${toolMode === "pan" ? isPanning ? "cursor-grabbing" : "cursor-grab" : "cursor-crosshair"}`
       }
@@ -22237,10 +22268,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     )))), hoveredTrack && /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "fixed pointer-events-none z-50 bg-[#0c0d16]/95 border border-djzinc-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-xl max-w-xs animate-fadeIn font-mono text-xs",
+        ref: tooltipRef,
+        className: "fixed pointer-events-none z-50 bg-[#0c0d16]/95 border border-djzinc-700/80 p-3 rounded-xl shadow-2xl backdrop-blur-xl max-w-xs animate-fadeIn font-mono text-xs top-0 left-0",
         style: {
-          left: Math.min(window.innerWidth - 280, mouseScreenPos.x + 16),
-          top: Math.min(window.innerHeight - 200, mouseScreenPos.y + 16)
+          transform: `translate3d(${Math.min(window.innerWidth - 280, mousePosRef.current.x + 16)}px, ${Math.min(window.innerHeight - 200, mousePosRef.current.y + 16)}px, 0)`
         }
       },
       /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/60 shadow" }, hoveredTrack.cover ? /* @__PURE__ */ React.createElement("img", { src: hoveredTrack.cover, alt: "Cover", className: "w-full h-full object-cover" }) : /* @__PURE__ */ React.createElement("div", { className: "w-full h-full flex items-center justify-center text-gray-500 text-xs" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }))), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white text-xs truncate" }, hoveredTrack.artist || "Desconocido"), /* @__PURE__ */ React.createElement("div", { className: "text-djcyan-300 font-medium text-[11px] truncate" }, hoveredTrack.title || "Sin T\xEDtulo"))),
