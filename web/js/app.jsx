@@ -2,7 +2,7 @@ import { ShellIcons } from './shell/icons.jsx';
 import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
-import { WsButton, ToolbarDivider, ExportMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
+import { WsButton, ToolbarDivider, ExportMenu, AddToCollectionMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
 import { PricingModal } from './shell/pricing-modal.jsx';
 import { RegisterFlowModal } from './shell/register-modal.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
@@ -9902,8 +9902,8 @@ const AuditWorkspace = ({
         setTimeout(() => setSaveFeedback(''), 3500);
     };
 
-    // Llevar pistas auditadas a la colección guardada de la app
-    const handleLlevarAColeccion = () => {
+    // Llevar pistas auditadas a un Crate o carpeta de la colección guardada
+    const handleLlevarAColeccion = (targetFolder = null, newCrateName = null) => {
         const sourceTracks = selectedAuditIds.size > 0 
             ? tracks.filter(t => selectedAuditIds.has(t.id)) 
             : tracks;
@@ -9919,13 +9919,28 @@ const AuditWorkspace = ({
             folders: [{ id: 'f_audit', name: '01 - Auditoría', tracks: [] }]
         };
 
-        const targetFolder = (activeLib.folders && activeLib.folders.length > 0) 
-            ? activeLib.folders[0] 
-            : { id: 'f_audit', name: '01 - Auditoría', tracks: [] };
+        let chosenFolder = targetFolder;
+        let updatedFolders = [...(activeLib.folders || [])];
 
-        const existingPaths = new Set((targetFolder.tracks || []).map(t => t.path || t.filepath || t.f || t.id));
+        if (newCrateName && newCrateName.trim()) {
+            chosenFolder = {
+                id: `f_${Date.now()}`,
+                name: newCrateName.trim(),
+                tracks: []
+            };
+            updatedFolders.push(chosenFolder);
+        } else if (!chosenFolder) {
+            chosenFolder = (activeLib.folders && activeLib.folders.length > 0) 
+                ? activeLib.folders[0] 
+                : { id: 'f_audit', name: '01 - Auditoría', tracks: [] };
+            if (!activeLib.folders || activeLib.folders.length === 0) {
+                updatedFolders = [chosenFolder];
+            }
+        }
+
+        const existingPaths = new Set((chosenFolder.tracks || []).map(t => t.path || t.filepath || t.f || t.id));
         let addedCount = 0;
-        const newFolderTracks = [...(targetFolder.tracks || [])];
+        const newFolderTracks = [...(chosenFolder.tracks || [])];
 
         sourceTracks.forEach(t => {
             const key = t.path || t.filepath || t.f || t.id;
@@ -9936,10 +9951,7 @@ const AuditWorkspace = ({
             }
         });
 
-        const updatedFolders = (activeLib.folders && activeLib.folders.length > 0)
-            ? activeLib.folders.map(f => f.id === targetFolder.id ? { ...f, tracks: newFolderTracks } : f)
-            : [{ ...targetFolder, tracks: newFolderTracks }];
-
+        updatedFolders = updatedFolders.map(f => f.id === chosenFolder.id ? { ...f, tracks: newFolderTracks } : f);
         const updatedLib = { ...activeLib, folders: updatedFolders };
         const updatedLibs = (customLibraries && customLibraries.length > 0)
             ? customLibraries.map(l => l.id === updatedLib.id ? updatedLib : l)
@@ -9950,8 +9962,8 @@ const AuditWorkspace = ({
         }
 
         setSaveFeedback(lang === 'en' 
-            ? `✓ Added ${addedCount} tracks to Colección (${targetFolder.name})` 
-            : `✓ ${addedCount} pistas añadidas a tu Colección (${targetFolder.name})`
+            ? `✓ Added ${addedCount} tracks to "${chosenFolder.name}"` 
+            : `✓ ${addedCount} pistas añadidas a "${chosenFolder.name}"`
         );
         setTimeout(() => setSaveFeedback(''), 4000);
     };
@@ -12349,7 +12361,14 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                     <div className="ws-toolbar-group">
                         <WsButton variant="primary" icon={Icons.Folder} label="Cargar Colección" onClick={handleExplorar} title="Cargar carpetas completas o pistas desde el explorador" />
                         <WsButton icon={Icons.Layers} label="Colección" onClick={handleCargarColeccionGuardada} title="Cargar la colección guardada en la app en la tabla de auditoría" />
-                        <WsButton icon={Icons.Plus} label="Llevar a Colección" onClick={handleLlevarAColeccion} title="Llevar pistas auditadas a tu colección guardada" />
+                        <AddToCollectionMenu
+                            customLibraries={customLibraries}
+                            activeCustomLibId={activeCustomLibId}
+                            onAddToFolder={(folder) => handleLlevarAColeccion(folder)}
+                            onCreateAndAdd={(name) => handleLlevarAColeccion(null, name)}
+                            selectedCount={selectedAuditIds.size > 0 ? selectedAuditIds.size : tracks.length}
+                            disabled={tracks.length === 0}
+                        />
                         <WsButton icon={Icons.Plus} label="Añadir" onClick={handleAnadirMas} title="Añadir más carpetas o pistas sin vaciar la selección" />
                         <WsButton compact icon={Icons.Refresh} label="Recargar selección" onClick={() => handleCargarDirectorio(resolveAuditTargets())} />
                         {onToggleSimulation && (

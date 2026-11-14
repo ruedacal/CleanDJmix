@@ -553,6 +553,105 @@
       /* @__PURE__ */ React.createElement(ShellIcons.ChevronDown, { size: 14, className: `transition-transform ${open ? "rotate-180" : ""}` })
     ), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "ws-menu right-0 w-72 bw-fade-in" }, /* @__PURE__ */ React.createElement("p", { className: "ws-menu-heading" }, "Software de cabina"), targets.map(({ id, label, ext, desc, Logo, onClick }) => /* @__PURE__ */ React.createElement("button", { key: id, type: "button", role: "menuitem", className: "ws-menu-row", onClick: () => run(onClick) }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-logo" }, Logo ? /* @__PURE__ */ React.createElement(Logo, { size: 18 }) : /* @__PURE__ */ React.createElement(ShellIcons.Excel, { size: 16 })), /* @__PURE__ */ React.createElement("span", { className: "flex flex-col min-w-0 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title" }, label), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-desc" }, desc)), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-ext" }, ext))), /* @__PURE__ */ React.createElement("div", { className: "ws-menu-sep" }), /* @__PURE__ */ React.createElement("button", { type: "button", role: "menuitem", className: "ws-menu-row", onClick: () => run(onSyncAll) }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-logo text-[var(--bw-cyan)]" }, /* @__PURE__ */ React.createElement(ShellIcons.Passport, { size: 16 })), /* @__PURE__ */ React.createElement("span", { className: "flex flex-col min-w-0 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title" }, "Pasaporte universal"), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-desc" }, "Los 4 destinos en una pasada"))), /* @__PURE__ */ React.createElement("button", { type: "button", role: "menuitem", className: "ws-menu-row", onClick: () => run(onSaveTags) }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-logo" }, /* @__PURE__ */ React.createElement(ShellIcons.Save, { size: 16 })), /* @__PURE__ */ React.createElement("span", { className: "flex flex-col min-w-0 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title" }, "Escribir tags en archivos"), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-desc" }, "ID3 / Vorbis directamente en disco")))));
   };
+  var AddToCollectionMenu = ({ customLibraries = [], activeCustomLibId, onAddToFolder, onCreateAndAdd, selectedCount = 0, disabled = false }) => {
+    const [open, setOpen] = useState2(false);
+    const [isCreating, setIsCreating] = useState2(false);
+    const [newCrateName, setNewCrateName] = useState2("");
+    const rootRef = useDismissable(open, (next) => {
+      setOpen(next);
+      if (!next) {
+        setIsCreating(false);
+        setNewCrateName("");
+      }
+    });
+    const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0] || {
+      id: "lib_default",
+      name: "Mi Colecci\xF3n Principal",
+      folders: []
+    };
+    const handleSelect = (folder) => {
+      setOpen(false);
+      setIsCreating(false);
+      if (onAddToFolder) onAddToFolder(folder);
+    };
+    const handleCreate = (e) => {
+      e.preventDefault();
+      if (!newCrateName.trim()) return;
+      setOpen(false);
+      setIsCreating(false);
+      const name = newCrateName.trim();
+      setNewCrateName("");
+      if (onCreateAndAdd) onCreateAndAdd(name);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "relative", ref: rootRef }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: "ws-btn ws-btn-ghost hover:text-cyan-400",
+        "aria-haspopup": "menu",
+        "aria-expanded": open,
+        disabled,
+        onClick: () => setOpen((v) => !v),
+        title: "Llevar pistas a un Crate o carpeta de tu Colecci\xF3n"
+      },
+      /* @__PURE__ */ React.createElement(ShellIcons.Plus, { size: 15 }),
+      /* @__PURE__ */ React.createElement("span", { className: "ws-btn-label" }, "Llevar a Colecci\xF3n"),
+      /* @__PURE__ */ React.createElement(ShellIcons.ChevronDown, { size: 14, className: `transition-transform duration-200 ${open ? "rotate-180" : ""}` })
+    ), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "ws-menu left-0 w-80 bw-fade-in z-50 shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-3 py-2 border-b border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-heading !p-0" }, "Crate de Destino"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold" }, selectedCount, " ", selectedCount === 1 ? "pista" : "pistas")), /* @__PURE__ */ React.createElement("div", { className: "max-h-56 overflow-y-auto py-1" }, activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders.map((folder) => {
+      var _a;
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: folder.id,
+          type: "button",
+          role: "menuitem",
+          className: "ws-menu-row w-full flex items-center justify-between hover:bg-white/5",
+          onClick: () => handleSelect(folder)
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400" }, /* @__PURE__ */ React.createElement(ShellIcons.Folder, { size: 15 })), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title truncate text-xs" }, folder.name)),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-white/5 shrink-0 ml-2" }, ((_a = folder.tracks) == null ? void 0 : _a.length) || 0)
+      );
+    }) : /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2 text-xs text-zinc-500 font-mono italic" }, "No hay crates creados a\xFAn.")), /* @__PURE__ */ React.createElement("div", { className: "ws-menu-sep" }), isCreating ? /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreate, className: "p-2 flex flex-col gap-1.5 bg-black/40" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        autoFocus: true,
+        value: newCrateName,
+        onChange: (e) => setNewCrateName(e.target.value),
+        placeholder: "Nombre del nuevo crate...",
+        className: "w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-cyan-500/60 rounded text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-400"
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setIsCreating(false);
+          setNewCrateName("");
+        },
+        className: "px-2 py-1 text-[10px] font-mono rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+      },
+      "Cancelar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "submit",
+        disabled: !newCrateName.trim(),
+        className: "px-2.5 py-1 text-[10px] font-mono rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold disabled:opacity-50"
+      },
+      "Crear y A\xF1adir"
+    ))) : /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        role: "menuitem",
+        className: "ws-menu-row w-full flex items-center gap-2 text-cyan-400 hover:text-cyan-300",
+        onClick: () => setIsCreating(true)
+      },
+      /* @__PURE__ */ React.createElement(ShellIcons.Plus, { size: 15 }),
+      /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title text-xs" }, "+ Crear nuevo Crate / Carpeta")
+    )));
+  };
   var TONE_DOT = {
     cyan: "bg-[var(--bw-cyan)]",
     emerald: "bg-emerald-400",
@@ -8359,7 +8458,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       setTimeout(() => setSaveFeedback(""), 3500);
     };
-    const handleLlevarAColeccion = () => {
+    const handleLlevarAColeccion = (targetFolder = null, newCrateName = null) => {
       const sourceTracks = selectedAuditIds.size > 0 ? tracks.filter((t2) => selectedAuditIds.has(t2.id)) : tracks;
       if (!sourceTracks || sourceTracks.length === 0) {
         setSaveFeedback(lang === "en" ? "No tracks available to add to Colecci\xF3n." : "No hay pistas para a\xF1adir a la Colecci\xF3n.");
@@ -8371,10 +8470,24 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         name: "Mi Colecci\xF3n Principal",
         folders: [{ id: "f_audit", name: "01 - Auditor\xEDa", tracks: [] }]
       };
-      const targetFolder = activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders[0] : { id: "f_audit", name: "01 - Auditor\xEDa", tracks: [] };
-      const existingPaths = new Set((targetFolder.tracks || []).map((t2) => t2.path || t2.filepath || t2.f || t2.id));
+      let chosenFolder = targetFolder;
+      let updatedFolders = [...activeLib.folders || []];
+      if (newCrateName && newCrateName.trim()) {
+        chosenFolder = {
+          id: `f_${Date.now()}`,
+          name: newCrateName.trim(),
+          tracks: []
+        };
+        updatedFolders.push(chosenFolder);
+      } else if (!chosenFolder) {
+        chosenFolder = activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders[0] : { id: "f_audit", name: "01 - Auditor\xEDa", tracks: [] };
+        if (!activeLib.folders || activeLib.folders.length === 0) {
+          updatedFolders = [chosenFolder];
+        }
+      }
+      const existingPaths = new Set((chosenFolder.tracks || []).map((t2) => t2.path || t2.filepath || t2.f || t2.id));
       let addedCount = 0;
-      const newFolderTracks = [...targetFolder.tracks || []];
+      const newFolderTracks = [...chosenFolder.tracks || []];
       sourceTracks.forEach((t2) => {
         const key = t2.path || t2.filepath || t2.f || t2.id;
         if (!existingPaths.has(key)) {
@@ -8383,14 +8496,14 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
           addedCount++;
         }
       });
-      const updatedFolders = activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders.map((f) => f.id === targetFolder.id ? { ...f, tracks: newFolderTracks } : f) : [{ ...targetFolder, tracks: newFolderTracks }];
+      updatedFolders = updatedFolders.map((f) => f.id === chosenFolder.id ? { ...f, tracks: newFolderTracks } : f);
       const updatedLib = { ...activeLib, folders: updatedFolders };
       const updatedLibs = customLibraries && customLibraries.length > 0 ? customLibraries.map((l) => l.id === updatedLib.id ? updatedLib : l) : [updatedLib];
       if (typeof onSaveCustomLibraries === "function") {
         onSaveCustomLibraries(updatedLibs, updatedLib.id);
       }
       setSaveFeedback(
-        lang === "en" ? `\u2713 Added ${addedCount} tracks to Colecci\xF3n (${targetFolder.name})` : `\u2713 ${addedCount} pistas a\xF1adidas a tu Colecci\xF3n (${targetFolder.name})`
+        lang === "en" ? `\u2713 Added ${addedCount} tracks to "${chosenFolder.name}"` : `\u2713 ${addedCount} pistas a\xF1adidas a "${chosenFolder.name}"`
       );
       setTimeout(() => setSaveFeedback(""), 4e3);
     };
@@ -10548,7 +10661,17 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("btn_cancel") || "Cancelar")
-    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar select-none", role: "toolbar", "aria-label": "Acciones de biblioteca" }, /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(WsButton, { variant: "primary", icon: Icons.Folder, label: "Cargar Colecci\xF3n", onClick: handleExplorar, title: "Cargar carpetas completas o pistas desde el explorador" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Layers, label: "Colecci\xF3n", onClick: handleCargarColeccionGuardada, title: "Cargar la colecci\xF3n guardada en la app en la tabla de auditor\xEDa" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "Llevar a Colecci\xF3n", onClick: handleLlevarAColeccion, title: "Llevar pistas auditadas a tu colecci\xF3n guardada" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "A\xF1adir", onClick: handleAnadirMas, title: "A\xF1adir m\xE1s carpetas o pistas sin vaciar la selecci\xF3n" }), /* @__PURE__ */ React.createElement(WsButton, { compact: true, icon: Icons.Refresh, label: "Recargar selecci\xF3n", onClick: () => handleCargarDirectorio(resolveAuditTargets()) }), onToggleSimulation && /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar select-none", role: "toolbar", "aria-label": "Acciones de biblioteca" }, /* @__PURE__ */ React.createElement("div", { className: "ws-toolbar-group" }, /* @__PURE__ */ React.createElement(WsButton, { variant: "primary", icon: Icons.Folder, label: "Cargar Colecci\xF3n", onClick: handleExplorar, title: "Cargar carpetas completas o pistas desde el explorador" }), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Layers, label: "Colecci\xF3n", onClick: handleCargarColeccionGuardada, title: "Cargar la colecci\xF3n guardada en la app en la tabla de auditor\xEDa" }), /* @__PURE__ */ React.createElement(
+      AddToCollectionMenu,
+      {
+        customLibraries,
+        activeCustomLibId,
+        onAddToFolder: (folder) => handleLlevarAColeccion(folder),
+        onCreateAndAdd: (name) => handleLlevarAColeccion(null, name),
+        selectedCount: selectedAuditIds.size > 0 ? selectedAuditIds.size : tracks.length,
+        disabled: tracks.length === 0
+      }
+    ), /* @__PURE__ */ React.createElement(WsButton, { icon: Icons.Plus, label: "A\xF1adir", onClick: handleAnadirMas, title: "A\xF1adir m\xE1s carpetas o pistas sin vaciar la selecci\xF3n" }), /* @__PURE__ */ React.createElement(WsButton, { compact: true, icon: Icons.Refresh, label: "Recargar selecci\xF3n", onClick: () => handleCargarDirectorio(resolveAuditTargets()) }), onToggleSimulation && /* @__PURE__ */ React.createElement(
       WsButton,
       {
         compact: true,

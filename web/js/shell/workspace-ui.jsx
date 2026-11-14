@@ -89,6 +89,137 @@ export const ExportMenu = ({ targets, onSyncAll, onSaveTags, disabled, busy }) =
     );
 };
 
+export const AddToCollectionMenu = ({ customLibraries = [], activeCustomLibId, onAddToFolder, onCreateAndAdd, selectedCount = 0, disabled = false }) => {
+    const [open, setOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [newCrateName, setNewCrateName] = useState('');
+    const rootRef = useDismissable(open, (next) => {
+        setOpen(next);
+        if (!next) {
+            setIsCreating(false);
+            setNewCrateName('');
+        }
+    });
+
+    const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || (customLibraries && customLibraries[0]) || {
+        id: 'lib_default',
+        name: 'Mi Colección Principal',
+        folders: []
+    };
+
+    const handleSelect = (folder) => {
+        setOpen(false);
+        setIsCreating(false);
+        if (onAddToFolder) onAddToFolder(folder);
+    };
+
+    const handleCreate = (e) => {
+        e.preventDefault();
+        if (!newCrateName.trim()) return;
+        setOpen(false);
+        setIsCreating(false);
+        const name = newCrateName.trim();
+        setNewCrateName('');
+        if (onCreateAndAdd) onCreateAndAdd(name);
+    };
+
+    return (
+        <div className="relative" ref={rootRef}>
+            <button
+                type="button"
+                className="ws-btn ws-btn-ghost hover:text-cyan-400"
+                aria-haspopup="menu"
+                aria-expanded={open}
+                disabled={disabled}
+                onClick={() => setOpen((v) => !v)}
+                title="Llevar pistas a un Crate o carpeta de tu Colección"
+            >
+                <Icons.Plus size={15} />
+                <span className="ws-btn-label">Llevar a Colección</span>
+                <Icons.ChevronDown size={14} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div role="menu" className="ws-menu left-0 w-80 bw-fade-in z-50 shadow-2xl">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+                        <span className="ws-menu-heading !p-0">Crate de Destino</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold">
+                            {selectedCount} {selectedCount === 1 ? 'pista' : 'pistas'}
+                        </span>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto py-1">
+                        {activeLib.folders && activeLib.folders.length > 0 ? (
+                            activeLib.folders.map((folder) => (
+                                <button
+                                    key={folder.id}
+                                    type="button"
+                                    role="menuitem"
+                                    className="ws-menu-row w-full flex items-center justify-between hover:bg-white/5"
+                                    onClick={() => handleSelect(folder)}
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <span className="text-cyan-400"><Icons.Folder size={15} /></span>
+                                        <span className="ws-menu-title truncate text-xs">{folder.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-white/5 shrink-0 ml-2">
+                                        {folder.tracks?.length || 0}
+                                    </span>
+                                </button>
+                            ))
+                        ) : (
+                            <div className="px-3 py-2 text-xs text-zinc-500 font-mono italic">
+                                No hay crates creados aún.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="ws-menu-sep" />
+
+                    {isCreating ? (
+                        <form onSubmit={handleCreate} className="p-2 flex flex-col gap-1.5 bg-black/40">
+                            <input
+                                type="text"
+                                autoFocus
+                                value={newCrateName}
+                                onChange={(e) => setNewCrateName(e.target.value)}
+                                placeholder="Nombre del nuevo crate..."
+                                className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-cyan-500/60 rounded text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                            />
+                            <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsCreating(false); setNewCrateName(''); }}
+                                    className="px-2 py-1 text-[10px] font-mono rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!newCrateName.trim()}
+                                    className="px-2.5 py-1 text-[10px] font-mono rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold disabled:opacity-50"
+                                >
+                                    Crear y Añadir
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="ws-menu-row w-full flex items-center gap-2 text-cyan-400 hover:text-cyan-300"
+                            onClick={() => setIsCreating(true)}
+                        >
+                            <Icons.Plus size={15} />
+                            <span className="ws-menu-title text-xs">+ Crear nuevo Crate / Carpeta</span>
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const TONE_DOT = {
     cyan: 'bg-[var(--bw-cyan)]',
     emerald: 'bg-emerald-400',
