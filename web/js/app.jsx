@@ -5674,8 +5674,8 @@ const UserAccountModal = ({
     );
 };
 
-// ─── MODAL DE INSPECCIÓN DETALLADA DE LOG / BITÁCORA ────────────────────────
-const BitacoraDetailModal = ({ entry, onClose }) => {
+// ─── VISOR DE DETALLE DE BITÁCORA Y REGISTRO TÉCNICO (COLUMNA DERECHA / DRAWER) ────────
+const BitacoraDetailContent = ({ entry, onBack, onClose, onOpenBeatgridStudio, tracks = [] }) => {
     if (!entry) return null;
     const [copied, setCopied] = useState(false);
 
@@ -5725,105 +5725,199 @@ ${entry.fullLog || entry.detailsAfter || 'Sin información adicional.'}
         URL.revokeObjectURL(url);
     };
 
+    const hasAudioTarget = !!(entry.filePath || entry.trackTitle || entry.trackId);
+
+    const handleLaunchBeatgridStudio = () => {
+        if (onOpenBeatgridStudio) {
+            onOpenBeatgridStudio(entry.filePath || entry.trackTitle || entry.trackId);
+        }
+        if (onClose) onClose();
+    };
+
     return (
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fadeIn pointer-events-auto select-text" onClick={onClose}>
-            <div className="bg-[#0b0d19] border-2 border-cyan-500/60 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col font-mono text-gray-200" onClick={(e) => e.stopPropagation()}>
-                {/* Cabecera */}
-                <div className="px-5 py-4 border-b border-djzinc-800 bg-[#080912] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-cyan-400 font-black shadow-md">
-                            <Icons.Notebook size={20} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                                <span>{entry.action || 'Detalle de Ejecución'}</span>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600/60 font-bold">
-                                    {entry.status || 'OK'}
-                                </span>
-                            </h3>
-                            <p className="text-[11px] text-gray-400">
-                                {entry.fullTimestamp || entry.timestamp || '--'} • Categoría: <span className="text-cyan-400 font-bold">{entry.category || 'general'}</span>
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer border border-djzinc-700"
-                    >
-                        <Icons.Close size={15} />
-                    </button>
-                </div>
-
-                {/* Contenido / Info Grid */}
-                <div className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[70vh] custom-scrollbar text-xs">
-                    {/* Tarjeta Pista & Ruta */}
-                    <div className="bg-[#06070e] p-3.5 rounded-xl border border-djzinc-800 flex flex-col gap-1.5">
-                        <div className="text-[10px] text-gray-400 uppercase font-bold">Pista / Archivo Afectado</div>
-                        <div className="text-white font-bold text-sm truncate">{entry.trackTitle || '--'}</div>
-                        {entry.filePath && (
-                            <div className="text-[10.5px] text-cyan-400/90 font-mono break-all bg-djzinc-900/80 p-2 rounded border border-djzinc-800/80">
-                                {entry.filePath}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Comparación Antes ➔ Después */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="bg-rose-950/20 border border-rose-900/40 p-3 rounded-xl flex flex-col gap-1">
-                            <span className="text-[10px] text-rose-400 uppercase font-black">Estado Anterior</span>
-                            <span className="text-rose-200 text-xs font-mono">{entry.detailsBefore || '--'}</span>
-                        </div>
-                        <div className="bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-xl flex flex-col gap-1">
-                            <span className="text-[10px] text-emerald-400 uppercase font-black">Estado Modificado</span>
-                            <span className="text-emerald-200 text-xs font-mono font-bold">{entry.detailsAfter || '--'}</span>
-                        </div>
-                    </div>
-
-                    {/* Visor de Log Completo */}
-                    <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                                Registro Técnico Detallado (Log)
+        <div className="flex flex-col h-full overflow-hidden select-text font-mono text-gray-200">
+            {/* Cabecera del Visor de Detalle */}
+            <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                    {onBack && (
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className="px-2.5 py-1.5 rounded-lg bg-djzinc-850 hover:bg-cyan-950 text-cyan-400 hover:text-cyan-200 border border-cyan-800/60 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                            title="Volver al listado de registros de bitácora"
+                        >
+                            <span>◀</span>
+                            <span>Volver</span>
+                        </button>
+                    )}
+                    <div>
+                        <h3 className="text-xs sm:text-sm font-black uppercase text-white tracking-wider flex items-center gap-2">
+                            <span>{entry.action || 'Detalle de Ejecución'}</span>
+                            <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600/60 font-bold">
+                                {entry.status || 'OK'}
                             </span>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleCopy}
-                                    className="px-2.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 border border-cyan-800/60 rounded text-[10.5px] font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
-                                >
-                                    <Icons.Copy size={12} />
-                                    <span>{copied ? '✓ Copiado' : 'Copiar'}</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleDownload}
-                                    className="px-2.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 border border-djzinc-700 rounded text-[10.5px] font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
-                                >
-                                    <Icons.Download size={12} />
-                                    <span>Descargar</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div className="bg-[#05060b] border border-cyan-900/40 rounded-xl p-3 text-[11px] text-cyan-200/90 font-mono whitespace-pre-wrap break-all max-h-56 overflow-y-auto custom-scrollbar leading-relaxed">
-                            {entry.fullLog || entry.detailsAfter || 'Sin información adicional.'}
-                        </div>
+                        </h3>
+                        <p className="text-[10px] text-gray-400">
+                            {entry.fullTimestamp || entry.timestamp || '--'} • <span className="text-cyan-400 font-bold">{entry.category || 'general'}</span>
+                        </p>
                     </div>
                 </div>
 
-                {/* Pie */}
-                <div className="px-5 py-3 border-t border-djzinc-800 bg-[#080912] flex items-center justify-end">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-8 h-8 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center font-mono text-sm border border-djzinc-700 transition-colors cursor-pointer"
+                    title="Cerrar (ESC)"
+                >
+                    <Icons.Close size={15} />
+                </button>
+            </div>
+
+            {/* Acciones Rápidas */}
+            <div className="px-5 py-2.5 bg-[#080912] border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2">
+                    {hasAudioTarget && (
+                        <button
+                            type="button"
+                            onClick={handleLaunchBeatgridStudio}
+                            className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer transition-all active:scale-95"
+                            title="Abrir y calibrar esta pista inmediatamente en el Studio de BeatGrid"
+                        >
+                            <span>🎛️</span>
+                            <span>Abrir en Studio BeatGrid</span>
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={onClose}
-                        className="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs rounded-lg cursor-pointer transition-all active:scale-95 shadow-md"
+                        onClick={handleCopy}
+                        className="px-2.5 py-1.5 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 border border-cyan-800/60 rounded-lg text-xs font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
                     >
-                        Cerrar Detalle
+                        <Icons.Copy size={13} />
+                        <span>{copied ? '✓ Copiado' : 'Copiar'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleDownload}
+                        className="px-2.5 py-1.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 border border-djzinc-700 rounded-lg text-xs font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                    >
+                        <Icons.Download size={13} />
+                        <span>Descargar</span>
                     </button>
                 </div>
             </div>
+
+            {/* Contenido / Tarjetas de Información */}
+            <div className="p-5 flex flex-col gap-4 overflow-y-auto flex-1 custom-scrollbar text-xs">
+                {/* Tarjeta Pista & Archivo */}
+                <div className="bg-[#06070e] p-3.5 rounded-xl border border-djzinc-800 flex flex-col gap-1.5 shadow-inner">
+                    <div className="text-[10px] text-cyan-400 uppercase font-black tracking-wider flex items-center justify-between">
+                        <span>Pista / Archivo Afectado</span>
+                        {hasAudioTarget && (
+                            <span 
+                                onClick={handleLaunchBeatgridStudio} 
+                                className="text-[10px] text-cyan-400 hover:text-cyan-200 underline cursor-pointer"
+                            >
+                                Calibrar Grid ➔
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-white font-bold text-sm truncate">{entry.trackTitle || '--'}</div>
+                    {entry.filePath && (
+                        <div className="text-[10.5px] text-cyan-300/90 font-mono break-all bg-djzinc-900/90 p-2.5 rounded-lg border border-djzinc-800">
+                            {entry.filePath}
+                        </div>
+                    )}
+                </div>
+
+                {/* Comparación Antes ➔ Después */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-rose-950/20 border border-rose-900/50 p-3 rounded-xl flex flex-col gap-1 shadow-sm">
+                        <span className="text-[10px] text-rose-400 uppercase font-black">Estado Anterior</span>
+                        <span className="text-rose-200 text-xs font-mono">{entry.detailsBefore || '--'}</span>
+                    </div>
+                    <div className="bg-emerald-950/20 border border-emerald-900/50 p-3 rounded-xl flex flex-col gap-1 shadow-sm">
+                        <span className="text-[10px] text-emerald-400 uppercase font-black">Estado Modificado</span>
+                        <span className="text-emerald-200 text-xs font-mono font-bold">{entry.detailsAfter || '--'}</span>
+                    </div>
+                </div>
+
+                {/* Log Técnico Detallado */}
+                <div className="flex flex-col gap-1.5 flex-1 min-h-[220px]">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                            Registro Técnico Detallado (Log de Ejecución)
+                        </span>
+                        <span className="text-[10px] text-zinc-500 font-mono">Monospace Raw</span>
+                    </div>
+                    <div className="bg-[#05060b] border border-cyan-900/50 rounded-xl p-3.5 text-[11px] text-cyan-200/95 font-mono whitespace-pre-wrap break-all flex-1 overflow-y-auto custom-scrollbar leading-relaxed shadow-inner">
+                        {entry.fullLog || entry.detailsAfter || 'Sin información adicional.'}
+                    </div>
+                </div>
+            </div>
+
+            {/* Pie del Visor */}
+            <div className="px-5 py-3 border-t border-djzinc-800 bg-[#0a0a14] flex items-center justify-between shrink-0">
+                {onBack ? (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="px-3.5 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-bold text-xs cursor-pointer transition-colors"
+                    >
+                        ◀ Volver al Listado
+                    </button>
+                ) : <div />}
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-1.5 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold text-xs cursor-pointer transition-colors"
+                >
+                    Cerrar (ESC)
+                </button>
+            </div>
         </div>
+    );
+};
+
+// ─── MODAL/DRAWER DE INSPECCIÓN DETALLADA DE LOG (COLUMNA DERECHA) ──────────
+const BitacoraDetailModal = ({ entry, onClose, onOpenBeatgridStudio, tracks = [] }) => {
+    if (!entry) return null;
+    const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_bitacora_detail_drawer_width', 540);
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 100000 }}>
+            <div 
+                className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
+                style={{ zIndex: 100000 }}
+                onClick={onClose}
+            />
+            <aside 
+                style={{ width: '100%', maxWidth: `${drawerWidth}px`, zIndex: 100001 }}
+                className="fixed top-0 bottom-0 right-0 h-full bg-[#0a0b14] border-l-4 border-l-cyan-400 shadow-[-25px_0_60px_rgba(0,0,0,1)] flex flex-col font-sans text-gray-200 animate-slideInRight pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Manija táctil de redimensión */}
+                <div 
+                    onPointerDown={onResizeDown}
+                    onDoubleClick={onResetWidth}
+                    className="hidden md:flex absolute top-0 bottom-0 -left-2 w-4 cursor-ew-resize items-center justify-center z-50 group select-none hover:bg-cyan-500/10 transition-colors"
+                    title="Arrastra para redimensionar (Doble clic para restablecer a 540px)"
+                >
+                    <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+                </div>
+                <BitacoraDetailContent
+                    entry={entry}
+                    onClose={onClose}
+                    onOpenBeatgridStudio={onOpenBeatgridStudio}
+                    tracks={tracks}
+                />
+            </aside>
+        </div>,
+        document.body
     );
 };
 
@@ -5857,7 +5951,7 @@ if (typeof window !== 'undefined') {
 }
 
 // ─── CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS CON EXPORTACIÓN EXCEL (DRAWER LATERAL DERECHO) ────────
-const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
+const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries, onOpenBeatgridStudio, tracks = [] }) => {
     if (!isOpen) return null;
 
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize('bw_bitacora_drawer_width', 540);
@@ -5969,7 +6063,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
         URL.revokeObjectURL(url);
     };
 
-    return (
+    return ReactDOM.createPortal(
         <div className="fixed inset-0 overflow-hidden select-none pointer-events-none" style={{ zIndex: 99998 }}>
             <div 
                 className="fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-fadeIn pointer-events-auto"
@@ -5991,7 +6085,17 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                     <div className="w-1 h-12 rounded-full bg-zinc-600 group-hover:bg-cyan-400 group-hover:scale-y-125 transition-all shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                 </div>
 
-                {/* Cabecera de la Bitácora */}
+                {detailEntry ? (
+                    <BitacoraDetailContent
+                        entry={detailEntry}
+                        onBack={() => setDetailEntry(null)}
+                        onClose={onClose}
+                        onOpenBeatgridStudio={onOpenBeatgridStudio}
+                        tracks={tracks}
+                    />
+                ) : (
+                    <>
+                        {/* Cabecera de la Bitácora */}
                 <div className="px-5 py-3.5 border-b border-djzinc-800 bg-[#0e0e18] flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-djcyan-950/80 border border-djcyan-500/50 flex items-center justify-center text-djcyan-400 text-lg shadow-[0_0_15px_rgba(6,182,212,0.4)] shrink-0 font-black">
@@ -6187,16 +6291,11 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                         Cerrar (ESC)
                     </button>
                 </div>
-
-                {/* Modal Flotante de Inspección de Log Detallado */}
-                {detailEntry && (
-                    <BitacoraDetailModal
-                        entry={detailEntry}
-                        onClose={() => setDetailEntry(null)}
-                    />
+                    </>
                 )}
             </aside>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -36195,12 +36294,44 @@ const App = () => {
         }
     };
 
-    const handleOpenBeatgridStudio = (trackId) => {
-        if (trackId) {
-            setSelectedTrack(trackId);
-            const found = auditTracks.find(t => String(t.id) === String(trackId));
-            if (found && handlePlayTrack) {
-                handlePlayTrack(found, 0, false);
+    const handleOpenBeatgridStudio = (trackRef) => {
+        if (trackRef) {
+            let found = null;
+            if (typeof trackRef === 'object' && trackRef !== null) {
+                found = auditTracks.find(t => String(t.id) === String(trackRef.id)) || trackRef;
+            } else {
+                const query = String(trackRef).trim();
+                found = auditTracks.find(t => 
+                    String(t.id) === query || 
+                    (t.filePath && t.filePath === query) ||
+                    (t.path && t.path === query) ||
+                    (t.title && t.title.toLowerCase() === query.toLowerCase()) ||
+                    (t.t && t.t.toLowerCase() === query.toLowerCase())
+                );
+            }
+
+            if (found) {
+                setSelectedTrack(found.id);
+                if (handlePlayTrack) {
+                    handlePlayTrack(found, 0, false);
+                }
+            } else if (typeof trackRef === 'string' && (trackRef.includes('/') || trackRef.includes('\\'))) {
+                const filename = trackRef.split('/').pop().replace(/\.[^/.]+$/, "");
+                const dynamicTrack = {
+                    id: 'trk_' + Date.now(),
+                    title: filename,
+                    artist: 'DJ Library',
+                    filePath: trackRef,
+                    path: trackRef,
+                    bpm: 138,
+                    first_downbeat_ms: 0,
+                    status: 'Listo'
+                };
+                setAuditTracks(prev => [dynamicTrack, ...prev]);
+                setSelectedTrack(dynamicTrack.id);
+                if (handlePlayTrack) {
+                    handlePlayTrack(dynamicTrack, 0, false);
+                }
             }
         }
         setStudioMode('beatgrid');
@@ -36828,6 +36959,8 @@ const App = () => {
                 onClose={() => setBitacoraModalOpen(false)}
                 entries={bitacoraEntries}
                 onClearEntries={handleClearBitacora}
+                onOpenBeatgridStudio={handleOpenBeatgridStudio}
+                tracks={auditTracks}
             />
 
 
