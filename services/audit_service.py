@@ -2246,56 +2246,79 @@ return folderPath'''
         }
 
     def inyectar_caratulas_lote(self, tracks: list, progreso_cb=None) -> dict:
-        """Busca o extrae carátulas 1:1 en alta resolución (local o remota) e incrusta en los archivos físicos."""
+        """Busca o extrae carátulas 1:1 en alta resolución (local o remota) e incrusta en los archivos físicos concurrentemente."""
         if not tracks or not isinstance(tracks, list):
             return {"status": "error", "msg": "Lista de pistas vacía", "actualizadas": 0}
 
         self.reiniciar_cancelacion()
         total = len(tracks)
-        actualizadas = 0
-        errores = 0
+        if total == 0:
+            return {"status": "ok", "total": 0, "actualizadas": 0, "errores": 0}
 
         if progreso_cb:
             progreso_cb(5, f"Buscando e inyectando carátulas 1:1 ({total} pistas)...")
 
-        for idx, t in enumerate(tracks, 1):
-            _cooperative_yield()
+        import concurrent.futures
+        from threading import Lock
+
+        lock = Lock()
+        completados = [0]
+        actualizadas_list = [0]
+        errores_list = [0]
+        num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
+
+        def _procesar_caratula(item):
+            idx, t = item
             if self._cancelar_proceso:
-                print(f"[CARATULAS] Cancelado por usuario en ({idx}/{total})")
-                if progreso_cb:
-                    progreso_cb(0, "Inyección de carátulas cancelada.")
-                break
-            pct = int(5 + (idx / total) * 90)
+                return False
+
             target_path = t.get("path")
             filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
-            if progreso_cb:
-                progreso_cb(pct, f"Inyectando carátula ({idx}/{total}): {filename}")
-
             if not target_path or not os.path.exists(target_path):
                 real = self.directorio_actual and os.path.join(self.directorio_actual, filename)
                 if real and os.path.exists(real):
                     target_path = real
 
-            if not target_path or not os.path.exists(target_path):
-                errores += 1
-                continue
+            ok = False
+            if target_path and os.path.exists(target_path):
+                artista = str(t.get("artist") or t.get("a") or "")
+                titulo = str(t.get("title") or t.get("t") or "")
 
-            artista = str(t.get("artist") or t.get("a") or "")
-            titulo = str(t.get("title") or t.get("t") or "")
+                cover_src = t.get("cover") or t.get("cover_url")
+                if not cover_src:
+                    cover_src = AudioProcessorService.resolver_caratula_local_o_remota(target_path, artista, titulo)
 
-            cover_src = t.get("cover") or t.get("cover_url")
-            if not cover_src:
-                cover_src = AudioProcessorService.resolver_caratula_local_o_remota(target_path, artista, titulo)
+                if cover_src:
+                    ok = AudioProcessorService.escribir_metadatos_pro(target_path, t, cover_url=cover_src)
+                    if ok:
+                        t["cover"] = cover_src
 
-            if cover_src:
-                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t, cover_url=cover_src)
+            with lock:
+                completados[0] += 1
+                c = completados[0]
                 if ok:
-                    t["cover"] = cover_src
-                    actualizadas += 1
+                    actualizadas_list[0] += 1
                 else:
-                    errores += 1
-            else:
-                errores += 1
+                    errores_list[0] += 1
+
+                if progreso_cb and (c % max(1, total // 50) == 0 or c == total):
+                    pct = int(5 + (c / total) * 90)
+                    progreso_cb(pct, f"Inyectando carátula ({c}/{total}): {filename}")
+
+            return ok
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [executor.submit(_procesar_caratula, (i, t)) for i, t in enumerate(tracks, 1)]
+            for future in concurrent.futures.as_completed(futures):
+                if self._cancelar_proceso:
+                    for f in futures:
+                        f.cancel()
+                    executor.shutdown(wait=False)
+                    break
+                _cooperative_yield()
+
+        actualizadas = actualizadas_list[0]
+        errores = errores_list[0]
 
         if progreso_cb:
             progreso_cb(100, f"Inyección de carátulas completada: {actualizadas} pistas actualizadas.")
@@ -2308,44 +2331,69 @@ return folderPath'''
         }
 
     def inyectar_lote_metadatos(self, tracks: list, progreso_cb=None) -> dict:
-        """Inyecta metadatos profesionales (BPM, Camelot TKEY, Serato Markers2, COMM) en lote."""
+        """Inyecta metadatos profesionales (BPM, Camelot TKEY, Serato Markers2, COMM) en lote concurrentemente."""
         if not tracks or not isinstance(tracks, list):
             return {"status": "error", "msg": "Lista de pistas vacía", "inyectados": 0}
 
         self.reiniciar_cancelacion()
         total = len(tracks)
-        inyectados = 0
-        errores = 0
+        if total == 0:
+            return {"status": "ok", "total": 0, "inyectados": 0, "errores": 0}
 
         if progreso_cb:
             progreso_cb(5, f"Iniciando inyección profunda de metadatos ({total} pistas)...")
 
-        for idx, t in enumerate(tracks, 1):
-            _cooperative_yield()
+        import concurrent.futures
+        from threading import Lock
+
+        lock = Lock()
+        completados = [0]
+        inyectados_list = [0]
+        errores_list = [0]
+        num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
+
+        def _procesar_meta(item):
+            idx, t = item
             if self._cancelar_proceso:
-                print(f"[METADATOS] Cancelado por usuario en ({idx}/{total})")
-                if progreso_cb:
-                    progreso_cb(0, "Inyección de metadatos cancelada.")
-                break
-            pct = int(5 + (idx / total) * 90)
+                return False
+
             target_path = t.get("path")
             filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
-            if progreso_cb:
-                progreso_cb(pct, f"Inyectando ID3v2.4 / Serato ({idx}/{total}): {filename}")
-
             if not target_path or not os.path.exists(target_path):
                 real = self.directorio_actual and os.path.join(self.directorio_actual, filename)
                 if real and os.path.exists(real):
                     target_path = real
 
+            ok = False
             if target_path and os.path.exists(target_path):
                 ok = AudioProcessorService.escribir_metadatos_pro(target_path, t)
+
+            with lock:
+                completados[0] += 1
+                c = completados[0]
                 if ok:
-                    inyectados += 1
+                    inyectados_list[0] += 1
                 else:
-                    errores += 1
-            else:
-                errores += 1
+                    errores_list[0] += 1
+
+                if progreso_cb and (c % max(1, total // 50) == 0 or c == total):
+                    pct = int(5 + (c / total) * 90)
+                    progreso_cb(pct, f"Inyectando ID3v2.4 / Serato ({c}/{total}): {filename}")
+
+            return ok
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [executor.submit(_procesar_meta, (i, t)) for i, t in enumerate(tracks, 1)]
+            for future in concurrent.futures.as_completed(futures):
+                if self._cancelar_proceso:
+                    for f in futures:
+                        f.cancel()
+                    executor.shutdown(wait=False)
+                    break
+                _cooperative_yield()
+
+        inyectados = inyectados_list[0]
+        errores = errores_list[0]
 
         if progreso_cb:
             progreso_cb(100, f"Inyección completada: {inyectados} pistas inyectadas con éxito.")

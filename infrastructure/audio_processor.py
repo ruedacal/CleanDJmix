@@ -204,12 +204,32 @@ class AudioProcessorService:
         except Exception:
             pass
 
-        # 2. Fallback a librosa (maneja MP3 con tags grandes, m4a, aac vía audioread/ffmpeg)
+        # 2. Fallback ultrarrápido vía ffmpeg pipe en memoria (sin audioread ni warnings de contenedor)
         try:
-            import librosa
-            mono, sr = librosa.load(ruta, sr=44100, mono=True, duration=max_sec)
-            if mono is not None and len(mono) > 0:
-                return mono, sr
+            import subprocess, shutil, numpy as np
+            ffmpeg_bin = shutil.which("ffmpeg") or ("/usr/local/bin/ffmpeg" if os.path.exists("/usr/local/bin/ffmpeg") else "ffmpeg")
+            cmd = [
+                ffmpeg_bin, "-nostats", "-loglevel", "error",
+                "-t", str(max_sec), "-i", ruta,
+                "-f", "f32le", "-ac", "1", "-ar", "44100", "pipe:1"
+            ]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=10**6)
+            raw_pcm, _ = proc.communicate(timeout=3)
+            if raw_pcm and len(raw_pcm) >= 4096:
+                mono = np.frombuffer(raw_pcm, dtype=np.float32)
+                return mono, 44100
+        except Exception:
+            pass
+
+        # 3. Fallback a pydub / librosa como última alternativa silenciosa
+        try:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import librosa
+                mono, sr = librosa.load(ruta, sr=44100, mono=True, duration=max_sec)
+                if mono is not None and len(mono) > 0:
+                    return mono, sr
         except Exception:
             pass
 
@@ -1610,17 +1630,20 @@ class AudioProcessorService:
         trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
         trim_end_ms = float(meta_track.get("trim_end_ms") or 0.0)
 
-        # REGLA ESTRICTA REDTEAM: El BeatGrid y Downbeat se deben recalcular OBLIGATORIAMENTE
-        # si no existe downbeat válido, si se solicita explícitamente recalcular, si el BPM ha cambiado
-        # o si se ejecuta la inyección de metadatos Serato para asegurar anclaje perfecto a bombos físicos
+        # REGLA ESTRICTA REDTEAM: El BeatGrid y Downbeat se deben recalcular
+        # si no existe downbeat válido, si se solicita explícitamente recalcular o si el BPM ha cambiado
         bpm_previo = float(meta_track.get("bpm_previo") or meta_track.get("old_bpm") or 0.0)
         bpm_cambio = (bpm_previo > 20.0 and abs(bpm_previo - bpm_float) > 0.05)
-        if downbeat_ms <= 0.0 or meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid") or bpm_cambio or modo_serato:
+        recalcular = meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid") or bpm_cambio
+        if downbeat_ms <= 0.0 or recalcular:
             try:
                 t_start, d_down, t_end = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm_float, incluir_cola=True)
                 trim_ms = t_start
                 downbeat_ms = d_down
                 trim_end_ms = t_end
+                meta_track["trim_start_ms"] = trim_ms
+                meta_track["first_downbeat_ms"] = downbeat_ms
+                meta_track["trim_end_ms"] = trim_end_ms
             except Exception:
                 pass
 
