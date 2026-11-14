@@ -231,6 +231,71 @@ class AudioProcessorService:
         return None, 44100
 
     @staticmethod
+    def calcular_bpm_acustico_exacto(ruta: str, bpm_hint: float = 0.0) -> float:
+        """Calcula el tempo acústico real (BPM) midiendo la autocorrelación física
+        de energía en la banda de subgraves (40-120 Hz) para aislar los bombos 4/4.
+        Detecta y corrige errores de etiquetado o deriva rítmica (drift)."""
+        if not ruta or not os.path.exists(ruta):
+            return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+        try:
+            import soundfile as sf
+            import numpy as np
+
+            info = sf.info(ruta)
+            sr = info.samplerate
+            total_frames = info.frames
+            offset_sec = 12.0 if (total_frames / sr) > 30.0 else 0.0
+            start_frame = int(sr * offset_sec)
+            dur_frames = min(int(sr * 35.0), total_frames - start_frame)
+            if dur_frames <= int(sr * 5.0):
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+
+            data, _ = sf.read(ruta, start=start_frame, frames=dur_frames, dtype='float32')
+            mono = np.mean(data, axis=1) if data.ndim > 1 else data
+
+            from scipy.signal import butter, sosfilt
+            sos = butter(2, [40.0, 120.0], btype='bandpass', fs=sr, output='sos')
+            sub = sosfilt(sos, mono)
+
+            # Envolvente RMS a resolución temporal de 1ms (1000 Hz)
+            hop = max(1, int(sr / 1000))
+            num_b = len(sub) // hop
+            if num_b <= 10:
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+
+            env = np.sqrt(np.mean(sub[:num_b*hop].reshape((num_b, hop))**2, axis=1))
+            env_diff = np.maximum(0, np.diff(env))
+
+            if np.max(env_diff) < 0.001:
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+
+            # Autocorrelación de la derivada de energía
+            ac = np.correlate(env_diff, env_diff, mode='full')
+            ac = ac[len(env_diff)-1:]
+
+            # Rango electrónico habitual 115 - 165 BPM (lag 363ms a 521ms a 1000Hz)
+            lag_min = int(1000 * 60 / 165)
+            lag_max = int(1000 * 60 / 115)
+            if lag_max >= len(ac):
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+
+            best_lag = lag_min + np.argmax(ac[lag_min:lag_max])
+            raw_bpm = (60.0 * 1000.0) / best_lag
+
+            # Cuantización a medio o entero más cercano si está a <0.22 BPM
+            nearest_half = round(raw_bpm * 2.0) / 2.0
+            if abs(raw_bpm - nearest_half) < 0.22:
+                final_bpm = float(nearest_half)
+            else:
+                final_bpm = round(raw_bpm, 1)
+
+            if bpm_hint and abs(float(bpm_hint) - final_bpm) <= 0.25:
+                return float(bpm_hint)
+            return final_bpm
+        except Exception:
+            return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+
+    @staticmethod
     def detectar_trim_y_downbeat(ruta: str, bpm: float = 0.0, incluir_cola: bool = False) -> tuple:
         """Calcula de forma rigurosa y en dos fases consecutivas:
         1. Recorte bidireccional de silencio muerto (Zero-Crossing Auto-Trim a -48 dBFS en Cabecera y Cola).
@@ -583,19 +648,16 @@ class AudioProcessorService:
 
         missing_meta = (bpm <= 0.0 or not key)
 
+        # Verificación acústica de BPM para eliminar drift rítmico y falsos valores de tags
+        try:
+            bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
+            if bpm <= 0.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.4):
+                bpm = bpm_acustico
+        except Exception:
+            pass
+
         if bpm <= 0.0:
-            try:
-                import librosa
-                y, sr = librosa.load(ruta, sr=22050, offset=25.0, duration=30.0)
-                if len(y) > 0:
-                    tempo, _ = librosa.beat.beat_track(y=y, sr=sr, start_bpm=128.0)
-                    t_val = float(tempo[0] if hasattr(tempo, '__len__') else tempo)
-                    if t_val > 0:
-                        bpm = round(t_val, 2)
-            except Exception:
-                pass
-            if bpm <= 0.0:
-                bpm = 128.0
+            bpm = 128.0
 
         if not key:
             pool = ["8A", "9A", "10A", "11A", "12A", "5A", "6A", "7A", "8B", "9B"]
