@@ -455,7 +455,7 @@ class AudioProcessorService:
             return (0.0, 0.0, 0.0) if incluir_cola else (0.0, 0.0)
 
     @staticmethod
-    def analizar_track_avanzado(ruta: str) -> dict:
+    def analizar_track_avanzado(ruta: str, verificar_beatgrid: bool = True) -> dict:
         filename = os.path.basename(ruta)
         ext = os.path.splitext(filename)[1].lower()
         artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
@@ -649,12 +649,15 @@ class AudioProcessorService:
         missing_meta = (bpm <= 0.0 or not key)
 
         # Verificación acústica de BPM para eliminar drift rítmico y falsos valores de tags
-        try:
-            bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
-            if bpm <= 0.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.4):
-                bpm = bpm_acustico
-        except Exception:
-            pass
+        if verificar_beatgrid:
+            try:
+                bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
+                if bpm <= 0.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.4):
+                    bpm = bpm_acustico
+            except Exception:
+                pass
+        elif bpm <= 0.0:
+            bpm = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=0.0)
 
         if bpm <= 0.0:
             bpm = 128.0

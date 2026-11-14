@@ -1479,7 +1479,7 @@ return folderPath'''
                 if c_met and isinstance(c_met, dict):
                     info = dict(c_met)
                 else:
-                    info = AudioProcessorService.analizar_track_avanzado(full_path)
+                    info = AudioProcessorService.analizar_track_avanzado(full_path, verificar_beatgrid=opt_beatgrid)
 
                 bpm_val = info.get("bpm") or info.get("b")
                 key_val = info.get("key") or info.get("k")

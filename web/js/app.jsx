@@ -3889,7 +3889,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
             items: [
                 { key: "fftLossless", title: "Inspección FFT Lossless Real", desc: "Análisis espectral por FFT para cazar transcodificaciones falsas a 16kHz/19kHz.", badge: "FFT 4096", badgeColor: "text-djcyan-400 bg-djcyan-950/80 border-djcyan-800/60" },
                 { key: "trimSilences", title: "Zero-Crossing Silence Auto-Trim (Cabecera & Cola)", desc: "Elimina espacios en blanco y silencios muertos cortando a cruce por cero a -48 dBFS al inicio y fin.", badge: "Trim 2-Way", badgeColor: "text-djgreen-400 bg-djgreen-950/80 border-djgreen-800/60" },
-                { key: "beatgrid", title: "Fijación Downbeat Beatgrid 1.0.0 (Anti-Trote)", desc: "Ancla el Beatgrid al primer bombo real post-trim para eliminar derivas y trotes de sincro.", badge: "Grid 1.0.0", badgeColor: "text-cyan-400 bg-blue-950/80 border-blue-800/60" },
+                { key: "beatgrid", title: "Fijación & Corrección Acústica Beatgrid 1.0.0 (Anti-Drift)", desc: "Calcula el tempo físico real en subgraves (40-120Hz), corrige desvíos de BPM y ancla el Beatgrid 1.0.0 exactamente en el golpe inicial del bombo.", badge: "Grid Anti-Drift", badgeColor: "text-cyan-300 bg-cyan-950 border-cyan-500/70" },
                 { key: "detectDuplicates", title: "Buscar & Deduplicar por Calidad", desc: "Compara pistas duplicadas por Nyquist FFT, formato y tamaño para depurar biblioteca.", badge: "Lossless Win", badgeColor: "text-amber-400 bg-amber-950/80 border-amber-800/60" }
             ]
         },
