@@ -242,14 +242,14 @@ class MediaService:
             self._thumb_cache[cache_key] = (data, mime)
         return data, mime
 
-    def buscar_metadata_itunes(self, termino, limit=30):
+    def buscar_metadata_itunes(self, termino, limit=100):
         if self._cancelar_busqueda or not termino:
             return []
         try:
             q = urllib.parse.quote(termino)
             url = f"https://itunes.apple.com/search?term={q}&entity=song&limit={limit}"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'})
-            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=6) as res:
+            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=8) as res:
                 if self._cancelar_busqueda:
                     return []
                 data = json.loads(res.read().decode('utf-8'))
@@ -258,8 +258,8 @@ class MediaService:
             print(f"[MEDIA SERVICE WARN] Error consultando API de iTunes: {e}")
             return []
 
-    def _buscar_tracks_por_spotify_artist_id(self, artist_id: str) -> list:
-        """Obtiene hasta 30 pistas destacadas y carátulas HD a partir del ID de artista en Spotify."""
+    def _buscar_tracks_por_spotify_artist_id(self, artist_id: str, limit_total: int = 150) -> list:
+        """Obtiene hasta limit_total (150) pistas destacadas y carátulas HD a partir del ID de artista en Spotify."""
         keys_camelot = ["8A", "11A", "4A", "6B", "9A", "2A", "1A", "5B", "10A", "7A", "3B", "12A"]
         bpms_tech = ["134.00", "136.00", "132.00", "135.00", "130.00", "133.00", "135.00", "138.00", "131.00", "137.00", "134.00", "136.00"]
 
@@ -273,17 +273,45 @@ class MediaService:
                 genres = art_info.get("genres", [])
                 genre_name = genres[0].title() if genres else "Pop / Electronic"
 
-                albums = self._sp.artist_albums(artist_id, album_type="album,single", limit=6).get("items", [])
                 all_tracks = []
                 seen_titles = set()
 
+                # 1. Top Tracks del artista primero
+                try:
+                    top_res = self._sp.artist_top_tracks(artist_id, country="ES")
+                    for t in top_res.get("tracks", []):
+                        t_name = t.get("name", "").strip()
+                        if t_name.lower() not in seen_titles:
+                            seen_titles.add(t_name.lower())
+                            dur_sec = (t.get("duration_ms") or 210000) // 1000
+                            alb = t.get("album", {})
+                            alb_imgs = alb.get("images", [])
+                            cover = alb_imgs[0]["url"] if alb_imgs else ""
+                            idx = len(all_tracks)
+                            all_tracks.append({
+                                "id": str(t.get("id") or f"sp_{idx}"),
+                                "title": t_name,
+                                "artist": artist_name,
+                                "album": alb.get("name", "Top Release"),
+                                "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                                "bpm": bpms_tech[idx % len(bpms_tech)],
+                                "key": keys_camelot[idx % len(keys_camelot)],
+                                "cover": cover,
+                                "preview_url": t.get("preview_url") or "",
+                                "genre": genre_name
+                            })
+                except Exception as top_err:
+                    print(f"[MEDIA SERVICE] Top tracks opcionales: {top_err}")
+
+                # 2. Discografía completa (álbumes y singles ampliados hasta limit_total)
+                albums = self._sp.artist_albums(artist_id, album_type="album,single", limit=25).get("items", [])
                 for alb in albums:
                     if self._cancelar_busqueda:
                         break
                     alb_name = alb.get("name", "")
                     alb_imgs = alb.get("images", [])
                     cover = alb_imgs[0]["url"] if alb_imgs else ""
-                    alb_tracks = self._sp.album_tracks(alb["id"], limit=10).get("items", [])
+                    alb_tracks = self._sp.album_tracks(alb["id"], limit=50).get("items", [])
                     for t in alb_tracks:
                         t_name = t.get("name", "").strip()
                         if t_name.lower() not in seen_titles:
@@ -302,9 +330,9 @@ class MediaService:
                                 "preview_url": t.get("preview_url") or "",
                                 "genre": genre_name
                             })
-                        if len(all_tracks) >= 30:
+                        if len(all_tracks) >= limit_total:
                             break
-                    if len(all_tracks) >= 30:
+                    if len(all_tracks) >= limit_total:
                         break
 
                 if all_tracks:
@@ -371,8 +399,8 @@ class MediaService:
                 enriquecidos = self._enriquecer_tracks_con_pre_auditoria(sp_tracks)
                 return {"status": "ok", "tracks": enriquecidos, "count": len(enriquecidos), "query": search_query}
 
-            # 3.2 Respaldo de alta velocidad en iTunes Search API
-            resultados = self.buscar_metadata_itunes(search_query, limit=30)
+            # 3.2 Respaldo de alta velocidad en iTunes Search API (catálogo ampliado de hasta 150 pistas por artista)
+            resultados = self.buscar_metadata_itunes(search_query, limit=150)
             if self._cancelar_busqueda:
                 return {"status": "cancelled", "msg": "Búsqueda cancelada", "tracks": []}
             tracks = []
