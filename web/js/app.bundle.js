@@ -5710,12 +5710,123 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       document.body
     );
   };
+  var BitacoraDetailModal = ({ entry, onClose }) => {
+    if (!entry) return null;
+    const [copied, setCopied] = useState5(false);
+    const handleCopy = () => {
+      const fullText = `=== BIT\xC1CORA BEATWAVE PRO ===
+Operaci\xF3n: ${entry.action || "--"}
+Categor\xEDa: ${entry.category || "--"}
+Fecha y Hora: ${entry.fullTimestamp || entry.timestamp || "--"}
+Pista / Archivo: ${entry.trackTitle || "--"}
+Ruta: ${entry.filePath || "--"}
+Estado Anterior: ${entry.detailsBefore || "--"}
+Estado Posterior: ${entry.detailsAfter || "--"}
+Resultado: ${entry.status || "OK"}
+
+--- LOG COMPLETO / DETALLES T\xC9CNICOS ---
+${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
+`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    };
+    const handleDownload = () => {
+      const fullText = `=== BIT\xC1CORA BEATWAVE PRO ===
+Operaci\xF3n: ${entry.action || "--"}
+Categor\xEDa: ${entry.category || "--"}
+Fecha y Hora: ${entry.fullTimestamp || entry.timestamp || "--"}
+Pista / Archivo: ${entry.trackTitle || "--"}
+Ruta: ${entry.filePath || "--"}
+Estado Anterior: ${entry.detailsBefore || "--"}
+Estado Posterior: ${entry.detailsAfter || "--"}
+Resultado: ${entry.status || "OK"}
+
+--- LOG COMPLETO / DETALLES T\xC9CNICOS ---
+${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
+`;
+      const blob = new Blob([fullText], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Log_${(entry.action || "ejecucion").replace(/\s+/g, "_")}_${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[100000] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fadeIn pointer-events-auto select-text", onClick: onClose }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0d19] border-2 border-cyan-500/60 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col font-mono text-gray-200", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "px-5 py-4 border-b border-djzinc-800 bg-[#080912] flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-cyan-400 font-black shadow-md" }, /* @__PURE__ */ React.createElement(Icons.Notebook, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, entry.action || "Detalle de Ejecuci\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600/60 font-bold" }, entry.status || "OK")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, entry.fullTimestamp || entry.timestamp || "--", " \u2022 Categor\xEDa: ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, entry.category || "general")))), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer border border-djzinc-700"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 })
+    )), /* @__PURE__ */ React.createElement("div", { className: "p-5 flex flex-col gap-4 overflow-y-auto max-h-[70vh] custom-scrollbar text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#06070e] p-3.5 rounded-xl border border-djzinc-800 flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 uppercase font-bold" }, "Pista / Archivo Afectado"), /* @__PURE__ */ React.createElement("div", { className: "text-white font-bold text-sm truncate" }, entry.trackTitle || "--"), entry.filePath && /* @__PURE__ */ React.createElement("div", { className: "text-[10.5px] text-cyan-400/90 font-mono break-all bg-djzinc-900/80 p-2 rounded border border-djzinc-800/80" }, entry.filePath)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "bg-rose-950/20 border border-rose-900/40 p-3 rounded-xl flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-rose-400 uppercase font-black" }, "Estado Anterior"), /* @__PURE__ */ React.createElement("span", { className: "text-rose-200 text-xs font-mono" }, entry.detailsBefore || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-xl flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-emerald-400 uppercase font-black" }, "Estado Modificado"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-200 text-xs font-mono font-bold" }, entry.detailsAfter || "--"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse" }), "Registro T\xE9cnico Detallado (Log)"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleCopy,
+        className: "px-2.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 border border-cyan-800/60 rounded text-[10.5px] font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Copy, { size: 12 }),
+      /* @__PURE__ */ React.createElement("span", null, copied ? "\u2713 Copiado" : "Copiar")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleDownload,
+        className: "px-2.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 border border-djzinc-700 rounded text-[10.5px] font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Download, { size: 12 }),
+      /* @__PURE__ */ React.createElement("span", null, "Descargar")
+    ))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#05060b] border border-cyan-900/40 rounded-xl p-3 text-[11px] text-cyan-200/90 font-mono whitespace-pre-wrap break-all max-h-56 overflow-y-auto custom-scrollbar leading-relaxed" }, entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."))), /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 border-t border-djzinc-800 bg-[#080912] flex items-center justify-end" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs rounded-lg cursor-pointer transition-all active:scale-95 shadow-md"
+      },
+      "Cerrar Detalle"
+    ))));
+  };
+  var registrarEnBitacora = (entry) => {
+    try {
+      const bEntry = {
+        id: "log_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+        timestamp: (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        fullTimestamp: (/* @__PURE__ */ new Date()).toLocaleString(),
+        action: entry.action || "Operaci\xF3n DSP",
+        category: entry.category || "audit",
+        trackTitle: entry.trackTitle || "Biblioteca",
+        filePath: entry.filePath || "",
+        detailsBefore: entry.detailsBefore || "--",
+        detailsAfter: entry.detailsAfter || "--",
+        status: entry.status || "\u2713 Completado",
+        fullLog: entry.fullLog || entry.log || entry.detailsAfter || ""
+      };
+      const raw = localStorage.getItem("bw_audit_bitacora");
+      let cur = raw ? JSON.parse(raw) : [];
+      const nextB = [bEntry, ...cur].slice(0, 500);
+      localStorage.setItem("bw_audit_bitacora", JSON.stringify(nextB));
+      window.dispatchEvent(new CustomEvent("bw_bitacora_updated", { detail: nextB }));
+    } catch (e) {
+      console.error("Error registrando en bitacora:", e);
+    }
+  };
+  if (typeof window !== "undefined") {
+    window.registrarEnBitacora = registrarEnBitacora;
+  }
   var BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_bitacora_drawer_width", 540);
     const [filterCategory, setFilterCategory] = useState5("all");
     const [selectedIds, setSelectedIds] = useState5(() => new Set(entries.map((e) => e.id)));
     const [searchTerm, setSearchTerm] = useState5("");
+    const [detailEntry, setDetailEntry] = useState5(null);
     const filteredEntries = entries.filter((e) => {
       const matchesCategory = filterCategory === "all" || e.category === filterCategory;
       const matchesSearch = !searchTerm || e.trackTitle && e.trackTitle.toLowerCase().includes(searchTerm.toLowerCase()) || e.action && e.action.toLowerCase().includes(searchTerm.toLowerCase()) || e.detailsAfter && e.detailsAfter.toLowerCase().includes(searchTerm.toLowerCase());
@@ -5842,6 +5953,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-[#080810] border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 overflow-x-auto no-scrollbar" }, [
         { id: "all", label: "Todos" },
         { id: "audit", label: "Auditor\xEDa DSP" },
+        { id: "beatgrid", label: "BeatGrid Serato" },
         { id: "cues", label: "Hot Cues" },
         { id: "download", label: "FLAC" },
         { id: "crates", label: "Crates" }
@@ -5883,14 +5995,14 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           className: "w-3.5 h-3.5 accent-djcyan-400 rounded cursor-pointer",
           title: "Seleccionar o deseleccionar todas las filas"
         }
-      )), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-20" }, "Hora"), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-28" }, "Operaci\xF3n"), /* @__PURE__ */ React.createElement("th", { className: "p-2" }, "Pista & Detalle (Antes \u2794 Despu\xE9s)"), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-16 text-center" }, "Estado"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 text-[11px]" }, filteredEntries.length === 0 ? /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "5", className: "p-8 text-center text-gray-500" }, "No hay registros que coincidan con el filtro seleccionado.")) : filteredEntries.map((row) => {
+      )), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-20" }, "Hora"), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-28" }, "Operaci\xF3n"), /* @__PURE__ */ React.createElement("th", { className: "p-2" }, "Pista & Detalle (Antes \u2794 Despu\xE9s)"), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-16 text-center" }, "Estado"), /* @__PURE__ */ React.createElement("th", { className: "p-2 w-20 text-center" }, "Detalle"))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 text-[11px]" }, filteredEntries.length === 0 ? /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: "6", className: "p-8 text-center text-gray-500" }, "No hay registros que coincidan con el filtro seleccionado.")) : filteredEntries.map((row) => {
         const isSelected = selectedIds.has(row.id);
         return /* @__PURE__ */ React.createElement(
           "tr",
           {
             key: row.id,
             className: `transition-colors cursor-pointer ${isSelected ? "bg-djcyan-950/20 hover:bg-djcyan-950/30" : "hover:bg-djzinc-900/40"}`,
-            onClick: () => toggleSelectRow(row.id)
+            onClick: () => setDetailEntry(row)
           },
           /* @__PURE__ */ React.createElement("td", { className: "p-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
             "input",
@@ -5904,7 +6016,18 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           /* @__PURE__ */ React.createElement("td", { className: "p-2 text-gray-400 whitespace-nowrap text-[10px]" }, row.timestamp),
           /* @__PURE__ */ React.createElement("td", { className: "p-2" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold text-[9.5px]" }, row.action)),
           /* @__PURE__ */ React.createElement("td", { className: "p-2" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-white truncate max-w-[220px]", title: row.filePath || row.trackTitle }, row.trackTitle), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5 text-[9.5px]" }, /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 rounded bg-rose-950/70 border border-rose-800 text-rose-300 truncate max-w-[100px]" }, row.detailsBefore), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "\u2794"), /* @__PURE__ */ React.createElement("span", { className: "px-1 py-0.2 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-300 font-bold truncate max-w-[100px]" }, row.detailsAfter))),
-          /* @__PURE__ */ React.createElement("td", { className: "p-2 text-center whitespace-nowrap" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/60 font-bold text-[9.5px]" }, row.status || "OK"))
+          /* @__PURE__ */ React.createElement("td", { className: "p-2 text-center whitespace-nowrap" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/60 font-bold text-[9.5px]" }, row.status || "OK")),
+          /* @__PURE__ */ React.createElement("td", { className: "p-2 text-center whitespace-nowrap", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => setDetailEntry(row),
+              className: "px-2 py-1 rounded bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-600/70 font-bold text-[10px] cursor-pointer transition-all active:scale-95 inline-flex items-center gap-1 shadow-xs",
+              title: "Ver informe detallado y log completo"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Eye, { size: 12 }),
+            /* @__PURE__ */ React.createElement("span", null, "Detalle")
+          ))
         );
       })))),
       /* @__PURE__ */ React.createElement("div", { className: "px-5 py-3 bg-[#0a0a14] border-t border-djzinc-800 flex items-center justify-between shrink-0 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[11px]" }, selectedIds.size, " de ", filteredEntries.length, " seleccionadas"), entries.length > 0 && /* @__PURE__ */ React.createElement(
@@ -5923,7 +6046,14 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           className: "px-4 py-1.5 rounded-xl bg-djzinc-850 hover:bg-djzinc-750 text-white font-bold transition-colors cursor-pointer text-xs"
         },
         "Cerrar (ESC)"
-      ))
+      )),
+      detailEntry && /* @__PURE__ */ React.createElement(
+        BitacoraDetailModal,
+        {
+          entry: detailEntry,
+          onClose: () => setDetailEntry(null)
+        }
+      )
     ));
   };
   var detectClientOS = () => {
@@ -8880,6 +9010,26 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
           }
           setBatchProgress(100);
           setBatchStatusMsg(`\u2713 Auditor\xEDa completada: ${(res == null ? void 0 : res.total) || 0} pistas procesadas.`);
+          if (typeof registrarEnBitacora === "function") {
+            registrarEnBitacora({
+              action: "Auditor\xEDa Ac\xFAstica DSP",
+              category: "audit",
+              trackTitle: `Auditor\xEDa ${(res == null ? void 0 : res.total) || 0} pistas`,
+              filePath: targetDesc,
+              detailsBefore: "Sin certificar",
+              detailsAfter: `${(res == null ? void 0 : res.ready) || 0} Lossless OK \u2022 ${(res == null ? void 0 : res.errors) || 0} Fakes \u2022 ${(res == null ? void 0 : res.sin_meta) || 0} Sin Meta`,
+              status: ((res == null ? void 0 : res.errors) || 0) > 0 ? "\u26A0\uFE0F Con advertencias" : "\u2713 Completado",
+              fullLog: `=== REPORTE DE AUDITOR\xCDA AC\xDASTICA ===
+Directorio / Pistas: ${targetDesc}
+Total procesadas: ${(res == null ? void 0 : res.total) || 0}
+Lossless Certificadas: ${(res == null ? void 0 : res.ready) || 0}
+Transcodificaciones Fake / Corruptos: ${(res == null ? void 0 : res.errors) || 0}
+Pistas sin metadatos: ${(res == null ? void 0 : res.sin_meta) || 0}
+Duplicados detectados: ${(res == null ? void 0 : res.duplicates) || 0}
+Inspecci\xF3n FFT: Activa
+Fijaci\xF3n BeatGrid 1.0.0: Activa`
+            });
+          }
         } catch (e) {
           console.error("Fallo auditor\xEDa:", e);
           setBatchStatusMsg("Error durante la auditor\xEDa.");
@@ -8894,6 +9044,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       }
     };
     const handleEjecutarAuditoriaLote = async (overrideOpts = null) => {
+      var _a2, _b, _c;
       const target = resolveAuditTargets();
       if (!target || Array.isArray(target) && target.length === 0) {
         alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Analizar biblioteca'.");
@@ -8937,6 +9088,22 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             }
             setSaveFeedback(`\u2713 An\xE1lisis completado con \xE9xito (${res.tracks.length} pistas)`);
             setTimeout(() => setSaveFeedback(""), 4e3);
+            if (typeof registrarEnBitacora === "function") {
+              registrarEnBitacora({
+                action: "Auditor\xEDa en Lote & DSP",
+                category: "audit",
+                trackTitle: `Lote ${(res == null ? void 0 : res.total) || ((_a2 = res == null ? void 0 : res.tracks) == null ? void 0 : _a2.length) || 0} pistas`,
+                filePath: targetDesc,
+                detailsBefore: "Pendiente de procesamiento",
+                detailsAfter: `${(res == null ? void 0 : res.total) || ((_b = res == null ? void 0 : res.tracks) == null ? void 0 : _b.length) || 0} pistas procesadas con \xE9xito`,
+                status: "\u2713 Completado",
+                fullLog: `=== AUDITOR\xCDA EN LOTE BEATWAVE PRO ===
+Objetivo: ${targetDesc}
+Pistas analizadas: ${((_c = res == null ? void 0 : res.tracks) == null ? void 0 : _c.length) || 0}
+Opciones aplicadas: ${Object.entries(opts).filter(([_, v]) => v).map(([k]) => k).join(", ")}
+Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-120Hz)" : "Desactivado"}`
+              });
+            }
           }
         } else {
           await handleAuditar();
@@ -12594,6 +12761,27 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           if (setTracks) {
             setTracks((prev) => prev.map((t2) => String(t2.id) === String(trackToSave.id) ? trackToSave : t2));
           }
+          if (typeof registrarEnBitacora === "function") {
+            registrarEnBitacora({
+              action: "Guardado BeatGrid & Cues",
+              category: "beatgrid",
+              trackTitle: currentTrack.title || currentTrack.t || "Pista",
+              filePath: currentTrack.path || currentTrack.f || "",
+              detailsBefore: `BPM: ${currentTrack.bpm || currentTrack.b || "--"} \u2022 Downbeat: ${currentTrack.first_downbeat_ms || 0}ms`,
+              detailsAfter: `BPM: ${bpm.toFixed(2)} \u2022 Downbeat: ${downbeatMs.toFixed(1)}ms \u2022 Cues: ${activeCues.length} pads`,
+              status: "\u2713 Inyectado en Disco",
+              fullLog: `=== REGISTRO DE GUARDADO INDIVIDUAL ===
+Pista: ${currentTrack.title || currentTrack.t}
+Artista: ${currentTrack.artist || currentTrack.a}
+Ruta: ${currentTrack.path || currentTrack.f}
+BPM ajustado: ${bpm.toFixed(2)}
+Downbeat 1.0.0: ${downbeatMs.toFixed(1)} ms
+Trim Inicio: ${trimMs.toFixed(1)} ms
+Trim Fin: ${trimEndMs.toFixed(1)} ms
+Hot Cues guardados: ${activeCues.map((c) => `[PAD ${c.id}: ${c.name} @ ${c.time}]`).join(", ")}
+Inyecci\xF3n: GEOB:Serato BeatGrid, GEOB:Serato Markers2, ID3v2.4 / Vorbis Comments`
+            });
+          }
         } else {
           setSaveStatus((res == null ? void 0 : res.msg) || "Error al guardar pista");
         }
@@ -12612,6 +12800,22 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           const res = await window.eel.inyectar_lote_metadatos(tracks)();
           if (res && res.status === "ok") {
             setSaveStatus(`\u2713 ${tracks.length} pistas guardadas e inyectadas`);
+            if (typeof registrarEnBitacora === "function") {
+              registrarEnBitacora({
+                action: "Inyecci\xF3n de Lote Cues & Grid",
+                category: "cues",
+                trackTitle: `Lote ${tracks.length} pistas`,
+                filePath: currentFolder || "Biblioteca activa",
+                detailsBefore: `${tracks.length} pistas en memoria`,
+                detailsAfter: `Marcas y Beatgrids inyectados en ${tracks.length} archivos`,
+                status: "\u2713 Lote Guardado",
+                fullLog: `=== INYECCI\xD3N DE METADATOS Y HOT CUES EN LOTE ===
+Total de pistas inyectadas: ${tracks.length}
+Carpeta: ${currentFolder || "Biblioteca"}
+Pads generados: Plantilla Club Extended 8 Pads Fraseados (32 compases)
+Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
+              });
+            }
           } else {
             setSaveStatus("Guardado de lote completado con advertencias");
           }

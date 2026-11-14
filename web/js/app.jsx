@@ -5674,6 +5674,188 @@ const UserAccountModal = ({
     );
 };
 
+// ─── MODAL DE INSPECCIÓN DETALLADA DE LOG / BITÁCORA ────────────────────────
+const BitacoraDetailModal = ({ entry, onClose }) => {
+    if (!entry) return null;
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        const fullText = `=== BITÁCORA BEATWAVE PRO ===
+Operación: ${entry.action || '--'}
+Categoría: ${entry.category || '--'}
+Fecha y Hora: ${entry.fullTimestamp || entry.timestamp || '--'}
+Pista / Archivo: ${entry.trackTitle || '--'}
+Ruta: ${entry.filePath || '--'}
+Estado Anterior: ${entry.detailsBefore || '--'}
+Estado Posterior: ${entry.detailsAfter || '--'}
+Resultado: ${entry.status || 'OK'}
+
+--- LOG COMPLETO / DETALLES TÉCNICOS ---
+${entry.fullLog || entry.detailsAfter || 'Sin información adicional.'}
+`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(fullText);
+        }
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+    };
+
+    const handleDownload = () => {
+        const fullText = `=== BITÁCORA BEATWAVE PRO ===
+Operación: ${entry.action || '--'}
+Categoría: ${entry.category || '--'}
+Fecha y Hora: ${entry.fullTimestamp || entry.timestamp || '--'}
+Pista / Archivo: ${entry.trackTitle || '--'}
+Ruta: ${entry.filePath || '--'}
+Estado Anterior: ${entry.detailsBefore || '--'}
+Estado Posterior: ${entry.detailsAfter || '--'}
+Resultado: ${entry.status || 'OK'}
+
+--- LOG COMPLETO / DETALLES TÉCNICOS ---
+${entry.fullLog || entry.detailsAfter || 'Sin información adicional.'}
+`;
+        const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Log_${(entry.action || 'ejecucion').replace(/\s+/g, '_')}_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fadeIn pointer-events-auto select-text" onClick={onClose}>
+            <div className="bg-[#0b0d19] border-2 border-cyan-500/60 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col font-mono text-gray-200" onClick={(e) => e.stopPropagation()}>
+                {/* Cabecera */}
+                <div className="px-5 py-4 border-b border-djzinc-800 bg-[#080912] flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-cyan-400 font-black shadow-md">
+                            <Icons.Notebook size={20} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <span>{entry.action || 'Detalle de Ejecución'}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600/60 font-bold">
+                                    {entry.status || 'OK'}
+                                </span>
+                            </h3>
+                            <p className="text-[11px] text-gray-400">
+                                {entry.fullTimestamp || entry.timestamp || '--'} • Categoría: <span className="text-cyan-400 font-bold">{entry.category || 'general'}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-lg bg-djzinc-850 hover:bg-djzinc-750 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer border border-djzinc-700"
+                    >
+                        <Icons.Close size={15} />
+                    </button>
+                </div>
+
+                {/* Contenido / Info Grid */}
+                <div className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[70vh] custom-scrollbar text-xs">
+                    {/* Tarjeta Pista & Ruta */}
+                    <div className="bg-[#06070e] p-3.5 rounded-xl border border-djzinc-800 flex flex-col gap-1.5">
+                        <div className="text-[10px] text-gray-400 uppercase font-bold">Pista / Archivo Afectado</div>
+                        <div className="text-white font-bold text-sm truncate">{entry.trackTitle || '--'}</div>
+                        {entry.filePath && (
+                            <div className="text-[10.5px] text-cyan-400/90 font-mono break-all bg-djzinc-900/80 p-2 rounded border border-djzinc-800/80">
+                                {entry.filePath}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Comparación Antes ➔ Después */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-rose-950/20 border border-rose-900/40 p-3 rounded-xl flex flex-col gap-1">
+                            <span className="text-[10px] text-rose-400 uppercase font-black">Estado Anterior</span>
+                            <span className="text-rose-200 text-xs font-mono">{entry.detailsBefore || '--'}</span>
+                        </div>
+                        <div className="bg-emerald-950/20 border border-emerald-900/40 p-3 rounded-xl flex flex-col gap-1">
+                            <span className="text-[10px] text-emerald-400 uppercase font-black">Estado Modificado</span>
+                            <span className="text-emerald-200 text-xs font-mono font-bold">{entry.detailsAfter || '--'}</span>
+                        </div>
+                    </div>
+
+                    {/* Visor de Log Completo */}
+                    <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                                Registro Técnico Detallado (Log)
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleCopy}
+                                    className="px-2.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-cyan-300 border border-cyan-800/60 rounded text-[10.5px] font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                                >
+                                    <Icons.Copy size={12} />
+                                    <span>{copied ? '✓ Copiado' : 'Copiar'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDownload}
+                                    className="px-2.5 py-1 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 border border-djzinc-700 rounded text-[10.5px] font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                                >
+                                    <Icons.Download size={12} />
+                                    <span>Descargar</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="bg-[#05060b] border border-cyan-900/40 rounded-xl p-3 text-[11px] text-cyan-200/90 font-mono whitespace-pre-wrap break-all max-h-56 overflow-y-auto custom-scrollbar leading-relaxed">
+                            {entry.fullLog || entry.detailsAfter || 'Sin información adicional.'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pie */}
+                <div className="px-5 py-3 border-t border-djzinc-800 bg-[#080912] flex items-center justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs rounded-lg cursor-pointer transition-all active:scale-95 shadow-md"
+                    >
+                        Cerrar Detalle
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Función global de registro en bitácora para auditorías, inyecciones y reparaciones
+const registrarEnBitacora = (entry) => {
+    try {
+        const bEntry = {
+            id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            fullTimestamp: new Date().toLocaleString(),
+            action: entry.action || 'Operación DSP',
+            category: entry.category || 'audit',
+            trackTitle: entry.trackTitle || 'Biblioteca',
+            filePath: entry.filePath || '',
+            detailsBefore: entry.detailsBefore || '--',
+            detailsAfter: entry.detailsAfter || '--',
+            status: entry.status || '✓ Completado',
+            fullLog: entry.fullLog || entry.log || entry.detailsAfter || ''
+        };
+        const raw = localStorage.getItem('bw_audit_bitacora');
+        let cur = raw ? JSON.parse(raw) : [];
+        const nextB = [bEntry, ...cur].slice(0, 500);
+        localStorage.setItem('bw_audit_bitacora', JSON.stringify(nextB));
+        window.dispatchEvent(new CustomEvent('bw_bitacora_updated', { detail: nextB }));
+    } catch (e) {
+        console.error("Error registrando en bitacora:", e);
+    }
+};
+if (typeof window !== 'undefined') {
+    window.registrarEnBitacora = registrarEnBitacora;
+}
+
 // ─── CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS CON EXPORTACIÓN EXCEL (DRAWER LATERAL DERECHO) ────────
 const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     if (!isOpen) return null;
@@ -5683,6 +5865,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
     const [filterCategory, setFilterCategory] = useState('all');
     const [selectedIds, setSelectedIds] = useState(() => new Set(entries.map(e => e.id)));
     const [searchTerm, setSearchTerm] = useState('');
+    const [detailEntry, setDetailEntry] = useState(null);
 
     const filteredEntries = entries.filter(e => {
         const matchesCategory = filterCategory === 'all' || e.category === filterCategory;
@@ -5846,6 +6029,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                         {[
                             { id: 'all', label: 'Todos' },
                             { id: 'audit', label: 'Auditoría DSP' },
+                            { id: 'beatgrid', label: 'BeatGrid Serato' },
                             { id: 'cues', label: 'Hot Cues' },
                             { id: 'download', label: 'FLAC' },
                             { id: 'crates', label: 'Crates' },
@@ -5905,12 +6089,13 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                                 <th className="p-2 w-28">Operación</th>
                                 <th className="p-2">Pista & Detalle (Antes ➔ Después)</th>
                                 <th className="p-2 w-16 text-center">Estado</th>
+                                <th className="p-2 w-20 text-center">Detalle</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-djzinc-850/60 text-[11px]">
                             {filteredEntries.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="p-8 text-center text-gray-500">
+                                    <td colSpan="6" className="p-8 text-center text-gray-500">
                                         No hay registros que coincidan con el filtro seleccionado.
                                     </td>
                                 </tr>
@@ -5923,7 +6108,7 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                                             className={`transition-colors cursor-pointer ${
                                                 isSelected ? 'bg-djcyan-950/20 hover:bg-djcyan-950/30' : 'hover:bg-djzinc-900/40'
                                             }`}
-                                            onClick={() => toggleSelectRow(row.id)}
+                                            onClick={() => setDetailEntry(row)}
                                         >
                                             <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
                                                 <input 
@@ -5958,6 +6143,17 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                                                     {row.status || 'OK'}
                                                 </span>
                                             </td>
+                                            <td className="p-2 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDetailEntry(row)}
+                                                    className="px-2 py-1 rounded bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-600/70 font-bold text-[10px] cursor-pointer transition-all active:scale-95 inline-flex items-center gap-1 shadow-xs"
+                                                    title="Ver informe detallado y log completo"
+                                                >
+                                                    <Icons.Eye size={12} />
+                                                    <span>Detalle</span>
+                                                </button>
+                                            </td>
                                         </tr>
                                     );
                                 })
@@ -5991,6 +6187,14 @@ const BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries }) => {
                         Cerrar (ESC)
                     </button>
                 </div>
+
+                {/* Modal Flotante de Inspección de Log Detallado */}
+                {detailEntry && (
+                    <BitacoraDetailModal
+                        entry={detailEntry}
+                        onClose={() => setDetailEntry(null)}
+                    />
+                )}
             </aside>
         </div>
     );
@@ -10390,6 +10594,18 @@ const AuditWorkspace = ({
                 }
                 setBatchProgress(100);
                 setBatchStatusMsg(`✓ Auditoría completada: ${res?.total || 0} pistas procesadas.`);
+                if (typeof registrarEnBitacora === 'function') {
+                    registrarEnBitacora({
+                        action: "Auditoría Acústica DSP",
+                        category: "audit",
+                        trackTitle: `Auditoría ${res?.total || 0} pistas`,
+                        filePath: targetDesc,
+                        detailsBefore: "Sin certificar",
+                        detailsAfter: `${res?.ready || 0} Lossless OK • ${res?.errors || 0} Fakes • ${res?.sin_meta || 0} Sin Meta`,
+                        status: (res?.errors || 0) > 0 ? "⚠️ Con advertencias" : "✓ Completado",
+                        fullLog: `=== REPORTE DE AUDITORÍA ACÚSTICA ===\nDirectorio / Pistas: ${targetDesc}\nTotal procesadas: ${res?.total || 0}\nLossless Certificadas: ${res?.ready || 0}\nTranscodificaciones Fake / Corruptos: ${res?.errors || 0}\nPistas sin metadatos: ${res?.sin_meta || 0}\nDuplicados detectados: ${res?.duplicates || 0}\nInspección FFT: Activa\nFijación BeatGrid 1.0.0: Activa`
+                    });
+                }
             } catch (e) {
                 console.error("Fallo auditoría:", e);
                 setBatchStatusMsg("Error durante la auditoría.");
@@ -10448,6 +10664,18 @@ const AuditWorkspace = ({
                     }
                     setSaveFeedback(`✓ Análisis completado con éxito (${res.tracks.length} pistas)`);
                     setTimeout(() => setSaveFeedback(''), 4000);
+                    if (typeof registrarEnBitacora === 'function') {
+                        registrarEnBitacora({
+                            action: "Auditoría en Lote & DSP",
+                            category: "audit",
+                            trackTitle: `Lote ${res?.total || res?.tracks?.length || 0} pistas`,
+                            filePath: targetDesc,
+                            detailsBefore: "Pendiente de procesamiento",
+                            detailsAfter: `${res?.total || res?.tracks?.length || 0} pistas procesadas con éxito`,
+                            status: "✓ Completado",
+                            fullLog: `=== AUDITORÍA EN LOTE BEATWAVE PRO ===\nObjetivo: ${targetDesc}\nPistas analizadas: ${res?.tracks?.length || 0}\nOpciones aplicadas: ${Object.entries(opts).filter(([_, v]) => v).map(([k]) => k).join(", ")}\nBeatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelación 40-120Hz)" : "Desactivado"}`
+                        });
+                    }
                 }
             } else {
                 await handleAuditar();
@@ -15708,6 +15936,18 @@ const HotCuesWorkspace = ({
                 if (setTracks) {
                     setTracks(prev => prev.map(t => String(t.id) === String(trackToSave.id) ? trackToSave : t));
                 }
+                if (typeof registrarEnBitacora === 'function') {
+                    registrarEnBitacora({
+                        action: "Guardado BeatGrid & Cues",
+                        category: "beatgrid",
+                        trackTitle: currentTrack.title || currentTrack.t || "Pista",
+                        filePath: currentTrack.path || currentTrack.f || "",
+                        detailsBefore: `BPM: ${currentTrack.bpm || currentTrack.b || "--"} • Downbeat: ${currentTrack.first_downbeat_ms || 0}ms`,
+                        detailsAfter: `BPM: ${bpm.toFixed(2)} • Downbeat: ${downbeatMs.toFixed(1)}ms • Cues: ${activeCues.length} pads`,
+                        status: "✓ Inyectado en Disco",
+                        fullLog: `=== REGISTRO DE GUARDADO INDIVIDUAL ===\nPista: ${currentTrack.title || currentTrack.t}\nArtista: ${currentTrack.artist || currentTrack.a}\nRuta: ${currentTrack.path || currentTrack.f}\nBPM ajustado: ${bpm.toFixed(2)}\nDownbeat 1.0.0: ${downbeatMs.toFixed(1)} ms\nTrim Inicio: ${trimMs.toFixed(1)} ms\nTrim Fin: ${trimEndMs.toFixed(1)} ms\nHot Cues guardados: ${activeCues.map(c => `[PAD ${c.id}: ${c.name} @ ${c.time}]`).join(", ")}\nInyección: GEOB:Serato BeatGrid, GEOB:Serato Markers2, ID3v2.4 / Vorbis Comments`
+                    });
+                }
             } else {
                 setSaveStatus(res?.msg || "Error al guardar pista");
             }
@@ -15728,6 +15968,18 @@ const HotCuesWorkspace = ({
                 const res = await window.eel.inyectar_lote_metadatos(tracks)();
                 if (res && res.status === "ok") {
                     setSaveStatus(`✓ ${tracks.length} pistas guardadas e inyectadas`);
+                    if (typeof registrarEnBitacora === 'function') {
+                        registrarEnBitacora({
+                            action: "Inyección de Lote Cues & Grid",
+                            category: "cues",
+                            trackTitle: `Lote ${tracks.length} pistas`,
+                            filePath: currentFolder || "Biblioteca activa",
+                            detailsBefore: `${tracks.length} pistas en memoria`,
+                            detailsAfter: `Marcas y Beatgrids inyectados en ${tracks.length} archivos`,
+                            status: "✓ Lote Guardado",
+                            fullLog: `=== INYECCIÓN DE METADATOS Y HOT CUES EN LOTE ===\nTotal de pistas inyectadas: ${tracks.length}\nCarpeta: ${currentFolder || "Biblioteca"}\nPads generados: Plantilla Club Extended 8 Pads Fraseados (32 compases)\nCompatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
+                        });
+                    }
                 } else {
                     setSaveStatus("Guardado de lote completado con advertencias");
                 }
