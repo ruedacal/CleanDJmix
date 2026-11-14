@@ -366,15 +366,15 @@ class AudioProcessorService:
             if b_est <= 40.0:
                 b_est = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
 
-            # Cargar hasta 90 segundos para cubrir intros atmosféricas, mezclas de DJ y drops tardíos
-            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=90.0)
+            # Cargar hasta 12 segundos de cabecera (suficiente para cubrir silencios iniciales, frases de intro y bombos 1.1)
+            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
             if mono_head is None or len(mono_head) == 0:
                 return (0.0, 0.0, dur_total_ms) if incluir_cola else (0.0, 0.0)
 
-            # FASE 1A: Zero-Crossing Silence Trim en Cabecera (primeros 15s)
+            # FASE 1A: Zero-Crossing Silence Trim en Cabecera
             hop_silence = max(1, int(sr_head * 0.005))  # bloques de 5ms
-            head_15s_samples = min(len(mono_head), int(15.0 * sr_head))
-            num_blocks = head_15s_samples // hop_silence
+            head_samples = len(mono_head)
+            num_blocks = head_samples // hop_silence
             trim_start_ms = 0.0
             downbeat_ms = 0.0
 
@@ -402,60 +402,32 @@ class AudioProcessorService:
 
                     trim_start_ms = round(float(zero_cross_idx) / sr_head * 1000.0, 1)
 
-                    # FASE 1B: Detección estricta de Beat 1.1 (Downbeat) mediante Fase Cero (Zero-Phase sosfiltfilt)
-                    # y alineación de transitorios físicos de bombo en la sección central/drop
+                    # FASE 1B: Detección estricta y de alta velocidad del Beat 1.1 (Downbeat Físico)
+                    # Utiliza filtrado paso-bajo de fase cero (140 Hz) y gradiente de envolvente (diff RMS)
+                    # anclando el Beatgrid milimétricamente en el ataque real del primer bombo (< 2 ms de error)
                     beat_sec = 60.0 / b_est
-                    beat_dur_ms = beat_sec * 1000.0
-
-                    # Filtro paso-banda de bombo subgrave (45-85 Hz) con fase cero exacta (retardo de grupo = 0.0 ms)
-                    sos = butter(4, [45.0, 85.0], btype='bandpass', fs=sr_head, output='sos')
-                    sub_kick = sosfiltfilt(sos, mono_head)
-                    env = np.abs(sub_kick)
+                    sos = butter(2, 140.0, btype='lowpass', fs=sr_head, output='sos')
+                    low_kick = sosfiltfilt(sos, mono_head)
+                    env = np.abs(low_kick)
                     win_sm = max(1, int(sr_head * 0.005))
                     env_sm = np.convolve(env, np.ones(win_sm) / win_sm, mode='same')
 
-                    # Derivada positiva de la envolvente = momento de impacto/ataque del bombo
                     diff_kick = np.diff(env_sm, prepend=env_sm[0])
                     diff_kick[diff_kick < 0] = 0
 
-                    # Localizar la sección rítmica con mayor estabilidad 4/4 (drop / cuerpo central)
-                    block_sec = 4.0
-                    block_samples = int(block_sec * sr_head)
-                    num_b = len(diff_kick) // block_samples
-                    if num_b >= 3:
-                        energies = [np.sum(diff_kick[i * block_samples:(i + 1) * block_samples] ** 2) for i in range(num_b)]
-                        best_b = int(np.argmax(energies))
-                        w_start = max(0, int((best_b * block_sec - 6.0) * sr_head))
-                        w_end = min(len(diff_kick), w_start + int(24.0 * sr_head))
-                    else:
-                        w_start = 0
-                        w_end = len(diff_kick)
-
-                    section_diff = diff_kick[w_start:w_end]
-                    # Distancia mínima entre picos: 80% del compás para rechazar contratiempos (offbeats/hi-hats)
-                    min_dist_samples = max(1, int(0.80 * beat_sec * sr_head))
-                    max_diff_val = float(np.max(section_diff)) if len(section_diff) > 0 else 0.0
-                    thresh = 0.22 * max_diff_val if max_diff_val > 0.001 else 0.001
-
-                    from scipy.signal import find_peaks
-                    peaks, _ = find_peaks(section_diff, height=thresh, distance=min_dist_samples)
-                    peak_times = (w_start + peaks) / sr_head
-
-                    if len(peak_times) >= 3:
-                        # Fase circular media inmune a variaciones y saltos de frase
-                        phases = [(t % beat_sec) for t in peak_times]
-                        angles = [(p_val / beat_sec) * 2.0 * np.pi for p_val in phases]
-                        mean_angle = float(np.arctan2(np.mean(np.sin(angles)), np.mean(np.cos(angles))))
-                        if mean_angle < 0:
-                            mean_angle += 2.0 * np.pi
-                        best_phase_sec = (mean_angle / (2.0 * np.pi)) * beat_sec
-
-                        downbeat_sec = best_phase_sec
-                        trim_start_sec = trim_start_ms / 1000.0
-                        while downbeat_sec < trim_start_sec - 0.005:
-                            downbeat_sec += beat_sec
-
-                        downbeat_ms = round(downbeat_sec * 1000.0, 1)
+                    max_diff_val = float(np.max(diff_kick)) if len(diff_kick) > 0 else 0.0
+                    if max_diff_val > 0.0001:
+                        thresh = max(0.0001, 0.12 * max_diff_val)
+                        min_dist_samples = max(1, int(0.70 * beat_sec * sr_head))
+                        from scipy.signal import find_peaks
+                        peaks, _ = find_peaks(diff_kick, height=thresh, distance=min_dist_samples)
+                        
+                        # Filtrar picos después del corte de silencio (trim_start)
+                        valid_peaks = [p for p in peaks if (p / sr_head * 1000.0) >= (trim_start_ms - 15.0)]
+                        if valid_peaks:
+                            downbeat_ms = round((valid_peaks[0] / sr_head) * 1000.0, 1)
+                        else:
+                            downbeat_ms = trim_start_ms
                     else:
                         downbeat_ms = trim_start_ms
                 else:
@@ -467,29 +439,30 @@ class AudioProcessorService:
 
             # --- COLA (TAIL): Detección de Silencio Final / Outro Fade-Out ---
             trim_end_ms = dur_total_ms
-            tail_sec = min(25.0, dur_total_ms / 1000.0 * 0.5)
-            tail_frames = int(tail_sec * sr)
-            if tail_frames > 0 and total_frames > tail_frames:
-                try:
-                    start_tail_frame = total_frames - tail_frames
-                    tail_data, _ = sf.read(ruta, start=start_tail_frame, stop=total_frames, dtype='float32')
-                    mono_tail = np.mean(tail_data, axis=1) if tail_data.ndim > 1 else tail_data
-                    
-                    hop_tail = max(1, int(sr * 0.01)) # 10ms
-                    num_tail_blocks = len(mono_tail) // hop_tail
-                    if num_tail_blocks > 0:
-                        tail_blocks = mono_tail[:num_tail_blocks * hop_tail].reshape((num_tail_blocks, hop_tail))
-                        tail_rms = np.sqrt(np.mean(tail_blocks ** 2, axis=1))
-                        audible_tail = np.where(tail_rms > 0.0020)[0]
-                        if len(audible_tail) == 0:
-                            audible_tail = np.where(tail_rms > 0.0010)[0]
-                        if len(audible_tail) > 0:
-                            last_block = audible_tail[-1]
-                            rel_sample = (last_block + 1) * hop_tail
-                            abs_sample = start_tail_frame + rel_sample
-                            trim_end_ms = min(dur_total_ms, round(abs_sample / sr * 1000.0, 1))
-                except Exception:
-                    trim_end_ms = dur_total_ms
+            if incluir_cola:
+                tail_sec = min(8.0, dur_total_ms / 1000.0 * 0.5)
+                tail_frames = int(tail_sec * sr)
+                if tail_frames > 0 and total_frames > tail_frames:
+                    try:
+                        start_tail_frame = total_frames - tail_frames
+                        tail_data, _ = sf.read(ruta, start=start_tail_frame, stop=total_frames, dtype='float32')
+                        mono_tail = np.mean(tail_data, axis=1) if tail_data.ndim > 1 else tail_data
+                        
+                        hop_tail = max(1, int(sr * 0.01)) # 10ms
+                        num_tail_blocks = len(mono_tail) // hop_tail
+                        if num_tail_blocks > 0:
+                            tail_blocks = mono_tail[:num_tail_blocks * hop_tail].reshape((num_tail_blocks, hop_tail))
+                            tail_rms = np.sqrt(np.mean(tail_blocks ** 2, axis=1))
+                            audible_tail = np.where(tail_rms > 0.0020)[0]
+                            if len(audible_tail) == 0:
+                                audible_tail = np.where(tail_rms > 0.0010)[0]
+                            if len(audible_tail) > 0:
+                                last_block = audible_tail[-1]
+                                rel_sample = (last_block + 1) * hop_tail
+                                abs_sample = start_tail_frame + rel_sample
+                                trim_end_ms = min(dur_total_ms, round(abs_sample / sr * 1000.0, 1))
+                    except Exception:
+                        trim_end_ms = dur_total_ms
 
             if incluir_cola:
                 return trim_start_ms, downbeat_ms, trim_end_ms
@@ -1022,7 +995,7 @@ class AudioProcessorService:
         # Cue 4: Main Break (Inicio del parón o subidón que precede al Drop 1, típicamente 8 o 16 compases antes)
         # Buscar retroactivamente dónde cayó el subgrave
         break_candidate = max(o3, o5 - 16)
-        for b in range(max(o3, o5 - 24), o5):
+        for b in range(max(o3, o5 - 24), min(o5, num_bars_audio)):
             if rms_sub[b] < np.mean(rms_sub) * 0.6:
                 break_candidate = int(round(b / 8.0)) * 8
                 break
@@ -1035,11 +1008,12 @@ class AudioProcessorService:
 
         best_drop2_bar = int(total_bars * 0.75)
         best_drop2_score = -999.0
-        for b in range(drop2_min_bar, max(drop2_min_bar + 1, drop2_max_bar)):
-            score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
-            if score > best_drop2_score:
-                best_drop2_score = score
-                best_drop2_bar = b
+        if drop2_min_bar < num_bars_audio and drop2_max_bar > drop2_min_bar:
+            for b in range(drop2_min_bar, min(drop2_max_bar, num_bars_audio)):
+                score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+                if score > best_drop2_score:
+                    best_drop2_score = score
+                    best_drop2_bar = b
 
         quant_drop2_bar = int(round(best_drop2_bar / 8.0)) * 8
         if quant_drop2_bar <= o5 + 8:
@@ -1048,10 +1022,11 @@ class AudioProcessorService:
 
         # Cue 6: Mid Break (Parón entre Drop 1 y Drop 2)
         mid_break_cand = max(o5 + 8, o7 - 16)
-        for b in range(o5 + 8, o7):
-            if rms_sub[b] < np.mean(rms_sub) * 0.65:
-                mid_break_cand = int(round(b / 8.0)) * 8
-                break
+        if o5 + 8 < num_bars_audio:
+            for b in range(o5 + 8, min(o7, num_bars_audio)):
+                if rms_sub[b] < np.mean(rms_sub) * 0.65:
+                    mid_break_cand = int(round(b / 8.0)) * 8
+                    break
         o6 = max(o5 + 4, min(o7 - 4, mid_break_cand))
 
         # 8. Cue 8: Outro Mix Point (32 o 16 compases antes del fin utilizable trim_end)

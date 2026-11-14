@@ -8622,7 +8622,37 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       setTimeout(() => setSaveFeedback(""), 2500);
     };
     const updateCurrentTrackField = (field, val) => {
-      setTracks((prev) => prev.map((t2) => t2.id === currentTrack.id ? { ...t2, [field]: val } : t2));
+      setTracks((prev) => prev.map((t2) => {
+        if (t2.id !== (currentTrack == null ? void 0 : currentTrack.id)) return t2;
+        const updated = { ...t2, [field]: val };
+        if (field === "bpm" || field === "b") {
+          const bpmNum = parseFloat(val);
+          updated.bpm = val;
+          updated.b = val;
+          updated.recalcular_grid = true;
+          updated.recalcular_cues = true;
+          if (!isNaN(bpmNum) && bpmNum > 20) {
+            const durMs = parseDurationMs(t2.duration || "05:00");
+            const downbeatMs = parseFloat(t2.first_downbeat_ms || 0);
+            const beatMs = 6e4 / bpmNum;
+            const cueNames = ["Intro (1.1)", "Bassline In", "Hi-Hats In", "Main Break", "Drop 1 (Climax)", "Mid Break", "Drop 2 (Re-Kick)", "Outro Mix Point"];
+            const cueBeats = [0, 32, 64, 96, 128, 160, 192, 224];
+            const cueColors = ["#06b6d4", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#ec4899", "#3b82f6", "#14b8a6"];
+            updated.cues = cueNames.map((name, i) => {
+              const pos = Math.min(durMs - 1e3, Math.round(downbeatMs + cueBeats[i] * beatMs));
+              return {
+                id: i + 1,
+                name,
+                pos_ms: Math.max(0, pos),
+                time: formatMsToTime(pos),
+                pct: durMs > 0 ? pos / durMs : 0,
+                color: cueColors[i]
+              };
+            });
+          }
+        }
+        return updated;
+      }));
     };
     const isFlacUpgradeCandidate = (t2) => {
       if (!t2) return false;

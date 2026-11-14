@@ -10124,7 +10124,38 @@ const AuditWorkspace = ({
     };
 
     const updateCurrentTrackField = (field, val) => {
-        setTracks(prev => prev.map(t => t.id === currentTrack.id ? { ...t, [field]: val } : t));
+        setTracks(prev => prev.map(t => {
+            if (t.id !== currentTrack?.id) return t;
+            const updated = { ...t, [field]: val };
+            if (field === 'bpm' || field === 'b') {
+                const bpmNum = parseFloat(val);
+                updated.bpm = val;
+                updated.b = val;
+                updated.recalcular_grid = true;
+                updated.recalcular_cues = true;
+                if (!isNaN(bpmNum) && bpmNum > 20.0) {
+                    const durMs = parseDurationMs(t.duration || "05:00");
+                    const downbeatMs = parseFloat(t.first_downbeat_ms || 0);
+                    // Sincronizar Cues al nuevo tempo inmediatamente (8 marcas de fraseo estándar)
+                    const beatMs = (60000.0 / bpmNum);
+                    const cueNames = ["Intro (1.1)", "Bassline In", "Hi-Hats In", "Main Break", "Drop 1 (Climax)", "Mid Break", "Drop 2 (Re-Kick)", "Outro Mix Point"];
+                    const cueBeats = [0, 32, 64, 96, 128, 160, 192, 224];
+                    const cueColors = ["#06b6d4", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#ec4899", "#3b82f6", "#14b8a6"];
+                    updated.cues = cueNames.map((name, i) => {
+                        const pos = Math.min(durMs - 1000, Math.round(downbeatMs + (cueBeats[i] * beatMs)));
+                        return {
+                            id: i + 1,
+                            name,
+                            pos_ms: Math.max(0, pos),
+                            time: formatMsToTime(pos),
+                            pct: durMs > 0 ? (pos / durMs) : 0,
+                            color: cueColors[i]
+                        };
+                    });
+                }
+            }
+            return updated;
+        }));
     };
 
     // Detección de FLAC que no cumple con estándares Lossless o es de calidad media/baja (SuperFLAC)

@@ -1261,12 +1261,19 @@ return folderPath'''
             else:
                 return {"status": "error", "msg": "Archivo no encontrado", "trim_start_ms": 0.0, "first_downbeat_ms": 0.0}
 
-        trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(filepath)
-        cues = []
+        info = {}
+        bpm_val = 128.0
+        dur_ms = 300000
         try:
-            info = AudioProcessorService.analizar_track_avanzado(filepath)
+            info = AudioProcessorService.analizar_track_avanzado(filepath, fast_mode=True)
             bpm_val = float(info.get("bpm") or 128.0)
             dur_ms = int(float(info.get("duration_sec", 300)) * 1000)
+        except Exception:
+            pass
+
+        trim_ms, downbeat_ms = AudioProcessorService.detectar_trim_y_downbeat(filepath, bpm=bpm_val)
+        cues = []
+        try:
             cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
                 duration_ms=dur_ms,
                 bpm=bpm_val,
