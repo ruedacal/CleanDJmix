@@ -5521,7 +5521,7 @@ const MANUAL_SECTIONS = {
         proTip: "Presta especial atención al Score Armónico global. Un set con una puntuación superior al 85% crea un efecto hipnótico en el público: la gente no puede parar de bailar porque las melodías y notas de los temas parecen pertenecer a una misma obra sinfónica continua.",
         controls: [
             { btn: "[ 🕸️ GENERAR FLUJO DE SESIÓN ]", desc: "¡El botón estrella estilo DJOID! Construye el mapa interactivo en grafo DAG con alternativas y compatibilidad armónica.", when: "Al planificar tu sesión para tener alternativas listas según la reacción de la pista." },
-            { btn: "[ 📁 Añadir Carpeta ]", desc: "Permite seleccionar un directorio completo e inyectar todas sus canciones en el set en 1 clic.", when: "Para preparar sets rápidos a partir de carpetas de música recién adquirida." },
+            { btn: "[ 📁 A��adir Carpeta ]", desc: "Permite seleccionar un directorio completo e inyectar todas sus canciones en el set en 1 clic.", when: "Para preparar sets rápidos a partir de carpetas de música recién adquirida." },
             { btn: "[ ⚡ Auto-Optimizar Pro ]", desc: "Reorganiza las pistas matemáticamente para maximizar el flujo armónico Camelot y suavizar saltos de BPM.", when: "Cuando tienes muchas pistas sueltas y quieres un orden perfecto automático." },
             { btn: "[ 🤖 Asesor AI & Calidad ]", desc: "Auditoría inteligente con Google Gemini 2.5 Flash y DSP acústico. Genera una nota del 0 al 100%.", when: "Antes de dar por cerrado un set para asegurarte de que no hay choques tonales." },
             { btn: "[ 🌉 Inyectar Pista Puente ]", desc: "Busca en tu colección canciones intermedias que sirvan de puente armónico entre dos tonos disonantes.", when: "Para pasar suavemente de una tonalidad lejana a otra sin corte abrupto." },
@@ -20684,7 +20684,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
         try {
             let res = null;
-            // 1. Intento primario vía API HTTP directa (soporta hasta 50MB sin límites de WebSocket)
+            // 1. Intento primario vía API HTTP directa (soporta hasta 50MB sin l��mites de WebSocket)
             try {
                 const response = await fetch('/api/identificar_audio', {
                     method: 'POST',
@@ -26807,7 +26807,7 @@ const KnowledgeWorkspace = ({ lang = "es" }) => {
                 </div>
             </div>
 
-            {/* Contenido de la Sección Activa */}
+            {/* Contenido de la Secci��n Activa */}
             <div className="flex-1 p-4 md:p-6">
                 {/* SECCIÓN 1: CURSOS ESTRUCTURADOS */}
                 {activeSection === "courses" && (
@@ -30593,6 +30593,7 @@ const App = () => {
         { id: 'shortcuts', label: 'Atajos de teclado', description: 'Controles rápidos de cabina', icon: 'Keyboard', onClick: () => setShortcutsModalOpen(true) },
         { id: 'tutorial', label: 'Tutorial guiado', description: 'Recorrido por la interfaz', icon: 'Compass', onClick: () => setTutorialOpen(true) },
         { id: 'intro', label: 'Ver intro cinemática', description: 'Presentación a pantalla completa', icon: 'Film', onClick: () => setCinematicIntroOpen(true) },
+        { id: 'admin', label: 'Panel de administración', description: 'Base de datos, analítica, contenido y más', icon: 'Grid', href: '/admin.html' },
         { id: 'pdf', label: 'Manual técnico (PDF)', description: 'Documentación funcional completa', icon: 'FileText', href: '/api/manual/pdf', download: 'CleanDJmix_PRO_Manual_Funcional_y_Tecnico.pdf' },
     ];
 
