@@ -348,10 +348,15 @@ def _emitir_progreso_batch(pct: int, msg: str):
         except Exception:
             pass
 
+        # Ceder cooperativamente el control al bucle Gevent para transmitir WebSocket y servir HTTP /api/audit/progress
         try:
-            eel.sleep(0.001)
+            import gevent
+            gevent.sleep(0.002)
         except Exception:
-            pass
+            try:
+                eel.sleep(0.002)
+            except Exception:
+                time.sleep(0.002)
     except Exception as e:
         print(f"[PROGRESS ERROR] {e}")
 

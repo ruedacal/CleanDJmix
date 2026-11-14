@@ -662,10 +662,12 @@ class AudioProcessorService:
         missing_meta = (bpm <= 0.0 or not key)
 
         # ORDEN ESTRICTO: 1º RESOLVER BPM ACÚSTICO EXACTO
-        if verificar_beatgrid or bpm <= 0.0:
+        # En fast_mode, si el archivo ya tiene BPM válido (>20), lo respetamos de inmediato (<0.5ms).
+        # Solo calculamos DSP acústico pesado si falta el BPM o si se solicita explícitamente (not fast_mode).
+        if bpm <= 20.0 or not fast_mode:
             try:
                 bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
-                if bpm <= 0.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.05):
+                if bpm <= 20.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.05):
                     bpm = bpm_acustico
             except Exception:
                 pass
@@ -681,8 +683,9 @@ class AudioProcessorService:
                 key = "8A"
 
         # ORDEN ESTRICTO: 2º CALCULAR BEATGRID Y DOWNBEAT TRAS RESOLVER EL BPM
+        # En fast_mode, si ya existe first_downbeat_ms > 0 en los tags, no re-decodificar audio.
         trim_end_ms = 0.0
-        if verificar_beatgrid or not fast_mode or (trim_start_ms <= 0.0 and first_downbeat_ms <= 0.0):
+        if (trim_start_ms <= 0.0 and first_downbeat_ms <= 0.0) or not fast_mode:
             try:
                 trim_start_ms, first_downbeat_ms, trim_end_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm, incluir_cola=True)
             except Exception:

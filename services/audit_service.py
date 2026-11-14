@@ -991,7 +991,7 @@ return folderPath'''
             try:
                 info_sf = sf.info(filepath)
                 start_frame = min(fs * 30, max(0, int(info_sf.frames * 0.25)))
-                frames_to_read = min(fs * 10, max(4096, info_sf.frames - start_frame))
+                frames_to_read = min(fs * 4, max(4096, info_sf.frames - start_frame))
                 data, samplerate = sf.read(filepath, start=start_frame, frames=frames_to_read)
             except Exception as sf_err:
                 # Fallback de ultra-alta velocidad (Patrón AudioAuditor multi-plataforma)
@@ -1462,7 +1462,7 @@ return folderPath'''
         if total_pending > 0:
             # PASO 4: Procesamiento paralelo multinúcleo dinámico para auditoría DSP en background
             num_workers = min(32, max(4, (os.cpu_count() or 4) * 2))
-            emit_step = max(1, min(4, total_pending // 25))
+            emit_step = max(1, min(2, total_pending // 50))
 
             def _procesar_un_delta(task_tuple):
                 if self._cancelar_proceso:
@@ -1710,6 +1710,11 @@ return folderPath'''
                     if progreso_cb and (done_c % emit_step == 0 or done_c == total_pending):
                         pct = int(10 + (done_c / total_pending) * 85)
                         progreso_cb(pct, f"Auditando delta ({done_c}/{total_pending}): {fname_t}")
+                        try:
+                            import gevent
+                            gevent.sleep(0.001)
+                        except Exception:
+                            time.sleep(0.001)
 
             # Guardar en SQLite en lotes atómicos WAL (una sola transacción masiva)
             if newly_audited_db and hasattr(self, "db_cache") and self.db_cache:

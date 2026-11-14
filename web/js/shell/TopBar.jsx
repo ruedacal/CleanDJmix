@@ -106,28 +106,6 @@ export const TopBar = ({
                 <h1 className="text-sm font-semibold text-white truncate">{navLabel(current, t)}</h1>
             </div>
 
-            {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
-                <div
-                    className="flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]"
-                    role="status"
-                    title={auditInfo.statusMsg || 'Procesando archivos...'}
-                >
-                    <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
-                    </span>
-                    <span className="font-mono text-xs text-cyan-200 tabular-nums font-semibold flex items-center gap-1.5">
-                        <span>{auditInfo.isLoadingDir ? 'Cargando carpeta' : (auditInfo.isAuditing ? 'Auditando' : 'Procesando')}</span>
-                        <strong className="text-white">{auditInfo.progress || 0}%</strong>
-                    </span>
-                    {auditInfo.statusMsg && (
-                        <span className="hidden xl:inline text-[11px] text-zinc-400 max-w-[280px] truncate border-l border-white/10 pl-2 font-mono">
-                            {auditInfo.statusMsg}
-                        </span>
-                    )}
-                </div>
-            )}
-
             <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button type="button" onClick={onOpenCopilot} className="bw-btn bw-btn-live md:hidden" aria-label="Abrir Live Copilot">
                     <span className="bw-live-dot" aria-hidden="true" />
