@@ -334,10 +334,10 @@ class AudioProcessorService:
                             max_comb = np.max(comb_scores) if len(comb_scores) > 0 else 0.0
                             for k in range(max_k):
                                 f_idx = best_phase + k * beat_frames
-                                if f_idx < len(energy_diff) and energy_diff[f_idx] >= (max_comb * 0.35):
+                                if f_idx < len(energy_diff) and energy_diff[f_idx] >= (max_comb * 0.20):
                                     sample_center = zero_cross_idx + (f_idx * hop_len)
-                                    w_start = max(0, sample_center - int(sr_head * 0.01))
-                                    w_end = min(len(mono_head), sample_center + int(sr_head * 0.015))
+                                    w_start = max(0, sample_center - int(sr_head * 0.02))
+                                    w_end = min(len(mono_head), sample_center + int(sr_head * 0.025))
                                     loc_peak = w_start + int(np.argmax(np.abs(mono_head[w_start:w_end])))
                                     downbeat_ms = round(float(loc_peak) / sr_head * 1000.0, 1)
                                     found_downbeat = True
@@ -1262,15 +1262,12 @@ class AudioProcessorService:
     def serializar_serato_beatgrid(bpm: float = 128.0, downbeat_ms: float = 0.0) -> bytes:
         """Serializa el bloque binario oficial Serato BeatGrid (GEOB:Serato BeatGrid).
         Estructura estándar Serato DJ Pro:
-        - Header (6 bytes): \\x01\\x00 + uint32 BE (conteo de marcadores = 1)
+        - Header (6 bytes): \x01\x00 + uint32 BE (conteo de marcadores = 1)
         - Marcador terminal (8 bytes): float32 BE (posición segundos) + float32 BE (BPM)
-        - Footer (1 byte): \\x00
+        - Footer (1 byte): \x00
         """
         try:
             bpm_val = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
-            nearest_int = round(bpm_val)
-            if abs(bpm_val - nearest_int) <= 0.08:
-                bpm_val = float(nearest_int)
         except Exception:
             bpm_val = 128.0
         try:
@@ -1455,12 +1452,23 @@ class AudioProcessorService:
         raw_key = meta_track.get("key") or meta_track.get("k") or ""
         key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
         comment = str(meta_track.get("comment") or "")
-        genre_val = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House").strip()
+        raw_genre = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House").strip()
         subgenre_val = str(meta_track.get("subgenre") or "").strip()
-        if subgenre_val and subgenre_val.lower() not in genre_val.lower():
-            genre_full = f"{genre_val} / {subgenre_val}"
-        else:
+        if any(x in raw_genre.lower() for x in ["pop/", "pop /", "electronic ", "electronic/", "dance/"]):
+            genre_val = AudioProcessorService.normalizar_genero_canonico(
+                raw_genre=raw_genre,
+                bpm=bpm_float,
+                filepath=ruta,
+                title=title,
+                artist=artist
+            )
             genre_full = genre_val
+        elif subgenre_val and subgenre_val.lower() not in raw_genre.lower() and "/" not in raw_genre:
+            genre_val = raw_genre
+            genre_full = f"{raw_genre} / {subgenre_val}"
+        else:
+            genre_val = raw_genre
+            genre_full = raw_genre
         isrc = str(meta_track.get("isrc") or "")
 
         # Cálculo de duración en milisegundos para sincronización de Cues
@@ -1473,7 +1481,7 @@ class AudioProcessorService:
             except Exception:
                 pass
 
-        downbeat_ms = int(float(meta_track.get("first_downbeat_ms") or 0))
+        downbeat_ms = float(meta_track.get("first_downbeat_ms") or meta_track.get("downbeat_ms") or 0.0)
         trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
         trim_end_ms = float(meta_track.get("trim_end_ms") or 0.0)
 

@@ -15177,6 +15177,17 @@ const HotCuesWorkspace = ({
         ? (tracks.find(t => String(t.id) === String(selectedTrack)) || tracks[0])
         : null;
 
+    const audioDurMs = (audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
+        ? Math.round(audioRef.current.duration * 1000)
+        : null;
+    const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
+    const bpm = (currentTrack && (currentTrack.bpm || currentTrack.b)) ? Math.max(30.0, parseFloat(currentTrack.bpm || currentTrack.b) || 128.0) : 128.0;
+    const beatMs = 60000.0 / bpm;
+    const barMs = beatMs * 4.0;
+    const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
+    const trimMs = currentTrack && currentTrack.trim_start_ms ? parseFloat(currentTrack.trim_start_ms) : 0;
+    const trimEndMs = currentTrack && currentTrack.trim_end_ms ? parseFloat(currentTrack.trim_end_ms) : durMs;
+
     const handleRemoveTrackFromHotCues = (trackId, e) => {
         if (e && e.stopPropagation) e.stopPropagation();
         if (onRemoveTrack) {
@@ -15431,17 +15442,6 @@ const HotCuesWorkspace = ({
         }
     };
 
-    const audioDurMs = (audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
-        ? Math.round(audioRef.current.duration * 1000)
-        : null;
-    const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
-    const bpm = (currentTrack && (currentTrack.bpm || currentTrack.b)) ? Math.max(30.0, parseFloat(currentTrack.bpm || currentTrack.b) || 128.0) : 128.0;
-    const beatMs = 60000.0 / bpm;
-    const barMs = beatMs * 4.0;
-    const downbeatMs = currentTrack && currentTrack.first_downbeat_ms ? parseFloat(currentTrack.first_downbeat_ms) : 0;
-    const trimMs = currentTrack && currentTrack.trim_start_ms ? parseFloat(currentTrack.trim_start_ms) : 0;
-    const trimEndMs = currentTrack && currentTrack.trim_end_ms ? parseFloat(currentTrack.trim_end_ms) : durMs;
-
     const CLUB_CUE_RATIOS = [0.005, 0.12, 0.25, 0.40, 0.55, 0.70, 0.85, 0.94];
     const CLUB_CUE_NAMES = [
         "Intro / Downbeat",
@@ -15681,18 +15681,35 @@ const HotCuesWorkspace = ({
         if (!currentTrack) return;
         setSaveStatus("Guardando marcas en disco...");
         try {
+            const trackToSave = {
+                ...currentTrack,
+                cues: activeCues,
+                comment: tacticalComment,
+                first_downbeat_ms: downbeatMs,
+                downbeat_ms: downbeatMs,
+                trim_start_ms: trimMs,
+                trim_end_ms: trimEndMs,
+                bpm: bpm
+            };
+            let res = null;
             if (window.eel && window.eel.guardar_cambios_track) {
-                const trackToSave = {
-                    ...currentTrack,
-                    cues: activeCues,
-                    comment: tacticalComment
-                };
-                const res = await window.eel.guardar_cambios_track(trackToSave)();
-                if (res && res.status === "ok") {
-                    setSaveStatus("✓ Pista guardada en disco con éxito");
-                } else {
-                    setSaveStatus(res?.msg || "Error al guardar pista");
+                res = await window.eel.guardar_cambios_track(trackToSave)();
+            } else {
+                const r = await fetch('/api/rpc/guardar_cambios_track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ args: [trackToSave] })
+                });
+                const d = await r.json();
+                res = d.result || d;
+            }
+            if (res && (res.status === "ok" || res === true)) {
+                setSaveStatus("✓ Pista y BeatGrid guardados en disco");
+                if (setTracks) {
+                    setTracks(prev => prev.map(t => String(t.id) === String(trackToSave.id) ? trackToSave : t));
                 }
+            } else {
+                setSaveStatus(res?.msg || "Error al guardar pista");
             }
         } catch (e) {
             setSaveStatus("Error de comunicación al guardar");
