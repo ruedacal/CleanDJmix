@@ -113,3 +113,8 @@
   src: url('../fonts/syne-800.woff2') format('woff2'), local('Syne');
 }
 
+.font-syne {
+  font-family: 'Syne', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 800 !important;
+}
+

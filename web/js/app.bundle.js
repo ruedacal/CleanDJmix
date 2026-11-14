@@ -4611,7 +4611,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const [opts, setOpts] = useState5({
       fftLossless: true,
       trimSilences: true,
-      beatgrid: true,
+      beatgrid: false,
       bpmKey: true,
       energyDance: true,
       moodDetect: true,
@@ -8257,7 +8257,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const [batchConfigOpts, setBatchConfigOpts] = useState5({
       fftLossless: true,
       trimSilences: true,
-      beatgrid: true,
+      beatgrid: false,
       bpmKey: true,
       energyDance: true,
       moodDetect: true,
@@ -24944,6 +24944,82 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     );
   };
+  var BeatWaveBrandIdentity = ({
+    variant = "hero",
+    // 'header' | 'hero'
+    isTechnoActive = false,
+    onClick = null,
+    className = ""
+  }) => {
+    const isHero = variant === "hero";
+    const badgeSize = isHero ? "hero" : "sm";
+    const titleSize = isHero ? 48 : 24;
+    const proSize = isHero ? 19 : 10.5;
+    const proBorder = isHero ? 2.5 : 1.5;
+    const proRadius = isHero ? 12 : 8;
+    const proPx = isHero ? 12 : 7;
+    const proPy = isHero ? 3 : 1.5;
+    const subSize = isHero ? 15 : 9;
+    const subGap = isHero ? 6 : 3;
+    const mainGap = isHero ? 22 : 12;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onClick,
+        className: `inline-flex items-center select-none ${onClick ? "cursor-pointer" : ""} group ${className}`,
+        style: { columnGap: `${mainGap}px` }
+      },
+      /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: badgeSize }),
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center text-left shrink-0 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center leading-none", style: { gap: isHero ? "12px" : "7px" } }, /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          className: `font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-300 ${isTechnoActive ? "anim-soundwave drop-shadow-[0_0_24px_rgba(34,211,238,0.95)]" : "drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)]"}`,
+          style: {
+            fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontWeight: 800,
+            fontSize: `${titleSize}px`,
+            lineHeight: 1
+          }
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"),
+        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400", style: { textShadow: "0 0 16px rgba(34, 211, 238, 0.9)" } }, "WAVE")
+      ), /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          className: "font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase",
+          style: {
+            fontFamily: "Inter, -apple-system, sans-serif",
+            fontWeight: 900,
+            fontSize: `${proSize}px`,
+            padding: `${proPy}px ${proPx}px`,
+            borderRadius: `${proRadius}px`,
+            border: `${proBorder}px solid #22d3ee`,
+            boxShadow: "0 0 12px rgba(34, 211, 238, 0.55)",
+            lineHeight: 1
+          }
+        },
+        "PRO"
+      )), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "w-full flex justify-between items-center text-cyan-200/90 select-none leading-none",
+          style: {
+            fontFamily: "Inter, -apple-system, sans-serif",
+            fontWeight: 800,
+            fontSize: `${subSize}px`,
+            letterSpacing: "0.14em",
+            marginTop: `${subGap}px`,
+            lineHeight: 1
+          }
+        },
+        /* @__PURE__ */ React.createElement("span", null, "PRECISION"),
+        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black", style: { fontSize: `${subSize * 1.15}px` } }, "\u2022"),
+        /* @__PURE__ */ React.createElement("span", null, "AUDIO"),
+        /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black", style: { fontSize: `${subSize * 1.15}px` } }, "\u2022"),
+        /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")
+      ))
+    );
+  };
   var HERO_SHOWCASE_SLIDES = [
     {
       title: "AUDITOR\xCDA FORENSE DE AUDIO LOSSLESS",
@@ -25357,15 +25433,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
           /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
         ))),
-        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-row items-center justify-center gap-3.5 sm:gap-5 md:gap-6 select-none group mt-2 sm:mt-4 mb-20 sm:mb-24 md:mb-32" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "hero" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center select-none text-left shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 sm:gap-3 md:gap-3.5 leading-none" }, /* @__PURE__ */ React.createElement(
-          "span",
+        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement(
+          "div",
           {
-            className: "font-syne font-black text-3xl sm:text-5xl md:text-[56px] lg:text-[62px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]",
-            style: { fontFamily: "'Syne', sans-serif", fontWeight: 800 }
+            className: "flex items-center justify-center select-none group",
+            style: { marginTop: "16px", marginBottom: "84px" }
           },
-          /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"),
-          /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_24px_rgba(34,211,238,0.9)]" }, "WAVE")
-        ), /* @__PURE__ */ React.createElement("span", { className: "text-xs sm:text-lg md:text-xl lg:text-[22px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-3.5 py-0.5 sm:py-1 rounded-[8px] sm:rounded-[12px] md:rounded-[14px] border-[1.5px] sm:border-[2px] md:border-[2.5px] border-cyan-400 text-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[10px] sm:text-sm md:text-base lg:text-[17.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))), /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
+          /* @__PURE__ */ React.createElement(BeatWaveBrandIdentity, { variant: "hero" })
+        ), /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
@@ -26668,16 +26743,14 @@ ${res.path}`);
     ))))), /* @__PURE__ */ React.createElement(
       TopBar,
       {
-        logo: /* @__PURE__ */ React.createElement(
-          "div",
+        logo: /* @__PURE__ */ React.createElement("div", { className: "flex items-center select-none my-auto pl-3 sm:pl-4" }, /* @__PURE__ */ React.createElement(
+          BeatWaveBrandIdentity,
           {
-            onClick: triggerLogoTechno,
-            className: "flex items-center select-none cursor-pointer group my-auto py-1 sm:py-1.5",
-            title: isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "w-[76px] shrink-0 flex items-center justify-center my-auto" }, /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: "sm" })),
-          /* @__PURE__ */ React.createElement("div", { className: "-ml-4 flex flex-col justify-center shrink-0 pr-3 my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 sm:gap-2 leading-none" }, /* @__PURE__ */ React.createElement("span", { className: `font-syne font-black text-[22px] sm:text-[24px] tracking-[0.02em] leading-none select-none transition-all duration-300 ${isLogoTechnoActive ? "anim-soundwave drop-shadow-[0_0_22px_rgba(6,182,212,0.95)]" : "group-hover:brightness-110 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]"}` }, /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]" }, "WAVE")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] sm:text-[11px] font-sans font-black tracking-wider px-2 py-0.5 rounded-[8px] sm:rounded-[9px] border-[1.5px] border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none" }, "PRO")), /* @__PURE__ */ React.createElement("div", { className: "w-full flex justify-between items-center text-[8.5px] sm:text-[9.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 select-none leading-none" }, /* @__PURE__ */ React.createElement("span", null, "PRECISION"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-black text-xs leading-none" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")))
-        ),
+            variant: "header",
+            isTechnoActive: isLogoTechnoActive,
+            onClick: triggerLogoTechno
+          }
+        )),
         activeTab,
         t,
         auditInfo: globalAuditInfo,

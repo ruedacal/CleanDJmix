@@ -3866,7 +3866,7 @@ const BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
     const [opts, setOpts] = useState({ 
         fftLossless: true, 
         trimSilences: true, 
-        beatgrid: true, 
+        beatgrid: false, 
         bpmKey: true, 
         energyDance: true, 
         moodDetect: true, 
@@ -9677,7 +9677,7 @@ const AuditWorkspace = ({
     const [batchConfigOpts, setBatchConfigOpts] = useState({
         fftLossless: true,
         trimSilences: true,
-        beatgrid: true,
+        beatgrid: false,
         bpmKey: true,
         energyDance: true,
         moodDetect: true,
@@ -34621,6 +34621,96 @@ const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
 };
 
 // ==============================================================================
+// CANONICAL BRAND IDENTITY LOGO (COMPARTIDO EXACTAMENTE EN HEADER Y EN HERO/INTRO)
+// ==============================================================================
+const BeatWaveBrandIdentity = ({ 
+    variant = 'hero', // 'header' | 'hero'
+    isTechnoActive = false, 
+    onClick = null,
+    className = '' 
+}) => {
+    const isHero = variant === 'hero';
+    const badgeSize = isHero ? 'hero' : 'sm'; // hero: 76px / sm: 36px
+    const titleSize = isHero ? 48 : 24;       // font-size en px
+    const proSize = isHero ? 19 : 10.5;       // font-size de PRO en px
+    const proBorder = isHero ? 2.5 : 1.5;     // grosor del borde
+    const proRadius = isHero ? 12 : 8;        // radio del borde
+    const proPx = isHero ? 12 : 7;            // padding horizontal
+    const proPy = isHero ? 3 : 1.5;           // padding vertical
+    const subSize = isHero ? 15 : 9;          // font-size de PRECISION • AUDIO • INTELLIGENCE
+    const subGap = isHero ? 6 : 3;            // margen entre título y subtítulo
+    const mainGap = isHero ? 22 : 12;         // espacio entre el badge y el texto
+
+    return (
+        <div 
+            onClick={onClick}
+            className={`inline-flex items-center select-none ${onClick ? 'cursor-pointer' : ''} group ${className}`}
+            style={{ columnGap: `${mainGap}px` }}
+        >
+            {/* 1. Badge Circular Oficial */}
+            <BeatWaveLogoBadge size={badgeSize} />
+
+            {/* 2. Bloque Tipográfico con Proporción Áurea 1:1 */}
+            <div className="flex flex-col justify-center text-left shrink-0 select-none">
+                {/* Fila 1: BEATWAVE + PRO */}
+                <div className="flex items-center leading-none" style={{ gap: isHero ? '12px' : '7px' }}>
+                    <span 
+                        className={`font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-300 ${
+                            isTechnoActive 
+                                ? 'anim-soundwave drop-shadow-[0_0_24px_rgba(34,211,238,0.95)]' 
+                                : 'drop-shadow-[0_2px_14px_rgba(0,0,0,0.9)]'
+                        }`}
+                        style={{ 
+                            fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
+                            fontWeight: 800,
+                            fontSize: `${titleSize}px`,
+                            lineHeight: 1
+                        }}
+                    >
+                        <span className="text-white">BEAT</span>
+                        <span className="text-cyan-400" style={{ textShadow: '0 0 16px rgba(34, 211, 238, 0.9)' }}>WAVE</span>
+                    </span>
+                    <span 
+                        className="font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase"
+                        style={{
+                            fontFamily: "Inter, -apple-system, sans-serif",
+                            fontWeight: 900,
+                            fontSize: `${proSize}px`,
+                            padding: `${proPy}px ${proPx}px`,
+                            borderRadius: `${proRadius}px`,
+                            border: `${proBorder}px solid #22d3ee`,
+                            boxShadow: '0 0 12px rgba(34, 211, 238, 0.55)',
+                            lineHeight: 1
+                        }}
+                    >
+                        PRO
+                    </span>
+                </div>
+
+                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE */}
+                <div 
+                    className="w-full flex justify-between items-center text-cyan-200/90 select-none leading-none"
+                    style={{
+                        fontFamily: "Inter, -apple-system, sans-serif",
+                        fontWeight: 800,
+                        fontSize: `${subSize}px`,
+                        letterSpacing: '0.14em',
+                        marginTop: `${subGap}px`,
+                        lineHeight: 1
+                    }}
+                >
+                    <span>PRECISION</span>
+                    <span className="text-cyan-400 font-black" style={{ fontSize: `${subSize * 1.15}px` }}>•</span>
+                    <span>AUDIO</span>
+                    <span className="text-cyan-400 font-black" style={{ fontSize: `${subSize * 1.15}px` }}>•</span>
+                    <span>INTELLIGENCE</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ==============================================================================
 // BEATWAVE HERO SHOWCASE STUDIO · 01 WARP DEPTH & LASER SCRAMBLE
 // ==============================================================================
 const HERO_SHOWCASE_SLIDES = [
@@ -35134,28 +35224,11 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
                     {/* Logo Oficial + Tipografía Idéntica al Header (Misma Tipografía Syne, Diseño y Proporción 1:1) Separado del Carrusel */}
-                    <div className="flex flex-row items-center justify-center gap-3.5 sm:gap-5 md:gap-6 select-none group mt-2 sm:mt-4 mb-20 sm:mb-24 md:mb-32">
-                        <BeatWaveLogoBadge size="hero" />
-                        <div className="flex flex-col justify-center select-none text-left shrink-0">
-                            <div className="flex items-center gap-2 sm:gap-3 md:gap-3.5 leading-none">
-                                <span 
-                                    className="font-syne font-black text-3xl sm:text-5xl md:text-[56px] lg:text-[62px] tracking-[0.02em] leading-none uppercase select-none transition-all duration-300 drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]"
-                                    style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800 }}
-                                >
-                                    <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_24px_rgba(34,211,238,0.9)]">WAVE</span>
-                                </span>
-                                <span className="text-xs sm:text-lg md:text-xl lg:text-[22px] font-sans font-black tracking-wider px-2 sm:px-3 md:px-3.5 py-0.5 sm:py-1 rounded-[8px] sm:rounded-[12px] md:rounded-[14px] border-[1.5px] sm:border-[2px] md:border-[2.5px] border-cyan-400 text-cyan-400 shadow-[0_0_14px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
-                                    PRO
-                                </span>
-                            </div>
-                            <div className="w-full flex justify-between items-center text-[10px] sm:text-sm md:text-base lg:text-[17.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 sm:mt-1.5 md:mt-2 select-none leading-none">
-                                <span>PRECISION</span>
-                                <span className="text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none">•</span>
-                                <span>AUDIO</span>
-                                <span className="text-cyan-400 font-black text-xs sm:text-sm md:text-base lg:text-[18px] leading-none">•</span>
-                                <span>INTELLIGENCE</span>
-                            </div>
-                        </div>
+                    <div 
+                        className="flex items-center justify-center select-none group"
+                        style={{ marginTop: '16px', marginBottom: '84px' }}
+                    >
+                        <BeatWaveBrandIdentity variant="hero" />
                     </div>
 
                     {/* ESCENARIO LIBRE SIN MARCOS NI TARJETAS: CLEAN-LINE KINETIC SCRAMBLE STUDIO */}
@@ -36580,38 +36653,12 @@ const App = () => {
 
             <TopBar
                 logo={(
-                    <div 
-                        onClick={triggerLogoTechno} 
-                        className="flex items-center select-none cursor-pointer group my-auto py-1 sm:py-1.5"
-                        title={isLogoTechnoActive ? "BeatWave Pro (Secuencia Techno Activa - 10s)" : "Haz clic para activar el pulso techno"}
-                    >
-                        {/* CONTENEDOR CENTRADO RESPECTO AL MENÚ LATERAL COLAPSADO (76px de ancho, centro en 38px) */}
-                        <div className="w-[76px] shrink-0 flex items-center justify-center my-auto">
-                            <BeatWaveLogoBadge size="sm" />
-                        </div>
-
-                        {/* TIPOGRAFÍA OFICIAL BEATWAVE PRO CON ESTILO DE TÍTULOS (FONT-SYNE BLACK) Y EMPAQUE */}
-                        <div className="-ml-4 flex flex-col justify-center shrink-0 pr-3 my-auto">
-                            <div className="flex items-center gap-1.5 sm:gap-2 leading-none">
-                                <span className={`font-syne font-black text-[22px] sm:text-[24px] tracking-[0.02em] leading-none select-none transition-all duration-300 ${
-                                    isLogoTechnoActive 
-                                        ? 'anim-soundwave drop-shadow-[0_0_22px_rgba(6,182,212,0.95)]' 
-                                        : 'group-hover:brightness-110 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]'
-                                }`}>
-                                    <span className="text-white">BEAT</span><span className="text-cyan-400 drop-shadow-[0_0_14px_rgba(34,211,238,0.85)]">WAVE</span>
-                                </span>
-                                <span className="text-[10px] sm:text-[11px] font-sans font-black tracking-wider px-2 py-0.5 rounded-[8px] sm:rounded-[9px] border-[1.5px] border-cyan-400 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)] shrink-0 self-center leading-none">
-                                    PRO
-                                </span>
-                            </div>
-                            <div className="w-full flex justify-between items-center text-[8.5px] sm:text-[9.5px] font-sans font-black tracking-[0.14em] text-cyan-300/90 mt-1 select-none leading-none">
-                                <span>PRECISION</span>
-                                <span className="text-cyan-400 font-black text-xs leading-none">•</span>
-                                <span>AUDIO</span>
-                                <span className="text-cyan-400 font-black text-xs leading-none">•</span>
-                                <span>INTELLIGENCE</span>
-                            </div>
-                        </div>
+                    <div className="flex items-center select-none my-auto pl-3 sm:pl-4">
+                        <BeatWaveBrandIdentity 
+                            variant="header"
+                            isTechnoActive={isLogoTechnoActive}
+                            onClick={triggerLogoTechno}
+                        />
                     </div>
                 )}
                 activeTab={activeTab}

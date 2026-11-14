@@ -568,6 +568,16 @@ async def serve_copilot_page():
         return FileResponse(copilot_html)
     return JSONResponse({"error": "copilot.html no encontrado"}, status_code=404)
 
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path.endswith((".html", ".js", ".css")) or path == "/":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Montar interfaz frontend React compilada (web/)
 WEB_DIR = os.path.join(BASE_DIR, "web")
 if os.path.isdir(WEB_DIR):
