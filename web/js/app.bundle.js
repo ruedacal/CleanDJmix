@@ -9052,7 +9052,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         console.error("Error abriendo di\xE1logo nativo:", err);
       }
     };
-    const handleAbrirNavegadorCarpetas2 = async (initialPath = "") => {
+    const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || (typeof rutaOrigen === "string" && !rutaOrigen.includes("pista") ? rutaOrigen : "") || "";
@@ -9160,11 +9160,11 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     };
     const handleExplorar = async () => {
       setIsAppendMode(false);
-      handleAbrirNavegadorCarpetas2(rutaOrigen);
+      handleAbrirNavegadorCarpetas(rutaOrigen);
     };
     const handleAnadirMas = () => {
       setIsAppendMode(true);
-      handleAbrirNavegadorCarpetas2(rutaOrigen);
+      handleAbrirNavegadorCarpetas(rutaOrigen);
     };
     const resolveAuditTargets = (pathOverride) => {
       if (pathOverride) return pathOverride;
@@ -14580,7 +14580,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         setIsExportingXls(false);
       }
     };
-    const handleAbrirNavegadorCarpetas2 = async (initialPath = "") => {
+    const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || destDir || "";
@@ -15299,7 +15299,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       });
     };
     const handleCambiarCarpeta = () => {
-      handleAbrirNavegadorCarpetas2(destDir);
+      handleAbrirNavegadorCarpetas(destDir);
     };
     return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-spotify flex w-full h-full max-w-full bg-[#09090c] text-gray-300 font-sans select-none overflow-x-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 border-b border-djzinc-800 bg-[#0c0c10] flex flex-col gap-2.5 shrink-0 w-full max-w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Download, title: "Record Pool", accent: "& Ingesta", badge: "AUDIO HQ" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-400 font-sans hidden md:inline" }, "B\xFAsqueda, descarga de alta fidelidad y extracci\xF3n autom\xE1tica de stems")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-1 min-w-[320px] max-w-full lg:max-w-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 bg-[#060609] border border-djzinc-750 focus-within:border-djcyan-500 rounded-lg flex items-center overflow-hidden shadow-inner" }, /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1.5 text-xs font-mono text-djcyan-400 bg-[#0e0e13] border-r border-djzinc-800 font-bold shrink-0 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "B\xDASQUEDA")), /* @__PURE__ */ React.createElement(
       "input",
@@ -26709,6 +26709,7 @@ ${res.path}`);
         console.error("Error al cargar directorio:", e);
       }
     };
+    const handleAbrirNavegadorCarpetas = handleCargarDirectorioGlobal;
     const handleOpenBeatgridStudio = (trackRef) => {
       if (trackRef) {
         let found = null;
@@ -26909,7 +26910,7 @@ ${res.path}`);
           setActiveTab("audit");
         },
         onNavigateTab: setActiveTab,
-        onLoadFolderFromDisk: () => handleAbrirNavegadorCarpetas(),
+        onLoadFolderFromDisk: () => handleCargarDirectorioGlobal(),
         currentFolder
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "audit" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
@@ -26997,7 +26998,7 @@ ${res.path}`);
           setActiveTab("audit");
         },
         onNavigateTab: setActiveTab,
-        onLoadFolderFromDisk: () => handleAbrirNavegadorCarpetas(),
+        onLoadFolderFromDisk: () => handleCargarDirectorioGlobal(),
         currentFolder
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "taxonomy" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(

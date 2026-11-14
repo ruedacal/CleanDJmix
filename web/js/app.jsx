@@ -36613,6 +36613,8 @@ const App = () => {
         }
     };
 
+    const handleAbrirNavegadorCarpetas = handleCargarDirectorioGlobal;
+
     const handleOpenBeatgridStudio = (trackRef) => {
         if (trackRef) {
             let found = null;
@@ -36818,7 +36820,7 @@ const App = () => {
                             setActiveTab('audit');
                         }}
                         onNavigateTab={setActiveTab}
-                        onLoadFolderFromDisk={() => handleAbrirNavegadorCarpetas()}
+                        onLoadFolderFromDisk={() => handleCargarDirectorioGlobal()}
                         currentFolder={currentFolder}
                     />
                 </div>
@@ -36906,7 +36908,7 @@ const App = () => {
                             setActiveTab('audit');
                         }}
                         onNavigateTab={setActiveTab}
-                        onLoadFolderFromDisk={() => handleAbrirNavegadorCarpetas()}
+                        onLoadFolderFromDisk={() => handleCargarDirectorioGlobal()}
                         currentFolder={currentFolder}
                     />
                 </div>
