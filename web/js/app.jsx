@@ -10545,27 +10545,45 @@ const AuditWorkspace = ({
     };
 
     const fetchDirectoryListing = async (path) => {
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
-            try {
-                const res = await window.eel.listar_subcarpetas_sistema(path)();
-                if (res && (res.folders || res.files || res.current)) return res;
-            } catch (e) {
-                console.warn("Eel listar_subcarpetas falló, reintentando por API:", e);
-            }
-        }
+        // 1. Priorizar llamada directa HTTP REST con timeout (independiente de websockets)
         try {
-            const r = await fetch('/api/listar_subcarpetas?ruta=' + encodeURIComponent(path || ''));
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const r = await fetch('/api/listar_subcarpetas?ruta=' + encodeURIComponent(path || ''), {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
             if (r.ok) {
                 const data = await r.json();
                 if (data && (data.folders || data.files || data.current)) return data;
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn("HTTP listar_subcarpetas falló, intentando alternativa:", e);
+        }
+
+        // 2. Fallback a Eel con timeout para evitar cuelgues si el websocket no responde
+        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+            try {
+                const eelPromise = window.eel.listar_subcarpetas_sistema(path)();
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Eel timeout")), 1500));
+                const res = await Promise.race([eelPromise, timeoutPromise]);
+                if (res && (res.folders || res.files || res.current)) return res;
+            } catch (e) {
+                console.warn("Eel listar_subcarpetas falló:", e);
+            }
+        }
+
+        // 3. Fallback a RPC FastAPI
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
             const r = await fetch('/api/rpc/listar_subcarpetas_sistema', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ args: [path || ''] })
+                body: JSON.stringify({ args: [path || ''] }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (r.ok) {
                 const data = await r.json();
                 return data.result || data;
@@ -10605,18 +10623,25 @@ const AuditWorkspace = ({
         setFsLoading(true);
         const startPath = initialPath || (typeof rutaOrigen === 'string' && !rutaOrigen.includes('pista') ? rutaOrigen : "") || "";
         try {
-            const res = await fetchDirectoryListing(startPath);
+            let res = await fetchDirectoryListing(startPath);
+            if (!res || (!res.folders?.length && !res.files?.length && !res.current)) {
+                // Si la ruta solicitada falló o está vacía, rescatar con la carpeta Music estándar
+                res = await fetchDirectoryListing("/Users/admin/Music");
+            }
             if (res) {
-                setFsCurrentPath(res.current || "");
-                setFsParentPath(res.parent || "");
+                setFsCurrentPath(res.current || "/Users/admin/Music");
+                setFsParentPath(res.parent || "/Users/admin");
                 setFsFolders(res.folders || []);
                 setFsFiles(res.files || []);
                 if ((!res.folders || res.folders.length === 0) && (res.files && res.files.length > 0)) {
                     setFsActiveTab('files');
                 }
+            } else {
+                setFsCurrentPath("/Users/admin/Music");
             }
         } catch (err) {
             console.error("Error al listar carpetas:", err);
+            setFsCurrentPath("/Users/admin/Music");
         } finally {
             setFsLoading(false);
         }
@@ -10627,7 +10652,7 @@ const AuditWorkspace = ({
         try {
             const res = await fetchDirectoryListing(targetPath);
             if (res) {
-                setFsCurrentPath(res.current || "");
+                setFsCurrentPath(res.current || targetPath);
                 setFsParentPath(res.parent || "");
                 setFsFolders(res.folders || []);
                 setFsFiles(res.files || []);
@@ -16330,25 +16355,29 @@ const HotCuesWorkspace = ({
         const target = dir || currentFolder || "";
         setRutaNavegacion(target);
         setFsBrowserOpen(true);
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        let res = null;
+        try {
+            const r = await fetch('/api/listar_subcarpetas?ruta=' + encodeURIComponent(target || ''));
+            if (r.ok) res = await r.json();
+        } catch (e) {}
+        if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
-                const res = await window.eel.listar_subcarpetas_sistema(target)();
-                if (res) {
-                    if (res.current) setRutaNavegacion(res.current);
-                    if (Array.isArray(res.folders)) {
-                        setCarpetasSistema(res.folders);
-                    } else if (Array.isArray(res)) {
-                        setCarpetasSistema(res);
-                    } else {
-                        setCarpetasSistema([]);
-                    }
-                } else {
-                    setCarpetasSistema([]);
-                }
+                res = await window.eel.listar_subcarpetas_sistema(target)();
             } catch (err) {
-                console.error("Error al listar carpetas:", err);
+                console.error("Error al listar carpetas Eel:", err);
+            }
+        }
+        if (res) {
+            if (res.current) setRutaNavegacion(res.current);
+            if (Array.isArray(res.folders)) {
+                setCarpetasSistema(res.folders);
+            } else if (Array.isArray(res)) {
+                setCarpetasSistema(res);
+            } else {
                 setCarpetasSistema([]);
             }
+        } else {
+            setCarpetasSistema([]);
         }
     };
 
@@ -18328,25 +18357,29 @@ const SpotifyWorkspace = ({
         setFsLoading(true);
         const startPath = initialPath || destDir || "";
         let res = null;
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        try {
+            const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(startPath)}`);
+            if (resp.ok) res = await resp.json();
+        } catch (httpErr) {}
+        if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
                 res = await window.eel.listar_subcarpetas_sistema(startPath)();
             } catch (err) {
                 console.warn("[EXPLORADOR] Fallo llamada Eel, recurriendo a HTTP:", err);
             }
         }
-        if (!res) {
+        if (!res || (!res.folders?.length && !res.files?.length && !res.current)) {
             try {
-                const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(startPath)}`);
+                const resp = await fetch('/api/listar_subcarpetas?ruta=' + encodeURIComponent('/Users/admin/Music'));
                 if (resp.ok) res = await resp.json();
-            } catch (httpErr) {
-                console.error("[EXPLORADOR] Fallo HTTP al listar carpetas:", httpErr);
-            }
+            } catch (e) {}
         }
         if (res) {
-            setFsCurrentPath(res.current || "");
-            setFsParentPath(res.parent || "");
+            setFsCurrentPath(res.current || "/Users/admin/Music");
+            setFsParentPath(res.parent || "/Users/admin");
             setFsFolders(res.folders || []);
+        } else {
+            setFsCurrentPath("/Users/admin/Music");
         }
         setFsLoading(false);
     };
@@ -18354,23 +18387,19 @@ const SpotifyWorkspace = ({
     const handleNavegarACarpeta = async (targetPath) => {
         setFsLoading(true);
         let res = null;
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        try {
+            const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(targetPath)}`);
+            if (resp.ok) res = await resp.json();
+        } catch (httpErr) {}
+        if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
             try {
                 res = await window.eel.listar_subcarpetas_sistema(targetPath)();
             } catch (err) {
                 console.warn("[EXPLORADOR] Fallo llamada Eel al navegar:", err);
             }
         }
-        if (!res) {
-            try {
-                const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(targetPath)}`);
-                if (resp.ok) res = await resp.json();
-            } catch (httpErr) {
-                console.error("[EXPLORADOR] Fallo HTTP al navegar:", httpErr);
-            }
-        }
         if (res) {
-            setFsCurrentPath(res.current || "");
+            setFsCurrentPath(res.current || targetPath);
             setFsParentPath(res.parent || "");
             setFsFolders(res.folders || []);
         }

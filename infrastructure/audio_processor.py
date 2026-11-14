@@ -353,7 +353,7 @@ class AudioProcessorService:
         try:
             import soundfile as sf
             import numpy as np
-            from scipy.signal import butter, sosfilt
+            from scipy.signal import butter, sosfiltfilt
 
             # 1. Inspección de metadatos de audio con soundfile C-level
             info = sf.info(ruta)
@@ -366,14 +366,15 @@ class AudioProcessorService:
             if b_est <= 40.0:
                 b_est = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
 
-            # Cargar hasta 50 segundos para cubrir intros atmosféricas y drops tardíos
-            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=50.0)
+            # Cargar hasta 90 segundos para cubrir intros atmosféricas, mezclas de DJ y drops tardíos
+            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=90.0)
             if mono_head is None or len(mono_head) == 0:
                 return (0.0, 0.0, dur_total_ms) if incluir_cola else (0.0, 0.0)
 
-            # FASE 1A: Zero-Crossing Silence Trim en Cabecera
+            # FASE 1A: Zero-Crossing Silence Trim en Cabecera (primeros 15s)
             hop_silence = max(1, int(sr_head * 0.005))  # bloques de 5ms
-            num_blocks = len(mono_head) // hop_silence
+            head_15s_samples = min(len(mono_head), int(15.0 * sr_head))
+            num_blocks = head_15s_samples // hop_silence
             trim_start_ms = 0.0
             downbeat_ms = 0.0
 
@@ -401,28 +402,47 @@ class AudioProcessorService:
 
                     trim_start_ms = round(float(zero_cross_idx) / sr_head * 1000.0, 1)
 
-                    # FASE 1B: Detección estricta del Beat 1.1 (Downbeat) mediante Fase Circular de Bombos Físicos Reales
+                    # FASE 1B: Detección estricta de Beat 1.1 (Downbeat) mediante Fase Cero (Zero-Phase sosfiltfilt)
+                    # y alineación de transitorios físicos de bombo en la sección central/drop
                     beat_sec = 60.0 / b_est
                     beat_dur_ms = beat_sec * 1000.0
 
-                    sos = butter(4, [40.0, 90.0], btype='bandpass', fs=sr_head, output='sos')
-                    sub_kick = sosfilt(sos, mono_head)
+                    # Filtro paso-banda de bombo subgrave (45-85 Hz) con fase cero exacta (retardo de grupo = 0.0 ms)
+                    sos = butter(4, [45.0, 85.0], btype='bandpass', fs=sr_head, output='sos')
+                    sub_kick = sosfiltfilt(sos, mono_head)
                     env = np.abs(sub_kick)
+                    win_sm = max(1, int(sr_head * 0.005))
+                    env_sm = np.convolve(env, np.ones(win_sm) / win_sm, mode='same')
 
-                    max_amp = float(np.max(env)) if len(env) > 0 else 0.0
-                    thresh = 0.35 * max_amp if max_amp > 0.001 else 0.001
-                    min_dist_samples = max(1, int(0.70 * beat_sec * sr_head))
-                    last_pk = -min_dist_samples
-                    peak_times = []
+                    # Derivada positiva de la envolvente = momento de impacto/ataque del bombo
+                    diff_kick = np.diff(env_sm, prepend=env_sm[0])
+                    diff_kick[diff_kick < 0] = 0
 
-                    for i in range(1, len(env) - 1):
-                        if env[i] > thresh and env[i] > env[i-1] and env[i] >= env[i+1]:
-                            if (i - last_pk) >= min_dist_samples:
-                                peak_times.append(float(i) / sr_head)
-                                last_pk = i
+                    # Localizar la sección rítmica con mayor estabilidad 4/4 (drop / cuerpo central)
+                    block_sec = 4.0
+                    block_samples = int(block_sec * sr_head)
+                    num_b = len(diff_kick) // block_samples
+                    if num_b >= 3:
+                        energies = [np.sum(diff_kick[i * block_samples:(i + 1) * block_samples] ** 2) for i in range(num_b)]
+                        best_b = int(np.argmax(energies))
+                        w_start = max(0, int((best_b * block_sec - 6.0) * sr_head))
+                        w_end = min(len(diff_kick), w_start + int(24.0 * sr_head))
+                    else:
+                        w_start = 0
+                        w_end = len(diff_kick)
 
-                    if len(peak_times) >= 4:
-                        # Fase circular media inmune a saltos de compás y síncopas
+                    section_diff = diff_kick[w_start:w_end]
+                    # Distancia mínima entre picos: 80% del compás para rechazar contratiempos (offbeats/hi-hats)
+                    min_dist_samples = max(1, int(0.80 * beat_sec * sr_head))
+                    max_diff_val = float(np.max(section_diff)) if len(section_diff) > 0 else 0.0
+                    thresh = 0.22 * max_diff_val if max_diff_val > 0.001 else 0.001
+
+                    from scipy.signal import find_peaks
+                    peaks, _ = find_peaks(section_diff, height=thresh, distance=min_dist_samples)
+                    peak_times = (w_start + peaks) / sr_head
+
+                    if len(peak_times) >= 3:
+                        # Fase circular media inmune a variaciones y saltos de frase
                         phases = [(t % beat_sec) for t in peak_times]
                         angles = [(p_val / beat_sec) * 2.0 * np.pi for p_val in phases]
                         mean_angle = float(np.arctan2(np.mean(np.sin(angles)), np.mean(np.cos(angles))))
@@ -430,13 +450,12 @@ class AudioProcessorService:
                             mean_angle += 2.0 * np.pi
                         best_phase_sec = (mean_angle / (2.0 * np.pi)) * beat_sec
 
-                        # Compensación del transitorio de ataque inicial frente al pico resonante (~12ms)
-                        attack_offset_sec = min(0.012, best_phase_sec)
-                        best_phase_sec = max(0.0, best_phase_sec - attack_offset_sec)
-                        downbeat_ms = round(best_phase_sec * 1000.0, 1)
+                        downbeat_sec = best_phase_sec
+                        trim_start_sec = trim_start_ms / 1000.0
+                        while downbeat_sec < trim_start_sec - 0.005:
+                            downbeat_sec += beat_sec
 
-                        while downbeat_ms < trim_start_ms - 15.0:
-                            downbeat_ms = round(downbeat_ms + beat_dur_ms, 1)
+                        downbeat_ms = round(downbeat_sec * 1000.0, 1)
                     else:
                         downbeat_ms = trim_start_ms
                 else:
@@ -1201,7 +1220,7 @@ class AudioProcessorService:
         Estructura oficial:
         - Cabecera binaria (2 bytes): \\x01\\x01
         - Bloque COLOR (RGB cian oficial #06b6d4)
-        - Bloque BPMLOCK (1 byte = 0 desbloqueado)
+        - Bloque BPMLOCK (1 byte = 1 bloqueado para blindar BeatGrid frente a sobreescritura de Serato)
         - Bloques CUE (13 bytes base + nombre con terminación null):
             Offset 00: \\x00 (padding)
             Offset 01: cid (uint8, 0..7)
@@ -1215,8 +1234,8 @@ class AudioProcessorService:
         out = bytearray(b"\x01\x01")
         # Color del track en Serato (Cian #06b6d4)
         out.extend(b"COLOR\x00" + struct.pack(">I", 4) + b"\x00\x06\xb6\xd4")
-        # BPMLOCK: 0 (desbloqueado)
-        out.extend(b"BPMLOCK\x00" + struct.pack(">I", 1) + b"\x00")
+        # BPMLOCK: 1 (bloqueado para blindar BeatGrid frente al motor auto-analizador de Serato)
+        out.extend(b"BPMLOCK\x00" + struct.pack(">I", 1) + b"\x01")
 
         if not cues or len(cues) == 0:
             active_cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
@@ -1616,8 +1635,12 @@ class AudioProcessorService:
         trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
         trim_end_ms = float(meta_track.get("trim_end_ms") or 0.0)
 
-        # Si no existe downbeat válido o se solicitó recalcular, sincronizar con el bpm_float exacto
-        if downbeat_ms <= 0.0 or meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid"):
+        # REGLA ESTRICTA REDTEAM: El BeatGrid y Downbeat se deben recalcular OBLIGATORIAMENTE
+        # si no existe downbeat válido, si se solicita explícitamente recalcular, si el BPM ha cambiado
+        # o si se ejecuta la inyección de metadatos Serato para asegurar anclaje perfecto a bombos físicos
+        bpm_previo = float(meta_track.get("bpm_previo") or meta_track.get("old_bpm") or 0.0)
+        bpm_cambio = (bpm_previo > 20.0 and abs(bpm_previo - bpm_float) > 0.05)
+        if downbeat_ms <= 0.0 or meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid") or bpm_cambio or modo_serato:
             try:
                 t_start, d_down, t_end = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm_float, incluir_cola=True)
                 trim_ms = t_start
@@ -1822,13 +1845,14 @@ class AudioProcessorService:
                 if downbeat_ms > 0:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
 
-                # Metadatos nativos Serato DJ en VORBIS_COMMENT
+                # Metadatos nativos Serato DJ en VORBIS_COMMENT (sin tags no oficiales que confundan a Serato)
                 audio["SERATO_MARKERS_V2"] = [flac_markers2_str]
                 audio["SERATO_MARKERS"] = [flac_markers1_str]
                 audio["SERATO_BEATGRID"] = [flac_beatgrid_b64]
-                audio["SERATO_TEMPO_MAP"] = [flac_tempo_map_str]
                 audio["SERATO_ANALYSIS_FLAGS"] = [flac_analysis_flags_b64]
                 audio["SERATO_AUTOGAIN"] = [flac_autotags_b64]
+                if "SERATO_TEMPO_MAP" in audio:
+                    del audio["SERATO_TEMPO_MAP"]
 
                 if cover_bytes:
                     try:
