@@ -9239,7 +9239,7 @@ const LibraryWorkspace = ({
                         <button
                             type="button"
                             onClick={() => onLoadFolderFromDisk()}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                            className="px-4 py-2.5 min-h-[38px] rounded-xl bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/70 text-emerald-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
                             title="Seleccionar y cargar una carpeta de música desde tu ordenador"
                         >
                             <Icons.Folder size={15} />
@@ -9250,7 +9250,7 @@ const LibraryWorkspace = ({
                         <button 
                             type="button" 
                             onClick={() => onNavigateTab('audit')}
-                            className="px-3.5 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                            className="px-4 py-2.5 min-h-[38px] rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-500/70 text-cyan-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
                             title="Ir a la mesa de Auditoría & DSP"
                         >
                             <Icons.Eye size={15} />
@@ -15000,29 +15000,29 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                 <button
                                     type="button"
                                     onClick={handleAbrirDialogoNativo}
-                                    className="px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white rounded text-[11px] font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95"
+                                    className="px-3.5 py-2 min-h-[34px] bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/70 text-emerald-300 hover:text-white rounded-lg text-xs font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95"
                                     title="Abrir ventana nativa del Finder de macOS para seleccionar carpeta"
                                 >
-                                    <Icons.Folder size={13} />
+                                    <Icons.Folder size={14} />
                                     <span>Abrir Finder (macOS)</span>
                                 </button>
-                                <button onClick={() => setFsBrowserOpen(false)} className="w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /></button>
+                                <button onClick={() => setFsBrowserOpen(false)} className="w-8 h-8 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={15} className="inline-block align-[-2px]" /></button>
                             </div>
                         </div>
 
-                        <div className="px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                        <div className="px-4 py-3 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span className="text-gray-400 shrink-0">Ruta:</span>
-                                <span className="text-djcyan-400 font-semibold truncate" title={fsCurrentPath}>{fsCurrentPath || "Cargando..."}</span>
+                                <span className="text-gray-400 shrink-0 font-bold">Ruta:</span>
+                                <span className="text-djcyan-400 font-bold truncate" title={fsCurrentPath}>{fsCurrentPath || "Cargando..."}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                                 {fsCurrentPath && (
                                     <button 
                                         type="button"
                                         onClick={() => toggleStageFolder(fsCurrentPath)}
-                                        className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                                        className={`px-3 py-2 min-h-[34px] rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow ${
                                             stagedFolders.includes(fsCurrentPath)
-                                                ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow'
+                                                ? 'bg-emerald-500 text-black border-emerald-400 font-black'
                                                 : 'bg-djcyan-950/80 hover:bg-djcyan-900 border-djcyan-700/70 text-djcyan-300'
                                         }`}
                                         title="Añadir o quitar toda esta carpeta de la cesta de selección conjunta"
@@ -15032,41 +15032,41 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                     </button>
                                 )}
                                 {fsParentPath && fsParentPath !== fsCurrentPath && (
-                                    <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded text-[11px] border border-djzinc-700 cursor-pointer shrink-0">
-                                        ▲ Subir Nivel
+                                    <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-3 py-2 min-h-[34px] bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-mono font-bold border border-djzinc-700 cursor-pointer shrink-0 flex items-center gap-1.5 shadow">
+                                        <span>▲</span> <span>Subir Nivel</span>
                                     </button>
                                 )}
                             </div>
                         </div>
 
                         {/* Pestañas de Vista: Subcarpetas / Archivos de Audio */}
-                        <div className="flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2 gap-2 text-xs font-mono">
+                        <div className="flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2.5 gap-2 text-xs font-mono">
                             <button
                                 onClick={() => setFsActiveTab('folders')}
-                                className={`px-3 py-1.5 rounded-t font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                className={`px-4 py-2.5 min-h-[38px] rounded-t-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${
                                     fsActiveTab === 'folders'
                                         ? 'bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700'
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
-                                <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Subcarpetas</span>
-                                <span className="px-1.5 py-0.2 bg-djzinc-800 text-[10px] rounded-full text-gray-300">{fsFolders.length}</span>
+                                <span><Icons.Folder size={15} className="inline-block align-[-2px]" /> Subcarpetas</span>
+                                <span className="px-2 py-0.5 bg-djzinc-800 text-[11px] rounded-full text-gray-300 font-mono font-bold leading-none">{fsFolders.length}</span>
                                 {stagedFolders.length > 0 && (
-                                    <span className="px-1.5 py-0.2 bg-emerald-500 text-black text-[10px] font-bold rounded-full">
+                                    <span className="px-2 py-0.5 bg-emerald-500 text-black text-[11px] font-bold rounded-full font-mono leading-none">
                                         {stagedFolders.length} en cesta
                                     </span>
                                 )}
                             </button>
                             <button
                                 onClick={() => setFsActiveTab('files')}
-                                className={`px-3 py-1.5 rounded-t font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                className={`px-4 py-2.5 min-h-[38px] rounded-t-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${
                                     fsActiveTab === 'files'
                                         ? 'bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700'
                                         : 'text-gray-400 hover:text-white'
                                 }`}
                             >
-                                <span><Icons.Music size={14} className="inline-block align-[-2px]" /> Pistas Sueltas</span>
-                                <span className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                                <span><Icons.Music size={15} className="inline-block align-[-2px]" /> Pistas Sueltas</span>
+                                <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold font-mono leading-none ${
                                     stagedFiles.length > 0 ? 'bg-djcyan-500 text-black' : 'bg-djzinc-800 text-gray-300'
                                 }`}>
                                     {stagedFiles.length > 0 ? `${stagedFiles.length} en cesta` : fsFiles.length}
@@ -15207,25 +15207,31 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                     </button>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setFsBrowserOpen(false)} className="px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 rounded text-xs cursor-pointer font-mono">
+                            <div className="flex items-center gap-2.5">
+                                <button 
+                                    type="button"
+                                    onClick={() => setFsBrowserOpen(false)} 
+                                    className="px-5 py-2.5 min-h-[40px] bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 hover:text-white rounded-xl text-xs font-mono font-bold cursor-pointer transition-all flex items-center justify-center shadow active:scale-95 border border-djzinc-700"
+                                >
                                     Cancelar
                                 </button>
                                 {(stagedFolders.length > 0 || stagedFiles.length > 0) ? (
                                     <button 
                                         type="button"
                                         onClick={handleConfirmarSeleccionLote}
-                                        className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-extrabold text-xs rounded-lg shadow-lg shadow-emerald-950/40 cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
+                                        className="px-5 py-2.5 min-h-[40px] bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-mono font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
                                     >
-                                        <span><Icons.Download size={14} className="inline-block align-[-2px]" /> Cargar Cesta Completa ({stagedFolders.length} carp., {stagedFiles.length} pistas)</span>
+                                        <Icons.Download size={15} />
+                                        <span>Cargar Cesta Completa ({stagedFolders.length} carp., {stagedFiles.length} pistas)</span>
                                     </button>
                                 ) : (
                                     <button 
                                         type="button"
                                         onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} 
-                                        className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow cursor-pointer transition-transform active:scale-95 flex items-center gap-1.5 font-mono"
+                                        className="px-5 py-2.5 min-h-[40px] bg-djcyan-400 hover:bg-djcyan-300 text-black font-mono font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2"
                                     >
-                                        <span><Icons.Folder size={14} className="inline-block align-[-2px]" /> Cargar Toda la Carpeta Actual</span>
+                                        <Icons.Folder size={15} />
+                                        <span>Cargar Toda la Carpeta Actual</span>
                                     </button>
                                 )}
                             </div>
@@ -20714,9 +20720,9 @@ const SpotifyWorkspace = ({
                                 ))
                             )}
                         </div>
-                        <div className="p-3 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center">
-                            <button onClick={() => setFsBrowserOpen(false)} className="px-3 py-1.5 rounded text-xs bg-djzinc-900 border border-djzinc-800 text-gray-400 hover:text-white cursor-pointer">Cancelar</button>
-                            <button onClick={() => handleSeleccionarCarpetaDestino(fsCurrentPath)} className="px-4 py-1.5 rounded text-xs font-bold bg-djcyan-500 hover:bg-djcyan-400 text-black cursor-pointer shadow">
+                        <div className="p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center gap-2.5">
+                            <button onClick={() => setFsBrowserOpen(false)} className="px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-800 text-gray-300 hover:text-white cursor-pointer transition-all shadow active:scale-95">Cancelar</button>
+                            <button onClick={() => handleSeleccionarCarpetaDestino(fsCurrentPath)} className="px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-mono font-bold bg-djcyan-400 hover:bg-djcyan-300 text-black cursor-pointer shadow-md transition-all active:scale-95">
                                 Usar esta Carpeta
                             </button>
                         </div>
