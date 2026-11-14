@@ -35244,36 +35244,36 @@ const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpe
                         <CleanLineKineticStudioStage />
                     </div>
 
-                    {/* BOTONES DE CONVERSIÓN & ACCESO A LICENCIA */}
-                    <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2">
+                    {/* BOTONES DE CONVERSIÓN & ACCESO A LICENCIA (COMPACTOS Y ESBELTOS) */}
+                    <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
                         <button
                             type="button"
                             onClick={() => handleAction('pricing')}
-                            className="bw-gate-card bw-gate-rise is-primary relative overflow-hidden group shadow-[0_15px_40px_rgba(34,211,238,0.45)] cursor-pointer"
+                            className="bw-gate-card bw-gate-rise is-primary relative overflow-hidden group shadow-[0_10px_28px_rgba(34,211,238,0.35)] cursor-pointer py-2.5 px-3.5"
                         >
-                            <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-black/20 text-[9.5px] font-mono font-black uppercase tracking-wider text-black">
+                            <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/20 text-[8.5px] font-mono font-black uppercase tracking-wider text-black">
                                 MÁS ELEGIDO
                             </div>
-                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/15 group-hover:scale-110 transition-transform text-black shrink-0">
-                                <Icons.Crown size={22} />
+                            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/15 group-hover:scale-105 transition-transform text-black shrink-0">
+                                <Icons.Crown size={19} />
                             </span>
-                            <span className="flex flex-col gap-0.5 text-left">
-                                <span className="text-base font-black tracking-tight text-black">Desbloquear Licencia Pro</span>
-                                <span className="text-xs text-black/75 font-medium leading-tight">Acceso total e ilimitado al motor DSP y Hot Cues</span>
+                            <span className="flex flex-col gap-0.5 text-left pr-14">
+                                <span className="text-[14px] font-black tracking-tight text-black leading-tight">Desbloquear Licencia Pro</span>
+                                <span className="text-[11px] text-black/75 font-medium leading-tight">Acceso total al motor DSP y Hot Cues</span>
                             </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => handleAction('login')}
-                            className="bw-gate-card bw-gate-rise bg-[#141524]/90 hover:bg-[#1a1c30] border-cyan-500/30 hover:border-cyan-400 relative overflow-hidden group shadow-lg cursor-pointer"
+                            className="bw-gate-card bw-gate-rise bg-[#141524]/90 hover:bg-[#1a1c30] border-cyan-500/30 hover:border-cyan-400 relative overflow-hidden group shadow-md cursor-pointer py-2.5 px-3.5"
                         >
-                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-cyan-300 group-hover:scale-110 transition-transform shrink-0">
-                                <Icons.LogIn size={20} />
+                            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-cyan-300 group-hover:scale-105 transition-transform shrink-0">
+                                <Icons.LogIn size={18} />
                             </span>
                             <span className="flex flex-col gap-0.5 text-left">
-                                <span className="text-base font-bold text-white tracking-tight">Iniciar Sesión en Cabina</span>
-                                <span className="text-xs text-zinc-400 font-medium leading-tight">Continúa tu sesión, maleta y preferencias</span>
+                                <span className="text-[14px] font-bold text-white tracking-tight leading-tight">Iniciar Sesión en Cabina</span>
+                                <span className="text-[11px] text-zinc-400 font-medium leading-tight">Continúa tu sesión, maleta y preferencias</span>
                             </span>
                         </button>
                     </div>

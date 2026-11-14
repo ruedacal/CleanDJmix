@@ -25454,25 +25454,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
             style: { marginTop: "16px", marginBottom: "84px" }
           },
           /* @__PURE__ */ React.createElement(BeatWaveBrandIdentity, { variant: "hero" })
-        ), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none", style: { marginBottom: "84px" } }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-1 sm:mt-2" }, /* @__PURE__ */ React.createElement(
+        ), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none", style: { marginBottom: "84px" } }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
             onClick: () => handleAction("pricing"),
-            className: "bw-gate-card bw-gate-rise is-primary relative overflow-hidden group shadow-[0_15px_40px_rgba(34,211,238,0.45)] cursor-pointer"
+            className: "bw-gate-card bw-gate-rise is-primary relative overflow-hidden group shadow-[0_10px_28px_rgba(34,211,238,0.35)] cursor-pointer py-2.5 px-3.5"
           },
-          /* @__PURE__ */ React.createElement("div", { className: "absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-black/20 text-[9.5px] font-mono font-black uppercase tracking-wider text-black" }, "M\xC1S ELEGIDO"),
-          /* @__PURE__ */ React.createElement("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-black/15 group-hover:scale-110 transition-transform text-black shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Crown, { size: 22 })),
-          /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-base font-black tracking-tight text-black" }, "Desbloquear Licencia Pro"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-black/75 font-medium leading-tight" }, "Acceso total e ilimitado al motor DSP y Hot Cues"))
+          /* @__PURE__ */ React.createElement("div", { className: "absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/20 text-[8.5px] font-mono font-black uppercase tracking-wider text-black" }, "M\xC1S ELEGIDO"),
+          /* @__PURE__ */ React.createElement("span", { className: "flex h-9 w-9 items-center justify-center rounded-lg bg-black/15 group-hover:scale-105 transition-transform text-black shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Crown, { size: 19 })),
+          /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5 text-left pr-14" }, /* @__PURE__ */ React.createElement("span", { className: "text-[14px] font-black tracking-tight text-black leading-tight" }, "Desbloquear Licencia Pro"), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-black/75 font-medium leading-tight" }, "Acceso total al motor DSP y Hot Cues"))
         ), /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
             onClick: () => handleAction("login"),
-            className: "bw-gate-card bw-gate-rise bg-[#141524]/90 hover:bg-[#1a1c30] border-cyan-500/30 hover:border-cyan-400 relative overflow-hidden group shadow-lg cursor-pointer"
+            className: "bw-gate-card bw-gate-rise bg-[#141524]/90 hover:bg-[#1a1c30] border-cyan-500/30 hover:border-cyan-400 relative overflow-hidden group shadow-md cursor-pointer py-2.5 px-3.5"
           },
-          /* @__PURE__ */ React.createElement("span", { className: "flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-cyan-300 group-hover:scale-110 transition-transform shrink-0" }, /* @__PURE__ */ React.createElement(Icons.LogIn, { size: 20 })),
-          /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-base font-bold text-white tracking-tight" }, "Iniciar Sesi\xF3n en Cabina"), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-zinc-400 font-medium leading-tight" }, "Contin\xFAa tu sesi\xF3n, maleta y preferencias"))
+          /* @__PURE__ */ React.createElement("span", { className: "flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-cyan-300 group-hover:scale-105 transition-transform shrink-0" }, /* @__PURE__ */ React.createElement(Icons.LogIn, { size: 18 })),
+          /* @__PURE__ */ React.createElement("span", { className: "flex flex-col gap-0.5 text-left" }, /* @__PURE__ */ React.createElement("span", { className: "text-[14px] font-bold text-white tracking-tight leading-tight" }, "Iniciar Sesi\xF3n en Cabina"), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-zinc-400 font-medium leading-tight" }, "Contin\xFAa tu sesi\xF3n, maleta y preferencias"))
         )), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] font-mono text-zinc-500 mt-3 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 12, className: "text-emerald-400" }), "Garant\xEDa de rendimiento en directo \xB7 100% Offline tras activaci\xF3n \xB7 Sin cuelgues")),
         /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-3.5 font-mono text-[11px] text-zinc-500 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400 font-bold" }, "ECOSISTEMA UNIVERSAL:"), /* @__PURE__ */ React.createElement("span", null, "CDJ-3000 \xB7 Rekordbox \xB7 Serato DJ Pro \xB7 Traktor Pro 3 \xB7 VirtualDJ")), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400/80 font-bold" }, "v2.4 Studio Pro \xB7 Ready for Tour"))
       ),

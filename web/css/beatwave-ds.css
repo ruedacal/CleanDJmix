@@ -569,12 +569,12 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 /* ── Access gate (post-intro portal) ────────────────────────────────── */
 .bw-gate-card {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.625rem;
-    padding: 1.125rem 1.25rem;
-    min-height: 112px;
-    border-radius: var(--bw-radius-lg);
+    flex-direction: row;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.75rem 1.125rem;
+    min-height: 60px;
+    border-radius: var(--bw-radius-md);
     border: 1px solid var(--bw-line-strong);
     background: rgba(20, 20, 24, 0.72);
     backdrop-filter: blur(10px);

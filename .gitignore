@@ -53,3 +53,4 @@ tailwind.config.js
 *.cdn-backup
 external/
 
+*.sqlite
