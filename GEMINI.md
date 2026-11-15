@@ -14,5 +14,6 @@
   3. **Brief Questions:** Targeted questions only if more data is needed to refine the instruction.
 
 ## 3. Architectural Continuity & Version Control
-- **Continuity:** Strictly adhere to previously decided architectural decisions. Proactively notify strategy shifts without breaking existing code or strategy (unless facing a total block).
+- **Continuity:** Strictly adhere to previously decided architectural decisions. Proactively notify strategy shifts without breaking existing code or strategy (unless facing a total block). Do not use libraries like Eel or similar non-cross-platform libraries. App version maintenance must be the same for different devices: Windows and Mac desktops, Android and iOS mobiles, tablets and iPads, and web. It's a hybrid application.
+Be careful; we can't break what's already been built.
 - **Version Control (Automated Commits):** Trigger and record a Git commit automatically whenever a feature becomes operational or a structural change is validated.
