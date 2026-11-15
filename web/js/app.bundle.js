@@ -23557,7 +23557,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     ));
   };
-  var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null }) => {
+  var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, onCue = null }) => {
     if (!deck) return null;
     return /* @__PURE__ */ React.createElement("div", { className: `p-3.5 sm:p-4 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.2)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-sm sm:text-base text-zinc-400" }, "DECK ", side), /* @__PURE__ */ React.createElement(
       "button",
@@ -23568,6 +23568,30 @@ Respuesta: ${qa.a}`).join("\n\n"),
         title: `Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`
       },
       isMaster ? "\u{1F50A} MASTER (ON AIR)" : "\u{1F3A7} EN CUE (PREPARADO)"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: (e) => {
+          e.stopPropagation();
+          onTogglePlay && onTogglePlay(side);
+        },
+        className: `px-3 py-1 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center gap-1 border shadow-sm ${deck.is_playing ? "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-600 hover:text-white"}`,
+        title: `Alternar Play/Pausa en Deck ${side} (Atajo de teclado: '${side}')`
+      },
+      /* @__PURE__ */ React.createElement("span", null, deck.is_playing ? "\u23F8 PAUSA" : "\u25B6 PLAY")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: (e) => {
+          e.stopPropagation();
+          onCue && onCue(side);
+        },
+        className: "px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all bg-zinc-900 hover:bg-zinc-800 text-indigo-300 border border-indigo-500/50 hover:text-white",
+        title: `Rebobinar a CUE Bar 1 (Atajo: tecla 'C')`
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u23EE CUE")
     ), (deck.mood || deck.phase) && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 12, className: "inline-block align-[-1px] mr-1" }), " ", deck.mood || deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase" }, deck.format && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -24311,6 +24335,74 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [lowEqApplied, setLowEqApplied] = useState5(false);
     const [manualPickerOpen, setManualPickerOpen] = useState5(false);
     const [manualSearchQuery, setManualSearchQuery] = useState5("");
+    const wsRef = useRef6(null);
+    const togglePlayDeck = async (targetSide) => {
+      const sideStr = targetSide === "2" ? "2" : "1";
+      setState((prev) => {
+        if (!prev) return prev;
+        const curDeck = sideStr === "1" ? prev.deck_1 : prev.deck_2;
+        if (!curDeck) return prev;
+        const newIsPlaying = !curDeck.is_playing;
+        return {
+          ...prev,
+          [`deck_${sideStr}`]: {
+            ...curDeck,
+            is_playing: newIsPlaying,
+            status: newIsPlaying ? curDeck.is_master ? "ON AIR (MASTER)" : "REPRODUCIENDO" : "CUE / PREPARADO"
+          }
+        };
+      });
+      try {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ action: "toggle_play", deck: sideStr }));
+        } else {
+          const res = await fetch("/api/copilot/toggle_play", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deck: sideStr })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setState(data);
+          }
+        }
+      } catch (_) {
+      }
+    };
+    const cueDeck = async (targetSide) => {
+      const sideStr = targetSide === "2" ? "2" : "1";
+      setState((prev) => {
+        if (!prev) return prev;
+        const curDeck = sideStr === "1" ? prev.deck_1 : prev.deck_2;
+        if (!curDeck) return prev;
+        return {
+          ...prev,
+          [`deck_${sideStr}`]: {
+            ...curDeck,
+            is_playing: false,
+            play_progress: 0,
+            elapsed_sec: 0,
+            status: "CUE / PREPARADO"
+          }
+        };
+      });
+      try {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ action: "cue_deck", deck: sideStr }));
+        } else {
+          const res = await fetch("/api/copilot/cue_deck", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deck: sideStr })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setState(data);
+          }
+        }
+      } catch (_) {
+      }
+    };
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -24380,6 +24472,25 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 status: "MIDI ACTIVO"
               });
             }
+            inputs.forEach((input) => {
+              input.onmidimessage = (msg) => {
+                if (!msg || !msg.data || msg.data.length < 2) return;
+                const status = msg.data[0];
+                const note = msg.data[1];
+                const vel = msg.data.length > 2 ? msg.data[2] : 0;
+                const isNoteOn = (status & 240) === 144 && vel > 0 || (status & 240) === 176 && vel > 0;
+                const channel = status & 15;
+                if (isNoteOn) {
+                  if (note === 11 || note === 71 || channel === 0 && (note === 0 || note === 11)) {
+                    togglePlayDeck("1");
+                  } else if (note === 12 || note === 72 || channel === 1 && (note === 0 || note === 12)) {
+                    togglePlayDeck("2");
+                  } else if (note === 1 || note === 12) {
+                    cueDeck("1");
+                  }
+                }
+              };
+            });
           };
           checkDevices();
           access.onstatechange = checkDevices;
@@ -24437,6 +24548,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
           const host = window.location.host || "127.0.0.1:8000";
           ws = new WebSocket(`${proto}//${host}/ws/copilot`);
+          wsRef.current = ws;
           let lastPingTime = performance.now();
           const pingInterval = setInterval(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -24527,15 +24639,30 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     useEffect6(() => {
       const handleKeyDown = (e) => {
+        var _a, _b;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
           e.preventDefault();
           setMasterDeck("toggle");
+        } else if (e.key === "1") {
+          e.preventDefault();
+          togglePlayDeck("1");
+        } else if (e.key === "2") {
+          e.preventDefault();
+          togglePlayDeck("2");
+        } else if (e.code === "Space") {
+          e.preventDefault();
+          const masterTarget = ((_a = state == null ? void 0 : state.deck_1) == null ? void 0 : _a.is_master) ? "1" : "2";
+          togglePlayDeck(masterTarget);
+        } else if (e.key === "c" || e.key === "C") {
+          e.preventDefault();
+          const cueTarget = ((_b = state == null ? void 0 : state.deck_1) == null ? void 0 : _b.is_master) ? "2" : "1";
+          cueDeck(cueTarget);
         }
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
-    }, []);
+    }, [state]);
     const toggleSimulation = async () => {
       const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
       if (isLocalHost) {
@@ -24716,7 +24843,31 @@ Respuesta: ${qa.a}`).join("\n\n"),
       /* @__PURE__ */ React.createElement("span", null, lowEqApplied ? "\u2713" : "\u26A1"),
       /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, "ACCI\xD3N:"),
       /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[280px]" }, lowEqApplied ? "Restablecer EQ (Deshacer)" : anti_muddy.action || "Corta Low EQ en Deck 2 (-10dB)")
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: harmonic.color } }, harmonic.badge)), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta, " dB")))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(CopilotDeckCard, { deck: deck_1, side: "1", isMaster: deck_1.is_master, antiMuddy: anti_muddy, partnerDeck: deck_2, onSetMaster: setMasterDeck }), /* @__PURE__ */ React.createElement(CopilotDeckCard, { deck: deck_2, side: "2", isMaster: deck_2.is_master, antiMuddy: anti_muddy, partnerDeck: deck_1, onSetMaster: setMasterDeck })), /* @__PURE__ */ React.createElement("section", { className: "mt-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-300 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "text-amber-400 inline-block" }), /* @__PURE__ */ React.createElement("span", null, "PR\xD3XIMAS PISTAS SUGERIDAS (", displayRecommendations.length, ")")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, "\u2022 Arrastra para reordenar la secuencia")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: harmonic.color } }, harmonic.badge)), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta, " dB")))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(
+      CopilotDeckCard,
+      {
+        deck: deck_1,
+        side: "1",
+        isMaster: deck_1.is_master,
+        antiMuddy: anti_muddy,
+        partnerDeck: deck_2,
+        onSetMaster: setMasterDeck,
+        onTogglePlay: togglePlayDeck,
+        onCue: cueDeck
+      }
+    ), /* @__PURE__ */ React.createElement(
+      CopilotDeckCard,
+      {
+        deck: deck_2,
+        side: "2",
+        isMaster: deck_2.is_master,
+        antiMuddy: anti_muddy,
+        partnerDeck: deck_1,
+        onSetMaster: setMasterDeck,
+        onTogglePlay: togglePlayDeck,
+        onCue: cueDeck
+      }
+    )), /* @__PURE__ */ React.createElement("section", { className: "mt-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-300 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "text-amber-400 inline-block" }), /* @__PURE__ */ React.createElement("span", null, "PR\xD3XIMAS PISTAS SUGERIDAS (", displayRecommendations.length, ")")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, "\u2022 Arrastra para reordenar la secuencia")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",

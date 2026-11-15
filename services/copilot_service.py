@@ -115,6 +115,10 @@ class CopilotService:
         self._cached_live_state: Optional[Dict[str, Any]] = None
         self.manual_master_deck: Optional[str] = None  # None = auto, '1' = Deck 1, '2' = Deck 2
         self.manual_play_state: Dict[str, Optional[bool]] = {"1": None, "2": None}
+        self._deck_playback = {
+            "1": {"is_playing": False, "play_start_ts": 0.0, "elapsed_sec": 0.0, "last_track_id": None},
+            "2": {"is_playing": True, "play_start_ts": time.time(), "elapsed_sec": 0.0, "last_track_id": None}
+        }
         self.anti_muddy_mode: str = "club"  # 'club' (40% estricto festival/club), 'standard' (44%), 'studio' (48%)
         self.anti_muddy_threshold: float = 40.0
 
@@ -1613,44 +1617,56 @@ class CopilotService:
         time_since_1 = now - t1_start if t1_start else 0.0
         time_since_2 = now - t2_start if t2_start else 0.0
 
+        # Detección de cambio de pista por Deck para resetear CUE
+        track_id_1 = str(deck_1_raw.get("id") or deck_1_raw.get("file_path") or "") if deck_1_raw else ""
+        track_id_2 = str(deck_2_raw.get("id") or deck_2_raw.get("file_path") or "") if deck_2_raw else ""
+
+        pb1 = self._deck_playback["1"]
+        if track_id_1 and pb1.get("last_track_id") != track_id_1:
+            pb1["last_track_id"] = track_id_1
+            pb1["is_playing"] = False
+            pb1["play_start_ts"] = 0.0
+            pb1["elapsed_sec"] = down_sec_1
+
+        pb2 = self._deck_playback["2"]
+        if track_id_2 and pb2.get("last_track_id") != track_id_2:
+            pb2["last_track_id"] = track_id_2
+            pb2["is_playing"] = True if time_since_2 < dur_2_sec else False
+            pb2["play_start_ts"] = now
+            pb2["elapsed_sec"] = min(dur_2_sec, max(0.0, time_since_2)) if (time_since_2 < dur_2_sec) else down_sec_2
+
         # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING) Y TIEMPO TRANSCURRIDO
         # Deck 1:
-        if self.manual_play_state.get("1") is not None:
-            d1_is_playing = bool(self.manual_play_state["1"])
-            elapsed_1 = round(max(0.0, now - t1_start) % (dur_1_sec or 1), 2) if (d1_is_playing and t1_start) else down_sec_1
-            prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
-        elif is_dj_running and t1_end == -1 and deck_1_raw:
-            if 0.0 <= time_since_1 <= dur_1_sec and (t1_start >= t2_start or time_since_2 > dur_2_sec):
-                d1_is_playing = True
-                elapsed_1 = round(time_since_1, 2)
-                prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
-            else:
+        if pb1["is_playing"]:
+            d1_is_playing = True
+            advance = max(0.0, now - (pb1.get("play_start_ts") or now))
+            elapsed_1 = round(pb1.get("elapsed_sec", 0.0) + advance, 2)
+            if elapsed_1 >= dur_1_sec:
+                elapsed_1 = dur_1_sec
                 d1_is_playing = False
-                elapsed_1 = round(down_sec_1, 2)
-                prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+                pb1["is_playing"] = False
+                pb1["elapsed_sec"] = dur_1_sec
+            prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
         else:
             d1_is_playing = False
-            elapsed_1 = round(down_sec_1, 2)
-            prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
+            elapsed_1 = round(pb1.get("elapsed_sec", down_sec_1), 2)
+            prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
 
         # Deck 2:
-        if self.manual_play_state.get("2") is not None:
-            d2_is_playing = bool(self.manual_play_state["2"])
-            elapsed_2 = round(max(0.0, now - t2_start) % (dur_2_sec or 1), 2) if (d2_is_playing and t2_start) else down_sec_2
-            prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
-        elif is_dj_running and t2_end == -1 and deck_2_raw:
-            if 0.0 <= time_since_2 <= dur_2_sec and (t2_start >= t1_start or time_since_1 > dur_1_sec):
-                d2_is_playing = True
-                elapsed_2 = round(time_since_2, 2)
-                prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
-            else:
+        if pb2["is_playing"]:
+            d2_is_playing = True
+            advance = max(0.0, now - (pb2.get("play_start_ts") or now))
+            elapsed_2 = round(pb2.get("elapsed_sec", 0.0) + advance, 2)
+            if elapsed_2 >= dur_2_sec:
+                elapsed_2 = dur_2_sec
                 d2_is_playing = False
-                elapsed_2 = round(down_sec_2, 2)
-                prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+                pb2["is_playing"] = False
+                pb2["elapsed_sec"] = dur_2_sec
+            prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
         else:
             d2_is_playing = False
-            elapsed_2 = round(down_sec_2, 2)
-            prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
+            elapsed_2 = round(pb2.get("elapsed_sec", down_sec_2), 2)
+            prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
 
         # DETERMINACIÓN DE MASTER (ON AIR) VS CUE (PREPARADO)
         if self.manual_master_deck in ("1", "2"):
@@ -1860,19 +1876,63 @@ class CopilotService:
         return self.get_live_state()
 
     def toggle_play(self, deck: str = "master") -> Dict[str, Any]:
-        """Conmuta manualmente Play/Pausa de un deck ('1', '2', o 'master')."""
-        state = self.get_live_state()
+        """Conmuta Play/Pausa de un deck en tiempo real ('1', '2', o 'master')."""
         if deck == "master":
-            target = "1" if state.get("deck_1", {}).get("is_master", True) else "2"
-        elif str(deck).strip().lower() in ("1", "a", "deck1"):
-            target = "1"
+            target = "1" if (self.manual_master_deck == "1" or self._deck_playback["1"]["is_playing"]) else "2"
         elif str(deck).strip().lower() in ("2", "b", "deck2"):
             target = "2"
         else:
             target = "1"
-        
-        current_playing = state.get(f"deck_{target}", {}).get("is_playing", False)
-        self.manual_play_state[target] = not current_playing
+
+        now = time.time()
+        pb = self._deck_playback[target]
+        if pb["is_playing"]:
+            # Pausar acumulando el tiempo avanzado
+            pb["elapsed_sec"] = pb.get("elapsed_sec", 0.0) + max(0.0, now - (pb.get("play_start_ts") or now))
+            pb["is_playing"] = False
+            pb["play_start_ts"] = 0.0
+        else:
+            # Reanudar Play desde la posición actual
+            pb["is_playing"] = True
+            pb["play_start_ts"] = now
+            if pb.get("elapsed_sec", 0.0) < 0:
+                pb["elapsed_sec"] = 0.0
+
+        self.manual_play_state[target] = pb["is_playing"]
+        self._last_live_state_time = 0.0
+        self._cached_live_state = None
+        return self.get_live_state()
+
+    def cue_deck(self, deck: str = "1") -> Dict[str, Any]:
+        """Detiene la reproducción y rebobina al punto CUE (Downbeat Bar 1)."""
+        target = "2" if str(deck).strip().lower() in ("2", "b", "deck2") else "1"
+        pb = self._deck_playback[target]
+        pb["is_playing"] = False
+        pb["play_start_ts"] = 0.0
+        pb["elapsed_sec"] = 0.0
+        self.manual_play_state[target] = False
+        self._last_live_state_time = 0.0
+        self._cached_live_state = None
+        return self.get_live_state()
+
+    def set_play_state(self, deck: str, is_playing: bool, position_sec: Optional[float] = None) -> Dict[str, Any]:
+        """Fija directamente el estado de reproducción desde WebMIDI o cliente."""
+        target = "2" if str(deck).strip().lower() in ("2", "b", "deck2") else "1"
+        now = time.time()
+        pb = self._deck_playback[target]
+        if is_playing and not pb["is_playing"]:
+            pb["is_playing"] = True
+            pb["play_start_ts"] = now
+            if position_sec is not None:
+                pb["elapsed_sec"] = max(0.0, float(position_sec))
+        elif not is_playing and pb["is_playing"]:
+            pb["elapsed_sec"] = pb.get("elapsed_sec", 0.0) + max(0.0, now - (pb.get("play_start_ts") or now))
+            pb["is_playing"] = False
+            pb["play_start_ts"] = 0.0
+            if position_sec is not None:
+                pb["elapsed_sec"] = max(0.0, float(position_sec))
+
+        self.manual_play_state[target] = is_playing
         self._last_live_state_time = 0.0
         self._cached_live_state = None
         return self.get_live_state()

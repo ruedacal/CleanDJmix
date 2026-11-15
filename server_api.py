@@ -518,6 +518,8 @@ async def websocket_copilot(websocket: WebSocket):
                     copilot_service.set_manual_master(data.get("master", "toggle"))
                 elif action == "toggle_play":
                     copilot_service.toggle_play(data.get("deck", "master"))
+                elif action == "cue_deck":
+                    copilot_service.cue_deck(data.get("deck", "1"))
                 elif action == "set_platform":
                     copilot_service.set_platform(data.get("platform", "auto"))
                 elif action == "toggle_simulation":
@@ -586,6 +588,16 @@ async def api_copilot_toggle_play(request: Request):
     except Exception:
         deck_val = request.query_params.get("deck", "master")
     return copilot_service.toggle_play(deck_val)
+
+@app.post("/api/copilot/cue_deck")
+async def api_copilot_cue_deck(request: Request):
+    deck_val = "1"
+    try:
+        body = await request.json()
+        deck_val = body.get("deck", "1")
+    except Exception:
+        deck_val = request.query_params.get("deck", "1")
+    return copilot_service.cue_deck(deck_val)
 
 @app.post("/api/copilot/toggle_simulation")
 async def api_copilot_toggle_simulation():
