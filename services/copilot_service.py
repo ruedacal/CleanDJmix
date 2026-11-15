@@ -146,6 +146,90 @@ class CopilotService:
         self._cached_controller_info = None
         self._start_midi_bridge()
 
+        # Arranque automático del puente Ableton Link (Carabiner) para Serato DJ Pro
+        self.link_peers: int = 0
+        self.link_bpm: float = 128.0
+        self.link_is_playing: bool = False
+        self._carabiner_proc = None
+        self._start_carabiner_bridge()
+
+    def _start_carabiner_bridge(self):
+        """Inicia el daemon Carabiner para enlace nativo con Ableton Link de Serato DJ Pro."""
+        if sys.platform != "darwin":
+            return
+        carabiner_bin = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "bin", "carabiner"))
+        if not os.path.exists(carabiner_bin):
+            return
+
+        try:
+            subprocess.run(["pkill", "-f", "carabiner"], stderr=subprocess.DEVNULL)
+            self._carabiner_proc = subprocess.Popen(
+                [carabiner_bin, "--port", "17000", "--daemon"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            import threading
+            self._carabiner_thread = threading.Thread(target=self._carabiner_client_loop, daemon=True)
+            self._carabiner_thread.start()
+        except Exception:
+            pass
+
+    def _carabiner_client_loop(self):
+        """Mantiene conexión TCP persistente con Carabiner (127.0.0.1:17000) para recibir Ableton Link."""
+        import socket
+        time.sleep(1.0)
+        sock = None
+        while True:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.connect(("127.0.0.1", 17000))
+                sock.sendall(b"enable-start-stop-sync\n")
+                buf = ""
+                while True:
+                    data = sock.recv(1024)
+                    if not data:
+                        break
+                    buf += data.decode("utf-8", errors="ignore")
+                    while "\n" in buf:
+                        line, buf = buf.split("\n", 1)
+                        self._handle_carabiner_line(line.strip())
+            except Exception:
+                time.sleep(3.0)
+            finally:
+                if sock:
+                    try:
+                        sock.close()
+                    except Exception:
+                        pass
+                time.sleep(2.0)
+
+    def _handle_carabiner_line(self, line: str):
+        """Parsea las líneas de status de Carabiner: status { :peers X :bpm Y :playing Z }"""
+        if not line or not line.startswith("status"):
+            return
+        try:
+            peers_match = re.search(r":peers\s+(\d+)", line)
+            bpm_match = re.search(r":bpm\s+([\d.]+)", line)
+            playing_match = re.search(r":playing\s+(true|false)", line)
+
+            if peers_match:
+                self.link_peers = int(peers_match.group(1))
+            if bpm_match:
+                self.link_bpm = float(bpm_match.group(1))
+            if playing_match:
+                is_play = (playing_match.group(1) == "true")
+                if self.link_peers > 0 and self.link_is_playing != is_play:
+                    self.link_is_playing = is_play
+                    target = "1" if (self.manual_master_deck == "1") else "2"
+                    self.manual_play_state[target] = is_play
+                    self._deck_playback[target]["is_playing"] = is_play
+                    if is_play:
+                        self._deck_playback[target]["play_start_ts"] = time.time()
+                    self._last_live_state_time = 0.0
+                    self._cached_live_state = None
+        except Exception:
+            pass
+
     def _start_midi_bridge(self):
         """Inicia el puente CoreMIDI nativo de macOS para Numark NV II y controladoras USB."""
         if sys.platform != "darwin":
@@ -464,6 +548,92 @@ class CopilotService:
             if num_part.isdigit() and 1 <= int(num_part) <= 12:
                 return clean
         return self.KEY_TO_CAMELOT.get(clean, "8A")
+
+    def _extract_serato_markers_cues(self, filepath: str) -> Optional[List[Dict[str, Any]]]:
+        """Extrae directamente los 8 Hot Cues oficiales grabados en serato_markers_v2 (FLAC) o GEOB (MP3)."""
+        if not filepath or not os.path.exists(filepath):
+            return None
+        if hasattr(self, "_cue_file_cache") and filepath in self._cue_file_cache:
+            return self._cue_file_cache[filepath]
+
+        if not hasattr(self, "_cue_file_cache"):
+            self._cue_file_cache = {}
+
+        cues = []
+        try:
+            import base64
+            import struct
+            data = None
+            fl = filepath.lower()
+            if fl.endswith(".flac"):
+                from mutagen.flac import FLAC
+                audio = FLAC(filepath)
+                raw_b64 = audio.get("serato_markers_v2")
+                if raw_b64:
+                    raw = base64.b64decode(raw_b64[0])
+                    idx = raw.find(b"Serato Markers2\x00")
+                    payload = raw[idx + len(b"Serato Markers2\x00"):] if idx != -1 else raw
+                    try:
+                        data = base64.b64decode(payload)
+                    except Exception:
+                        data = payload
+            elif fl.endswith(".mp3"):
+                from mutagen.id3 import ID3
+                tags = ID3(filepath)
+                for geob in tags.getall("GEOB"):
+                    if "Serato Markers2" in geob.desc:
+                        raw = geob.data
+                        try:
+                            data = base64.b64decode(raw)
+                        except Exception:
+                            data = raw
+                        idx = data.find(b"Serato Markers2\x00")
+                        if idx != -1:
+                            data = data[idx + len(b"Serato Markers2\x00"):]
+                        try:
+                            data = base64.b64decode(data)
+                        except Exception:
+                            pass
+                        break
+
+            if data and len(data) >= 2:
+                p = 2
+                while p < len(data):
+                    null_idx = data.find(b"\x00", p)
+                    if null_idx == -1:
+                        break
+                    tag = data[p:null_idx].decode("ascii", errors="ignore")
+                    p = null_idx + 1
+                    if p + 4 > len(data):
+                        break
+                    length = struct.unpack(">I", data[p:p+4])[0]
+                    p += 4
+                    val = data[p:p+length]
+                    p += length
+                    if tag == "CUE" and len(val) >= 12:
+                        cid = val[1]
+                        pos_ms = struct.unpack(">I", val[2:6])[0]
+                        r, g, b = val[7], val[8], val[9]
+                        name = val[12:].split(b"\x00")[0].decode("utf-8", errors="ignore")
+                        m = pos_ms // 60000
+                        s = (pos_ms % 60000) / 1000.0
+                        time_str = f"{m:02d}:{s:04.1f}"
+                        cues.append({
+                            "id": cid + 1,
+                            "name": name or f"Cue {cid + 1}",
+                            "pos_ms": pos_ms,
+                            "time": time_str,
+                            "color": f"#{r:02x}{g:02x}{b:02x}",
+                            "rgb": (r, g, b)
+                        })
+        except Exception:
+            pass
+
+        if cues:
+            cues.sort(key=lambda x: x["pos_ms"])
+            self._cue_file_cache[filepath] = cues
+            return cues
+        return None
 
     def _fetch_audit_dsp(self, filepath: str) -> Dict[str, Any]:
         """Consulta la huella espectral, 8 Hot Cues reales y métricas de sonoridad de BeatWave para una pista."""
@@ -1647,6 +1817,12 @@ class CopilotService:
             "capture_latency_ms": 0.35,
             "fps": 60,
             "controller": self.get_connected_dj_controller(),
+            "ableton_link": {
+                "enabled": True,
+                "peers": getattr(self, "link_peers", 0),
+                "bpm": getattr(self, "link_bpm", 128.0),
+                "playing": getattr(self, "link_is_playing", False)
+            },
             "detected_platforms": {
                 pid: self._is_platform_installed(pid) for pid in self.PLATFORM_SPECS
             },
@@ -1761,54 +1937,66 @@ class CopilotService:
         pb1 = self._deck_playback["1"]
         if track_id_1 and pb1.get("last_track_id") != track_id_1:
             pb1["last_track_id"] = track_id_1
-            if "1" in self.manual_play_state:
-                pb1["is_playing"] = bool(self.manual_play_state["1"])
-            else:
-                pb1["is_playing"] = False
-            pb1["play_start_ts"] = now if pb1["is_playing"] else 0.0
+            pb1["play_start_ts"] = now
             pb1["elapsed_sec"] = down_sec_1
 
         pb2 = self._deck_playback["2"]
         if track_id_2 and pb2.get("last_track_id") != track_id_2:
             pb2["last_track_id"] = track_id_2
-            if "2" in self.manual_play_state:
-                pb2["is_playing"] = bool(self.manual_play_state["2"])
-            else:
-                # Si Deck 1 no está explícitamente reproduciendo y Deck 2 es nuevo, en CUE
-                pb2["is_playing"] = False
-            pb2["play_start_ts"] = now if pb2["is_playing"] else 0.0
+            pb2["play_start_ts"] = now
             pb2["elapsed_sec"] = down_sec_2
 
         # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING) Y TIEMPO TRANSCURRIDO
-        # Deck 1:
-        if pb1["is_playing"]:
-            d1_is_playing = True
-            advance = max(0.0, now - (pb1.get("play_start_ts") or now))
-            elapsed_1 = round(pb1.get("elapsed_sec", 0.0) + advance, 2)
+        # Respetar manual_play_state si el usuario lo conmutó explícitamente en la UI o atajos
+        if self.manual_play_state.get("1") is not None:
+            d1_is_playing = bool(self.manual_play_state["1"])
+        elif self.link_peers > 0:
+            d1_is_master = (self.manual_master_deck == "1") or (t1_start >= t2_start)
+            d1_is_playing = self.link_is_playing if d1_is_master else False
+        elif is_dj_running and t1_end == -1 and deck_1_raw:
+            d1_is_playing = (time_since_1 < dur_1_sec and (t1_start >= t2_start or time_since_2 >= dur_2_sec))
+        else:
+            d1_is_playing = False
+
+        if self.manual_play_state.get("2") is not None:
+            d2_is_playing = bool(self.manual_play_state["2"])
+        elif self.link_peers > 0:
+            d2_is_master = (self.manual_master_deck == "2") or (t2_start > t1_start)
+            d2_is_playing = self.link_is_playing if d2_is_master else False
+        elif is_dj_running and t2_end == -1 and deck_2_raw:
+            d2_is_playing = (time_since_2 < dur_2_sec and (t2_start > t1_start or time_since_1 >= dur_1_sec))
+        else:
+            d2_is_playing = False
+
+        # Deck 1 Elapsed:
+        if d1_is_playing:
+            if pb1.get("play_start_ts") and pb1["play_start_ts"] > 0:
+                elapsed_1 = round(pb1.get("elapsed_sec", 0.0) + (now - pb1["play_start_ts"]), 2)
+            elif t1_start and time_since_1 < dur_1_sec:
+                elapsed_1 = round(time_since_1, 2)
+            else:
+                elapsed_1 = round(pb1.get("elapsed_sec", down_sec_1), 2)
             if elapsed_1 >= dur_1_sec:
                 elapsed_1 = dur_1_sec
                 d1_is_playing = False
-                pb1["is_playing"] = False
-                pb1["elapsed_sec"] = dur_1_sec
             prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
         else:
-            d1_is_playing = False
             elapsed_1 = round(pb1.get("elapsed_sec", down_sec_1), 2)
             prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
 
-        # Deck 2:
-        if pb2["is_playing"]:
-            d2_is_playing = True
-            advance = max(0.0, now - (pb2.get("play_start_ts") or now))
-            elapsed_2 = round(pb2.get("elapsed_sec", 0.0) + advance, 2)
+        # Deck 2 Elapsed:
+        if d2_is_playing:
+            if pb2.get("play_start_ts") and pb2["play_start_ts"] > 0:
+                elapsed_2 = round(pb2.get("elapsed_sec", 0.0) + (now - pb2["play_start_ts"]), 2)
+            elif t2_start and time_since_2 < dur_2_sec:
+                elapsed_2 = round(time_since_2, 2)
+            else:
+                elapsed_2 = round(pb2.get("elapsed_sec", down_sec_2), 2)
             if elapsed_2 >= dur_2_sec:
                 elapsed_2 = dur_2_sec
                 d2_is_playing = False
-                pb2["is_playing"] = False
-                pb2["elapsed_sec"] = dur_2_sec
             prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
         else:
-            d2_is_playing = False
             elapsed_2 = round(pb2.get("elapsed_sec", down_sec_2), 2)
             prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
 
@@ -1824,8 +2012,10 @@ class CopilotService:
                 # Si ambos están en standby o ambos reproduciéndose: el que se cargó más recientemente
                 deck_1_is_master = (t1_start >= t2_start) if (t1_start and t2_start) else True
 
-        # Hot Cues reales extraídos de la pista o calculados acústicamente
-        deck_1_cues_list = dsp_1.get("cues") or deck_1_raw.get("cues")
+        # Hot Cues reales extraídos de la pista Serato o calculados acústicamente
+        deck_1_cues_list = self._extract_serato_markers_cues(deck_1_raw.get("file_path", "")) if deck_1_raw else None
+        if not deck_1_cues_list:
+            deck_1_cues_list = dsp_1.get("cues") or deck_1_raw.get("cues")
         if not deck_1_cues_list:
             from infrastructure.audio_processor import AudioProcessorService
             down_ms = float(dsp_1.get("first_downbeat_ms") or 0.0)
@@ -1834,8 +2024,14 @@ class CopilotService:
                 bpm=float(deck_1_raw.get("bpm") or 130.0),
                 downbeat_ms=int(down_ms)
             )
+        if deck_1_cues_list:
+            for c in deck_1_cues_list:
+                if "pct" not in c and dur_1_sec > 0:
+                    c["pct"] = round((float(c.get("pos_ms", 0)) / 1000.0) / dur_1_sec, 4)
 
-        deck_2_cues_list = dsp_2.get("cues") or deck_2_raw.get("cues")
+        deck_2_cues_list = self._extract_serato_markers_cues(deck_2_raw.get("file_path", "")) if deck_2_raw else None
+        if not deck_2_cues_list:
+            deck_2_cues_list = dsp_2.get("cues") or deck_2_raw.get("cues")
         if not deck_2_cues_list:
             from infrastructure.audio_processor import AudioProcessorService
             down_ms = float(dsp_2.get("first_downbeat_ms") or 0.0)
@@ -1844,6 +2040,10 @@ class CopilotService:
                 bpm=float(deck_2_raw.get("bpm") or 130.0),
                 downbeat_ms=int(down_ms)
             )
+        if deck_2_cues_list:
+            for c in deck_2_cues_list:
+                if "pct" not in c and dur_2_sec > 0:
+                    c["pct"] = round((float(c.get("pos_ms", 0)) / 1000.0) / dur_2_sec, 4)
 
         deck_1_status = "ON AIR (MASTER)" if (d1_is_playing and deck_1_is_master) else ("REPRODUCIENDO" if d1_is_playing else ("MASTER (PAUSADO)" if deck_1_is_master else "CUE (DETENIDO)"))
         deck_2_status = "ON AIR (MASTER)" if (d2_is_playing and not deck_1_is_master) else ("REPRODUCIENDO" if d2_is_playing else ("MASTER (PAUSADO)" if not deck_1_is_master else "CUE (DETENIDO)"))
@@ -1855,7 +2055,7 @@ class CopilotService:
             "is_playing": d1_is_playing,
             "artist": deck_1_raw.get("artist", "Desconocido") if deck_1_raw else "Deck 1 Vacío",
             "title": deck_1_raw.get("name", "Pista 1") if deck_1_raw else "Sin pista cargada en Deck 1",
-            "bpm": deck_1_raw.get("bpm", 130.0) if deck_1_raw else 130.0,
+            "bpm": round(self.link_bpm, 2) if (self.link_peers > 0 and d1_is_playing) else (deck_1_raw.get("bpm", 130.0) if deck_1_raw else 130.0),
             "camelot": c1,
             "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
             "raw_key": deck_1_raw.get("raw_key", "") if deck_1_raw else "",
@@ -1894,7 +2094,7 @@ class CopilotService:
                 "is_playing": d2_is_playing,
                 "artist": deck_2_raw.get("artist", "Desconocido"),
                 "title": deck_2_raw.get("name", "Pista 2"),
-                "bpm": deck_2_raw.get("bpm", 130.0),
+                "bpm": round(self.link_bpm, 2) if (self.link_peers > 0 and d2_is_playing) else deck_2_raw.get("bpm", 130.0),
                 "camelot": c2,
                 "camelot_color": self.CAMELOT_COLORS.get(c2, "#06b6d4"),
                 "raw_key": deck_2_raw.get("raw_key", ""),
@@ -1983,6 +2183,12 @@ class CopilotService:
             "capture_latency_ms": max(0.12, capture_latency_ms),
             "fps": 60,
             "controller": self.get_connected_dj_controller(),
+            "ableton_link": {
+                "enabled": True,
+                "peers": getattr(self, "link_peers", 0),
+                "bpm": getattr(self, "link_bpm", 128.0),
+                "playing": getattr(self, "link_is_playing", False)
+            },
             "detected_platforms": {
                 pid: self._is_platform_installed(pid) for pid in self.PLATFORM_SPECS
             },

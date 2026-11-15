@@ -34257,6 +34257,19 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         <strong className="text-white">{controllerState.name}</strong>
                     </div>
 
+                    {/* BADGE ABLETON LINK SYNC */}
+                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border transition-all ${
+                        state.ableton_link?.peers > 0
+                        ? 'bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]'
+                        : 'bg-zinc-900 border-zinc-700/60 text-zinc-400'
+                    }`} title={state.ableton_link?.peers > 0 ? "Ableton Link Activo: sincronizado con Serato DJ Pro" : "Ableton Link en espera: activa [Link] en Serato para sincronizar"}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${state.ableton_link?.peers > 0 ? 'bg-purple-400 animate-pulse' : 'bg-zinc-500'}`}></span>
+                        <span>🔗 LINK:</span>
+                        <strong className={state.ableton_link?.peers > 0 ? 'text-white' : 'text-zinc-400'}>
+                            {state.ableton_link?.peers > 0 ? `${state.ableton_link.peers} PEER (${state.ableton_link.playing ? 'PLAY' : 'PAUSA'})` : 'STANDBY'}
+                        </strong>
+                    </div>
+
                     {/* HUD BADGE LATENCIA CABINA (<25ms) & SELECTOR MASTER */}
                     <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>

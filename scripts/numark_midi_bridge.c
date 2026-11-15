@@ -11,6 +11,7 @@ static int g_udp_sock = -1;
 static struct sockaddr_in g_dest_addr;
 
 void readProc(const MIDIPacketList *pktlist, void *readProcRefCon, void *srcConnRefCon) {
+    FILE *f = fopen("/tmp/numark_midi_raw.log", "a");
     const MIDIPacket *packet = &pktlist->packet[0];
     for (UInt32 i = 0; i < pktlist->numPackets; ++i) {
         if (packet->length >= 1) {
@@ -21,16 +22,24 @@ void readProc(const MIDIPacketList *pktlist, void *readProcRefCon, void *srcConn
             unsigned char note = packet->length > 1 ? packet->data[1] : 0;
             unsigned char vel = packet->length > 2 ? packet->data[2] : 0;
 
-            int n = snprintf(buffer, sizeof(buffer), "MIDI ch=%u type=0x%02X status=0x%02X note=%u vel=%u\n",
-                             ch, type, st, note, vel);
-            printf("%s", buffer);
-            fflush(stdout);
+            int n = snprintf(buffer, sizeof(buffer), "MIDI len=%u ch=%u type=0x%02X status=0x%02X note=%u vel=%u (hex:",
+                             packet->length, ch, type, st, note, vel);
+            for (int k = 0; k < packet->length && k < 8; ++k) {
+                n += snprintf(buffer + n, sizeof(buffer) - n, " %02X", packet->data[k]);
+            }
+            n += snprintf(buffer + n, sizeof(buffer) - n, ")\n");
+
+            if (f) {
+                fputs(buffer, f);
+                fflush(f);
+            }
             if (g_udp_sock >= 0) {
                 sendto(g_udp_sock, buffer, n, 0, (struct sockaddr *)&g_dest_addr, sizeof(g_dest_addr));
             }
         }
         packet = MIDIPacketNext(packet);
     }
+    if (f) fclose(f);
 }
 
 int main(int argc, char **argv) {
