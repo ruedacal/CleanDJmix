@@ -29,6 +29,7 @@ config_ingest.json
 # Builds and packaging
 build/
 dist/
+bin/
 *.spec
 assets_extracted/
 CleanDJmix_PRO_Assets.zip

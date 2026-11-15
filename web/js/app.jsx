@@ -33824,7 +33824,7 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 
     const [controllerState, setControllerState] = useState({
         detected: true,
-        name: 'PIONEER DDJ-FLX4 (USB)',
+        name: 'NUMARK NV II (USB)',
         status: 'CONECTADA'
     });
 
@@ -33835,11 +33835,15 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                 .then(access => {
                     const checkDevices = () => {
                         const inputs = Array.from(access.inputs.values());
-                        const djDev = inputs.find(d => /ddj|pioneer|traktor|kontrol|denon|numark|hercules|reloop|dj/i.test(d.name || ''));
+                        const djDev = inputs.find(d => /nv|numark|mkii|ddj|flx|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ''));
                         if (djDev) {
+                            let cleanName = djDev.name.toUpperCase();
+                            if (/nv|mkii/i.test(cleanName)) {
+                                cleanName = 'NUMARK NV II (USB)';
+                            }
                             setControllerState({
                                 detected: true,
-                                name: djDev.name.toUpperCase(),
+                                name: cleanName,
                                 status: 'CONECTADA'
                             });
                         } else if (inputs.length > 0) {
@@ -33861,14 +33865,22 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 const channel = status & 0x0f;
 
                                 if (isNoteOn) {
-                                    // DDJ-FLX4 / DDJ-400 / Pioneer: Play suele ser nota 11 (0x0B) o 71 (0x47)
-                                    // Numark NV / Mixtrack: Canal 0/1 o notas 0, 11, 71
-                                    if (note === 11 || note === 71 || (channel === 0 && (note === 0 || note === 11))) {
+                                    // Numark NV / NV II / Pioneer / Traktor transport:
+                                    // Ch 0 o Ch 2 (Deck 1 / 3):
+                                    if ((channel === 0 || channel === 2) && (note === 0 || note === 8 || note === 11 || note === 39 || note === 64 || note === 67 || note === 71 || note === 75)) {
                                         togglePlayDeck('1');
-                                    } else if (note === 12 || note === 72 || (channel === 1 && (note === 0 || note === 12))) {
+                                    } else if ((channel === 1 || channel === 3) && (note === 0 || note === 8 || note === 12 || note === 39 || note === 64 || note === 67 || note === 72 || note === 75)) {
                                         togglePlayDeck('2');
-                                    } else if (note === 1 || note === 12) {
-                                        cueDeck('1');
+                                    } else if (note === 11 || note === 71) {
+                                        togglePlayDeck('1');
+                                    } else if (note === 12 || note === 72) {
+                                        togglePlayDeck('2');
+                                    } else if (note === 1 || note === 9 || note === 51 || note === 68) {
+                                        if (channel === 1 || channel === 3) {
+                                            cueDeck('2');
+                                        } else {
+                                            cueDeck('1');
+                                        }
                                     }
                                 }
                             };
@@ -33909,6 +33921,9 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         const dt = Math.round(performance.now() - t0);
                         if (isMounted) {
                             setState(data);
+                            if (data.controller && data.controller.name) {
+                                setControllerState(data.controller);
+                            }
                             const measured = data.capture_latency_ms ? Math.round(data.capture_latency_ms + (dt * 0.15)) : dt;
                             setLatency(Math.max(1, measured));
                             if (data.recommendations && data.recommendations.length > 0) {
@@ -33955,6 +33970,9 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             return;
                         }
                         setState(data);
+                        if (data.controller && data.controller.name) {
+                            setControllerState(data.controller);
+                        }
                         const cap = data.capture_latency_ms || 0.4;
                         const netDt = data.server_ts ? Math.max(1, Math.round((Date.now() / 1000 - data.server_ts) * 1000)) : 1;
                         const totalLat = Math.min(25, Math.max(1, Math.round(cap + netDt)));
@@ -34338,12 +34356,12 @@ const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
-                        {anti_muddy.flx4 && (
+                        {(anti_muddy.controller_knobs || anti_muddy.flx4) && (
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                <span>🎛️ DDJ-FLX4:</span>
-                                <span className="text-white font-extrabold">{anti_muddy.flx4.filter_knob}</span>
+                                <span>🎛️ {(state.controller?.name || controllerState.name || 'NUMARK NV II').replace(' (USB)', '')}:</span>
+                                <span className="text-white font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob}</span>
                                 <span className="text-zinc-400">•</span>
-                                <span className="text-amber-300 font-extrabold">{anti_muddy.flx4.eq_low}</span>
+                                <span className="text-amber-300 font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).eq_low}</span>
                             </div>
                         )}
                         {/* BOTÓN INTERACTIVO DE ACCIÓN CORRECTIVA ANTI-MUDDY */}

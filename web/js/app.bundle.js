@@ -24325,6 +24325,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     "is_simulating": true
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
+    var _a;
     const [state, setState] = useState5(DEFAULT_COPILOT_STATE);
     const [clock, setClock] = useState5("");
     const [latency, setLatency] = useState5(2);
@@ -24450,7 +24451,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     const [controllerState, setControllerState] = useState5({
       detected: true,
-      name: "PIONEER DDJ-FLX4 (USB)",
+      name: "NUMARK NV II (USB)",
       status: "CONECTADA"
     });
     useEffect6(() => {
@@ -24458,11 +24459,15 @@ Respuesta: ${qa.a}`).join("\n\n"),
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
             const inputs = Array.from(access.inputs.values());
-            const djDev = inputs.find((d) => /ddj|pioneer|traktor|kontrol|denon|numark|hercules|reloop|dj/i.test(d.name || ""));
+            const djDev = inputs.find((d) => /nv|numark|mkii|ddj|flx|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ""));
             if (djDev) {
+              let cleanName = djDev.name.toUpperCase();
+              if (/nv|mkii/i.test(cleanName)) {
+                cleanName = "NUMARK NV II (USB)";
+              }
               setControllerState({
                 detected: true,
-                name: djDev.name.toUpperCase(),
+                name: cleanName,
                 status: "CONECTADA"
               });
             } else if (inputs.length > 0) {
@@ -24481,12 +24486,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 const isNoteOn = (status & 240) === 144 && vel > 0 || (status & 240) === 176 && vel > 0;
                 const channel = status & 15;
                 if (isNoteOn) {
-                  if (note === 11 || note === 71 || channel === 0 && (note === 0 || note === 11)) {
+                  if ((channel === 0 || channel === 2) && (note === 0 || note === 8 || note === 11 || note === 39 || note === 64 || note === 67 || note === 71 || note === 75)) {
                     togglePlayDeck("1");
-                  } else if (note === 12 || note === 72 || channel === 1 && (note === 0 || note === 12)) {
+                  } else if ((channel === 1 || channel === 3) && (note === 0 || note === 8 || note === 12 || note === 39 || note === 64 || note === 67 || note === 72 || note === 75)) {
                     togglePlayDeck("2");
-                  } else if (note === 1 || note === 12) {
-                    cueDeck("1");
+                  } else if (note === 11 || note === 71) {
+                    togglePlayDeck("1");
+                  } else if (note === 12 || note === 72) {
+                    togglePlayDeck("2");
+                  } else if (note === 1 || note === 9 || note === 51 || note === 68) {
+                    if (channel === 1 || channel === 3) {
+                      cueDeck("2");
+                    } else {
+                      cueDeck("1");
+                    }
                   }
                 }
               };
@@ -24523,6 +24536,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
               const dt = Math.round(performance.now() - t0);
               if (isMounted) {
                 setState(data);
+                if (data.controller && data.controller.name) {
+                  setControllerState(data.controller);
+                }
                 const measured = data.capture_latency_ms ? Math.round(data.capture_latency_ms + dt * 0.15) : dt;
                 setLatency(Math.max(1, measured));
                 if (data.recommendations && data.recommendations.length > 0) {
@@ -24566,6 +24582,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 return;
               }
               setState(data);
+              if (data.controller && data.controller.name) {
+                setControllerState(data.controller);
+              }
               const cap = data.capture_latency_ms || 0.4;
               const netDt = data.server_ts ? Math.max(1, Math.round((Date.now() / 1e3 - data.server_ts) * 1e3)) : 1;
               const totalLat = Math.min(25, Math.max(1, Math.round(cap + netDt)));
@@ -24614,9 +24633,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       }
       setState((prev) => {
-        var _a;
+        var _a2;
         if (!prev) return prev;
-        const cur1Master = (_a = prev.deck_1) == null ? void 0 : _a.is_master;
+        const cur1Master = (_a2 = prev.deck_1) == null ? void 0 : _a2.is_master;
         const new1Master = deckTarget === "1" ? true : deckTarget === "2" ? false : !cur1Master;
         return {
           ...prev,
@@ -24639,7 +24658,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     useEffect6(() => {
       const handleKeyDown = (e) => {
-        var _a, _b;
+        var _a2, _b;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
           e.preventDefault();
@@ -24652,7 +24671,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           togglePlayDeck("2");
         } else if (e.code === "Space") {
           e.preventDefault();
-          const masterTarget = ((_a = state == null ? void 0 : state.deck_1) == null ? void 0 : _a.is_master) ? "1" : "2";
+          const masterTarget = ((_a2 = state == null ? void 0 : state.deck_1) == null ? void 0 : _a2.is_master) ? "1" : "2";
           togglePlayDeck(masterTarget);
         } else if (e.key === "c" || e.key === "C") {
           e.preventDefault();
@@ -24832,7 +24851,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Grid, { size: 12 }),
       /* @__PURE__ */ React.createElement("span", null, "Pop-Out \u2197")
-    ))), /* @__PURE__ */ React.createElement("section", { className: "mb-2.5" }, /* @__PURE__ */ React.createElement("div", { className: `px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${anti_muddy.status === "danger" ? "bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]" : anti_muddy.status === "warning" ? "bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]" : "bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-xs text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${anti_muddy.status === "danger" ? "bg-red-600 text-white" : anti_muddy.status === "warning" ? "bg-amber-500 text-black" : "bg-emerald-500 text-black"}` }, anti_muddy.tag)), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-zinc-300 truncate mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono" }, anti_muddy.flx4 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F DDJ-FLX4:"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-extrabold" }, anti_muddy.flx4.filter_knob), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-extrabold" }, anti_muddy.flx4.eq_low)), /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("section", { className: "mb-2.5" }, /* @__PURE__ */ React.createElement("div", { className: `px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${anti_muddy.status === "danger" ? "bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]" : anti_muddy.status === "warning" ? "bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]" : "bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-xs text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${anti_muddy.status === "danger" ? "bg-red-600 text-white" : anti_muddy.status === "warning" ? "bg-amber-500 text-black" : "bg-emerald-500 text-black"}` }, anti_muddy.tag)), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-zinc-300 truncate mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono" }, (anti_muddy.controller_knobs || anti_muddy.flx4) && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F ", (((_a = state.controller) == null ? void 0 : _a.name) || controllerState.name || "NUMARK NV II").replace(" (USB)", ""), ":"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).eq_low)), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",

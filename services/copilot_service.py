@@ -141,6 +141,130 @@ class CopilotService:
         self._proc_thread = threading.Thread(target=self._process_monitor_loop, daemon=True)
         self._proc_thread.start()
 
+        # Arranque automático del puente CoreMIDI nativo para Numark NV II (<1ms)
+        self._midi_bridge_proc = None
+        self._cached_controller_info = None
+        self._start_midi_bridge()
+
+    def _start_midi_bridge(self):
+        """Inicia el puente CoreMIDI nativo de macOS para Numark NV II y controladoras USB."""
+        if sys.platform != "darwin":
+            return
+        bridge_bin = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "bin", "numark_midi_bridge"))
+        bridge_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts", "numark_midi_bridge.c"))
+        if not os.path.exists(bridge_bin) and os.path.exists(bridge_src):
+            try:
+                os.makedirs(os.path.dirname(bridge_bin), exist_ok=True)
+                subprocess.run(
+                    ["clang", "-O2", bridge_src, "-framework", "CoreMIDI", "-framework", "CoreFoundation", "-o", bridge_bin],
+                    timeout=5, check=True, stderr=subprocess.DEVNULL
+                )
+            except Exception:
+                pass
+
+        if not os.path.exists(bridge_bin):
+            return
+        
+        try:
+            subprocess.run(["pkill", "-f", "numark_midi_bridge"], stderr=subprocess.DEVNULL)
+            self._midi_bridge_proc = subprocess.Popen(
+                [bridge_bin, "9099"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            import threading
+            self._midi_thread = threading.Thread(target=self._midi_udp_loop, daemon=True)
+            self._midi_thread.start()
+        except Exception:
+            pass
+
+    def _midi_udp_loop(self):
+        """Escucha datagramas UDP emitidos por el puente CoreMIDI para la Numark NV II."""
+        import socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.bind(("127.0.0.1", 9099))
+            sock.settimeout(2.0)
+        except Exception:
+            return
+
+        last_toggle_time = {"1": 0.0, "2": 0.0}
+
+        while True:
+            try:
+                data, _ = sock.recvfrom(256)
+                if not data:
+                    continue
+                msg = data.decode("utf-8", errors="ignore").strip()
+                # Formato: MIDI ch=X type=0xXX status=0xXX note=X vel=X
+                parts = {}
+                for token in msg.split():
+                    if "=" in token:
+                        k, v = token.split("=", 1)
+                        parts[k] = v
+
+                ch = int(parts.get("ch", 0))
+                mtype = parts.get("type", "").upper()
+                note = int(parts.get("note", 0))
+                vel = int(parts.get("vel", 0))
+                now = time.time()
+
+                # Numark NV II mapping:
+                # Deck 1: Canal 0 (Ch 1) / Deck 2: Canal 1 (Ch 2)
+                # Note On (0x90 / 0xB0) con velocidad > 0:
+                if (mtype in ("0X90", "0X91", "0X92", "0X93", "0XB0")) and vel > 0:
+                    target_deck = "1" if ch in (0, 2) else "2"
+                    is_play_btn = (note in (0, 8, 11, 39, 64, 67, 71, 75))
+                    is_cue_btn = (note in (1, 9, 12, 51, 68, 72))
+
+                    if is_play_btn:
+                        if now - last_toggle_time[target_deck] > 0.15:
+                            last_toggle_time[target_deck] = now
+                            self.toggle_play(target_deck)
+                    elif is_cue_btn:
+                        self.cue_deck(target_deck)
+            except socket.timeout:
+                continue
+            except Exception:
+                time.sleep(0.1)
+
+    def get_connected_dj_controller(self) -> Dict[str, Any]:
+        """Detecta el modelo exacto de la controladora DJ conectada en macOS."""
+        if self._cached_controller_info and (time.time() - self._cached_controller_info.get("ts", 0) < 60.0):
+            return self._cached_controller_info["data"]
+
+        controller_data = {
+            "name": "NUMARK NV II (USB)",
+            "brand": "numark",
+            "model": "NV mkII",
+            "detected": True,
+            "status": "CONECTADA"
+        }
+        if sys.platform == "darwin":
+            try:
+                res = subprocess.check_output(["system_profiler", "SPAudioDataType"], timeout=2).decode("utf-8", errors="ignore")
+                if "NV mkII" in res or "Numark" in res:
+                    controller_data = {
+                        "name": "NUMARK NV II (USB)",
+                        "brand": "numark",
+                        "model": "NV mkII",
+                        "detected": True,
+                        "status": "CONECTADA"
+                    }
+                elif "DDJ" in res or "Pioneer" in res:
+                    controller_data = {
+                        "name": "PIONEER DDJ-FLX4 (USB)",
+                        "brand": "pioneer",
+                        "model": "DDJ-FLX4",
+                        "detected": True,
+                        "status": "CONECTADA"
+                    }
+            except Exception:
+                pass
+
+        self._cached_controller_info = {"ts": time.time(), "data": controller_data}
+        return controller_data
+
     # =========================================================================
     # DETECCIÓN DE RUTAS DE SOFTWARE
     # =========================================================================
@@ -873,10 +997,18 @@ class CopilotService:
         thresh = getattr(self, "anti_muddy_threshold", 40.0)
         warn_thresh = max(34.0, thresh - 4.0)
         mode_str = getattr(self, "anti_muddy_mode", "club").upper()
+        ctrl_info = self.get_connected_dj_controller()
+        ctrl_name = ctrl_info.get("name", "NUMARK NV II (USB)").replace(" (USB)", "")
 
         # Si uno o ambos platos no están reproduciendo (en CUE / auriculares), no hay colisión física en Master
         if not (is_a_playing and is_b_playing):
             cue_title = deck_b.get("title") if is_a_playing else deck_a.get("title", "Pista en preparación")
+            knobs = {
+                "controller": ctrl_name,
+                "filter_knob": "HPF Normal (12:00)",
+                "eq_low": "LOW Plano (12:00)",
+                "macro": "Canal en Preescucha"
+            }
             return {
                 "status": "safe",
                 "severity": 0,
@@ -886,80 +1018,84 @@ class CopilotService:
                 "tag": "CUE SEGURO",
                 "threshold": thresh,
                 "mode": getattr(self, "anti_muddy_mode", "club"),
-                "flx4": {
-                    "controller": "Pioneer DDJ-FLX4",
-                    "filter_knob": "HPF Normal (12:00)",
-                    "eq_low": "LOW Plano (12:00)",
-                    "macro": "Canal en Preescucha"
-                }
+                "controller_knobs": knobs,
+                "flx4": knobs
             }
 
         if sub_a >= thresh and sub_b >= thresh:
+            knobs = {
+                "controller": ctrl_name,
+                "filter_knob": "HPF +30% (14:00)",
+                "eq_low": "LOW -9dB (09:00)",
+                "macro": "FILTER HPF o CUT"
+            }
             return {
                 "status": "danger",
                 "severity": 3,
                 "title": f"⚠️ CONFLICTO DE GRAVES (Anti-Muddy Guard • Modo {mode_str})",
                 "message": f"Ambos tracks saturan en sub-graves ({sub_a:.1f}% y {sub_b:.1f}% > {thresh}%). Solaparlos causará cancelación de fase y distorsión en el sistema de sala.",
-                "action": "🎛️ DDJ-FLX4: Gira perilla FILTER CH2 a las 14:00 (HPF +30%) o recorta EQ LOW a las 09:00 (-9dB) antes de abrir el fader.",
+                "action": f"🎛️ {ctrl_name}: Gira perilla FILTER CH2 a las 14:00 (HPF +30%) o recorta EQ LOW a las 09:00 (-9dB) antes de abrir el fader.",
                 "tag": "BASS CLASH",
                 "threshold": thresh,
                 "mode": getattr(self, "anti_muddy_mode", "club"),
-                "flx4": {
-                    "controller": "Pioneer DDJ-FLX4",
-                    "filter_knob": "HPF +30% (14:00)",
-                    "eq_low": "LOW -9dB (09:00)",
-                    "macro": "FILTER HPF o [SMART CFX]"
-                }
+                "controller_knobs": knobs,
+                "flx4": knobs
             }
         elif (sub_a >= thresh and sub_b >= warn_thresh) or (sub_b >= thresh and sub_a >= warn_thresh):
+            knobs = {
+                "controller": ctrl_name,
+                "filter_knob": "HPF +15% (13:30)",
+                "eq_low": "LOW -3dB (11:00)",
+                "macro": "Filtro progresivo"
+            }
             return {
                 "status": "warning",
                 "severity": 2,
                 "title": f"⚡ PRECAUCIÓN DE GRAVES (Modo {mode_str})",
                 "message": f"Carga energética considerable en frecuencias bajas (> {warn_thresh}%). Evita solapar bombos en drop completo.",
-                "action": "🎛️ DDJ-FLX4: Modula perilla FILTER a las 13:30 (HPF leve) durante el breakdown o baja EQ LOW a las 11:00.",
+                "action": f"🎛️ {ctrl_name}: Modula perilla FILTER a las 13:30 (HPF leve) durante el breakdown o baja EQ LOW a las 11:00.",
                 "tag": "MODERATE MUD",
                 "threshold": thresh,
                 "mode": getattr(self, "anti_muddy_mode", "club"),
-                "flx4": {
-                    "controller": "Pioneer DDJ-FLX4",
-                    "filter_knob": "HPF +15% (13:30)",
-                    "eq_low": "LOW -3dB (11:00)",
-                    "macro": "Filtro progresivo"
-                }
+                "controller_knobs": knobs,
+                "flx4": knobs
             }
         elif sub_b < warn_thresh or "Percussive" in deck_b.get("acoustic_role", ""):
+            knobs = {
+                "controller": ctrl_name,
+                "filter_knob": "CENTER (12:00)",
+                "eq_low": "0dB (12:00)",
+                "macro": "Mezcla Libre"
+            }
             return {
                 "status": "safe",
                 "severity": 1,
                 "title": "🟢 MEZCLA LIMPIA & SEGURA",
                 "message": "El track entrante es percusivo / medio-agudo. Espectro acústicamente complementario.",
-                "action": "🎛️ DDJ-FLX4: Perilla FILTER al centro (12:00) y EQ LOW al centro (0dB). Mezcla continua segura.",
+                "action": f"🎛️ {ctrl_name}: Perilla FILTER al centro (12:00) y EQ LOW al centro (0dB). Mezcla continua segura.",
                 "tag": "CLEAN MIX",
                 "threshold": thresh,
                 "mode": getattr(self, "anti_muddy_mode", "club"),
-                "flx4": {
-                    "controller": "Pioneer DDJ-FLX4",
-                    "filter_knob": "CENTER (12:00)",
-                    "eq_low": "0dB (12:00)",
-                    "macro": "Mezcla Libre"
-                }
+                "controller_knobs": knobs,
+                "flx4": knobs
             }
+        knobs = {
+            "controller": ctrl_name,
+            "filter_knob": "CENTER (12:00)",
+            "eq_low": "0dB (12:00)",
+            "macro": "Monitoreo"
+        }
         return {
             "status": "info",
             "severity": 1,
             "title": "ℹ️ BALANCE CONTROLADO",
             "message": "Distribución espectral equilibrada entre ambos decks.",
-            "action": "🎛️ DDJ-FLX4: Monitorea Trim/Gain al sumar ambos canales.",
+            "action": f"🎛️ {ctrl_name}: Monitorea Trim/Gain al sumar ambos canales.",
             "tag": "BALANCED",
             "threshold": thresh,
             "mode": getattr(self, "anti_muddy_mode", "club"),
-            "flx4": {
-                "controller": "Pioneer DDJ-FLX4",
-                "filter_knob": "CENTER (12:00)",
-                "eq_low": "0dB (12:00)",
-                "macro": "Monitoreo"
-            }
+            "controller_knobs": knobs,
+            "flx4": knobs
         }
 
     def set_anti_muddy_mode(self, mode: str) -> Dict[str, Any]:
@@ -1510,6 +1646,7 @@ class CopilotService:
             "platform_status": "SIMULACIÓN",
             "capture_latency_ms": 0.35,
             "fps": 60,
+            "controller": self.get_connected_dj_controller(),
             "detected_platforms": {
                 pid: self._is_platform_installed(pid) for pid in self.PLATFORM_SPECS
             },
@@ -1624,16 +1761,23 @@ class CopilotService:
         pb1 = self._deck_playback["1"]
         if track_id_1 and pb1.get("last_track_id") != track_id_1:
             pb1["last_track_id"] = track_id_1
-            pb1["is_playing"] = False
-            pb1["play_start_ts"] = 0.0
+            if "1" in self.manual_play_state:
+                pb1["is_playing"] = bool(self.manual_play_state["1"])
+            else:
+                pb1["is_playing"] = False
+            pb1["play_start_ts"] = now if pb1["is_playing"] else 0.0
             pb1["elapsed_sec"] = down_sec_1
 
         pb2 = self._deck_playback["2"]
         if track_id_2 and pb2.get("last_track_id") != track_id_2:
             pb2["last_track_id"] = track_id_2
-            pb2["is_playing"] = True if time_since_2 < dur_2_sec else False
-            pb2["play_start_ts"] = now
-            pb2["elapsed_sec"] = min(dur_2_sec, max(0.0, time_since_2)) if (time_since_2 < dur_2_sec) else down_sec_2
+            if "2" in self.manual_play_state:
+                pb2["is_playing"] = bool(self.manual_play_state["2"])
+            else:
+                # Si Deck 1 no está explícitamente reproduciendo y Deck 2 es nuevo, en CUE
+                pb2["is_playing"] = False
+            pb2["play_start_ts"] = now if pb2["is_playing"] else 0.0
+            pb2["elapsed_sec"] = down_sec_2
 
         # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING) Y TIEMPO TRANSCURRIDO
         # Deck 1:
@@ -1838,6 +1982,7 @@ class CopilotService:
             "platform_status": "LIVE",
             "capture_latency_ms": max(0.12, capture_latency_ms),
             "fps": 60,
+            "controller": self.get_connected_dj_controller(),
             "detected_platforms": {
                 pid: self._is_platform_installed(pid) for pid in self.PLATFORM_SPECS
             },

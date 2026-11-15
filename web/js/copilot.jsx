@@ -1418,7 +1418,7 @@ function LiveCopilotApp() {
 
     const [controllerState, setControllerState] = useState({
         detected: true,
-        name: 'PIONEER DDJ-FLX4 (USB)',
+        name: 'NUMARK NV II (USB)',
         status: 'CONECTADA'
     });
 
@@ -1429,11 +1429,15 @@ function LiveCopilotApp() {
                 .then(access => {
                     const checkDevices = () => {
                         const inputs = Array.from(access.inputs.values());
-                        const djDev = inputs.find(d => /ddj|pioneer|traktor|kontrol|denon|numark|hercules|reloop|dj/i.test(d.name || ''));
+                        const djDev = inputs.find(d => /nv|numark|mkii|ddj|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ''));
                         if (djDev) {
+                            let cleanName = djDev.name.toUpperCase();
+                            if (/nv|mkii/i.test(cleanName)) {
+                                cleanName = 'NUMARK NV II (USB)';
+                            }
                             setControllerState({
                                 detected: true,
-                                name: djDev.name.toUpperCase(),
+                                name: cleanName,
                                 status: 'CONECTADA'
                             });
                         } else if (inputs.length > 0) {
@@ -1907,12 +1911,12 @@ function LiveCopilotApp() {
                     </div>
 
                     <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
-                        {anti_muddy.flx4 && (
+                        {(anti_muddy.controller_knobs || anti_muddy.flx4) && (
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                <span>🎛️ DDJ-FLX4:</span>
-                                <span className="text-white font-extrabold">{anti_muddy.flx4.filter_knob}</span>
+                                <span>🎛️ {(state.controller?.name || controllerState.name || 'NUMARK NV II').replace(' (USB)', '')}:</span>
+                                <span className="text-white font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob}</span>
                                 <span className="text-zinc-400">•</span>
-                                <span className="text-amber-300 font-extrabold">{anti_muddy.flx4.eq_low}</span>
+                                <span className="text-amber-300 font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).eq_low}</span>
                             </div>
                         )}
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/60 border border-zinc-800">
