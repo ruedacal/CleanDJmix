@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import sqlite3
 import time
 import socket
@@ -337,7 +338,7 @@ class CopilotService:
         return self.KEY_TO_CAMELOT.get(clean, "8A")
 
     def _fetch_audit_dsp(self, filepath: str) -> Dict[str, Any]:
-        """Consulta la huella espectral y métricas de sonoridad de BeatWave para una pista (con cache en memoria)."""
+        """Consulta la huella espectral, 8 Hot Cues reales y métricas de sonoridad de BeatWave para una pista."""
         if not filepath:
             return {
                 "lufs": -6.8,
@@ -346,7 +347,9 @@ class CopilotService:
                 "high_ratio": 20.0,
                 "acoustic_role": "Bass-Heavy Driver",
                 "is_audited": False,
-                "comment": "Intro limpia 32b • Drop contundente • Outro 64b"
+                "comment": "Intro limpia 32b • Drop contundente • Outro 64b",
+                "cues": None,
+                "first_downbeat_ms": 0.0
             }
 
         clean_path = filepath if filepath.startswith("/") else "/" + filepath
@@ -360,7 +363,9 @@ class CopilotService:
             "high_ratio": 20.0,
             "acoustic_role": "Bass-Heavy Driver",
             "is_audited": False,
-            "comment": "Intro limpia 32b • Drop contundente • Outro 64b"
+            "comment": "Intro limpia 32b • Drop contundente • Outro 64b",
+            "cues": None,
+            "first_downbeat_ms": 0.0
         }
         if not os.path.exists(self.audit_cache_path):
             self._dsp_cache[clean_path] = default_dsp
@@ -374,22 +379,47 @@ class CopilotService:
                 (clean_path, f"%{os.path.basename(filepath)}")
             )
             row = cursor.fetchone()
+
+            cursor.execute(
+                "SELECT track_json FROM metadata_cache WHERE filepath = ? OR filepath LIKE ? LIMIT 1",
+                (clean_path, f"%{os.path.basename(filepath)}")
+            )
+            row_meta = cursor.fetchone()
             conn.close()
-            if row:
-                role = str(row[4]) if row[4] else "Club Master"
-                res = {
-                    "lufs": float(row[0]) if row[0] is not None else -6.8,
-                    "low_ratio": float(row[1]) if row[1] is not None else 48.0,
-                    "mid_ratio": float(row[2]) if row[2] is not None else 32.0,
-                    "high_ratio": float(row[3]) if row[3] is not None else 20.0,
-                    "acoustic_role": role,
-                    "is_audited": True,
-                    "comment": f"[{role}] Intro 32b • Drop contundente • Outro 64b"
-                }
-                self._dsp_cache[clean_path] = res
-                return res
+
+            meta_data = {}
+            if row_meta and row_meta[0]:
+                try:
+                    meta_data = json.loads(row_meta[0])
+                except Exception:
+                    pass
+
+            role = str(row[4]) if (row and row[4]) else (meta_data.get("acoustic_role") or "Club Master")
+            cues_list = meta_data.get("cues")
+            downbeat_ms = float(meta_data.get("first_downbeat_ms") or 0.0)
+
+            res = {
+                "lufs": float(row[0]) if (row and row[0] is not None) else float(meta_data.get("lufs") or -6.8),
+                "low_ratio": float(row[1]) if (row and row[1] is not None) else float(meta_data.get("low_ratio") or 48.0),
+                "mid_ratio": float(row[2]) if (row and row[2] is not None) else float(meta_data.get("mid_ratio") or 32.0),
+                "high_ratio": float(row[3]) if (row and row[3] is not None) else float(meta_data.get("high_ratio") or 20.0),
+                "acoustic_role": role,
+                "is_audited": bool(row or row_meta),
+                "comment": meta_data.get("comment") or f"[{role}] Intro 32b • Drop contundente • Outro 64b",
+                "cues": cues_list,
+                "first_downbeat_ms": downbeat_ms,
+                "energy": meta_data.get("energy") or meta_data.get("e"),
+                "danceability": meta_data.get("danceability") or meta_data.get("dance"),
+                "genre": meta_data.get("genre"),
+                "subgenre": meta_data.get("subgenre"),
+                "mood": meta_data.get("mood") or meta_data.get("vibe"),
+                "phase": meta_data.get("phase") or meta_data.get("fase_dj")
+            }
+            self._dsp_cache[clean_path] = res
+            return res
         except Exception:
             pass
+
         self._dsp_cache[clean_path] = default_dsp
         return default_dsp
 
@@ -830,12 +860,35 @@ class CopilotService:
 
     def _calculate_anti_muddy_guard(self, deck_a: Dict[str, Any], deck_b: Dict[str, Any]) -> Dict[str, Any]:
         """Calcula el riesgo de colisión de graves y saturación espectral con recomendaciones para Pioneer DDJ-FLX4."""
+        is_a_playing = bool(deck_a.get("is_playing", False))
+        is_b_playing = bool(deck_b.get("is_playing", False))
+
         sub_a = float(deck_a.get("low_ratio", 45.0) or 45.0)
         sub_b = float(deck_b.get("low_ratio", 45.0) or 45.0)
 
         thresh = getattr(self, "anti_muddy_threshold", 40.0)
         warn_thresh = max(34.0, thresh - 4.0)
         mode_str = getattr(self, "anti_muddy_mode", "club").upper()
+
+        # Si uno o ambos platos no están reproduciendo (en CUE / auriculares), no hay colisión física en Master
+        if not (is_a_playing and is_b_playing):
+            cue_title = deck_b.get("title") if is_a_playing else deck_a.get("title", "Pista en preparación")
+            return {
+                "status": "safe",
+                "severity": 0,
+                "title": f"🎧 EN CUE (PREPARADO) • MODO {mode_str}",
+                "message": f"'{cue_title}' en preescucha de auriculares. Graves aislados sin solapamiento en sala (Master limpio).",
+                "action": "Abre fader gradualmente al iniciar frase",
+                "tag": "CUE SEGURO",
+                "threshold": thresh,
+                "mode": getattr(self, "anti_muddy_mode", "club"),
+                "flx4": {
+                    "controller": "Pioneer DDJ-FLX4",
+                    "filter_knob": "HPF Normal (12:00)",
+                    "eq_low": "LOW Plano (12:00)",
+                    "macro": "Canal en Preescucha"
+                }
+            }
 
         if sub_a >= thresh and sub_b >= thresh:
             return {
@@ -991,55 +1044,140 @@ class CopilotService:
     @staticmethod
     def _generate_structural_phases(cues: list, duration_sec: float) -> list:
         """Genera las fases tácticas de la pista (Intro, Drop, Break, Outro) sincronizadas con los Hot Cues."""
-        return [
-            {"id": "intro", "name": "Intro Percusiva", "start_pct": 0.0, "end_pct": 0.16, "type": "intro", "label": "Intro 32b • Mezcla In", "color": "#06b6d4"},
-            {"id": "build", "name": "Bassline In", "start_pct": 0.16, "end_pct": 0.35, "type": "build", "label": "Bassline Activa", "color": "#eab308"},
-            {"id": "break", "name": "Breakdown", "start_pct": 0.35, "end_pct": 0.48, "type": "break", "label": "Breakdown (Sin Graves)", "color": "#38bdf8"},
-            {"id": "drop", "name": "MAIN DROP", "start_pct": 0.48, "end_pct": 0.74, "type": "drop", "label": "⚡ DROP PRINCIPAL (Clímax)", "color": "#ef4444"},
-            {"id": "break2", "name": "Segundo Parón", "start_pct": 0.74, "end_pct": 0.82, "type": "break", "label": "Puente Melódico", "color": "#a855f7"},
-            {"id": "outro", "name": "Outro Limpio", "start_pct": 0.82, "end_pct": 1.0, "type": "outro", "label": "🟢 OUTRO SEGURO • Mezcla Out", "color": "#10b981"}
-        ]
+        if not cues or len(cues) < 4:
+            return [
+                {"id": "intro", "name": "Intro Percusiva", "start_pct": 0.0, "end_pct": 0.16, "type": "intro", "label": "Intro 32b • Mezcla In", "color": "#06b6d4"},
+                {"id": "build", "name": "Bassline In", "start_pct": 0.16, "end_pct": 0.35, "type": "build", "label": "Bassline Activa", "color": "#eab308"},
+                {"id": "break", "name": "Breakdown", "start_pct": 0.35, "end_pct": 0.48, "type": "break", "label": "Breakdown (Sin Graves)", "color": "#38bdf8"},
+                {"id": "drop", "name": "MAIN DROP", "start_pct": 0.48, "end_pct": 0.74, "type": "drop", "label": "⚡ DROP PRINCIPAL (Clímax)", "color": "#ef4444"},
+                {"id": "break2", "name": "Segundo Parón", "start_pct": 0.74, "end_pct": 0.82, "type": "break", "label": "Puente Melódico", "color": "#a855f7"},
+                {"id": "outro", "name": "Outro Limpio", "start_pct": 0.82, "end_pct": 1.0, "type": "outro", "label": "🟢 OUTRO SEGURO • Mezcla Out", "color": "#10b981"}
+            ]
+
+        c_sorted = sorted(cues, key=lambda x: float(x.get("pct", 0.0)))
+        phases = []
+        for i in range(len(c_sorted)):
+            c_curr = c_sorted[i]
+            c_next = c_sorted[i + 1] if i + 1 < len(c_sorted) else None
+            start_p = round(float(c_curr.get("pct", 0.0)), 4)
+            end_p = round(float(c_next.get("pct", 1.0)), 4) if c_next else 1.0
+            name_raw = c_curr.get("short_name") or c_curr.get("name", f"Cue {i+1}")
+            p_type = "intro" if i < 2 else ("build" if i < 3 else ("break" if "break" in name_raw.lower() else ("drop" if "drop" in name_raw.lower() or "climax" in name_raw.lower() else ("outro" if i >= len(c_sorted) - 2 else "build"))))
+            color = c_curr.get("color") or ("#ef4444" if p_type == "drop" else ("#10b981" if p_type == "outro" else "#06b6d4"))
+            phases.append({
+                "id": f"phase_{i+1}",
+                "name": name_raw,
+                "start_pct": start_p,
+                "end_pct": end_p,
+                "type": p_type,
+                "label": f"{name_raw} ({c_curr.get('bar_str', '')})",
+                "color": color,
+                "directive": f"Compás {c_curr.get('bar', (i*16)+1)}. {c_curr.get('name')}"
+            })
+        return phases
 
     def _get_tactical_recommendations(self, master_track: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Genera 3 recomendaciones tácticas de rescate y progresión desde la biblioteca auditada."""
-        base_bpm = master_track.get("bpm", 130.0)
-        base_camelot = master_track.get("camelot", "8A")
+        """Genera recomendaciones armónicas y tácticas reales desde la biblioteca auditada del usuario."""
+        base_bpm = float(master_track.get("bpm") or 130.0)
+        base_camelot = str(master_track.get("camelot") or "8A").upper().strip()
+        current_title = str(master_track.get("title") or "").lower().strip()
+        current_file = str(master_track.get("file_path") or "").strip()
 
         num = int(base_camelot[:-1]) if base_camelot[:-1].isdigit() else 8
         mode = base_camelot[-1] if base_camelot[-1] in ("A", "B") else "A"
+        alt_mode = "B" if mode == "A" else "A"
         up_num = 1 if num == 12 else num + 1
+        down_num = 12 if num == 1 else num - 1
 
+        compatible_keys = {
+            f"{num}{mode}": ("Mezcla Armónica Segura", f"Mismo tono ({num}{mode}). Cero disonancia tímbrica."),
+            f"{up_num}{mode}": ("Subidón de Energía (+1)", f"Aumento armónico a {up_num}{mode}. Eleva la energía en pista."),
+            f"{down_num}{mode}": ("Descenso Armónico (-1)", f"Paso a {down_num}{mode}. Modulación sutil para descompresión."),
+            f"{num}{alt_mode}": ("Cambio Modal (Relativa)", f"Cruce a {num}{alt_mode}. Cambio de brillo mayor/menor.")
+        }
+
+        real_candidates: List[Dict[str, Any]] = []
+
+        if os.path.exists(self.audit_cache_path):
+            try:
+                conn = sqlite3.connect(f"file:{self.audit_cache_path}?mode=ro", uri=True)
+                cursor = conn.cursor()
+                cursor.execute("SELECT filepath, track_json FROM metadata_cache LIMIT 800")
+                rows = cursor.fetchall()
+                conn.close()
+
+                for fp, tj in rows:
+                    if not tj:
+                        continue
+                    try:
+                        t = json.loads(tj)
+                    except Exception:
+                        continue
+
+                    t_key = (t.get("key") or t.get("k") or "").upper().strip()
+                    if t_key not in compatible_keys:
+                        continue
+
+                    try:
+                        t_bpm = float(t.get("bpm") or t.get("b") or 0.0)
+                    except Exception:
+                        continue
+
+                    if t_bpm <= 40.0 or abs(t_bpm - base_bpm) > (base_bpm * 0.08):
+                        continue
+
+                    t_title = str(t.get("title") or t.get("t") or os.path.basename(fp)).strip()
+                    if current_title and current_title in t_title.lower():
+                        continue
+                    if current_file and fp and os.path.basename(current_file) == os.path.basename(fp):
+                        continue
+
+                    strat, reason = compatible_keys[t_key]
+                    c_id = f"rec_{len(real_candidates) + 1}_{t.get('id', len(real_candidates))}"
+                    
+                    real_candidates.append({
+                        "id": c_id,
+                        "title": t_title,
+                        "artist": t.get("artist") or t.get("a") or "Desconocido",
+                        "bpm": round(t_bpm, 1),
+                        "camelot": t_key,
+                        "camelot_color": self.CAMELOT_COLORS.get(t_key, "#06b6d4"),
+                        "raw_key": t.get("raw_key") or t_key,
+                        "role": t.get("acoustic_role") or "Club Master",
+                        "lufs": float(t.get("lufs") or -7.0),
+                        "low_ratio": float(t.get("low_ratio") or 38.0),
+                        "genre": t.get("genre") or "Tech House",
+                        "subgenre": t.get("subgenre") or "Club Master",
+                        "energy": int(t.get("energy") or t.get("e") or 88),
+                        "danceability": int(t.get("danceability") or t.get("dance") or 85),
+                        "mood": t.get("mood") or t.get("vibe") or "Peak Time",
+                        "format": t.get("format") or ("FLAC 24-bit" if fp.lower().endswith(".flac") else "MP3 320k"),
+                        "duration": t.get("duration") or "06:00",
+                        "year": str(t.get("year") or "2024"),
+                        "cover": t.get("cover") or f"/cover?path={fp}",
+                        "strategy": strat,
+                        "reason": reason
+                    })
+
+                    if len(real_candidates) >= 12:
+                        break
+            except Exception:
+                pass
+
+        if len(real_candidates) >= 4:
+            return real_candidates[:6]
+
+        # Respaldo si no hay suficientes pistas indexadas en biblioteca
         rec_same = f"{num}{mode}"
         rec_up = f"{up_num}{mode}"
-
-        DEFAULT_CUES_1 = [
-            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
-            {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
-            {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
-            {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
-            {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
-            {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
-            {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
-            {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
-        ]
-        DEFAULT_CUES_2 = [
-            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
-            {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
-            {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
-            {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
-            {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
-            {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
-            {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
-            {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
-        ]
-
-        candidates = [
+        fallback_candidates = [
             {
                 "id": "rec_1",
                 "title": "Higher (Original Mix)",
                 "artist": "Amelie Lens",
                 "bpm": round(base_bpm, 1),
                 "camelot": rec_same,
+                "camelot_color": self.CAMELOT_COLORS.get(rec_same, "#f472b6"),
                 "role": "Percussive Tool",
                 "lufs": -6.5,
                 "low_ratio": 36.0,
@@ -1061,6 +1199,7 @@ class CopilotService:
                 "artist": "Adam Beyer & Bart Skils",
                 "bpm": round(base_bpm + 1.0, 1),
                 "camelot": rec_up,
+                "camelot_color": self.CAMELOT_COLORS.get(rec_up, "#fb7185"),
                 "role": "Peak Time Driver",
                 "lufs": -5.9,
                 "low_ratio": 49.0,
@@ -1082,6 +1221,7 @@ class CopilotService:
                 "artist": "Hertz",
                 "bpm": round(base_bpm, 1),
                 "camelot": rec_same,
+                "camelot_color": self.CAMELOT_COLORS.get(rec_same, "#f472b6"),
                 "role": "Industrial Driver",
                 "lufs": -6.2,
                 "low_ratio": 38.0,
@@ -1103,6 +1243,7 @@ class CopilotService:
                 "artist": "Planetary Assault Systems",
                 "bpm": round(base_bpm - 0.5, 1),
                 "camelot": rec_same,
+                "camelot_color": self.CAMELOT_COLORS.get(rec_same, "#f472b6"),
                 "role": "Percussive Descongestor",
                 "lufs": -7.1,
                 "low_ratio": 32.0,
@@ -1117,55 +1258,9 @@ class CopilotService:
                 "cover": "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
                 "strategy": "Descongestión de Sala",
                 "reason": "Textura enfocada en medios y agudos. Ideal para limpiar la sala tras un drop saturado."
-            },
-            {
-                "id": "rec_5",
-                "title": "Subversion",
-                "artist": "Enrico Sangiuliano",
-                "bpm": round(base_bpm + 0.5, 1),
-                "camelot": rec_up,
-                "role": "Cosmic Climax",
-                "lufs": -6.0,
-                "low_ratio": 44.0,
-                "genre": "Peak Time Techno",
-                "subgenre": "NINETOZERO",
-                "energy": 95,
-                "danceability": 90,
-                "mood": "Cosmic Meltdown",
-                "format": "FLAC Hi-Res",
-                "duration": "06:48",
-                "year": "2023",
-                "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
-                "strategy": "Ascensión Hipnótica",
-                "reason": "Sintetizadores espaciales que abren el panorama estéreo antes de cortar los bajos."
-            },
-            {
-                "id": "rec_6",
-                "title": "Rave Generation",
-                "artist": "Reinier Zonneveld",
-                "bpm": round(base_bpm + 2.0, 1),
-                "camelot": rec_up,
-                "role": "Acid Meltdown",
-                "lufs": -5.5,
-                "low_ratio": 46.0,
-                "genre": "Acid Techno",
-                "subgenre": "Filth on Acid",
-                "energy": 98,
-                "danceability": 94,
-                "mood": "High Energy Climax",
-                "format": "WAV 24-bit",
-                "duration": "06:15",
-                "year": "2024",
-                "cover": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
-                "strategy": "Explosión Peak Time",
-                "reason": "Energía máxima para cerrar el set. Requiere swap rápido de EQ Low en drop."
             }
         ]
-
-        for c in candidates[:3]:
-            c["camelot_color"] = self.CAMELOT_COLORS.get(c["camelot"], "#06b6d4")
-
-        return candidates[:3]
+        return (real_candidates + fallback_candidates)[:6]
 
     # =========================================================================
     # ESTADO SIMULADO Y CONSOLIDADO
@@ -1512,47 +1607,50 @@ class CopilotService:
         t2_start = deck_2_raw.get("start_time", 0) if deck_2_raw else 0
         t2_end = deck_2_raw.get("end_time", -1) if deck_2_raw else 0
 
-        # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING)
+        down_sec_1 = float(dsp_1.get("first_downbeat_ms") or 0.0) / 1000.0
+        down_sec_2 = float(dsp_2.get("first_downbeat_ms") or 0.0) / 1000.0
+
+        time_since_1 = now - t1_start if t1_start else 0.0
+        time_since_2 = now - t2_start if t2_start else 0.0
+
+        # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING) Y TIEMPO TRANSCURRIDO
         # Deck 1:
         if self.manual_play_state.get("1") is not None:
             d1_is_playing = bool(self.manual_play_state["1"])
-            elapsed_1 = round(max(0.0, now - t1_start) % (dur_1_sec or 1), 2) if (d1_is_playing and t1_start) else 0.0
+            elapsed_1 = round(max(0.0, now - t1_start) % (dur_1_sec or 1), 2) if (d1_is_playing and t1_start) else down_sec_1
             prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
         elif is_dj_running and t1_end == -1 and deck_1_raw:
-            # Solo si Serato está abierto y el track está cargado en curso
-            time_since_1 = now - t1_start if t1_start else 0.0
-            if 0.0 <= time_since_1 <= dur_1_sec:
+            if 0.0 <= time_since_1 <= dur_1_sec and (t1_start >= t2_start or time_since_2 > dur_2_sec):
                 d1_is_playing = True
                 elapsed_1 = round(time_since_1, 2)
                 prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
             else:
                 d1_is_playing = False
-                elapsed_1 = dur_1_sec
-                prog_1 = 1.0
+                elapsed_1 = round(down_sec_1, 2)
+                prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
         else:
             d1_is_playing = False
-            elapsed_1 = 0.0
-            prog_1 = 0.0
+            elapsed_1 = round(down_sec_1, 2)
+            prog_1 = round(elapsed_1 / (dur_1_sec or 1), 4)
 
         # Deck 2:
         if self.manual_play_state.get("2") is not None:
             d2_is_playing = bool(self.manual_play_state["2"])
-            elapsed_2 = round(max(0.0, now - t2_start) % (dur_2_sec or 1), 2) if (d2_is_playing and t2_start) else 0.0
+            elapsed_2 = round(max(0.0, now - t2_start) % (dur_2_sec or 1), 2) if (d2_is_playing and t2_start) else down_sec_2
             prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
         elif is_dj_running and t2_end == -1 and deck_2_raw:
-            time_since_2 = now - t2_start if t2_start else 0.0
-            if 0.0 <= time_since_2 <= dur_2_sec:
+            if 0.0 <= time_since_2 <= dur_2_sec and (t2_start >= t1_start or time_since_1 > dur_1_sec):
                 d2_is_playing = True
                 elapsed_2 = round(time_since_2, 2)
                 prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
             else:
                 d2_is_playing = False
-                elapsed_2 = dur_2_sec
-                prog_2 = 1.0
+                elapsed_2 = round(down_sec_2, 2)
+                prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
         else:
             d2_is_playing = False
-            elapsed_2 = 0.0
-            prog_2 = 0.0
+            elapsed_2 = round(down_sec_2, 2)
+            prog_2 = round(elapsed_2 / (dur_2_sec or 1), 4)
 
         # DETERMINACIÓN DE MASTER (ON AIR) VS CUE (PREPARADO)
         if self.manual_master_deck in ("1", "2"):
@@ -1563,30 +1661,29 @@ class CopilotService:
             elif d2_is_playing and not d1_is_playing:
                 deck_1_is_master = False
             else:
-                # Si ambos están parados o ambos reproduciéndose: el que se cargó más recientemente
+                # Si ambos están en standby o ambos reproduciéndose: el que se cargó más recientemente
                 deck_1_is_master = (t1_start >= t2_start) if (t1_start and t2_start) else True
 
-        deck_1_cues_list = (deck_1_raw.get("cues") if deck_1_raw else None) or [
-            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.04, "time": "00:00.25"},
-            {"id": 2, "name": "Intro Perc", "color": "#f97316", "pct": 0.16, "time": "01:04.00"},
-            {"id": 3, "name": "Bassline In", "color": "#eab308", "pct": 0.32, "time": "02:08.00"},
-            {"id": 4, "name": "MAIN DROP", "color": "#10b981", "pct": 0.48, "time": "03:12.00"},
-            {"id": 5, "name": "Breakdown", "color": "#06b6d4", "pct": 0.62, "time": "04:16.00"},
-            {"id": 6, "name": "Climax 2", "color": "#3b82f6", "pct": 0.74, "time": "05:04.00"},
-            {"id": 7, "name": "Outro 32b", "color": "#8b5cf6", "pct": 0.86, "time": "06:08.00"},
-            {"id": 8, "name": "Cut / Fade", "color": "#ec4899", "pct": 0.96, "time": "07:15.00"}
-        ]
+        # Hot Cues reales extraídos de la pista o calculados acústicamente
+        deck_1_cues_list = dsp_1.get("cues") or deck_1_raw.get("cues")
+        if not deck_1_cues_list:
+            from infrastructure.audio_processor import AudioProcessorService
+            down_ms = float(dsp_1.get("first_downbeat_ms") or 0.0)
+            deck_1_cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                duration_ms=int(dur_1_sec * 1000),
+                bpm=float(deck_1_raw.get("bpm") or 130.0),
+                downbeat_ms=int(down_ms)
+            )
 
-        deck_2_cues_list = (deck_2_raw.get("cues") if deck_2_raw else None) or [
-            {"id": 1, "name": "Downbeat 1.0.0", "color": "#ef4444", "pct": 0.05, "time": "00:00.30"},
-            {"id": 2, "name": "Vocal Hook", "color": "#f97316", "pct": 0.19, "time": "01:08.00"},
-            {"id": 3, "name": "Build-Up 16b", "color": "#eab308", "pct": 0.35, "time": "02:16.00"},
-            {"id": 4, "name": "PEAK DROP", "color": "#10b981", "pct": 0.50, "time": "03:20.00"},
-            {"id": 5, "name": "Acid Meltdown", "color": "#06b6d4", "pct": 0.64, "time": "04:24.00"},
-            {"id": 6, "name": "Second Drop", "color": "#3b82f6", "pct": 0.76, "time": "05:12.00"},
-            {"id": 7, "name": "Outro Limpio", "color": "#8b5cf6", "pct": 0.88, "time": "06:16.00"},
-            {"id": 8, "name": "Fade Out", "color": "#ec4899", "pct": 0.97, "time": "06:45.00"}
-        ]
+        deck_2_cues_list = dsp_2.get("cues") or deck_2_raw.get("cues")
+        if not deck_2_cues_list:
+            from infrastructure.audio_processor import AudioProcessorService
+            down_ms = float(dsp_2.get("first_downbeat_ms") or 0.0)
+            deck_2_cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                duration_ms=int(dur_2_sec * 1000),
+                bpm=float(deck_2_raw.get("bpm") or 130.0),
+                downbeat_ms=int(down_ms)
+            )
 
         deck_1_status = "ON AIR (MASTER)" if (d1_is_playing and deck_1_is_master) else ("REPRODUCIENDO" if d1_is_playing else ("MASTER (PAUSADO)" if deck_1_is_master else "CUE (DETENIDO)"))
         deck_2_status = "ON AIR (MASTER)" if (d2_is_playing and not deck_1_is_master) else ("REPRODUCIENDO" if d2_is_playing else ("MASTER (PAUSADO)" if not deck_1_is_master else "CUE (DETENIDO)"))
@@ -1603,19 +1700,21 @@ class CopilotService:
             "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
             "raw_key": deck_1_raw.get("raw_key", "") if deck_1_raw else "",
             "file_path": deck_1_raw.get("file_path", "") if deck_1_raw else "",
-            "genre": (deck_1_raw.get("genre") if deck_1_raw else "Melodic Techno") or "Melodic Techno",
-            "subgenre": (deck_1_raw.get("subgenre") if deck_1_raw else "Club Master") or "Club Master",
-            "energy": deck_1_raw.get("energy", 92) if deck_1_raw else 85,
-            "danceability": deck_1_raw.get("danceability", 88) if deck_1_raw else 85,
+            "genre": dsp_1.get("genre") or (deck_1_raw.get("genre") if deck_1_raw else "Melodic Techno") or "Melodic Techno",
+            "subgenre": dsp_1.get("subgenre") or (deck_1_raw.get("subgenre") if deck_1_raw else "Club Master") or "Club Master",
+            "energy": dsp_1.get("energy") or (deck_1_raw.get("energy", 92) if deck_1_raw else 85),
+            "danceability": dsp_1.get("danceability") or (deck_1_raw.get("danceability", 88) if deck_1_raw else 85),
             "format": (deck_1_raw.get("format") if deck_1_raw else ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k")) if deck_1_raw else "FLAC",
             "duration": (deck_1_raw.get("duration") if deck_1_raw else "06:30") or "06:30",
             "duration_sec": dur_1_sec,
             "elapsed_sec": elapsed_1,
             "play_progress": prog_1,
-            "phase": (deck_1_raw.get("phase") if deck_1_raw else "Peak Time") or "Peak Time",
+            "phase": dsp_1.get("phase") or (deck_1_raw.get("phase") if deck_1_raw else "Peak Time") or "Peak Time",
+            "mood": dsp_1.get("mood") or "Peak Time",
             "year": (deck_1_raw.get("year") if deck_1_raw else "2024") or "2024",
             "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if (deck_1_raw and deck_1_raw.get("file_path")) else "") if deck_1_raw else "",
             "cues": deck_1_cues_list,
+            "first_downbeat_ms": dsp_1.get("first_downbeat_ms", 0.0),
             "structural_phases": self._generate_structural_phases(deck_1_cues_list, dur_1_sec),
             "lufs": dsp_1["lufs"],
             "low_ratio": dsp_1["low_ratio"],

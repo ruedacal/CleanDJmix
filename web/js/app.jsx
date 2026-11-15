@@ -32208,16 +32208,17 @@ const CopilotSeratoWaveform = ({
     const [zoom, setZoom] = useState(4); // 2x, 4x, 8x, 16x
     const [showTacticalAids, setShowTacticalAids] = useState(true);
     const [hoveredMilestone, setHoveredMilestone] = useState(null);
-    const [progress, setProgress] = useState(deck.play_progress || 0.15);
-    const progressRef = useRef(deck.play_progress || 0.15);
+    const initialProgress = (typeof deck.play_progress === 'number' && !isNaN(deck.play_progress)) ? deck.play_progress : 0.0;
+    const [progress, setProgress] = useState(initialProgress);
+    const progressRef = useRef(initialProgress);
     const isPlayingRef = useRef(Boolean(deck.is_playing));
     const bpmRef = useRef(deck.bpm || 130.0);
     const durationSecRef = useRef(deck.duration_sec || 390.0);
 
     useEffect(() => {
-        if (deck.play_progress !== undefined) {
+        if (deck.play_progress !== undefined && deck.play_progress !== null) {
             const diff = Math.abs(progressRef.current - deck.play_progress);
-            if (diff > 0.02) {
+            if (diff > 0.01) {
                 progressRef.current = deck.play_progress;
                 setProgress(deck.play_progress);
             }
@@ -32298,7 +32299,8 @@ const CopilotSeratoWaveform = ({
     const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
     const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
 
-    const isBassClashDanger = antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44;
+    const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
+    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -32561,10 +32563,15 @@ const CopilotSeratoWaveform = ({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         {/* CONTADOR DE ANTICIPACIÓN (URGENCIA EN ROJO < 5s) */}
                         <div className="flex items-center gap-2">
-                            {isBassClashDanger ? (
+                            {!deck.is_playing ? (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/70 text-indigo-200 font-mono text-[11px] font-bold shadow-[0_0_12px_rgba(99,102,241,0.3)]">
+                                    <span className="text-sm">🎧</span>
+                                    <span>EN CUE (PREPARADO) ➔ Listo para soltar en primer bombo (Bar 1)</span>
+                                </div>
+                            ) : isBassClashDanger ? (
                                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-500 text-red-200 font-mono text-[11px] font-bold shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse ring-1 ring-red-400">
                                     <span className="text-sm">⚠️</span>
-                                    <span>EN 8 COMPASES (00:12) ➔ BASS CLASH: Cortar Low EQ</span>
+                                    <span>EN {barsToNextCue || 8} COMPASES ({formatSec(timeToNextCue || 16)}) ➔ BASS CLASH: Cortar Low EQ</span>
                                 </div>
                             ) : nextCue ? (
                                 (timeToNextCue <= 5.0 && timeToNextCue > 0) ? (
