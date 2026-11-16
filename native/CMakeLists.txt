@@ -28,6 +28,8 @@ set(CORE_SOURCES
     src/AudioDecoderResampler.cpp
     src/MelSpectrogram.cpp
     src/BeatThisRhythmEngine.cpp
+    src/CleanRoomDynamics.cpp
+    src/CleanRoomTonality.cpp
 )
 
 add_library(beatwave_core STATIC ${CORE_SOURCES})
