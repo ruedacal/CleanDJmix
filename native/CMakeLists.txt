@@ -25,10 +25,24 @@ include_directories(
 # 1. Librería Core Compartida (BeatWaveCore)
 set(CORE_SOURCES
     src/BeatWaveCore.cpp
+    src/AudioDecoderResampler.cpp
+    src/MelSpectrogram.cpp
+    src/BeatThisRhythmEngine.cpp
 )
 
 add_library(beatwave_core STATIC ${CORE_SOURCES})
 target_include_directories(beatwave_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Búsqueda condicional de FFTW3 y ONNX Runtime
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(FFTW3 QUIET fftw3)
+    if(FFTW3_FOUND)
+        target_include_directories(beatwave_core PRIVATE ${FFTW3_INCLUDE_DIRS})
+        target_link_libraries(beatwave_core PRIVATE ${FFTW3_LIBRARIES})
+        target_compile_definitions(beatwave_core PRIVATE HAVE_FFTW3=1)
+    endif()
+endif()
 
 # 2. Target Desktop N-API (node-addon-api)
 if(BUILD_NODE_ADDON)
