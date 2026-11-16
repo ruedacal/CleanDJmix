@@ -825,44 +825,33 @@ class CopilotService:
         try:
             cursor = conn.cursor()
 
-            # 1. Detectar si Serato tiene una sesión activa abierta (end_time = -1 en history_session)
+            # Deck 1 específico (el más reciente cargado en Deck 1 / A)
             cursor.execute(
                 """
-                SELECT id FROM history_session WHERE end_time = -1 ORDER BY id DESC LIMIT 1
+                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
+                FROM history_entry
+                WHERE deck IN ('1', 'A')
+                ORDER BY id DESC
+                LIMIT 1
                 """
             )
-            sess_row = cursor.fetchone()
-            active_session_id = sess_row[0] if sess_row else None
+            r1 = cursor.fetchone()
+            if r1:
+                d1 = self._parse_serato_row(r1)
 
-            if active_session_id is not None:
-                # Solo pistas activas en los decks en la sesión actual (end_time == -1)
-                cursor.execute(
-                    """
-                    SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
-                    FROM history_entry
-                    WHERE session_id = ? AND deck IN ('1', 'A') AND end_time = -1
-                    ORDER BY id DESC
-                    LIMIT 1
-                    """,
-                    (active_session_id,)
-                )
-                r1 = cursor.fetchone()
-                if r1:
-                    d1 = self._parse_serato_row(r1)
-
-                cursor.execute(
-                    """
-                    SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
-                    FROM history_entry
-                    WHERE session_id = ? AND deck IN ('2', 'B') AND end_time = -1
-                    ORDER BY id DESC
-                    LIMIT 1
-                    """,
-                    (active_session_id,)
-                )
-                r2 = cursor.fetchone()
-                if r2:
-                    d2 = self._parse_serato_row(r2)
+            # Deck 2 específico (el más reciente cargado en Deck 2 / B)
+            cursor.execute(
+                """
+                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
+                FROM history_entry
+                WHERE deck IN ('2', 'B')
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            )
+            r2 = cursor.fetchone()
+            if r2:
+                d2 = self._parse_serato_row(r2)
 
             # Historial general de pistas recientes
             cursor.execute(
@@ -2052,11 +2041,11 @@ class CopilotService:
 
         # Hot Cues reales extraídos de la pista Serato o calculados acústicamente
         deck_1_cues_list = self._extract_serato_markers_cues(deck_1_raw.get("file_path", "")) if deck_1_raw else None
-        if not deck_1_cues_list:
-            deck_1_cues_list = dsp_1.get("cues") or deck_1_raw.get("cues")
-        if not deck_1_cues_list:
+        if not deck_1_cues_list and deck_1_raw:
+            deck_1_cues_list = (dsp_1.get("cues") if dsp_1 else None) or deck_1_raw.get("cues")
+        if not deck_1_cues_list and deck_1_raw:
             from infrastructure.audio_processor import AudioProcessorService
-            down_ms = float(dsp_1.get("first_downbeat_ms") or 0.0)
+            down_ms = float(dsp_1.get("first_downbeat_ms") or 0.0) if dsp_1 else 0.0
             deck_1_cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
                 duration_ms=int(dur_1_sec * 1000),
                 bpm=float(deck_1_raw.get("bpm") or 130.0),
@@ -2064,15 +2053,15 @@ class CopilotService:
             )
         if deck_1_cues_list:
             for c in deck_1_cues_list:
-                if "pct" not in c and dur_1_sec > 0:
+                if isinstance(c, dict) and "pct" not in c and dur_1_sec > 0:
                     c["pct"] = round((float(c.get("pos_ms", 0)) / 1000.0) / dur_1_sec, 4)
 
         deck_2_cues_list = self._extract_serato_markers_cues(deck_2_raw.get("file_path", "")) if deck_2_raw else None
-        if not deck_2_cues_list:
-            deck_2_cues_list = dsp_2.get("cues") or deck_2_raw.get("cues")
-        if not deck_2_cues_list:
+        if not deck_2_cues_list and deck_2_raw:
+            deck_2_cues_list = (dsp_2.get("cues") if dsp_2 else None) or deck_2_raw.get("cues")
+        if not deck_2_cues_list and deck_2_raw:
             from infrastructure.audio_processor import AudioProcessorService
-            down_ms = float(dsp_2.get("first_downbeat_ms") or 0.0)
+            down_ms = float(dsp_2.get("first_downbeat_ms") or 0.0) if dsp_2 else 0.0
             deck_2_cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
                 duration_ms=int(dur_2_sec * 1000),
                 bpm=float(deck_2_raw.get("bpm") or 130.0),
@@ -2080,7 +2069,7 @@ class CopilotService:
             )
         if deck_2_cues_list:
             for c in deck_2_cues_list:
-                if "pct" not in c and dur_2_sec > 0:
+                if isinstance(c, dict) and "pct" not in c and dur_2_sec > 0:
                     c["pct"] = round((float(c.get("pos_ms", 0)) / 1000.0) / dur_2_sec, 4)
 
         deck_1_status = "ON AIR (MASTER)" if (d1_is_playing and deck_1_is_master) else ("REPRODUCIENDO" if d1_is_playing else ("MASTER (PAUSADO)" if deck_1_is_master else "CUE (DETENIDO)"))
