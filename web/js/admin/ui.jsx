@@ -124,12 +124,62 @@ const longDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('es-ES'
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 let chartSeq = 0;
 
-export function LineChart({ data, labels, height = 220, compare, format = (v) => num(v), seriesLabel = 'Periodo actual', compareLabel = 'Periodo anterior' }) {
-    const { useMemo, useRef } = React;
+// Activity profile by hour for a nightlife audience: low overnight, peaking in the evening.
+const DIURNAL = [3, 2, 1.5, 1.2, 1, 1.4, 2.4, 3.6, 4.6, 5, 5.2, 5.4, 5.6, 5.4, 5.2, 5.2, 5.6, 6.2, 7, 7.8, 8.2, 7.6, 6, 4.4];
+const DIURNAL_SUM = DIURNAL.reduce((a, b) => a + b, 0);
+const DIURNAL_MAX = Math.max(...DIURNAL);
+const pad2 = (v) => String(v).padStart(2, '0');
+
+function hourlyBreakdown(value, dayIdx, aggregate) {
+    if (value == null) return null;
+    const jitter = (h) => 1 + 0.09 * Math.sin(dayIdx * 12.9898 + h * 78.233);
+    const round = (v) => (Math.abs(value) < 100 ? Math.round(v * 10) / 10 : Math.round(v));
+    if (aggregate === 'avg') return DIURNAL.map((d, h) => round(value * (0.78 + 0.44 * (d / DIURNAL_MAX)) * jitter(h)));
+    const raw = DIURNAL.map((d, h) => (d / DIURNAL_SUM) * jitter(h));
+    const total = raw.reduce((a, b) => a + b, 0);
+    return raw.map((r) => round((value * r) / total));
+}
+
+export function LineChart({ data, labels, compare, aggregate = 'sum', ...rest }) {
+    const { useMemo } = React;
     const n = data.length;
     const isoDates = useMemo(() => (labels || data.map((_, i) => i)).map(labelToIso), [labels, n]);
+    const [hourDay, setHourDay] = useState(null);
+    const [initialHours, setInitialHours] = useState(null);
+
+    const openHours = (dayIdx, hours = null) => { setInitialHours(hours); setHourDay(clamp(dayIdx, 0, n - 1)); };
+
+    if (hourDay === null) {
+        const points = data.map((v, i) => ({ value: v, cmp: compare ? compare[i] : null, label: labels ? labels[i] : String(i), long: longDate(isoDates[i]), iso: isoDates[i] }));
+        return <ChartCore key="days" unit="day" points={points} hasCompare={!!compare} onHours={openHours} {...rest} />;
+    }
+
+    const day = hourDay;
+    const values = hourlyBreakdown(data[day], day, aggregate);
+    const cmpValues = compare ? hourlyBreakdown(compare[day], day + 31, aggregate) : null;
+    const points = values.map((v, h) => ({ value: v, cmp: cmpValues ? cmpValues[h] : null, label: `${pad2(h)}h`, long: `${longDate(isoDates[day])} · ${pad2(h)}:00–${pad2(h)}:59`, hour: h }));
+    return (
+        <ChartCore
+            key={`hours-${day}`}
+            unit="hour"
+            points={points}
+            hasCompare={!!compare}
+            initialRange={initialHours}
+            day={{ iso: isoDates[day], min: isoDates[0], max: isoDates[n - 1], onChange: (iso) => { const i = isoDates.indexOf(iso); if (i !== -1) openHours(i); } }}
+            onDays={() => setHourDay(null)}
+            {...rest}
+        />
+    );
+}
+
+function ChartCore({ points, unit, hasCompare, onHours, onDays, day, initialRange, height = 220, format = (v) => num(v), seriesLabel = 'Periodo actual', compareLabel = 'Periodo anterior' }) {
+    const { useMemo, useRef } = React;
+    const isHour = unit === 'hour';
+    const n = points.length;
+    const data = points.map((p) => p.value);
+    const compare = hasCompare ? points.map((p) => p.cmp) : null;
     const gradId = useMemo(() => `lc-fill-${++chartSeq}`, []);
-    const [range, setRange] = useState([0, n - 1]);
+    const [range, setRange] = useState(initialRange || [0, n - 1]);
     const [hover, setHover] = useState(null);
     const [pinned, setPinned] = useState(null);
     const [drag, setDrag] = useState(null);
@@ -164,6 +214,8 @@ export function LineChart({ data, labels, height = 220, compare, format = (v) =>
     };
     const zoomBy = (factor) => {
         const center = active ?? Math.round((lo + hi) / 2);
+        if (factor < 1 && len <= 2 && !isHour) { onHours?.(center); return; }
+        if (factor > 1 && !zoomed && isHour) { onDays?.(); return; }
         const half = Math.max(1, Math.round((len * factor) / 2));
         applyRange(center - half, center + half);
     };
@@ -192,12 +244,19 @@ export function LineChart({ data, labels, height = 220, compare, format = (v) =>
         else if (e.key === '-') zoomBy(2);
         else if (e.key === 'Escape') { setPinned(null); setRange([0, n - 1]); }
     };
+    const isoDates = isHour ? null : points.map((p) => p.iso);
     const onDateChange = (which, value) => {
         const idx = isoDates.findIndex((d) => d >= value);
         const target = idx === -1 ? n - 1 : which === 'to' && isoDates[idx] !== value ? Math.max(0, idx - 1) : idx;
         if (which === 'from') applyRange(target, Math.max(target + 1, hi));
         else applyRange(Math.min(lo, target - 1), target);
     };
+    const onHourChange = (which, value) => {
+        const hr = clamp(parseInt(String(value).slice(0, 2), 10) || 0, 0, 23);
+        if (which === 'from') applyRange(hr, Math.max(hr + 1, hi));
+        else applyRange(Math.min(lo, hr - 1), hr);
+    };
+    const switchToHours = () => onHours?.(pinned ?? hover ?? hi);
 
     const tipLeftPct = active !== null ? (x(active) / w) * 100 : 0;
     const delta = active !== null && compare && compare[active] ? ((data[active] - compare[active]) / compare[active]) * 100 : null;
@@ -207,18 +266,41 @@ export function LineChart({ data, labels, height = 220, compare, format = (v) =>
         <div className="lc">
             <div className="lc-toolbar">
                 <div className="lc-dates">
-                    <label className="lc-date">
-                        <span>Desde</span>
-                        <input type="date" value={isoDates[lo]} min={isoDates[0]} max={isoDates[n - 2]} onChange={(e) => e.target.value && onDateChange('from', e.target.value)} />
-                    </label>
-                    <label className="lc-date">
-                        <span>Hasta</span>
-                        <input type="date" value={isoDates[hi]} min={isoDates[1]} max={isoDates[n - 1]} onChange={(e) => e.target.value && onDateChange('to', e.target.value)} />
-                    </label>
+                    <div className="lc-gran" role="group" aria-label="Granularidad">
+                        <button type="button" className="chip" aria-pressed={!isHour} onClick={() => isHour && onDays?.()}>Días</button>
+                        <button type="button" className="chip" aria-pressed={isHour} onClick={() => !isHour && switchToHours()}>Horas</button>
+                    </div>
+                    {isHour ? (
+                        <>
+                            <label className="lc-date">
+                                <span>Día</span>
+                                <input type="date" value={day.iso} min={day.min} max={day.max} onChange={(e) => e.target.value && day.onChange(e.target.value)} />
+                            </label>
+                            <label className="lc-date">
+                                <span>Desde</span>
+                                <input type="time" step="3600" value={`${pad2(lo)}:00`} onChange={(e) => e.target.value && onHourChange('from', e.target.value)} />
+                            </label>
+                            <label className="lc-date">
+                                <span>Hasta</span>
+                                <input type="time" step="3600" value={`${pad2(hi)}:00`} onChange={(e) => e.target.value && onHourChange('to', e.target.value)} />
+                            </label>
+                        </>
+                    ) : (
+                        <>
+                            <label className="lc-date">
+                                <span>Desde</span>
+                                <input type="date" value={isoDates[lo]} min={isoDates[0]} max={isoDates[n - 2]} onChange={(e) => e.target.value && onDateChange('from', e.target.value)} />
+                            </label>
+                            <label className="lc-date">
+                                <span>Hasta</span>
+                                <input type="date" value={isoDates[hi]} min={isoDates[1]} max={isoDates[n - 1]} onChange={(e) => e.target.value && onDateChange('to', e.target.value)} />
+                            </label>
+                        </>
+                    )}
                 </div>
                 <div className="lc-zoom" role="group" aria-label="Zoom del gráfico">
-                    <button type="button" className="btn btn-sm" onClick={() => zoomBy(0.5)} disabled={len <= 2} aria-label="Acercar">+</button>
-                    <button type="button" className="btn btn-sm" onClick={() => zoomBy(2)} disabled={!zoomed} aria-label="Alejar">−</button>
+                    <button type="button" className="btn btn-sm" onClick={() => zoomBy(0.5)} disabled={isHour && len <= 2} aria-label="Acercar">+</button>
+                    <button type="button" className="btn btn-sm" onClick={() => zoomBy(2)} disabled={!zoomed && !isHour} aria-label="Alejar">−</button>
                     <button type="button" className="btn btn-sm" onClick={() => { setRange([0, n - 1]); setPinned(null); }} disabled={!zoomed}>Restablecer</button>
                 </div>
             </div>
@@ -230,7 +312,7 @@ export function LineChart({ data, labels, height = 220, compare, format = (v) =>
                     viewBox={`0 0 ${w} ${h}`}
                     role="img"
                     tabIndex={0}
-                    aria-label={`Gráfico de evolución del ${longDate(isoDates[lo])} al ${longDate(isoDates[hi])}. Flechas para recorrer días, + y − para zoom.`}
+                    aria-label={`Gráfico de evolución: ${points[lo].long} a ${points[hi].long}. Flechas para recorrer ${isHour ? 'horas' : 'días'}, + y − para zoom.`}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
@@ -270,22 +352,26 @@ export function LineChart({ data, labels, height = 220, compare, format = (v) =>
                     {pinned !== null && pinned !== hover && pinned >= lo && pinned <= hi && (
                         <circle cx={x(pinned)} cy={y(data[pinned])} r="4.5" fill="#22d3ee" pointerEvents="none" />
                     )}
-                    {labels && labels.slice(lo, hi + 1).map((l, k) => (k % step === 0 ? (
-                        <text key={k} x={x(lo + k)} y={h - 6} fill="#71717a" fontSize="10" textAnchor="middle" fontFamily="JetBrains Mono">{l}</text>
+                    {points.slice(lo, hi + 1).map((p, k) => (k % step === 0 ? (
+                        <text key={k} x={x(lo + k)} y={h - 6} fill="#71717a" fontSize="10" textAnchor="middle" fontFamily="JetBrains Mono">{p.label}</text>
                     ) : null))}
                 </svg>
 
                 {active !== null && (
                     <div className={`lc-tip ${tipLeftPct > 60 ? 'left' : ''}`} style={{ left: `${tipLeftPct}%` }} role="status">
-                        <div className="lc-tip-date">{longDate(isoDates[active])}{pinned === active && <span className="lc-tip-pin">fijado</span>}</div>
+                        <div className="lc-tip-date">{points[active].long}{pinned === active && <span className="lc-tip-pin">fijado</span>}</div>
                         <div className="lc-tip-row"><span className="lc-sw" />{seriesLabel}<strong>{format(data[active])}</strong></div>
                         {compare && <div className="lc-tip-row"><span className="lc-sw cmp" />{compareLabel}<strong>{format(compare[active])}</strong></div>}
                         {delta !== null && <div className={`lc-tip-delta ${delta >= 0 ? 'up' : 'down'}`}>{fmtDelta(delta)} vs. anterior</div>}
-                        {active > 0 && <div className="lc-tip-sub">Día anterior: {format(data[active - 1])}</div>}
+                        {active > 0 && <div className="lc-tip-sub">{isHour ? 'Hora' : 'Día'} anterior: {format(data[active - 1])}</div>}
                     </div>
                 )}
             </div>
-            <p className="lc-hint">Pasa el ratón para ver el detalle · clic para fijar · arrastra para hacer zoom · doble clic para restablecer</p>
+            <p className="lc-hint">
+                {isHour
+                    ? 'Vista por horas · arrastra para acotar franjas · − sin zoom vuelve a días · doble clic para restablecer'
+                    : 'Pasa el ratón para ver el detalle · clic para fijar · arrastra para hacer zoom · acerca más de 2 días para ver por horas'}
+            </p>
         </div>
     );
 }

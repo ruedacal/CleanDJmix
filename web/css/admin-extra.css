@@ -76,7 +76,8 @@
 /* Interactive line chart */
 .lc { display: flex; flex-direction: column; gap: 10px; }
 .lc-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.lc-dates, .lc-zoom { display: flex; align-items: center; gap: 6px; }
+.lc-dates, .lc-zoom { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lc-gran { display: flex; gap: 4px; margin-right: 6px; }
 .lc-date { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--bw-text-3); text-transform: uppercase; letter-spacing: 0.06em; }
 .lc-date input { background: var(--bw-surface-2); border: 1px solid var(--bw-line-strong); border-radius: var(--bw-radius-sm); color: var(--bw-white); font-family: var(--font-mono); font-size: 12px; padding: 5px 8px; color-scheme: dark; }
 .lc-date input:focus-visible { outline: 2px solid var(--bw-cyan); outline-offset: 1px; }
