@@ -635,6 +635,49 @@ class CopilotService:
             return cues
         return None
 
+    def _extract_serato_overview(self, filepath: str) -> Optional[str]:
+        """Extrae la silueta espectral completa (1280 columnas x 3 bandas) de serato_overview oficial."""
+        if not filepath or not os.path.exists(filepath):
+            return None
+        if not hasattr(self, "_overview_file_cache"):
+            self._overview_file_cache = {}
+        if filepath in self._overview_file_cache:
+            return self._overview_file_cache[filepath]
+
+        try:
+            import base64
+            fl = filepath.lower()
+            samples = None
+            if fl.endswith(".flac"):
+                from mutagen.flac import FLAC
+                audio = FLAC(filepath)
+                raw_b64 = audio.get("serato_overview")
+                if raw_b64:
+                    raw = base64.b64decode(raw_b64[0])
+                    idx = raw.find(b"Serato Overview\x00")
+                    payload = raw[idx + len(b"Serato Overview\x00"):] if idx != -1 else raw
+                    samples = payload[2:]
+            elif fl.endswith(".mp3"):
+                from mutagen.id3 import ID3
+                tags = ID3(filepath)
+                for geob in tags.getall("GEOB"):
+                    if "Serato Overview" in geob.desc:
+                        raw = geob.data
+                        idx = raw.find(b"Serato Overview\x00")
+                        payload = raw[idx + len(b"Serato Overview\x00"):] if idx != -1 else raw
+                        samples = payload[2:]
+                        break
+
+            if samples and len(samples) >= 3840:
+                res_b64 = base64.b64encode(samples[:3840]).decode("ascii")
+                self._overview_file_cache[filepath] = res_b64
+                return res_b64
+        except Exception:
+            pass
+
+        self._overview_file_cache[filepath] = None
+        return None
+
     def _fetch_audit_dsp(self, filepath: str) -> Dict[str, Any]:
         """Consulta la huella espectral, 8 Hot Cues reales y métricas de sonoridad de BeatWave para una pista."""
         if not filepath:
@@ -2083,7 +2126,8 @@ class CopilotService:
             "acoustic_role": dsp_1["acoustic_role"],
             "is_audited": dsp_1["is_audited"],
             "comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
-            "tactical_comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b"
+            "tactical_comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
+            "serato_overview": self._extract_serato_overview(deck_1_raw.get("file_path")) if deck_1_raw else None
         }
 
         if deck_2_raw:
@@ -2120,7 +2164,8 @@ class CopilotService:
                 "acoustic_role": dsp_2["acoustic_role"],
                 "is_audited": dsp_2["is_audited"],
                 "comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido",
-                "tactical_comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido"
+                "tactical_comment": dsp_2.get("comment") or f"[{deck_2_raw.get('bpm', 130.0)} BPM | {c2}] Entrada armónica limpia • Outro extendido",
+                "serato_overview": self._extract_serato_overview(deck_2_raw.get("file_path")) if deck_2_raw else None
             }
         else:
             deck_2 = {

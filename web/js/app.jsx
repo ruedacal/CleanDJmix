@@ -32268,6 +32268,21 @@ const CopilotSeratoWaveform = ({
     const elapsedSec = progress * durSec;
     const remainSec = Math.max(0, durSec - elapsedSec);
 
+    // Decodificación de la silueta espectral real Serato Overview (1280 columnas x 3 bandas)
+    const overviewBytes = useMemo(() => {
+        if (!deck.serato_overview) return null;
+        try {
+            const bin = atob(deck.serato_overview);
+            const u8 = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+                u8[i] = bin.charCodeAt(i);
+            }
+            return u8;
+        } catch (e) {
+            return null;
+        }
+    }, [deck.serato_overview]);
+
     const formatSec = (s) => {
         const m = Math.floor(s / 60);
         const sec = Math.floor(s % 60);
@@ -32384,7 +32399,7 @@ const CopilotSeratoWaveform = ({
             }
         }
 
-        // Espectro Dinámico 3-Bandas Quirúrgico (Sub-Bass Azul Cobalto + Medios Ámbar + Agudos Blanco Eléctrico)
+        // Espectro Tricromático Serato Oficial (1280 columnas x 3 bandas reales o síntesis acústica de respaldo)
         const stepPx = 2;
         const totalSlices = Math.ceil(w / stepPx);
         for (let i = 0; i < totalSlices; i++) {
@@ -32393,27 +32408,39 @@ const CopilotSeratoWaveform = ({
             const sliceNorm = sliceSec / durSec;
 
             if (sliceNorm >= 0.0 && sliceNorm <= 1.0) {
-                const { bass, drums, vocals, treble } = computeTrackStructuralBands(sliceNorm, seed, deck);
+                let bass, mid, treble;
+                if (overviewBytes && overviewBytes.length >= 3840) {
+                    const colIdx = Math.min(1279, Math.max(0, Math.floor(sliceNorm * 1280)));
+                    const byteOffset = colIdx * 3;
+                    bass = Math.min(1.0, (overviewBytes[byteOffset] || 0) / 220.0);
+                    mid = Math.min(1.0, (overviewBytes[byteOffset + 1] || 0) / 120.0);
+                    treble = Math.min(1.0, (overviewBytes[byteOffset + 2] || 0) / 120.0);
+                } else {
+                    const bands = computeTrackStructuralBands(sliceNorm, seed, deck);
+                    bass = bands.bass;
+                    mid = Math.max(bands.drums, bands.vocals);
+                    treble = bands.treble;
+                }
                 const maxAmp = (h / 2) - 8;
 
-                // 1. Sub-Bass & Bombo (<200Hz) en Azul Cobalto Intenso
+                // 1. Sub-Bass & Bombo (<200Hz) en Rojo Serato Canónico
                 const bassAmp = bass * maxAmp * 0.95;
-                ctx.fillStyle = '#22d3ee';
+                ctx.fillStyle = '#ef4444';
                 ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
 
-                // 2. Medios y Vocales (200Hz - 2.5kHz) en Ámbar Cálido
-                const midAmp = Math.max(drums, vocals) * maxAmp * 0.72;
-                ctx.fillStyle = '#f59e0b';
+                // 2. Medios y Vocales (200Hz - 2.5kHz) en Cian / Azul Eléctrico Serato
+                const midAmp = mid * maxAmp * 0.72;
+                ctx.fillStyle = '#06b6d4';
                 ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
 
-                // 3. Agudos y Transientes (>2.5kHz) en Blanco Eléctrico y Cian
+                // 3. Agudos y Transientes (>2.5kHz) en Blanco Brillante Serato
                 const trebAmp = treble * maxAmp * 0.48;
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
 
-                // Núcleo central blanco en picos de pegada
+                // Núcleo central amarillo en picos de pegada (>0.85)
                 if (bass > 0.85) {
-                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillStyle = '#fbbf24';
                     ctx.fillRect(x, midY - 2, stepPx - 0.4, 4);
                 }
             }
@@ -32479,7 +32506,7 @@ const CopilotSeratoWaveform = ({
         if (mCtx.resetTransform) mCtx.resetTransform(); else mCtx.setTransform(1, 0, 0, 1, 0, 0);
         mCtx.scale(dpr, dpr);
 
-        const cacheKey = `${rawId}_${mw}_${showTacticalAids}`;
+        const cacheKey = `${rawId}_${mw}_${showTacticalAids}_${overviewBytes ? 'real' : 'synth'}`;
         if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
             const off = document.createElement('canvas');
             off.width = Math.round(mw * dpr);
@@ -32496,15 +32523,34 @@ const CopilotSeratoWaveform = ({
             for (let j = 0; j < mSlices; j++) {
                 const mx = j * mStep;
                 const mNorm = mx / mw;
-                const { bass, treble } = computeTrackStructuralBands(mNorm, seed, deck);
+                let bVal, mVal, tVal;
+                if (overviewBytes && overviewBytes.length >= 3840) {
+                    const colIdx = Math.min(1279, Math.max(0, Math.floor(mNorm * 1280)));
+                    const byteOffset = colIdx * 3;
+                    bVal = Math.min(1.0, (overviewBytes[byteOffset] || 0) / 220.0);
+                    mVal = Math.min(1.0, (overviewBytes[byteOffset + 1] || 0) / 120.0);
+                    tVal = Math.min(1.0, (overviewBytes[byteOffset + 2] || 0) / 120.0);
+                } else {
+                    const bands = computeTrackStructuralBands(mNorm, seed, deck);
+                    bVal = bands.bass;
+                    mVal = Math.max(bands.drums, bands.vocals);
+                    tVal = bands.treble;
+                }
                 const mHalf = mh / 2;
-                const bAmp = bass * (mHalf - 2);
-                const tAmp = treble * (mHalf - 3);
+                const bAmp = bVal * (mHalf - 2);
+                const mAmp = mVal * (mHalf - 3);
+                const tAmp = tVal * (mHalf - 4);
 
-                oCtx.fillStyle = '#22d3ee';
+                // 1. Capa Sub-Graves (Rojo Serato Canónico)
+                oCtx.fillStyle = '#ef4444';
                 oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
 
+                // 2. Capa Medios (Cian / Azul Serato)
                 oCtx.fillStyle = '#06b6d4';
+                oCtx.fillRect(mx, mHalf - mAmp, mStep - 0.4, mAmp * 2);
+
+                // 3. Capa Agudos (Blanco Serato)
+                oCtx.fillStyle = '#ffffff';
                 oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
             }
 
@@ -32669,9 +32715,15 @@ const CopilotSeratoWaveform = ({
 
                     {/* LEYENDA VISUAL DE FRECUENCIAS SERATO 3-BAND */}
                     <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400">
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]"></span>Graves (&lt;200Hz)</span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>Medios</span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ffffff]"></span>Agudos</span>
+                        {overviewBytes && (
+                            <span className="flex items-center gap-1 font-mono text-[8.5px] font-black px-1.5 py-0.2 rounded bg-red-950/70 border border-red-500/50 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.3)]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                                SERATO OVERVIEW REAL
+                            </span>
+                        )}
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span>Graves (&lt;200Hz)</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4]"></span>Medios (200Hz-2.5kHz)</span>
+                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ffffff]"></span>Agudos (&gt;2.5kHz)</span>
                     </div>
                 </div>
 

@@ -23254,6 +23254,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const durSec = deck.duration_sec || 390;
     const elapsedSec = progress * durSec;
     const remainSec = Math.max(0, durSec - elapsedSec);
+    const overviewBytes = useMemo(() => {
+      if (!deck.serato_overview) return null;
+      try {
+        const bin = atob(deck.serato_overview);
+        const u8 = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) {
+          u8[i] = bin.charCodeAt(i);
+        }
+        return u8;
+      } catch (e) {
+        return null;
+      }
+    }, [deck.serato_overview]);
     const formatSec = (s) => {
       const m = Math.floor(s / 60);
       const sec = Math.floor(s % 60);
@@ -23361,19 +23374,31 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const sliceSec = startSec + x / w * windowSec;
         const sliceNorm = sliceSec / durSec;
         if (sliceNorm >= 0 && sliceNorm <= 1) {
-          const { bass, drums, vocals, treble } = computeTrackStructuralBands(sliceNorm, seed, deck);
+          let bass, mid, treble;
+          if (overviewBytes && overviewBytes.length >= 3840) {
+            const colIdx = Math.min(1279, Math.max(0, Math.floor(sliceNorm * 1280)));
+            const byteOffset = colIdx * 3;
+            bass = Math.min(1, (overviewBytes[byteOffset] || 0) / 220);
+            mid = Math.min(1, (overviewBytes[byteOffset + 1] || 0) / 120);
+            treble = Math.min(1, (overviewBytes[byteOffset + 2] || 0) / 120);
+          } else {
+            const bands = computeTrackStructuralBands(sliceNorm, seed, deck);
+            bass = bands.bass;
+            mid = Math.max(bands.drums, bands.vocals);
+            treble = bands.treble;
+          }
           const maxAmp = h / 2 - 8;
           const bassAmp = bass * maxAmp * 0.95;
-          ctx.fillStyle = "#22d3ee";
+          ctx.fillStyle = "#ef4444";
           ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
-          const midAmp = Math.max(drums, vocals) * maxAmp * 0.72;
-          ctx.fillStyle = "#f59e0b";
+          const midAmp = mid * maxAmp * 0.72;
+          ctx.fillStyle = "#06b6d4";
           ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
           const trebAmp = treble * maxAmp * 0.48;
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
           if (bass > 0.85) {
-            ctx.fillStyle = "#38bdf8";
+            ctx.fillStyle = "#fbbf24";
             ctx.fillRect(x, midY - 2, stepPx - 0.4, 4);
           }
         }
@@ -23429,7 +23454,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       if (mCtx.resetTransform) mCtx.resetTransform();
       else mCtx.setTransform(1, 0, 0, 1, 0, 0);
       mCtx.scale(dpr, dpr);
-      const cacheKey = `${rawId}_${mw}_${showTacticalAids}`;
+      const cacheKey = `${rawId}_${mw}_${showTacticalAids}_${overviewBytes ? "real" : "synth"}`;
       if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
         const off = document.createElement("canvas");
         off.width = Math.round(mw * dpr);
@@ -23445,13 +23470,28 @@ Respuesta: ${qa.a}`).join("\n\n"),
         for (let j = 0; j < mSlices; j++) {
           const mx = j * mStep;
           const mNorm = mx / mw;
-          const { bass, treble } = computeTrackStructuralBands(mNorm, seed, deck);
+          let bVal, mVal, tVal;
+          if (overviewBytes && overviewBytes.length >= 3840) {
+            const colIdx = Math.min(1279, Math.max(0, Math.floor(mNorm * 1280)));
+            const byteOffset = colIdx * 3;
+            bVal = Math.min(1, (overviewBytes[byteOffset] || 0) / 220);
+            mVal = Math.min(1, (overviewBytes[byteOffset + 1] || 0) / 120);
+            tVal = Math.min(1, (overviewBytes[byteOffset + 2] || 0) / 120);
+          } else {
+            const bands = computeTrackStructuralBands(mNorm, seed, deck);
+            bVal = bands.bass;
+            mVal = Math.max(bands.drums, bands.vocals);
+            tVal = bands.treble;
+          }
           const mHalf = mh / 2;
-          const bAmp = bass * (mHalf - 2);
-          const tAmp = treble * (mHalf - 3);
-          oCtx.fillStyle = "#22d3ee";
+          const bAmp = bVal * (mHalf - 2);
+          const mAmp = mVal * (mHalf - 3);
+          const tAmp = tVal * (mHalf - 4);
+          oCtx.fillStyle = "#ef4444";
           oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
           oCtx.fillStyle = "#06b6d4";
+          oCtx.fillRect(mx, mHalf - mAmp, mStep - 0.4, mAmp * 2);
+          oCtx.fillStyle = "#ffffff";
           oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
         }
         if (showTacticalAids) {
@@ -23525,7 +23565,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "\u{1F3AF}" : "\u26AA"),
       /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "Ayudas DJ" : "Puro Wave")
-    ), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#22d3ee]" }), "Graves (<200Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#f59e0b]" }), "Medios"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ffffff]" }), "Agudos"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]" }, [2, 4, 8, 16].map((z) => /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400" }, overviewBytes && /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1 font-mono text-[8.5px] font-black px-1.5 py-0.2 rounded bg-red-950/70 border border-red-500/50 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.3)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" }), "SERATO OVERVIEW REAL"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ef4444]" }), "Graves (<200Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#06b6d4]" }), "Medios (200Hz-2.5kHz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ffffff]" }), "Agudos (>2.5kHz)"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]" }, [2, 4, 8, 16].map((z) => /* @__PURE__ */ React.createElement(
       "button",
       {
         key: z,
