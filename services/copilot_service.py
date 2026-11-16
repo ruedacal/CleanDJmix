@@ -824,35 +824,47 @@ class CopilotService:
         entries = []
         try:
             cursor = conn.cursor()
-            # Deck 1 específico (el más reciente)
+
+            # 1. Detectar si Serato tiene una sesión activa abierta (end_time = -1 en history_session)
             cursor.execute(
                 """
-                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
-                FROM history_entry
-                WHERE deck IN ('1', 'A')
-                ORDER BY id DESC
-                LIMIT 1
+                SELECT id FROM history_session WHERE end_time = -1 ORDER BY id DESC LIMIT 1
                 """
             )
-            r1 = cursor.fetchone()
-            if r1:
-                d1 = self._parse_serato_row(r1)
+            sess_row = cursor.fetchone()
+            active_session_id = sess_row[0] if sess_row else None
 
-            # Deck 2 específico (el más reciente)
-            cursor.execute(
-                """
-                SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
-                FROM history_entry
-                WHERE deck IN ('2', 'B')
-                ORDER BY id DESC
-                LIMIT 1
-                """
-            )
-            r2 = cursor.fetchone()
-            if r2:
-                d2 = self._parse_serato_row(r2)
+            if active_session_id is not None:
+                # Solo pistas activas en los decks en la sesión actual (end_time == -1)
+                cursor.execute(
+                    """
+                    SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
+                    FROM history_entry
+                    WHERE session_id = ? AND deck IN ('1', 'A') AND end_time = -1
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (active_session_id,)
+                )
+                r1 = cursor.fetchone()
+                if r1:
+                    d1 = self._parse_serato_row(r1)
 
-            # Historial general de 15 pistas
+                cursor.execute(
+                    """
+                    SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
+                    FROM history_entry
+                    WHERE session_id = ? AND deck IN ('2', 'B') AND end_time = -1
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (active_session_id,)
+                )
+                r2 = cursor.fetchone()
+                if r2:
+                    d2 = self._parse_serato_row(r2)
+
+            # Historial general de pistas recientes
             cursor.execute(
                 """
                 SELECT id, deck, artist, name, bpm, key, portable_id, start_time, played, end_time, length_ms, genre, year, grouping
@@ -1989,71 +2001,54 @@ class CopilotService:
             pb2["play_start_ts"] = now
             pb2["elapsed_sec"] = down_sec_2
 
-        # CÁLCULO PRECISO DEL ESTADO DE REPRODUCCIÓN (IS_PLAYING) Y TIEMPO TRANSCURRIDO
-        # Respetar manual_play_state si el usuario lo conmutó explícitamente en la UI o atajos
-        if self.manual_play_state.get("1") is not None:
-            d1_is_playing = bool(self.manual_play_state["1"])
-        elif self.link_peers > 0:
-            d1_is_master = (self.manual_master_deck == "1") or (t1_start >= t2_start)
-            d1_is_playing = self.link_is_playing if d1_is_master else False
-        elif is_dj_running and t1_end == -1 and deck_1_raw:
-            d1_is_playing = (time_since_1 < dur_1_sec and (t1_start >= t2_start or time_since_2 >= dur_2_sec))
-        else:
-            d1_is_playing = False
-
-        if self.manual_play_state.get("2") is not None:
-            d2_is_playing = bool(self.manual_play_state["2"])
-        elif self.link_peers > 0:
-            d2_is_master = (self.manual_master_deck == "2") or (t2_start > t1_start)
-            d2_is_playing = self.link_is_playing if d2_is_master else False
-        elif is_dj_running and t2_end == -1 and deck_2_raw:
-            d2_is_playing = (time_since_2 < dur_2_sec and (t2_start > t1_start or time_since_1 >= dur_1_sec))
-        else:
-            d2_is_playing = False
-
-        # Deck 1 Elapsed:
-        if d1_is_playing:
-            if pb1.get("play_start_ts") and pb1["play_start_ts"] > 0:
-                elapsed_1 = round(pb1.get("elapsed_sec", 0.0) + (now - pb1["play_start_ts"]), 2)
-            elif t1_start and time_since_1 < dur_1_sec:
-                elapsed_1 = round(time_since_1, 2)
-            else:
-                elapsed_1 = round(pb1.get("elapsed_sec", down_sec_1), 2)
-            if elapsed_1 >= dur_1_sec:
-                elapsed_1 = dur_1_sec
-                d1_is_playing = False
-            prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
-        else:
-            elapsed_1 = round(pb1.get("elapsed_sec", down_sec_1), 2)
-            prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
-
-        # Deck 2 Elapsed:
-        if d2_is_playing:
-            if pb2.get("play_start_ts") and pb2["play_start_ts"] > 0:
-                elapsed_2 = round(pb2.get("elapsed_sec", 0.0) + (now - pb2["play_start_ts"]), 2)
-            elif t2_start and time_since_2 < dur_2_sec:
-                elapsed_2 = round(time_since_2, 2)
-            else:
-                elapsed_2 = round(pb2.get("elapsed_sec", down_sec_2), 2)
-            if elapsed_2 >= dur_2_sec:
-                elapsed_2 = dur_2_sec
-                d2_is_playing = False
-            prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
-        else:
-            elapsed_2 = round(pb2.get("elapsed_sec", down_sec_2), 2)
-            prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
-
         # DETERMINACIÓN DE MASTER (ON AIR) VS CUE (PREPARADO)
         if self.manual_master_deck in ("1", "2"):
             deck_1_is_master = (self.manual_master_deck == "1")
         else:
-            if d1_is_playing and not d2_is_playing:
+            if deck_1_raw and deck_2_raw:
+                # El track cargado antes es el Master en aire; el recién cargado es el CUE preparado
+                deck_1_is_master = (t1_start <= t2_start)
+            elif deck_1_raw:
                 deck_1_is_master = True
-            elif d2_is_playing and not d1_is_playing:
-                deck_1_is_master = False
             else:
-                # Si ambos están en standby o ambos reproduciéndose: el que se cargó más recientemente
-                deck_1_is_master = (t1_start >= t2_start) if (t1_start and t2_start) else True
+                deck_1_is_master = False
+
+        # REPRODUCCIÓN FLUIDA AUTÓNOMA Y REACTIVA:
+        # El deck Master reproduce y avanza continuamente; el deck Cue permanece preparado en punto Cue
+        if self.manual_play_state.get("1") is not None:
+            d1_is_playing = bool(self.manual_play_state["1"])
+        else:
+            d1_is_playing = bool(deck_1_raw and deck_1_is_master)
+
+        if self.manual_play_state.get("2") is not None:
+            d2_is_playing = bool(self.manual_play_state["2"])
+        else:
+            d2_is_playing = bool(deck_2_raw and (not deck_1_is_master))
+
+        # Cálculo de tiempo transcurrido (elapsed):
+        if d1_is_playing and deck_1_raw:
+            pb1 = self._deck_playback["1"]
+            if pb1.get("play_start_ts") and pb1["play_start_ts"] > 0:
+                elapsed_1 = round(pb1.get("elapsed_sec", 0.0) + (now - pb1["play_start_ts"]), 2)
+            else:
+                t1_st = float(t1_start) if t1_start else now
+                elapsed_1 = round(max(0.0, now - t1_st) % (dur_1_sec or 1), 2)
+            prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4)
+        else:
+            elapsed_1 = round(down_sec_1, 2) if deck_1_raw else 0.0
+            prog_1 = round(min(1.0, elapsed_1 / (dur_1_sec or 1)), 4) if (deck_1_raw and dur_1_sec > 0) else 0.0
+
+        if d2_is_playing and deck_2_raw:
+            pb2 = self._deck_playback["2"]
+            if pb2.get("play_start_ts") and pb2["play_start_ts"] > 0:
+                elapsed_2 = round(pb2.get("elapsed_sec", 0.0) + (now - pb2["play_start_ts"]), 2)
+            else:
+                t2_st = float(t2_start) if t2_start else now
+                elapsed_2 = round(max(0.0, now - t2_st) % (dur_2_sec or 1), 2)
+            prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4)
+        else:
+            elapsed_2 = round(down_sec_2, 2) if deck_2_raw else 0.0
+            prog_2 = round(min(1.0, elapsed_2 / (dur_2_sec or 1)), 4) if (deck_2_raw and dur_2_sec > 0) else 0.0
 
         # Hot Cues reales extraídos de la pista Serato o calculados acústicamente
         deck_1_cues_list = self._extract_serato_markers_cues(deck_1_raw.get("file_path", "")) if deck_1_raw else None
@@ -2091,44 +2086,82 @@ class CopilotService:
         deck_1_status = "ON AIR (MASTER)" if (d1_is_playing and deck_1_is_master) else ("REPRODUCIENDO" if d1_is_playing else ("MASTER (PAUSADO)" if deck_1_is_master else "CUE (DETENIDO)"))
         deck_2_status = "ON AIR (MASTER)" if (d2_is_playing and not deck_1_is_master) else ("REPRODUCIENDO" if d2_is_playing else ("MASTER (PAUSADO)" if not deck_1_is_master else "CUE (DETENIDO)"))
 
-        deck_1 = {
-            "deck_num": "1",
-            "status": deck_1_status,
-            "is_master": deck_1_is_master,
-            "is_playing": d1_is_playing,
-            "artist": deck_1_raw.get("artist", "Desconocido") if deck_1_raw else "Deck 1 Vacío",
-            "title": deck_1_raw.get("name", "Pista 1") if deck_1_raw else "Sin pista cargada en Deck 1",
-            "bpm": round(self.link_bpm, 2) if (self.link_peers > 0 and d1_is_playing) else (deck_1_raw.get("bpm", 130.0) if deck_1_raw else 130.0),
-            "camelot": c1,
-            "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
-            "raw_key": deck_1_raw.get("raw_key", "") if deck_1_raw else "",
-            "file_path": deck_1_raw.get("file_path", "") if deck_1_raw else "",
-            "genre": dsp_1.get("genre") or (deck_1_raw.get("genre") if deck_1_raw else "Melodic Techno") or "Melodic Techno",
-            "subgenre": dsp_1.get("subgenre") or (deck_1_raw.get("subgenre") if deck_1_raw else "Club Master") or "Club Master",
-            "energy": dsp_1.get("energy") or (deck_1_raw.get("energy", 92) if deck_1_raw else 85),
-            "danceability": dsp_1.get("danceability") or (deck_1_raw.get("danceability", 88) if deck_1_raw else 85),
-            "format": (deck_1_raw.get("format") if deck_1_raw else ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k")) if deck_1_raw else "FLAC",
-            "duration": (deck_1_raw.get("duration") if deck_1_raw else "06:30") or "06:30",
-            "duration_sec": dur_1_sec,
-            "elapsed_sec": elapsed_1,
-            "play_progress": prog_1,
-            "phase": dsp_1.get("phase") or (deck_1_raw.get("phase") if deck_1_raw else "Peak Time") or "Peak Time",
-            "mood": dsp_1.get("mood") or "Peak Time",
-            "year": (deck_1_raw.get("year") if deck_1_raw else "2024") or "2024",
-            "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if (deck_1_raw and deck_1_raw.get("file_path")) else "") if deck_1_raw else "",
-            "cues": deck_1_cues_list,
-            "first_downbeat_ms": dsp_1.get("first_downbeat_ms", 0.0),
-            "structural_phases": self._generate_structural_phases(deck_1_cues_list, dur_1_sec),
-            "lufs": dsp_1["lufs"],
-            "low_ratio": dsp_1["low_ratio"],
-            "mid_ratio": dsp_1["mid_ratio"],
-            "high_ratio": dsp_1["high_ratio"],
-            "acoustic_role": dsp_1["acoustic_role"],
-            "is_audited": dsp_1["is_audited"],
-            "comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
-            "tactical_comment": dsp_1.get("comment") or f"[{(deck_1_raw.get('bpm', 130.0) if deck_1_raw else 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
-            "serato_overview": self._extract_serato_overview(deck_1_raw.get("file_path")) if deck_1_raw else None
-        }
+        if deck_1_raw:
+            deck_1 = {
+                "deck_num": "1",
+                "status": deck_1_status,
+                "is_master": deck_1_is_master,
+                "is_playing": d1_is_playing,
+                "artist": deck_1_raw.get("artist", "Desconocido"),
+                "title": deck_1_raw.get("name", "Pista 1"),
+                "bpm": deck_1_raw.get("bpm", 130.0),
+                "camelot": c1,
+                "camelot_color": self.CAMELOT_COLORS.get(c1, "#06b6d4"),
+                "raw_key": deck_1_raw.get("raw_key", ""),
+                "file_path": deck_1_raw.get("file_path", ""),
+                "genre": dsp_1.get("genre") or deck_1_raw.get("genre") or "Melodic Techno",
+                "subgenre": dsp_1.get("subgenre") or deck_1_raw.get("subgenre") or "Club Master",
+                "energy": dsp_1.get("energy") or deck_1_raw.get("energy", 92),
+                "danceability": dsp_1.get("danceability") or deck_1_raw.get("danceability", 88),
+                "format": deck_1_raw.get("format") or ("FLAC 24-bit" if str(deck_1_raw.get("file_path","")).lower().endswith(".flac") else "MP3 320k"),
+                "duration": deck_1_raw.get("duration") or "06:30",
+                "duration_sec": dur_1_sec,
+                "elapsed_sec": elapsed_1,
+                "play_progress": prog_1,
+                "phase": dsp_1.get("phase") or deck_1_raw.get("phase") or "Peak Time",
+                "mood": dsp_1.get("mood") or "Peak Time",
+                "year": deck_1_raw.get("year") or "2024",
+                "cover": deck_1_raw.get("cover") or (f"/cover?path={deck_1_raw['file_path']}" if deck_1_raw.get("file_path") else ""),
+                "cues": deck_1_cues_list,
+                "first_downbeat_ms": dsp_1.get("first_downbeat_ms", 0.0),
+                "structural_phases": self._generate_structural_phases(deck_1_cues_list, dur_1_sec),
+                "lufs": dsp_1["lufs"],
+                "low_ratio": dsp_1["low_ratio"],
+                "mid_ratio": dsp_1["mid_ratio"],
+                "high_ratio": dsp_1["high_ratio"],
+                "acoustic_role": dsp_1["acoustic_role"],
+                "is_audited": dsp_1["is_audited"],
+                "comment": dsp_1.get("comment") or f"[{deck_1_raw.get('bpm', 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
+                "tactical_comment": dsp_1.get("comment") or f"[{deck_1_raw.get('bpm', 130.0)} BPM | {c1}] Intro 32b • Drop contundente • Outro 64b",
+                "serato_overview": self._extract_serato_overview(deck_1_raw.get("file_path"))
+            }
+        else:
+            deck_1 = {
+                "deck_num": "1",
+                "status": "STANDBY / VACÍO",
+                "is_master": False,
+                "is_playing": False,
+                "artist": "Deck 1 Vacío",
+                "title": "Arrastra una canción en Serato Deck 1",
+                "bpm": 130.0,
+                "camelot": "8A",
+                "camelot_color": "#06b6d4",
+                "raw_key": "",
+                "file_path": "",
+                "genre": "Standby",
+                "subgenre": "En espera",
+                "energy": 0,
+                "danceability": 0,
+                "format": "--",
+                "duration": "00:00",
+                "duration_sec": 0.0,
+                "elapsed_sec": 0.0,
+                "play_progress": 0.0,
+                "phase": "Standby",
+                "year": "",
+                "cover": "",
+                "cues": [],
+                "structural_phases": [],
+                "lufs": -14.0,
+                "low_ratio": 33.0,
+                "mid_ratio": 33.0,
+                "high_ratio": 34.0,
+                "acoustic_role": "Standby",
+                "is_audited": False,
+                "comment": "Deck 1 en espera de carga en Serato",
+                "tactical_comment": "Deck 1 en espera de carga en Serato",
+                "serato_overview": None
+            }
 
         if deck_2_raw:
             deck_2 = {
