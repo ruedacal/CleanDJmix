@@ -17,6 +17,7 @@ data/*.json
 .pytest_cache/
 cache_preview/
 web/previews/
+conversacion_*.txt
 
 # Environments and Secrets
 .env
