@@ -28,6 +28,7 @@ config_ingest.json
 
 # Builds and packaging
 build/
+native/build/
 dist/
 bin/
 *.spec
