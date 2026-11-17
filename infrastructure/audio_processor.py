@@ -115,8 +115,9 @@ class AudioProcessorService:
         except Exception:
             bpm_val = 126.0
 
-        # REGLAS DURAS DETERMINISTAS (HARD-RULES)
-        if intensity is not None:
+        # REGLAS DURAS DETERMINISTAS (HARD-RULES) PARA TAGS GENÉRICOS O AMBIGUOS
+        is_generic_or_empty = not raw or any(g == raw or raw.startswith(f"{g}/") or raw.endswith(f"/{g}") for g in ["pop", "electronic", "dance", "club", "other", "unknown"])
+        if intensity is not None and is_generic_or_empty:
             try:
                 inten_val = float(intensity)
                 if bpm_val > 133.0 and inten_val > 0.65:

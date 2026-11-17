@@ -11,7 +11,10 @@ import shutil
 import concurrent.futures
 import numpy as np
 import soundfile as sf
-import eel
+try:
+    import eel
+except ImportError:
+    eel = None
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
@@ -1845,6 +1848,7 @@ return folderPath'''
         trim_start_ms = 0.0
         first_downbeat_ms = 0.0
         has_cover = False
+        energy_pct = None
 
         tech_sr = 44100
         tech_depth = 16
@@ -1895,6 +1899,12 @@ return folderPath'''
                         genre_str = str(raw_g)
                     if raw_sg:
                         subgenre_str = str(raw_sg)
+                    raw_energy = f.get("ENERGY", f.get("TXXX:ENERGY", [""]))[0]
+                    if raw_energy:
+                        try:
+                            energy_pct = float(str(raw_energy).replace('%', '').strip())
+                        except Exception:
+                            pass
                     if getattr(f, "pictures", None):
                         has_cover = True
                 except Exception:
@@ -1962,6 +1972,12 @@ return folderPath'''
                                 first_downbeat_ms = float(d_ms)
                             except Exception:
                                 pass
+                        raw_energy = _get_tag_val(["TXXX:ENERGY", "energy", "ENERGY"])
+                        if raw_energy:
+                            try:
+                                energy_pct = float(str(raw_energy).replace('%', '').strip())
+                            except Exception:
+                                pass
                         if any(str(k).startswith("APIC") or str(k).lower().startswith("covr") for k in tags.keys()):
                             has_cover = True
                     if m.info and hasattr(m.info, "length"):
@@ -1976,7 +1992,7 @@ return folderPath'''
         artist = re.sub(r'\s+', ' ', str(artist or artist_fb)).strip()
 
         b_calc = float(bpm_str) if bpm_str != "--" else 126.0
-        calc_intensity = round((float(energy_pct) / 100.0) * 0.7 + 0.24, 2) if energy_pct else 0.5
+        calc_intensity = round((float(energy_pct) / 100.0) * 0.7 + 0.24, 2) if energy_pct is not None else 0.5
         genre_clean = AudioProcessorService.normalizar_genero_canonico(
             genre_str or subgenre_str or "",
             bpm=b_calc,
