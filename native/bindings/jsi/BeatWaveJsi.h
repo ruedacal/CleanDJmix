@@ -2,6 +2,7 @@
 
 #include <jsi/jsi.h>
 #include "BeatWaveCore.h"
+#include "BeatWaveDSP.h"
 #include <memory>
 
 namespace beatwave {
@@ -28,7 +29,16 @@ private:
         size_t count
     );
 
+    // API Radar Zero-Copy: processAudioBuffer(Float32Array audio, string profile)
+    static jsi::Value processAudioBuffer(
+        jsi::Runtime& runtime,
+        const jsi::Value& thisValue,
+        const jsi::Value* arguments,
+        size_t count
+    );
+
     static jsi::Object convertResultToJsiObject(jsi::Runtime& runtime, const TrackAnalysisResult& res);
+    static jsi::Object convertRadarResultToJsiObject(jsi::Runtime& runtime, const radar::FingerprintResult& res, const std::string& profile);
 };
 
 } // namespace jsi_bindings

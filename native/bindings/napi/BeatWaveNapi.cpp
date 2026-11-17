@@ -1,4 +1,6 @@
 #include "BeatWaveNapi.h"
+#include <cstring>
+#include <algorithm>
 
 namespace beatwave {
 namespace napi_bindings {
@@ -106,10 +108,51 @@ Napi::Object ConvertResultToNapiObject(Napi::Env env, const TrackAnalysisResult&
     return obj;
 }
 
-BeatWaveNapiModule::BeatWaveNapiModule(Napi::Env env, Napi::Exports exports) {
+Napi::Object ConvertRadarResultToNapiObject(Napi::Env env, const radar::FingerprintResult& res, const std::string& profile) {
+    Napi::Object obj = Napi::Object::New(env);
+
+    // 1. Telemetría de señal acústica
+    Napi::Object telemetry = Napi::Object::New(env);
+    telemetry.Set("rmsDbfs", Napi::Number::New(env, res.rms_dbfs));
+    telemetry.Set("peakDbfs", Napi::Number::New(env, res.peak_dbfs));
+    // Detección de clipping si el pico acústico toca el techo de -1.0 dBFS o satura
+    telemetry.Set("isClipping", Napi::Boolean::New(env, res.peak_dbfs >= -1.05f));
+    telemetry.Set("durationMs", Napi::Number::New(env, res.duration_ms));
+    telemetry.Set("sampleRate", Napi::Number::New(env, res.sample_rate));
+    telemetry.Set("environment", Napi::String::New(env, profile));
+    obj.Set("telemetry", telemetry);
+
+    // 2. Huella binaria remota ACRCloud (Uint8Array)
+    if (!res.acrcloud_fingerprint.empty()) {
+        Napi::ArrayBuffer ab = Napi::ArrayBuffer::New(env, res.acrcloud_fingerprint.size());
+        std::memcpy(ab.Data(), res.acrcloud_fingerprint.data(), res.acrcloud_fingerprint.size());
+        Napi::Uint8Array u8 = Napi::Uint8Array::New(env, res.acrcloud_fingerprint.size(), ab, 0);
+        obj.Set("acrcloudFingerprint", u8);
+    } else {
+        obj.Set("acrcloudFingerprint", env.Null());
+    }
+
+    // 3. Huella binaria local Olaf LMDB (Uint8Array)
+    if (!res.olaf_fingerprint.empty()) {
+        Napi::ArrayBuffer ab = Napi::ArrayBuffer::New(env, res.olaf_fingerprint.size());
+        std::memcpy(ab.Data(), res.olaf_fingerprint.data(), res.olaf_fingerprint.size());
+        Napi::Uint8Array u8 = Napi::Uint8Array::New(env, res.olaf_fingerprint.size(), ab, 0);
+        obj.Set("olafFingerprint", u8);
+    } else {
+        obj.Set("olafFingerprint", env.Null());
+    }
+
+    obj.Set("landmarksCount", Napi::Number::New(env, res.olaf_landmarks_count));
+    obj.Set("isValid", Napi::Boolean::New(env, res.is_valid));
+
+    return obj;
+}
+
+BeatWaveNapiModule::BeatWaveNapiModule(Napi::Env env, Napi::Object exports) {
     DefineAddon(exports, {
         InstanceMethod("analyzeTrack", &BeatWaveNapiModule::AnalyzeTrack, napi_enumerable),
-        InstanceMethod("getSpectralOverview", &BeatWaveNapiModule::GetSpectralOverview, napi_enumerable)
+        InstanceMethod("getSpectralOverview", &BeatWaveNapiModule::GetSpectralOverview, napi_enumerable),
+        InstanceMethod("processAudioBuffer", &BeatWaveNapiModule::ProcessAudioBuffer, napi_enumerable)
     });
 }
 
@@ -146,6 +189,63 @@ Napi::Value BeatWaveNapiModule::GetSpectralOverview(const Napi::CallbackInfo& in
 
     // Zero-Copy ArrayBuffer wrapping C++ memory directly
     return Napi::ArrayBuffer::New(env, const_cast<uint8_t*>(ptr), size);
+}
+
+// ============================================================================
+// ZERO-COPY RADAR DSP: processAudioBuffer(Float32Array audio, string profile)
+// ============================================================================
+Napi::Value BeatWaveNapiModule::ProcessAudioBuffer(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+
+    // 1. Validación de argumento Float32Array
+    if (info.Length() < 1 || !info[0].IsTypedArray()) {
+        Napi::TypeError::New(env, "Argumento 'audio' requerido como Float32Array").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    Napi::TypedArray typedArr = info[0].As<Napi::TypedArray>();
+    if (typedArr.TypedArrayType() != napi_float32_array) {
+        Napi::TypeError::New(env, "El buffer debe ser exactamente Float32Array").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    Napi::Float32Array floatArray = info[0].As<Napi::Float32Array>();
+
+    // Lectura de memoria CERO-COPIAS (Zero-Copy) directa del backing store V8
+    const float* pcmData = floatArray.Data();
+    size_t numSamples = floatArray.ElementLength();
+
+    if (!pcmData || numSamples == 0) {
+        Napi::TypeError::New(env, "El buffer Float32Array está vacío").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    // 2. Perfil de entorno acústico ("club" | "studio")
+    std::string profile = "club";
+    if (info.Length() > 1 && info[1].IsString()) {
+        profile = info[1].As<Napi::String>().Utf8Value();
+    }
+
+    radar::RadarEnvironmentMode envMode = (profile == "studio") 
+        ? radar::RadarEnvironmentMode::Studio 
+        : radar::RadarEnvironmentMode::Club;
+
+    // Frecuencia de entrada opcional (por defecto 44100 Hz si no se especifica)
+    uint32_t inSampleRate = 44100;
+    if (info.Length() > 2 && info[2].IsNumber()) {
+        inSampleRate = info[2].As<Napi::Number>().Uint32Value();
+    }
+
+    // 3. Procesamiento en motor DSP nativo de Radar
+    radar::BeatWaveDSP dspEngine(envMode);
+    radar::FingerprintResult fpResult = dspEngine.processSingleBuffer(
+        pcmData,
+        numSamples,
+        1, // Mono stream
+        inSampleRate
+    );
+
+    return ConvertRadarResultToNapiObject(env, fpResult, profile);
 }
 
 NODE_API_ADDON(BeatWaveNapiModule)

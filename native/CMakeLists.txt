@@ -166,9 +166,21 @@ if(BUILD_NODE_ADDON)
         ERROR_QUIET
     )
 
+    execute_process(
+        COMMAND node -e "const path = require('path'); console.log(path.resolve(process.execPath, '../../include/node'));"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE NODE_INCLUDE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
     if(NODE_ADDON_API_DIR)
         string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
         include_directories(${NODE_ADDON_API_DIR})
+    endif()
+
+    if(NODE_INCLUDE_DIR AND EXISTS "${NODE_INCLUDE_DIR}/node_api.h")
+        include_directories(${NODE_INCLUDE_DIR})
     endif()
 
     add_library(beatwave_napi SHARED
@@ -176,13 +188,19 @@ if(BUILD_NODE_ADDON)
     )
 
     target_link_libraries(beatwave_napi PRIVATE beatwave_core)
-    target_compile_definitions(beatwave_napi PRIVATE NAPI_CPP_EXCEPTIONS)
+    target_compile_definitions(beatwave_napi PRIVATE NAPI_CPP_EXCEPTIONS NODE_GYP_MODULE_NAME=beatwave_core)
 
     set_target_properties(beatwave_napi PROPERTIES
         PREFIX ""
         SUFFIX ".node"
         OUTPUT_NAME "beatwave_core"
     )
+
+    if(APPLE)
+        set_target_properties(beatwave_napi PROPERTIES
+            LINK_FLAGS "-undefined dynamic_lookup"
+        )
+    endif()
 endif()
 
 # ==============================================================================

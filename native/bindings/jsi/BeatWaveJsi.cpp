@@ -1,5 +1,7 @@
 #include "BeatWaveJsi.h"
 #include <thread>
+#include <cstring>
+#include <algorithm>
 
 namespace beatwave {
 namespace jsi_bindings {
@@ -21,9 +23,17 @@ void BeatWaveJsiModule::install(jsi::Runtime& runtime) {
         BeatWaveJsiModule::getSpectralOverview
     );
 
+    auto processAudioBufferHostFunc = jsi::Function::createFromHostFunction(
+        runtime,
+        jsi::PropNameID::forAscii(runtime, "processAudioBuffer"),
+        2,
+        BeatWaveJsiModule::processAudioBuffer
+    );
+
     jsi::Object moduleObj(runtime);
     moduleObj.setProperty(runtime, "analyzeTrack", analyzeTrackHostFunc);
     moduleObj.setProperty(runtime, "getSpectralOverview", getSpectralOverviewHostFunc);
+    moduleObj.setProperty(runtime, "processAudioBuffer", processAudioBufferHostFunc);
 
     // Instalar en el objeto global de React Native (global.BeatWaveCore)
     runtime.global().setProperty(runtime, "BeatWaveCore", moduleObj);
@@ -101,31 +111,77 @@ jsi::Object BeatWaveJsiModule::convertResultToJsiObject(jsi::Runtime& runtime, c
     return obj;
 }
 
+jsi::Object BeatWaveJsiModule::convertRadarResultToJsiObject(
+    jsi::Runtime& runtime,
+    const radar::FingerprintResult& res,
+    const std::string& profile
+) {
+    jsi::Object obj(runtime);
+
+    // 1. Telemetría acústica
+    jsi::Object telemetry(runtime);
+    telemetry.setProperty(runtime, "rmsDbfs", static_cast<double>(res.rms_dbfs));
+    telemetry.setProperty(runtime, "peakDbfs", static_cast<double>(res.peak_dbfs));
+    telemetry.setProperty(runtime, "isClipping", res.peak_dbfs >= -1.05f);
+    telemetry.setProperty(runtime, "durationMs", static_cast<double>(res.duration_ms));
+    telemetry.setProperty(runtime, "sampleRate", static_cast<double>(res.sample_rate));
+    telemetry.setProperty(runtime, "environment", jsi::String::createFromUtf8(runtime, profile));
+    obj.setProperty(runtime, "telemetry", telemetry);
+
+    // 2. Huella remota ACRCloud (Uint8Array)
+    jsi::Function uint8ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Uint8Array");
+    if (!res.acrcloud_fingerprint.empty()) {
+        auto arrayBufferCtor = runtime.global().getPropertyAsFunction(runtime, "ArrayBuffer");
+        jsi::ArrayBuffer ab = arrayBufferCtor.callAsConstructor(
+            runtime, static_cast<double>(res.acrcloud_fingerprint.size())
+        ).asObject(runtime).getArrayBuffer(runtime);
+        
+        std::memcpy(ab.data(runtime), res.acrcloud_fingerprint.data(), res.acrcloud_fingerprint.size());
+        jsi::Object u8Obj = uint8ArrayCtor.callAsConstructor(runtime, ab).asObject(runtime);
+        obj.setProperty(runtime, "acrcloudFingerprint", u8Obj);
+    } else {
+        obj.setProperty(runtime, "acrcloudFingerprint", jsi::Value::null());
+    }
+
+    // 3. Huella local Olaf LMDB (Uint8Array)
+    if (!res.olaf_fingerprint.empty()) {
+        auto arrayBufferCtor = runtime.global().getPropertyAsFunction(runtime, "ArrayBuffer");
+        jsi::ArrayBuffer ab = arrayBufferCtor.callAsConstructor(
+            runtime, static_cast<double>(res.olaf_fingerprint.size())
+        ).asObject(runtime).getArrayBuffer(runtime);
+        
+        std::memcpy(ab.data(runtime), res.olaf_fingerprint.data(), res.olaf_fingerprint.size());
+        jsi::Object u8Obj = uint8ArrayCtor.callAsConstructor(runtime, ab).asObject(runtime);
+        obj.setProperty(runtime, "olafFingerprint", u8Obj);
+    } else {
+        obj.setProperty(runtime, "olafFingerprint", jsi::Value::null());
+    }
+
+    obj.setProperty(runtime, "landmarksCount", static_cast<double>(res.olaf_landmarks_count));
+    obj.setProperty(runtime, "isValid", res.is_valid);
+
+    return obj;
+}
+
 jsi::Value BeatWaveJsiModule::analyzeTrack(
     jsi::Runtime& runtime,
-    const jsi::Value& thisValue,
+    const jsi::Value&,
     const jsi::Value* arguments,
     size_t count
 ) {
     if (count < 1 || !arguments[0].isString()) {
-        throw jsi::JSError(runtime, "BeatWaveCore.analyzeTrack requiere argumento filePath de tipo string");
+        throw jsi::JSError(runtime, "BeatWaveCore.analyzeTrack requiere argumento filePath");
     }
 
     std::string filePath = arguments[0].asString(runtime).utf8(runtime);
-
-    // En JSI puro para React Native, creamos una Promise de JS
-    // y delegamos la computación a un std::thread desacoplado
     auto promiseConstructor = runtime.global().getPropertyAsFunction(runtime, "Promise");
-    
-    // Captura segura y ejecución en hilo de fondo
+
     auto callback = [filePath](jsi::Runtime& rt, const jsi::Value&, const jsi::Value* args, size_t) -> jsi::Value {
         auto resolve = std::make_shared<jsi::Function>(args[0].asObject(rt).asFunction(rt));
         auto reject = std::make_shared<jsi::Function>(args[1].asObject(rt).asFunction(rt));
 
         std::thread workerThread([&rt, filePath, resolve, reject]() {
             TrackAnalysisResult res = BeatWaveCore::getInstance().analyzeTrackSync(filePath);
-            
-            // Notificar al runtime (en TurboModules se despacha a través de CallInvoker)
             if (res.success) {
                 jsi::Object resObj = BeatWaveJsiModule::convertResultToJsiObject(rt, res);
                 resolve->call(rt, resObj);
@@ -150,7 +206,7 @@ jsi::Value BeatWaveJsiModule::analyzeTrack(
 
 jsi::Value BeatWaveJsiModule::getSpectralOverview(
     jsi::Runtime& runtime,
-    const jsi::Value& thisValue,
+    const jsi::Value&,
     const jsi::Value* arguments,
     size_t count
 ) {
@@ -166,13 +222,79 @@ jsi::Value BeatWaveJsiModule::getSpectralOverview(
         return jsi::Value::null();
     }
 
-    // Zero-Copy MutableBufferView / ArrayBuffer en JSI
     auto arrayBufferCtor = runtime.global().getPropertyAsFunction(runtime, "ArrayBuffer");
-    jsi::ArrayBuffer ab = runtime.global().getPropertyAsObject(runtime, "ArrayBuffer")
-        .asFunction(runtime).callAsConstructor(runtime, static_cast<double>(size)).asObject(runtime).getArrayBuffer(runtime);
+    jsi::ArrayBuffer ab = arrayBufferCtor.callAsConstructor(
+        runtime, static_cast<double>(size)
+    ).asObject(runtime).getArrayBuffer(runtime);
 
     std::memcpy(ab.data(runtime), ptr, size);
     return ab;
+}
+
+// ============================================================================
+// ZERO-COPY RADAR JSI: processAudioBuffer(Float32Array audio, string profile)
+// ============================================================================
+jsi::Value BeatWaveJsiModule::processAudioBuffer(
+    jsi::Runtime& runtime,
+    const jsi::Value&,
+    const jsi::Value* arguments,
+    size_t count
+) {
+    if (count < 1 || !arguments[0].isObject()) {
+        throw jsi::JSError(runtime, "BeatWaveCore.processAudioBuffer requiere un argumento Float32Array");
+    }
+
+    jsi::Object audioObj = arguments[0].asObject(runtime);
+    jsi::ArrayBuffer arrayBuffer(runtime);
+    size_t byteOffset = 0;
+    size_t byteLength = 0;
+
+    // Extracción Zero-Copy de Float32Array o ArrayBuffer
+    if (audioObj.hasProperty(runtime, "buffer")) {
+        arrayBuffer = audioObj.getProperty(runtime, "buffer").asObject(runtime).getArrayBuffer(runtime);
+        byteOffset = static_cast<size_t>(audioObj.getProperty(runtime, "byteOffset").asNumber());
+        byteLength = static_cast<size_t>(audioObj.getProperty(runtime, "byteLength").asNumber());
+    } else if (audioObj.isArrayBuffer(runtime)) {
+        arrayBuffer = audioObj.getArrayBuffer(runtime);
+        byteOffset = 0;
+        byteLength = arrayBuffer.size(runtime);
+    } else {
+        throw jsi::JSError(runtime, "El argumento de audio debe ser Float32Array o ArrayBuffer");
+    }
+
+    // Puntero directo a memoria de JavaScript SIN COPIAS (Zero-Copy)
+    const float* floatData = reinterpret_cast<const float*>(arrayBuffer.data(runtime) + byteOffset);
+    size_t numSamples = byteLength / sizeof(float);
+
+    if (!floatData || numSamples == 0) {
+        throw jsi::JSError(runtime, "El buffer Float32Array no contiene muestras");
+    }
+
+    // Perfil de ecualización acústica ("club" | "studio")
+    std::string profile = "club";
+    if (count > 1 && arguments[1].isString()) {
+        profile = arguments[1].asString(runtime).utf8(runtime);
+    }
+
+    radar::RadarEnvironmentMode envMode = (profile == "studio") 
+        ? radar::RadarEnvironmentMode::Studio 
+        : radar::RadarEnvironmentMode::Club;
+
+    uint32_t inSampleRate = 44100;
+    if (count > 2 && arguments[2].isNumber()) {
+        inSampleRate = static_cast<uint32_t>(arguments[2].asNumber());
+    }
+
+    // Procesar en el motor DSP Radar
+    radar::BeatWaveDSP dspEngine(envMode);
+    radar::FingerprintResult res = dspEngine.processSingleBuffer(
+        floatData,
+        numSamples,
+        1, // Mono stream
+        inSampleRate
+    );
+
+    return convertRadarResultToJsiObject(runtime, res, profile);
 }
 
 } // namespace jsi_bindings
