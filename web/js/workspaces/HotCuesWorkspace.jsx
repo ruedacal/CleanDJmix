@@ -1717,7 +1717,7 @@ export const HotCuesWorkspace = ({
                                                 Versión 1: Modo Estándar (Performance / Slam Mix)
                                             </h4>
                                             <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
-                                                • Ancla Drop 1 + Retroceso -16b + Escalera Salida (Pads 6-8)
+                                                • Anclajes Fijos de Fraseo de Club (16b / 32b) · Hasta 8 Cues Cuantizados
                                             </span>
                                         </div>
                                         <button

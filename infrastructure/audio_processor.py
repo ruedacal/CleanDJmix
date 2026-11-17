@@ -860,116 +860,16 @@ class AudioProcessorService:
 
     @staticmethod
     def calcular_8_hot_cues_fraseo(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, ruta: str = None, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
-        """Calcula los 8 Hot Cues estándar (Pads Numark NV2 / Pioneer DJ) sincronizados
-        al Beatgrid 1.0.0. Si 'ruta' existe, aplica análisis acústico de subgraves y transitorios
-        (Enfoque 4 + 1) para ubicar los Drops y Breaks reales en lugar de meros porcentajes."""
-        if ruta and os.path.exists(ruta):
-            try:
-                cues_acusticos = AudioProcessorService.calcular_8_hot_cues_acusticos(
-                    ruta=ruta,
-                    duration_ms=duration_ms,
-                    bpm=bpm,
-                    downbeat_ms=downbeat_ms,
-                    trim_start_ms=trim_start_ms,
-                    trim_end_ms=trim_end_ms
-                )
-                if cues_acusticos and len(cues_acusticos) >= 4:
-                    return cues_acusticos
-            except Exception as e_acust:
-                print(f"[HOT CUES DSP WARN] Fallback a fraseo estándar: {e_acust}")
-
-        try:
-            bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
-        except Exception:
-            bpm_clean = 128.0
-
-        try:
-            dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
-        except Exception:
-            dur_clean = 300000
-
-        try:
-            downbeat_clean = max(0, int(downbeat_ms))
-        except Exception:
-            downbeat_clean = 0
-
-        beat_ms = 60000.0 / bpm_clean
-        bar_ms = beat_ms * 4.0
-
-        usable_dur = max(1000, dur_clean - downbeat_clean)
-        total_bars = max(8, int(usable_dur / bar_ms))
-
-        o1 = 0
-        if total_bars >= 112:
-            o2 = 16
-            o3 = 32
-            o4 = max(o3 + 8, int((total_bars * 0.36) / 8) * 8)
-            o5 = max(o4 + 8, int((total_bars * 0.50) / 8) * 8)
-            o6 = max(o5 + 8, int((total_bars * 0.68) / 8) * 8)
-            o7 = max(o6 + 8, int((total_bars * 0.82) / 8) * 8)
-            o8 = max(o7 + 4, int(max(0, total_bars - 16) / 4) * 4)
-        elif total_bars >= 64:
-            o2 = 8
-            o3 = 16
-            o4 = max(o3 + 4, int((total_bars * 0.35) / 4) * 4)
-            o5 = max(o4 + 4, int((total_bars * 0.50) / 4) * 4)
-            o6 = max(o5 + 4, int((total_bars * 0.68) / 4) * 4)
-            o7 = max(o6 + 4, int((total_bars * 0.82) / 4) * 4)
-            o8 = max(o7 + 4, int(max(0, total_bars - 8) / 4) * 4)
-        else:
-            step = max(1, total_bars // 8)
-            o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
-
-        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
-        for i in range(1, 8):
-            if bar_offsets[i] <= bar_offsets[i - 1]:
-                bar_offsets[i] = bar_offsets[i - 1] + 1
-            if bar_offsets[i] >= total_bars:
-                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
-
-        cue_configs = [
-            {"id": 1, "name": "Kick / Intro", "color": "#ef4444", "rgb": (239, 68, 68), "text": "text-red-400", "border": "border-red-500/50", "bg": "bg-red-500/10"},
-            {"id": 2, "name": "Hi-Hats In", "color": "#f97316", "rgb": (249, 115, 22), "text": "text-orange-400", "border": "border-orange-500/50", "bg": "bg-orange-500/10"},
-            {"id": 3, "name": "Bassline", "color": "#eab308", "rgb": (234, 179, 8), "text": "text-yellow-400", "border": "border-yellow-500/50", "bg": "bg-yellow-500/10"},
-            {"id": 4, "name": "Main Break", "color": "#22c55e", "rgb": (34, 197, 94), "text": "text-green-400", "border": "border-green-500/50", "bg": "bg-green-500/10"},
-            {"id": 5, "name": "Drop 1 (Climax)", "color": "#06b6d4", "rgb": (6, 182, 212), "text": "text-cyan-400", "border": "border-cyan-500/50", "bg": "bg-cyan-500/10"},
-            {"id": 6, "name": "Mid Break", "color": "#3b82f6", "rgb": (59, 130, 246), "text": "text-blue-400", "border": "border-blue-500/50", "bg": "bg-blue-500/10"},
-            {"id": 7, "name": "Drop 2 (Re-Kick)", "color": "#a855f7", "rgb": (168, 85, 247), "text": "text-purple-400", "border": "border-purple-500/50", "bg": "bg-purple-500/10"},
-            {"id": 8, "name": "Outro Mix Point", "color": "#ec4899", "rgb": (236, 72, 153), "text": "text-pink-400", "border": "border-pink-500/50", "bg": "bg-pink-500/10"}
-        ]
-
-        result = []
-        for idx in range(8):
-            cfg = cue_configs[idx]
-            b_offset = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
-            compas = b_offset + 1
-            pos_ms = int(downbeat_clean + (b_offset * bar_ms))
-            if pos_ms >= dur_clean:
-                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
-
-            sec = pos_ms / 1000.0
-            m = int(sec // 60)
-            s = sec % 60
-            time_str = f"{m:02d}:{s:04.1f}"
-            pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
-
-            result.append({
-                "id": cfg["id"],
-                "bar": compas,
-                "bar_str": f"Bar {compas}",
-                "name": f"{cfg['name']} (Bar {compas})",
-                "short_name": cfg["name"],
-                "pos_ms": pos_ms,
-                "time": time_str,
-                "pct": pct,
-                "color": cfg["color"],
-                "rgb": cfg["rgb"],
-                "text": cfg["text"],
-                "border": cfg["border"],
-                "bg": cfg["bg"]
-            })
-
-        return result
+        """Calcula los Hot Cues estándar (Pads Numark NV2 / Pioneer DJ) sincronizados
+        al Beatgrid Rekordbox/Serato usando anclajes fijos de club."""
+        return AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms,
+            ruta=ruta,
+            trim_start_ms=trim_start_ms,
+            trim_end_ms=trim_end_ms
+        )
 
     @staticmethod
     def calcular_8_hot_cues_acusticos(ruta: str, duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
@@ -1107,10 +1007,11 @@ class AudioProcessorService:
         o6 = max(o5 + 4, min(o7 - 4, mid_break_cand))
 
         # 8. Cue 8: Outro Mix Point (32 o 16 compases antes del fin utilizable trim_end)
-        if total_bars >= 112:
-            o8 = max(o7 + 8, int((total_bars - 16) / 8) * 8)
+        outro_cand = int((total_bars - 16) / 8) * 8
+        if outro_cand - o7 >= 16 and outro_cand <= total_bars - 8:
+            o8 = outro_cand
         else:
-            o8 = max(o7 + 4, total_bars - 8)
+            o8 = total_bars + 999  # Se descartará por sobrepasar total_bars
 
         raw_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
         cue_configs = [
@@ -1126,20 +1027,22 @@ class AudioProcessorService:
 
         valid_offsets = []
         for i, off in enumerate(raw_offsets):
+            if off > total_bars - 8:
+                continue
             if i == 0:
                 valid_offsets.append((off, cue_configs[i]))
             else:
                 prev_off = valid_offsets[-1][0]
-                min_dist = 16 if i == 7 else 8
-                if (off - prev_off) >= min_dist and off < total_bars:
+                min_dist = 16 if (i >= 5) else 8
+                if (off - prev_off) >= min_dist:
                     valid_offsets.append((off, cue_configs[i]))
 
         result = []
-        for idx, (b_offset, cfg) in enumerate(valid_offsets):
+        for idx, (b_offset, cfg) in enumerate(valid_offsets[:8]):
             compas = b_offset + 1
             pos_ms = int(downbeat_clean + (b_offset * bar_ms))
-            if pos_ms >= dur_clean:
-                pos_ms = max(0, dur_clean - 1000)
+            if pos_ms > dur_clean - int(6 * bar_ms):
+                continue
 
             sec = pos_ms / 1000.0
             m = int(sec // 60)
@@ -1168,119 +1071,22 @@ class AudioProcessorService:
     @staticmethod
     def generar_hot_cues_plantilla_club(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0) -> list:
         """Motor de Auto-Mapping con Plantilla Club Extended (16/32 compases).
-        Asigna los 8 Hot Cues con cuantización exacta al BeatGrid:
-        Pad 1: Intro / Downbeat (0 compases / Downbeat)
-        Pad 2: First Beat / Percussion In (compás 16 o 32)
-        Pad 3: Breakdown Principal (bajada melódica antes del clímax)
-        Pad 4: Drop Clímax (explosión del tema)
-        Pad 5: Loop Rítmico (16 compases sin melodía)
-        Pad 6: Loop Rítmico (32 compases para mezcla larga)
-        Pad 7: Outro Mix Point (inicio de salida)
-        Pad 8: Outro End (cola final)
-        """
-        try:
-            bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
-        except Exception:
-            bpm_clean = 128.0
-
-        try:
-            dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
-        except Exception:
-            dur_clean = 300000
-
-        try:
-            downbeat_clean = max(0, int(downbeat_ms))
-        except Exception:
-            downbeat_clean = 0
-
-        beat_ms = 60000.0 / bpm_clean
-        bar_ms = beat_ms * 4.0
-        usable_dur = max(1000, dur_clean - downbeat_clean)
-        total_bars = max(8, int(usable_dur / bar_ms))
-
-        o1 = 0
-        if total_bars >= 112:
-            o2 = 16
-            o3 = 32
-            o4 = max(o3 + 8, int((total_bars * 0.36) / 8) * 8)
-            o5 = max(o4 + 8, int((total_bars * 0.50) / 8) * 8)
-            o6 = max(o5 + 8, int((total_bars * 0.68) / 8) * 8)
-            o7 = max(o6 + 8, int((total_bars * 0.82) / 8) * 8)
-            o8 = max(o7 + 4, int(max(0, total_bars - 16) / 4) * 4)
-        elif total_bars >= 64:
-            o2 = 8
-            o3 = 16
-            o4 = max(o3 + 4, int((total_bars * 0.35) / 4) * 4)
-            o5 = max(o4 + 4, int((total_bars * 0.50) / 4) * 4)
-            o6 = max(o5 + 4, int((total_bars * 0.68) / 4) * 4)
-            o7 = max(o6 + 4, int((total_bars * 0.82) / 4) * 4)
-            o8 = max(o7 + 4, int(max(0, total_bars - 8) / 4) * 4)
-        else:
-            step = max(1, total_bars // 8)
-            o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
-
-        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
-        for i in range(1, 8):
-            if bar_offsets[i] <= bar_offsets[i - 1]:
-                bar_offsets[i] = bar_offsets[i - 1] + 1
-            if bar_offsets[i] >= total_bars:
-                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
-
-        template_configs = [
-            {"id": 1, "name": "Intro / Downbeat", "color": "#ef4444", "rgb": (239, 68, 68)},
-            {"id": 2, "name": "First Beat (Percussion)", "color": "#f97316", "rgb": (249, 115, 22)},
-            {"id": 3, "name": "Breakdown Principal", "color": "#eab308", "rgb": (234, 179, 8)},
-            {"id": 4, "name": "Drop (Climax)", "color": "#06b6d4", "rgb": (6, 182, 212)},
-            {"id": 5, "name": "Loop Rítmico (16 Compases)", "color": "#22c55e", "rgb": (34, 197, 94)},
-            {"id": 6, "name": "Loop Rítmico (32 Compases)", "color": "#3b82f6", "rgb": (59, 130, 246)},
-            {"id": 7, "name": "Outro Mix Point", "color": "#a855f7", "rgb": (168, 85, 247)},
-            {"id": 8, "name": "Outro End", "color": "#ec4899", "rgb": (236, 72, 153)}
-        ]
-
-        result = []
-        for idx in range(8):
-            cfg = template_configs[idx]
-            b_off = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
-            compas = b_off + 1
-            pos_ms = int(downbeat_clean + (b_off * bar_ms))
-            if pos_ms >= dur_clean:
-                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
-
-            sec = pos_ms / 1000.0
-            m = int(sec // 60)
-            s = sec % 60
-            time_str = f"{m:02d}:{s:04.1f}"
-            pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
-
-            result.append({
-                "id": cfg["id"],
-                "bar": compas,
-                "bar_str": f"Bar {compas}",
-                "name": f"{cfg['name']} (Bar {compas})",
-                "short_name": cfg["name"],
-                "pos_ms": pos_ms,
-                "time": time_str,
-                "pct": pct,
-                "color": cfg["color"],
-                "rgb": cfg["rgb"]
-            })
-
-        return result
+        Delega en la distribución homogénea de Anclajes Fijos."""
+        return AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms
+        )
 
     @staticmethod
     def generar_hot_cues_estandar_performance(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, ruta: str = None, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
-        """Motor de Hot Cues Estándar de Performance (Club / Slam Mix) con soporte para Sparse Cues.
-        Asigna únicamente los Hot Cues necesarios (de 4 a 8 pads) respetando la regla estricta
-        de separación mínima de frases (>= 16 compases) y anclaje al final rítmico real (Kick Cutoff):
-        - Pad 1 (Rojo): Primer golpe de la intro (Lanzamiento principal en compás 1.1)
-        - Pad 2 (Naranja): Intro Groove en compás 33 (si la intro es larga) o Entrada rápida (-16b del Drop 1)
-        - Pad 3 (Amarillo): Break 1 (Parón melódico / Vocal) o Drop 1 (si no hay parón previo)
-        - Pad 4 (Verde): Drop 1 (Clímax principal / Slam mix)
-        - Pad 5 (Cian): Break 2 o Segundo Clímax
-        - Pad 6 (Azul): Drop 2 (Re-kick para remezcla en vivo)
-        - Pad 7 (Morado): Inicio del Outro (Base rítmica sin melodía a -16b o -32b del fin rítmico)
-        - Pad 8 (Rosa): Loop de seguridad (solo si quedan >= 16 compases útiles de base rítmica)
-        Si la pista no justifica 8 pads, los pads sobrantes se dejan deliberadamente vacíos (Sparse Cues).
+        """Motor de Hot Cues Estándar de Performance con ANCLAJES FIJOS (Fraseo Métrico de Club).
+        Asigna Hot Cues anclados rígidamente a los límites métricos de frase (múltiplos de 8, 16, 32 y 64 compases)
+        cuantizados al Beatgrid Rekordbox/Serato:
+        - Si la pista tiene duración suficiente (>= 160 compases), completa hasta los 8 Hot Cues con distribución homogénea.
+        - Si la pista es más corta o no justifica 8 pads, genera únicamente los cues útiles (de 4 a 7 pads) respetando
+          una separación mínima de >= 16 compases entre cues de salida y una zona de guarda de >= 8 compases antes del fin.
+        - Elimina cualquier apiñamiento artificial o escalera de salida en el fadeout.
         """
         try:
             bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
@@ -1315,115 +1121,96 @@ class AudioProcessorService:
         usable_dur = max(1000, end_ms - downbeat_clean)
         total_bars = max(8, int(usable_dur / bar_ms))
 
-        breaks = []
-        drops = []
-        last_kick_bar = total_bars - 1
-
-        if ruta and os.path.exists(ruta):
-            try:
-                import soundfile as sf
-                import numpy as np
-                import scipy.signal as signal
-                data, sr_in = sf.read(ruta, dtype='float32')
-                mono = np.mean(data, axis=1) if data.ndim > 1 else data
-                decimate = max(1, sr_in // 12000)
-                sr_sub = sr_in // decimate
-                mono_sub = mono[::decimate]
-                sos = signal.butter(2, 150.0 / (sr_sub / 2.0), btype='low', output='sos')
-                low_mono = signal.sosfilt(sos, mono_sub)
-                bar_samples = int(sr_sub * (bar_ms / 1000.0))
-                num_bars_audio = min(total_bars, len(mono_sub) // bar_samples) if bar_samples > 0 else 0
-
-                if num_bars_audio >= 16:
-                    rms_sub = np.zeros(num_bars_audio)
-                    for b in range(num_bars_audio):
-                        s = b * bar_samples
-                        e = s + bar_samples
-                        rms_sub[b] = np.sqrt(np.mean(low_mono[s:e]**2))
-                    mean_low = np.mean(rms_sub)
-
-                    # Detección del último compás con bombo audible (Kick Cutoff)
-                    audible = np.where(rms_sub > 0.25 * mean_low)[0]
-                    if len(audible) > 0:
-                        last_kick_bar = audible[-1]
-
-                    # Detección rigurosa de parones (Breaks) y explosiones (Drops / Re-kicks)
-                    in_break = False
-                    brk_start = 0
-                    for b in range(last_kick_bar):
-                        if rms_sub[b] < 0.45 * mean_low:
-                            if not in_break:
-                                in_break = True
-                                brk_start = b
-                        else:
-                            if in_break:
-                                if (b - brk_start) >= 4:
-                                    q_brk = int(round(brk_start / 8.0)) * 8
-                                    q_drop = int(round(b / 8.0)) * 8
-                                    breaks.append(q_brk)
-                                    drops.append(q_drop)
-                                in_break = False
-            except Exception:
-                pass
-
+        # Configuración de anclajes fijos según frases estándar de club (EDM / House / Techno / Urban)
         cues_plan = []
-        # Pad 1: Primer Golpe
+
+        # 1. Pad 1 (Rojo): Primer Golpe (Intro Downbeat en 1.1)
         cues_plan.append((0, "Primer Golpe (Intro)", "#ef4444", (239, 68, 68), "Lanzamiento principal en compás 1.1"))
 
-        first_drop = drops[0] if drops else (64 if total_bars >= 112 else 32)
-        first_break = breaks[0] if breaks and breaks[0] < first_drop else None
+        # 2. Pad 2 (Naranja): Hi-Hats In / Percusión (Compás 17 o 9)
+        p2_bar = 16 if total_bars >= 48 else 8
+        cues_plan.append((p2_bar, "Hi-Hats / Percusión", "#f97316", (249, 115, 22), f"Entrada rítmica en compás {p2_bar + 1}"))
 
-        # Si la intro es larga (> 40 compases), colocar Pad 2 en compás 33 (desarrollo rítmico)
-        # para evitar vacíos de 2 o 3 minutos en la sesión
-        if first_drop >= 48:
-            cues_plan.append((32, "Intro Groove / Sintes", "#f97316", (249, 115, 22), "Entrada de ritmo y sintes en compás 33"))
-            if first_break is not None and first_break > 32:
-                cues_plan.append((first_break, "Break 1 (Parón/Vocal)", "#eab308", (234, 179, 8), "Parón melódico para bajar energía o transicionar"))
-                cues_plan.append((first_drop, "Drop 1 (Clímax)", "#22c55e", (34, 197, 94), "Explosión principal / Slam Mix"))
-            else:
-                cues_plan.append((max(40, first_drop - 16), "Entrada Rápida (-16b Drop)", "#eab308", (234, 179, 8), "16 compases antes del Drop 1"))
-                cues_plan.append((first_drop, "Drop 1 (Clímax)", "#22c55e", (34, 197, 94), "Explosión principal / Slam Mix"))
+        # 3. Pad 3 (Amarillo): Bassline / Groove In (Compás 33 o 25 o 17)
+        if total_bars >= 96:
+            p3_bar = 32
+        elif total_bars >= 64:
+            p3_bar = 24
         else:
-            # Intro estándar corta (<= 40 compases)
-            p2_b = max(8, first_drop - 16)
-            if p2_b > 0 and (first_drop - p2_b) >= 8:
-                cues_plan.append((p2_b, "Entrada Rápida (-16b Drop)", "#f97316", (249, 115, 22), "16 compases antes del Drop 1"))
-            cues_plan.append((first_drop, "Drop 1 (Clímax)", "#eab308", (234, 179, 8), "Explosión principal / Slam Mix"))
+            p3_bar = 16
+        if p3_bar - cues_plan[-1][0] >= 8 and p3_bar <= total_bars - 8:
+            cues_plan.append((p3_bar, "Bassline / Groove", "#eab308", (234, 179, 8), f"Entrada del bajo principal en compás {p3_bar + 1}"))
 
-        # Segundo drop / break
-        second_drop = drops[1] if len(drops) > 1 else None
-        second_break = breaks[1] if len(breaks) > 1 else None
+        # 4. Pad 4 (Verde): Break 1 (Parón Melódico) (Compás 65 o 49 o 33)
+        if total_bars >= 144:
+            p4_bar = 64
+        elif total_bars >= 96:
+            p4_bar = 48
+        elif total_bars >= 64:
+            p4_bar = 32
+        else:
+            p4_bar = 24
+        if p4_bar - cues_plan[-1][0] >= 8 and p4_bar <= total_bars - 8:
+            cues_plan.append((p4_bar, "Break 1 (Parón)", "#22c55e", (34, 197, 94), f"Parón melódico en compás {p4_bar + 1} para bajar energía"))
 
-        if second_drop and second_drop > first_drop + 16:
-            if second_break and second_break > first_drop + 8 and second_break < second_drop:
-                cues_plan.append((second_break, "Break 2 (Parón)", "#06b6d4", (6, 182, 212), "Segundo parón intermedio"))
-            cues_plan.append((second_drop, "Drop 2 (Segundo Clímax)", "#3b82f6", (59, 130, 246), "Segundo clímax / Re-kick para remezcla en vivo"))
+        # 5. Pad 5 (Cian): Drop 1 (Clímax Principal / Slam Mix)
+        if total_bars >= 160:
+            p5_bar = 96
+        elif total_bars >= 144:
+            p5_bar = 80
+        elif total_bars >= 96:
+            p5_bar = 64
+        elif total_bars >= 64:
+            p5_bar = 48
+        else:
+            p5_bar = 32
+        if p5_bar - cues_plan[-1][0] >= 8 and p5_bar <= total_bars - 8:
+            cues_plan.append((p5_bar, "Drop 1 (Clímax)", "#06b6d4", (6, 182, 212), f"Explosión principal / Slam Mix en compás {p5_bar + 1}"))
+
+        # 6. Pad 6 (Azul): Break 2 / Re-Build (Segundo parón)
+        # Solo si hay suficiente margen antes del final (>= 32 compases tras Drop 1)
+        if total_bars >= 176:
+            p6_bar = 128
+        elif total_bars >= 144:
+            p6_bar = 112
         elif total_bars >= 128:
-            est_d2 = int(round((total_bars * 0.72) / 8.0)) * 8
-            if est_d2 > first_drop + 24:
-                cues_plan.append((est_d2, "Drop 2 (Segundo Clímax)", "#3b82f6", (59, 130, 246), "Segundo clímax / Re-kick para remezcla en vivo"))
+            p6_bar = 96
+        else:
+            p6_bar = None
+        if p6_bar is not None and (p6_bar - cues_plan[-1][0] >= 16) and (total_bars - p6_bar >= 24):
+            cues_plan.append((p6_bar, "Break 2 (Re-Build)", "#3b82f6", (59, 130, 246), f"Segundo parón intermedio en compás {p6_bar + 1}"))
 
-        # Outro Mix Point (-16 o -32 compases del último bombo audible)
-        last_cue_b = cues_plan[-1][0]
-        outro_target = max(last_cue_b + 16, last_kick_bar - 16)
-        if outro_target > last_cue_b + 8 and outro_target < total_bars:
-            q_outro = int(round(outro_target / 8.0)) * 8
-            if q_outro > last_cue_b + 8:
-                cues_plan.append((q_outro, "Inicio Outro (Salida)", "#a855f7", (168, 85, 247), "Base rítmica limpia para mezclar hacia el siguiente track"))
+        # 7. Pad 7 (Morado): Drop 2 (Segundo Clímax) o Inicio de Outro
+        last_b = cues_plan[-1][0]
+        if total_bars - last_b >= 32:
+            p7_bar = last_b + 16
+            if p7_bar <= total_bars - 16:
+                cues_plan.append((p7_bar, "Drop 2 (Segundo Clímax)", "#a855f7", (168, 85, 247), f"Segundo clímax en compás {p7_bar + 1}"))
 
-        # Solo agregar Loop de Seguridad si quedan >= 16 compases útiles de base rítmica
-        curr_last_b = cues_plan[-1][0]
-        if (last_kick_bar - curr_last_b) >= 16 and len(cues_plan) < 8:
-            loop_b = int(round((curr_last_b + 16) / 8.0)) * 8
-            if loop_b < last_kick_bar:
-                cues_plan.append((loop_b, "Loop Seguridad (Outro Loop)", "#ec4899", (236, 72, 153), "Bucle rítmico automático de rescate"))
+        # 8. Outro Mix Point (Salida) / Outro Loop de Seguridad
+        last_b = cues_plan[-1][0]
+        outro_b = int((total_bars - 16) / 8) * 8
+        if outro_b - last_b >= 16 and outro_b <= total_bars - 8:
+            cues_plan.append((outro_b, "Inicio Outro (Mix Out)", "#ec4899", (236, 72, 153), f"Base rítmica para mezclar hacia el siguiente track (Compás {outro_b + 1})"))
+        elif total_bars - last_b >= 16:
+            p_out = last_b + 16
+            if p_out <= total_bars - 8:
+                cues_plan.append((p_out, "Inicio Outro (Mix Out)", "#ec4899", (236, 72, 153), f"Base rítmica de salida (Compás {p_out + 1})"))
+
+        # Pad 8 adicional si aún quedan < 8 pads y hay espacio de al menos 16 compases útiles de base
+        if len(cues_plan) < 8:
+            last_b = cues_plan[-1][0]
+            if total_bars - last_b >= 16:
+                p_loop = last_b + 16
+                if p_loop <= total_bars - 6:
+                    cues_plan.append((p_loop, "Loop Seguridad (Outro)", "#d946ef", (217, 70, 239), f"Bucle de rescate en compás {p_loop + 1}"))
 
         result = []
         for idx, (b_off, name, color, rgb, desc) in enumerate(cues_plan[:8]):
             compas = b_off + 1
             pos_ms = int(downbeat_clean + (b_off * bar_ms))
-            if pos_ms >= dur_clean:
-                pos_ms = max(0, dur_clean - 1000)
+            if pos_ms > dur_clean - int(6 * bar_ms):
+                continue
 
             sec = pos_ms / 1000.0
             m = int(sec // 60)
@@ -1459,13 +1246,17 @@ class AudioProcessorService:
             trim_start_ms=trim_start_ms,
             trim_end_ms=trim_end_ms
         )
-        cues_acustico = AudioProcessorService.calcular_8_hot_cues_fraseo(
+        cues_acustico = AudioProcessorService.calcular_8_hot_cues_acusticos(
+            ruta=ruta,
             duration_ms=duration_ms,
             bpm=bpm,
             downbeat_ms=downbeat_ms,
-            ruta=ruta,
             trim_start_ms=trim_start_ms,
             trim_end_ms=trim_end_ms
+        ) if (ruta and os.path.exists(ruta)) else AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms
         )
 
         return {
@@ -1474,13 +1265,13 @@ class AudioProcessorService:
             "cues_acustico": cues_acustico,
             "explicacion": {
                 "estandar": {
-                    "titulo": "Estándar (Performance / Slam Mix)",
-                    "descripcion": "Diseñado para mezcla rápida en cabina y cambios de energía inmediatos. El Pad 2 salta exactamente 16 compases antes del Drop 1 para no esperar intros largas; el Pad 3 entra directamente en el Clímax; y los Pads 6 a 8 forman una escalera de salida con aviso previo de 16 compases y bucle final de emergencia.",
-                    "enfoque": "Cabina DJ, saltos rápidos (slam mixing), transiciones dinámicas."
+                    "titulo": "Estándar (Anclajes Fijos / Fraseo de Club)",
+                    "descripcion": "Diseñado para mezcla en cabina y saltos dinámicos (Slam Mix). Asigna Hot Cues en anclajes métricos de frase (16 y 32 compases) cuantizados al Beatgrid (Intro, Hi-Hats, Bassline, Breaks, Drops y Outro) con distribución homogénea de hasta 8 pads y sin apiñamientos.",
+                    "enfoque": "Cabina DJ, saltos rápidos (slam mixing), transiciones predecibles."
                 },
                 "acustico": {
                     "titulo": "Acústico (Sub-Bass + Transients)",
-                    "descripcion": "Diseñado para sets progresivos y deconstrucción tímbrica. Detecta la evolución de la instrumentación analizando caídas y subidas de subgraves: cuándo entran los platos (Hi-Hats In), cuándo entra el bajo (Bassline), el parón preparatorio y los picos espectrales.",
+                    "descripcion": "Diseñado para sets progresivos y deconstrucción tímbrica. Detecta la evolución de la señal acústica (bombos, platos, bajadas y subidas de subgraves). Si la pista no presenta suficientes eventos, se reservan pads vacíos para evitar falsos marcadores en el fadeout.",
                     "enfoque": "Mezclas largas progresivas, capas de instrumentación, sets de club envolventes."
                 }
             }
