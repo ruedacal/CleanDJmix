@@ -1693,7 +1693,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         </div>
                     </div>
 
-                    {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA & ABLETON LINK */}
+                    {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA & PROTOCOLO NATIVO */}
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* HUD BADGE LATENCIA CABINA (<25ms) & SELECTOR MASTER */}
                         <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
@@ -1709,14 +1709,12 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             </button>
                         </div>
 
-                        {/* BADGE ABLETON LINK SYNC */}
-                        {state.ableton_link?.peers > 0 && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]" title="Ableton Link Activo: sincronizado con software DJ">
+                        {/* BADGE SYNC PROTOCOLO NATIVO */}
+                        {state.sync_protocol && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]" title="Protocolo de cabina sincronizado">
                                 <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                                <span>🔗 LINK:</span>
-                                <strong className="text-white">
-                                    {`${state.ableton_link.peers} PEER (${state.ableton_link.playing ? 'PLAY' : 'PAUSA'})`}
-                                </strong>
+                                <span>🔗 {state.sync_protocol}:</span>
+                                <strong className="text-white">ACTIVO</strong>
                             </div>
                         )}
                     </div>
