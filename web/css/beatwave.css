@@ -964,6 +964,39 @@ body.club-mode,
     font-weight: 800 !important;
 }
 
+/* ==============================================================================
+   BEATWAVE PRO — HEADER LOGO CONTAINER (RESPONSIVE PADDING & PROPORTIONS)
+   ============================================================================== */
+.bw-header-logo-container {
+    display: flex !important;
+    align-items: center !important;
+    user-select: none !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+    padding-left: 0.75rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    transition: padding 200ms ease;
+}
+
+/* Tablet en formato vertical (Portrait: 768px a 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+    .bw-header-logo-container {
+        padding-left: 1rem !important;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+}
+
+/* Desktop, Web y Tablet en formato horizontal (Landscape: >= 1024px o >= 768px landscape) */
+@media (min-width: 1024px), (min-width: 768px) and (orientation: landscape) {
+    .bw-header-logo-container {
+        padding-left: 1.2rem !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 0.7rem !important;
+    }
+}
+
 
 
 

@@ -1497,7 +1497,7 @@ const App = () => {
 
             <TopBar
                 logo={(
-                    <div className="flex items-center select-none my-auto pl-3 sm:pl-4">
+                    <div className="flex items-center select-none my-auto bw-header-logo-container">
                         <BeatWaveBrandIdentity 
                             variant="header"
                             isTechnoActive={isLogoTechnoActive}

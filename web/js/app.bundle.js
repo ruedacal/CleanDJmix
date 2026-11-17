@@ -29289,7 +29289,7 @@ ${res.path}`);
     ))))), /* @__PURE__ */ React.createElement(
       TopBar,
       {
-        logo: /* @__PURE__ */ React.createElement("div", { className: "flex items-center select-none my-auto pl-3 sm:pl-4" }, /* @__PURE__ */ React.createElement(
+        logo: /* @__PURE__ */ React.createElement("div", { className: "flex items-center select-none my-auto bw-header-logo-container" }, /* @__PURE__ */ React.createElement(
           BeatWaveBrandIdentity,
           {
             variant: "header",
