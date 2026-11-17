@@ -8,6 +8,7 @@
 #include <cmath>
 #include <mutex>
 #include <functional>
+#include "FlacMemoryEncoder.h"
 
 namespace beatwave {
 namespace radar {
@@ -199,13 +200,33 @@ public:
         uint32_t& outLandmarksCount
     );
 
+    /**
+     * FASE 2: Retención de Alta Fidelidad y Compresión FLAC en Memoria (Zero-Disk)
+     * Extrae la ventana circular de 10.0s retenida a 16 kHz mono y la comprime a FLAC
+     * en RAM reduciendo el payload ~50% para streaming hacia microservicios GPU.
+     */
+    std::vector<uint8_t> getEscalationBufferFLAC() const;
+
+    /**
+     * Codifica un búfer float arbitrario a FLAC 16 kHz mono en memoria.
+     */
+    std::vector<uint8_t> encodeBufferToFLAC(
+        const float* pcmData,
+        size_t numSamples,
+        uint32_t inSampleRate
+    ) const;
+
+    // Métricas de estado del búfer de escalado a 16 kHz
+    size_t getEscalationBufferedSamples() const;
+    size_t getEscalationCapacitySamples() const { return ESCALATION_BUFFER_SAMPLES; }
+
 private:
     RadarEnvironmentMode envMode_;
     std::unique_ptr<AudioRingBuffer> ringBuffer_;
     CascadedFilter4thOrder hpfFilter_;
     CascadedFilter4thOrder lpfFilter_;
     
-    // Parámetros canónicos de fingerprinting
+    // Parámetros canónicos de fingerprinting (Fase 1: 8 kHz)
     static constexpr double TARGET_SAMPLE_RATE = 8000.0;
     static constexpr double HPF_STUDIO_CUTOFF = 35.0;
     static constexpr double HPF_CLUB_CUTOFF = 120.0;
@@ -215,16 +236,36 @@ private:
     static constexpr double WINDOW_DURATION_SEC = 10.0;
     static constexpr double STRIDE_DURATION_SEC = 2.0;
 
+    // Parámetros canónicos de rescate neuronal (Fase 2: 16 kHz)
+    static constexpr double ESCALATION_SAMPLE_RATE = 16000.0;
+    static constexpr double ESCALATION_WINDOW_SEC = 10.0;
+    static constexpr size_t ESCALATION_BUFFER_SAMPLES = 160000; // 10.0s * 16000 Hz
+
+    // Ring Buffer de escalado en paralelo a 16 kHz mono
+    mutable std::mutex escalationMutex_;
+    std::vector<float> escalationRingBuffer16k_;
+    size_t escalationWriteHead_ = 0;
+    size_t escalationCount_ = 0;
+
+    void pushEscalationSamples(const float* samples16k, size_t count);
+
     void updateFilterCoefficients(double inSampleRate);
     double lastConfiguredSampleRate_ = 0.0;
 
-    // Resampler determinista a 8000 Hz
+    // Resamplers deterministas
     void resampleTo8kHz(
         const float* input,
         size_t inCount,
         uint32_t inRate,
         std::vector<float>& output
     );
+
+    void resampleTo16kHz(
+        const float* input,
+        size_t inCount,
+        uint32_t inRate,
+        std::vector<float>& output
+    ) const;
 
     // Normalizador de energía RMS a -16 dBFS y Limitador a -1 dBFS
     void normalizeAndLimit(

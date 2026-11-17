@@ -37,8 +37,18 @@ private:
         size_t count
     );
 
+    // API Fase 2: getEscalationBufferFLAC([audio, sampleRate]) -> Uint8Array (FLAC binary en RAM)
+    static jsi::Value getEscalationBufferFLAC(
+        jsi::Runtime& runtime,
+        const jsi::Value& thisValue,
+        const jsi::Value* arguments,
+        size_t count
+    );
+
     static jsi::Object convertResultToJsiObject(jsi::Runtime& runtime, const TrackAnalysisResult& res);
     static jsi::Object convertRadarResultToJsiObject(jsi::Runtime& runtime, const radar::FingerprintResult& res, const std::string& profile);
+
+    static radar::BeatWaveDSP s_radarDsp;
 };
 
 } // namespace jsi_bindings

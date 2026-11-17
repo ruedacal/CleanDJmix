@@ -8,6 +8,8 @@ namespace jsi_bindings {
 
 using namespace facebook;
 
+radar::BeatWaveDSP BeatWaveJsiModule::s_radarDsp;
+
 void BeatWaveJsiModule::install(jsi::Runtime& runtime) {
     auto analyzeTrackHostFunc = jsi::Function::createFromHostFunction(
         runtime,
@@ -30,10 +32,18 @@ void BeatWaveJsiModule::install(jsi::Runtime& runtime) {
         BeatWaveJsiModule::processAudioBuffer
     );
 
+    auto getEscalationBufferFLACHostFunc = jsi::Function::createFromHostFunction(
+        runtime,
+        jsi::PropNameID::forAscii(runtime, "getEscalationBufferFLAC"),
+        1,
+        BeatWaveJsiModule::getEscalationBufferFLAC
+    );
+
     jsi::Object moduleObj(runtime);
     moduleObj.setProperty(runtime, "analyzeTrack", analyzeTrackHostFunc);
     moduleObj.setProperty(runtime, "getSpectralOverview", getSpectralOverviewHostFunc);
     moduleObj.setProperty(runtime, "processAudioBuffer", processAudioBufferHostFunc);
+    moduleObj.setProperty(runtime, "getEscalationBufferFLAC", getEscalationBufferFLACHostFunc);
 
     // Instalar en el objeto global de React Native (global.BeatWaveCore)
     runtime.global().setProperty(runtime, "BeatWaveCore", moduleObj);
@@ -285,9 +295,9 @@ jsi::Value BeatWaveJsiModule::processAudioBuffer(
         inSampleRate = static_cast<uint32_t>(arguments[2].asNumber());
     }
 
-    // Procesar en el motor DSP Radar
-    radar::BeatWaveDSP dspEngine(envMode);
-    radar::FingerprintResult res = dspEngine.processSingleBuffer(
+    // Procesar en el motor DSP Radar (retiene automáticamente buffer 16 kHz para escalado)
+    s_radarDsp.setEnvironmentMode(envMode);
+    radar::FingerprintResult res = s_radarDsp.processSingleBuffer(
         floatData,
         numSamples,
         1, // Mono stream
@@ -295,6 +305,58 @@ jsi::Value BeatWaveJsiModule::processAudioBuffer(
     );
 
     return convertRadarResultToJsiObject(runtime, res, profile);
+}
+
+// ============================================================================
+// FASE 2 JSI: getEscalationBufferFLAC([audio, sampleRate]) -> Uint8Array
+// ============================================================================
+jsi::Value BeatWaveJsiModule::getEscalationBufferFLAC(
+    jsi::Runtime& runtime,
+    const jsi::Value&,
+    const jsi::Value* arguments,
+    size_t count
+) {
+    std::vector<uint8_t> flacBytes;
+
+    if (count >= 1 && arguments[0].isObject()) {
+        jsi::Object audioObj = arguments[0].asObject(runtime);
+        jsi::ArrayBuffer arrayBuffer(runtime);
+        size_t byteOffset = 0;
+        size_t byteLength = 0;
+
+        if (audioObj.hasProperty(runtime, "buffer")) {
+            arrayBuffer = audioObj.getProperty(runtime, "buffer").asObject(runtime).getArrayBuffer(runtime);
+            byteOffset = static_cast<size_t>(audioObj.getProperty(runtime, "byteOffset").asNumber());
+            byteLength = static_cast<size_t>(audioObj.getProperty(runtime, "byteLength").asNumber());
+        } else if (audioObj.isArrayBuffer(runtime)) {
+            arrayBuffer = audioObj.getArrayBuffer(runtime);
+            byteLength = arrayBuffer.size(runtime);
+        }
+
+        const float* floatData = reinterpret_cast<const float*>(arrayBuffer.data(runtime) + byteOffset);
+        size_t numSamples = byteLength / sizeof(float);
+        uint32_t inRate = 44100;
+        if (count >= 2 && arguments[1].isNumber()) {
+            inRate = static_cast<uint32_t>(arguments[1].asNumber());
+        }
+        flacBytes = s_radarDsp.encodeBufferToFLAC(floatData, numSamples, inRate);
+    } else {
+        flacBytes = s_radarDsp.getEscalationBufferFLAC();
+    }
+
+    if (flacBytes.empty()) {
+        return jsi::Value::null();
+    }
+
+    auto arrayBufferCtor = runtime.global().getPropertyAsFunction(runtime, "ArrayBuffer");
+    auto uint8ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Uint8Array");
+
+    jsi::ArrayBuffer ab = arrayBufferCtor.callAsConstructor(
+        runtime, static_cast<double>(flacBytes.size())
+    ).asObject(runtime).getArrayBuffer(runtime);
+
+    std::memcpy(ab.data(runtime), flacBytes.data(), flacBytes.size());
+    return uint8ArrayCtor.callAsConstructor(runtime, ab);
 }
 
 } // namespace jsi_bindings

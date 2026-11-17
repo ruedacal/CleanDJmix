@@ -174,6 +174,10 @@ void BeatWaveDSP::reset() {
     if (ringBuffer_) {
         ringBuffer_->reset();
     }
+    std::lock_guard<std::mutex> lock(escalationMutex_);
+    escalationRingBuffer16k_.assign(ESCALATION_BUFFER_SAMPLES, 0.0f);
+    escalationWriteHead_ = 0;
+    escalationCount_ = 0;
 }
 
 void BeatWaveDSP::updateFilterCoefficients(double inSampleRate) {
@@ -286,6 +290,64 @@ void BeatWaveDSP::resampleTo8kHz(
         double sample = ((a * frac + b) * frac + c) * frac + d;
         output[i] = static_cast<float>(sample);
     }
+}
+
+void BeatWaveDSP::resampleTo16kHz(
+    const float* input,
+    size_t inCount,
+    uint32_t inRate,
+    std::vector<float>& output
+) const {
+    if (!input || inCount == 0 || inRate == 0) {
+        output.clear();
+        return;
+    }
+
+    if (inRate == 16000) {
+        output.assign(input, input + inCount);
+        return;
+    }
+
+    double ratio = ESCALATION_SAMPLE_RATE / static_cast<double>(inRate);
+    size_t outCount = static_cast<size_t>(std::floor(static_cast<double>(inCount) * ratio));
+    output.resize(outCount);
+
+    for (size_t i = 0; i < outCount; ++i) {
+        double srcPos = static_cast<double>(i) / ratio;
+        size_t idx = static_cast<size_t>(std::floor(srcPos));
+        double frac = srcPos - static_cast<double>(idx);
+
+        float p0 = (idx > 0) ? input[idx - 1] : input[0];
+        float p1 = (idx < inCount) ? input[idx] : input[inCount - 1];
+        float p2 = (idx + 1 < inCount) ? input[idx + 1] : input[inCount - 1];
+        float p3 = (idx + 2 < inCount) ? input[idx + 2] : input[inCount - 1];
+
+        double a = -0.5 * p0 + 1.5 * p1 - 1.5 * p2 + 0.5 * p3;
+        double b = p0 - 2.5 * p1 + 2.0 * p2 - 0.5 * p3;
+        double c = -0.5 * p0 + 0.5 * p2;
+        double d = p1;
+
+        double sample = ((a * frac + b) * frac + c) * frac + d;
+        output[i] = static_cast<float>(sample);
+    }
+}
+
+void BeatWaveDSP::pushEscalationSamples(const float* samples16k, size_t count) {
+    if (!samples16k || count == 0) return;
+    std::lock_guard<std::mutex> lock(escalationMutex_);
+
+    if (escalationRingBuffer16k_.size() != ESCALATION_BUFFER_SAMPLES) {
+        escalationRingBuffer16k_.assign(ESCALATION_BUFFER_SAMPLES, 0.0f);
+        escalationWriteHead_ = 0;
+        escalationCount_ = 0;
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        escalationRingBuffer16k_[escalationWriteHead_] = samples16k[i];
+        escalationWriteHead_ = (escalationWriteHead_ + 1) % ESCALATION_BUFFER_SAMPLES;
+    }
+
+    escalationCount_ = std::min(ESCALATION_BUFFER_SAMPLES, escalationCount_ + count);
 }
 
 void BeatWaveDSP::normalizeAndLimit(
@@ -582,6 +644,11 @@ void BeatWaveDSP::ingestAudioStream(
 
     ringBuffer_->pushSamples(monoChunk.data(), frames);
 
+    // Alimentar paralelamente el búfer circular de escalado a 16 kHz (Fase 2 Rescate Neuronal)
+    std::vector<float> chunk16k;
+    resampleTo16kHz(monoChunk.data(), frames, inSampleRate, chunk16k);
+    pushEscalationSamples(chunk16k.data(), chunk16k.size());
+
     // Si se cumplió el stride de 2.0s y hay 10.0s acumulados, extraer y procesar
     std::vector<float> window10s;
     while (ringBuffer_->extractWindow(window10s)) {
@@ -608,6 +675,20 @@ FingerprintResult BeatWaveDSP::processSingleBuffer(
         result.error_message = "Buffer de audio vacío o inválido";
         return result;
     }
+
+    // Alimentar paralelamente el buffer circular a 16 kHz para retención de alta fidelidad
+    size_t monoFrames = numSamples / ((numChannels > 0) ? numChannels : 1);
+    std::vector<float> monoTemp(monoFrames);
+    if (numChannels >= 2) {
+        for (size_t i = 0; i < monoFrames; ++i) {
+            monoTemp[i] = 0.5f * (pcmData[i * numChannels] + pcmData[i * numChannels + 1]);
+        }
+    } else {
+        std::copy(pcmData, pcmData + monoFrames, monoTemp.begin());
+    }
+    std::vector<float> chunk16k;
+    resampleTo16kHz(monoTemp.data(), monoFrames, inSampleRate, chunk16k);
+    pushEscalationSamples(chunk16k.data(), chunk16k.size());
 
     float rmsDbfs = -96.0f;
     float peakDbfs = -96.0f;
@@ -644,6 +725,65 @@ FingerprintResult BeatWaveDSP::processSingleBuffer(
 
     result.is_valid = (!result.acrcloud_fingerprint.empty()) && (!result.olaf_fingerprint.empty());
     return result;
+}
+
+// ============================================================================
+// FASE 2: RETENCIÓN DE ALTA FIDELIDAD Y COMPRESIÓN FLAC EN MEMORIA (Zero-Disk)
+// ============================================================================
+std::vector<uint8_t> BeatWaveDSP::getEscalationBufferFLAC() const {
+    std::lock_guard<std::mutex> lock(escalationMutex_);
+    if (escalationCount_ == 0 || escalationRingBuffer16k_.empty()) {
+        return {};
+    }
+
+    size_t count = escalationCount_;
+    std::vector<float> linearBuffer(count);
+
+    if (count < ESCALATION_BUFFER_SAMPLES) {
+        // El buffer todavía no se llenó por completo: copiar muestras contiguas iniciales
+        std::copy(
+            escalationRingBuffer16k_.begin(),
+            escalationRingBuffer16k_.begin() + count,
+            linearBuffer.begin()
+        );
+    } else {
+        // Buffer circular lleno de 10.0s: desenrollar desde la muestra más antigua
+        size_t readHead = escalationWriteHead_;
+        for (size_t i = 0; i < ESCALATION_BUFFER_SAMPLES; ++i) {
+            linearBuffer[i] = escalationRingBuffer16k_[(readHead + i) % ESCALATION_BUFFER_SAMPLES];
+        }
+    }
+
+    // Codificación lossless FLAC en RAM a 16 kHz Mono
+    return audio::FlacMemoryEncoder::encodeFloats(
+        linearBuffer.data(),
+        linearBuffer.size(),
+        static_cast<uint32_t>(ESCALATION_SAMPLE_RATE),
+        1 // Mono
+    );
+}
+
+std::vector<uint8_t> BeatWaveDSP::encodeBufferToFLAC(
+    const float* pcmData,
+    size_t numSamples,
+    uint32_t inSampleRate
+) const {
+    if (!pcmData || numSamples == 0 || inSampleRate == 0) return {};
+
+    std::vector<float> resampled16k;
+    resampleTo16kHz(pcmData, numSamples, inSampleRate, resampled16k);
+
+    return audio::FlacMemoryEncoder::encodeFloats(
+        resampled16k.data(),
+        resampled16k.size(),
+        static_cast<uint32_t>(ESCALATION_SAMPLE_RATE),
+        1
+    );
+}
+
+size_t BeatWaveDSP::getEscalationBufferedSamples() const {
+    std::lock_guard<std::mutex> lock(escalationMutex_);
+    return escalationCount_;
 }
 
 } // namespace radar

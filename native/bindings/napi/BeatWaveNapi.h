@@ -20,6 +20,12 @@ private:
 
     // API Radar Zero-Copy: processAudioBuffer(Float32Array audio, string profile) -> RadarResult
     Napi::Value ProcessAudioBuffer(const Napi::CallbackInfo& info);
+
+    // API Fase 2: getEscalationBufferFLAC([audio, sampleRate]) -> Uint8Array (FLAC binary en RAM)
+    Napi::Value GetEscalationBufferFLAC(const Napi::CallbackInfo& info);
+
+private:
+    radar::BeatWaveDSP m_radarDsp;
 };
 
 // Conversores C++ Struct -> Napi::Object

@@ -152,7 +152,8 @@ BeatWaveNapiModule::BeatWaveNapiModule(Napi::Env env, Napi::Object exports) {
     DefineAddon(exports, {
         InstanceMethod("analyzeTrack", &BeatWaveNapiModule::AnalyzeTrack, napi_enumerable),
         InstanceMethod("getSpectralOverview", &BeatWaveNapiModule::GetSpectralOverview, napi_enumerable),
-        InstanceMethod("processAudioBuffer", &BeatWaveNapiModule::ProcessAudioBuffer, napi_enumerable)
+        InstanceMethod("processAudioBuffer", &BeatWaveNapiModule::ProcessAudioBuffer, napi_enumerable),
+        InstanceMethod("getEscalationBufferFLAC", &BeatWaveNapiModule::GetEscalationBufferFLAC, napi_enumerable)
     });
 }
 
@@ -236,9 +237,9 @@ Napi::Value BeatWaveNapiModule::ProcessAudioBuffer(const Napi::CallbackInfo& inf
         inSampleRate = info[2].As<Napi::Number>().Uint32Value();
     }
 
-    // 3. Procesamiento en motor DSP nativo de Radar
-    radar::BeatWaveDSP dspEngine(envMode);
-    radar::FingerprintResult fpResult = dspEngine.processSingleBuffer(
+    // 3. Procesamiento en motor DSP nativo de Radar (retiene automáticamente ventana 16 kHz)
+    m_radarDsp.setEnvironmentMode(envMode);
+    radar::FingerprintResult fpResult = m_radarDsp.processSingleBuffer(
         pcmData,
         numSamples,
         1, // Mono stream
@@ -246,6 +247,41 @@ Napi::Value BeatWaveNapiModule::ProcessAudioBuffer(const Napi::CallbackInfo& inf
     );
 
     return ConvertRadarResultToNapiObject(env, fpResult, profile);
+}
+
+// ============================================================================
+// FASE 2: getEscalationBufferFLAC([audio, inSampleRate]) -> Uint8Array
+// ============================================================================
+Napi::Value BeatWaveNapiModule::GetEscalationBufferFLAC(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::vector<uint8_t> flacBytes;
+
+    if (info.Length() >= 1 && info[0].IsTypedArray()) {
+        Napi::TypedArray typedArr = info[0].As<Napi::TypedArray>();
+        if (typedArr.TypedArrayType() != napi_float32_array) {
+            Napi::TypeError::New(env, "El buffer debe ser Float32Array").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+        Napi::Float32Array floatArray = info[0].As<Napi::Float32Array>();
+        const float* pcm = floatArray.Data();
+        size_t count = floatArray.ElementLength();
+        uint32_t inRate = 44100;
+        if (info.Length() >= 2 && info[1].IsNumber()) {
+            inRate = info[1].As<Napi::Number>().Uint32Value();
+        }
+        flacBytes = m_radarDsp.encodeBufferToFLAC(pcm, count, inRate);
+    } else {
+        flacBytes = m_radarDsp.getEscalationBufferFLAC();
+    }
+
+    if (flacBytes.empty()) {
+        return env.Null();
+    }
+
+    // Zero-Copy RAM: Embalaje en ArrayBuffer y TypedArray Uint8Array
+    Napi::ArrayBuffer arrayBuffer = Napi::ArrayBuffer::New(env, flacBytes.size());
+    std::memcpy(arrayBuffer.Data(), flacBytes.data(), flacBytes.size());
+    return Napi::Uint8Array::New(env, flacBytes.size(), arrayBuffer, 0);
 }
 
 NODE_API_ADDON(BeatWaveNapiModule)

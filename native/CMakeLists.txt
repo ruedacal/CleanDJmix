@@ -84,6 +84,7 @@ set(CORE_SOURCES
     src/CleanRoomDynamics.cpp
     src/CleanRoomTonality.cpp
     src/BeatWaveDSP.cpp
+    src/FlacMemoryEncoder.cpp
 )
 
 add_library(beatwave_core STATIC ${CORE_SOURCES})
@@ -227,6 +228,14 @@ if(BUILD_TESTS)
     add_executable(test_radar_dsp
         tests/test_radar_dsp.cpp
         src/BeatWaveDSP.cpp
+        src/FlacMemoryEncoder.cpp
     )
     target_include_directories(test_radar_dsp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+    add_executable(test_radar_flac
+        tests/test_radar_flac.cpp
+        src/BeatWaveDSP.cpp
+        src/FlacMemoryEncoder.cpp
+    )
+    target_include_directories(test_radar_flac PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
