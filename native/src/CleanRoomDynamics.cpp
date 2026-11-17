@@ -173,22 +173,24 @@ HotCuesAnalysis CleanRoomDynamicsExtractor::extractTacticalCues(
     size_t mainBreakBar = 0;
     size_t drop1Bar = 0;
 
-    for (size_t i = 16; i < barMetrics.size() - 16; ++i) {
-        // Ventana previa de 4 compases vs compás actual
-        double prev4Sub = (barMetrics[i - 4].rms_sub_bass_db + barMetrics[i - 3].rms_sub_bass_db +
-                           barMetrics[i - 2].rms_sub_bass_db + barMetrics[i - 1].rms_sub_bass_db) / 4.0;
-        double currentSub = barMetrics[i].rms_sub_bass_db;
+    if (barMetrics.size() > 32) {
+        for (size_t i = 16; i < barMetrics.size() - 16; ++i) {
+            // Ventana previa de 4 compases vs compás actual
+            double prev4Sub = (barMetrics[i - 4].rms_sub_bass_db + barMetrics[i - 3].rms_sub_bass_db +
+                               barMetrics[i - 2].rms_sub_bass_db + barMetrics[i - 1].rms_sub_bass_db) / 4.0;
+            double currentSub = barMetrics[i].rms_sub_bass_db;
 
-        // Detección de caída de -6 dB en sub-grave acoplada a caída de banda ancha
-        if (mainBreakBar == 0 && (prev4Sub - currentSub) >= 6.0 && currentSub < -24.0) {
-            mainBreakBar = i;
-        }
+            // Detección de caída de -6 dB en sub-grave acoplada a caída de banda ancha
+            if (mainBreakBar == 0 && (prev4Sub - currentSub) >= 6.0 && currentSub < -24.0) {
+                mainBreakBar = i;
+            }
 
-        // Detección de Drop 1: Subida brusca de >= 6 dB saliendo del break
-        if (mainBreakBar > 0 && drop1Bar == 0 && i > mainBreakBar + 4) {
-            if ((currentSub - barMetrics[i - 1].rms_sub_bass_db) >= 5.5 && currentSub > -18.0) {
-                drop1Bar = i;
-                break;
+            // Detección de Drop 1: Subida brusca de >= 6 dB saliendo del break
+            if (mainBreakBar > 0 && drop1Bar == 0 && i > mainBreakBar + 4) {
+                if ((currentSub - barMetrics[i - 1].rms_sub_bass_db) >= 5.5 && currentSub > -18.0) {
+                    drop1Bar = i;
+                    break;
+                }
             }
         }
     }

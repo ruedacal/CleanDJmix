@@ -98,16 +98,33 @@ class AudioProcessorService:
         return ext
 
     @staticmethod
-    def normalizar_genero_canonico(raw_genre: str = "", bpm: float = 126.0, filepath: str = "", title: str = "", artist: str = "") -> str:
+    def normalizar_genero_canonico(raw_genre: str = "", bpm: float = 126.0, filepath: str = "", title: str = "", artist: str = "", intensity: float = None) -> str:
         """Normaliza cualquier tag, detección o texto a un ÚNICO género canónico de cabina DJ.
         Erradica híbridos indeseados como 'POP/Tech House', 'Electronic Tech House' o etiquetas genéricas 'Pop'/'Electronic'.
-        Reglas:
-        1. Reconocimiento de artistas icónicos de club (Charlotte de Witte, Amelie Lens, Oscar Mulero, etc. -> Techno).
-        2. Prioridad semántica a géneros específicos de club.
-        3. Detección por BPM y contexto si el tag es genérico ('Pop', 'Electronic', 'Dance', 'Club', 'Other', vacíos).
-        4. Siempre retorna UN ÚNICO género limpio sin barras ni prefijos redundantes."""
+        Reglas Duras:
+        1. Si BPM > 133 e Intensidad > 0.65 -> Forzar estrictamente 'Peak-Time Techno'.
+        2. Si Intensidad < 0.40 y BPM < 132 -> Forzar estrictamente 'Tech House'.
+        3. Reconocimiento de artistas icónicos de club (Charlotte de Witte, Amelie Lens, etc. -> Techno).
+        4. Prioridad semántica a géneros específicos de club.
+        5. Detección por BPM y contexto si el tag es genérico ('Pop', 'Electronic', etc.)."""
         raw = str(raw_genre or "").strip().lower()
         search_ctx = f"{raw} {str(filepath or '').lower()} {str(title or '').lower()} {str(artist or '').lower()}"
+
+        try:
+            bpm_val = float(bpm) if bpm and float(bpm) > 0 else 126.0
+        except Exception:
+            bpm_val = 126.0
+
+        # REGLAS DURAS DETERMINISTAS (HARD-RULES)
+        if intensity is not None:
+            try:
+                inten_val = float(intensity)
+                if bpm_val > 133.0 and inten_val > 0.65:
+                    return "Peak-Time Techno"
+                if inten_val < 0.40 and bpm_val < 132.0:
+                    return "Tech House"
+            except Exception:
+                pass
 
         # 0. Reconocimiento de artistas icónicos de Techno / Club para evitar falsos "Pop" / "Electronic"
         techno_artists = [
@@ -770,12 +787,14 @@ class AudioProcessorService:
             subtag_val = f"{mood_val} / Driving"
             tactical_comment = f"[{bpm:.1f} BPM | {key}] Intro limpia 32b • Drop contundente • Outro 64b"
 
+        calc_intensity = round((energy / 100.0) * 0.7 + (danceability_val / 100.0) * 0.3, 2)
         genre_clean = AudioProcessorService.normalizar_genero_canonico(
             genre_val or subgenre_val or "",
             bpm=bpm,
             filepath=ruta,
             title=title,
-            artist=artist
+            artist=artist,
+            intensity=calc_intensity
         )
         # Si subgenre_val tiene un subestilo real de club (distinto de Pop, Electronic, Dance, etc.), preservarlo
         if subgenre_val and subgenre_val.lower() not in ["pop", "electronic", "dance", "club", "other", "unknown", genre_clean.lower()]:

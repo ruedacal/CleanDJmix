@@ -6,6 +6,7 @@ import { WsButton, ToolbarDivider, ExportMenu, AddToCollectionMenu, FilterMenu, 
 import { PricingModal } from './shell/pricing-modal.jsx';
 import { RegisterFlowModal } from './shell/register-modal.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
+import { classifyTrackGenre } from './modules/genreClassifier.ts';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // ─── PERF: PlayerContext ──────────────────────────────────────────────────────
@@ -3237,6 +3238,19 @@ const CAMELOT_WHEEL_DATA = {
 };
 
 const TAXONOMY_TREE = {
+    "Peak-Time Techno": [
+        "Peak Time / Driving (130-135 BPM)",
+        "Raw / Driving Techno",
+        "Acid Peak-Time",
+        "Festival Techno"
+    ],
+    "Tech House": [
+        "Tech House (126-129 BPM)",
+        "Groove Tech House",
+        "Minimal Tech House",
+        "Latin Tech House",
+        "Mainstage Tech"
+    ],
     "Hard Techno": [
         "Hard Techno / Schranz (150-160 BPM)",
         "Industrial Hard Techno",
@@ -9147,7 +9161,7 @@ const LibraryWorkspace = ({
         setTimeout(() => setFeedbackMsg(''), 2500);
     };
 
-    // Auto-organizar por Género (crea carpetas y reparte pistas automáticamente)
+    // Auto-organizar por Género (crea carpetas y reparte pistas automáticamente con motor BeatWave)
     const handleAutoGroupByGenre = () => {
         if (!currentTracks || currentTracks.length === 0) {
             alert("Carga pistas en la biblioteca para auto-organizar por género.");
@@ -9155,7 +9169,25 @@ const LibraryWorkspace = ({
         }
         const byGenre = {};
         currentTracks.forEach(t => {
-            const g = (t.genre || t.subgenre || 'Electrónica General').trim();
+            const rawBpm = parseFloat(t.bpm || t.b) || 126.0;
+            const rawEnergy = t.energy !== undefined ? (parseFloat(t.energy) > 1.0 ? parseFloat(t.energy)/100.0 : parseFloat(t.energy)) : 0.65;
+            const rawIntensity = t.intensity !== undefined ? parseFloat(t.intensity) : (rawEnergy * 0.7 + 0.25);
+            const rawAtmo = t.atmosphere !== undefined ? parseFloat(t.atmosphere) : 0.50;
+            const camelot = t.camelot_key || t.key || t.k || "8A";
+
+            const classified = classifyTrackGenre({
+                bpm: rawBpm,
+                energy: rawEnergy,
+                intensity: rawIntensity,
+                atmosphere: rawAtmo,
+                camelotKey: camelot
+            });
+
+            let g = (t.genre || t.subgenre || '').trim();
+            if (!g || ['electronic', 'electrónica', 'dance', 'club', 'pop', 'other', 'unknown', 'electrónica general'].includes(g.toLowerCase()) || classified.ruleApplied.startsWith("HARD_RULE")) {
+                g = classified.canonicalGenre;
+            }
+
             if (!byGenre[g]) byGenre[g] = [];
             byGenre[g].push(t);
         });
@@ -9174,7 +9206,7 @@ const LibraryWorkspace = ({
         });
         if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
         if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
-        setFeedbackMsg(`✓ ${newFolders.length} carpetas generadas automáticamente por género`);
+        setFeedbackMsg(`✓ ${newFolders.length} carpetas generadas automáticamente por género (Motor BeatWave Neural)`);
         setTimeout(() => setFeedbackMsg(''), 3500);
     };
 

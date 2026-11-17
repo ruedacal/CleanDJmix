@@ -1604,12 +1604,14 @@ return folderPath'''
                         lang="es"
                     )
 
+                calc_intensity = round((e_num / 100.0) * 0.7 + (float(info.get("danceability") or 80) / 100.0) * 0.3, 2)
                 track_genre = AudioProcessorService.normalizar_genero_canonico(
                     info.get("genre") or info.get("subgenre") or "",
                     bpm=bpm_num,
                     filepath=full_path,
                     title=title_str,
-                    artist=artist_str
+                    artist=artist_str,
+                    intensity=calc_intensity
                 )
                 track_subgenre = track_genre
                 v_type = TagSanitizerService.extraer_tipo_version(f"{title_str} {file}")
@@ -1974,12 +1976,14 @@ return folderPath'''
         artist = re.sub(r'\s+', ' ', str(artist or artist_fb)).strip()
 
         b_calc = float(bpm_str) if bpm_str != "--" else 126.0
+        calc_intensity = round((float(energy_pct) / 100.0) * 0.7 + 0.24, 2) if energy_pct else 0.5
         genre_clean = AudioProcessorService.normalizar_genero_canonico(
             genre_str or subgenre_str or "",
             bpm=b_calc,
             filepath=full_path,
             title=title,
-            artist=artist
+            artist=artist,
+            intensity=calc_intensity
         )
         genre_str = genre_clean
         subgenre_str = genre_clean

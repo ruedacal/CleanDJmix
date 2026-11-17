@@ -1793,6 +1793,90 @@
     );
   };
 
+  // web/js/modules/genreClassifier.ts
+  function classifyTrackGenre(input) {
+    const { bpm, energy, intensity, atmosphere, camelotKey = "8A" } = input;
+    const clampedEnergy = Math.max(0, Math.min(1, energy || 0));
+    const clampedIntensity = Math.max(0, Math.min(1, intensity || 0));
+    const clampedAtmosphere = Math.max(0, Math.min(1, atmosphere || 0));
+    const cleanBpm = Math.max(60, Math.min(220, bpm || 128));
+    let canonicalGenre = "Electronic";
+    let subGenre = "Club";
+    let ruleApplied = "Default fallback";
+    let confidence = 0.85;
+    if (cleanBpm > 133 && clampedIntensity > 0.65) {
+      canonicalGenre = "Peak-Time Techno";
+      subGenre = cleanBpm >= 140 ? "Hard / Driving Techno" : "Peak-Time Techno";
+      ruleApplied = "HARD_RULE: (BPM > 133 && Intensity > 0.65) -> Peak-Time Techno";
+      confidence = 0.98;
+    } else if (clampedIntensity < 0.4 && cleanBpm < 132) {
+      canonicalGenre = "Tech House";
+      subGenre = clampedAtmosphere > 0.55 ? "Minimal Tech House" : "Groove Tech House";
+      ruleApplied = "HARD_RULE: (Intensity < 0.40 && BPM < 132) -> Tech House";
+      confidence = 0.96;
+    } else if (cleanBpm >= 142 && clampedIntensity >= 0.75) {
+      canonicalGenre = "Hard Techno";
+      subGenre = "Industrial / Schranz";
+      ruleApplied = "RULE: BPM >= 142 & High Intensity";
+      confidence = 0.95;
+    } else if (cleanBpm >= 129 && clampedAtmosphere >= 0.68 && clampedIntensity >= 0.45) {
+      canonicalGenre = "Raw Techno";
+      subGenre = "Deep / Hypnotic Techno";
+      ruleApplied = "RULE: BPM >= 129 & High Atmosphere";
+      confidence = 0.92;
+    } else if (cleanBpm >= 122 && cleanBpm <= 128 && clampedAtmosphere >= 0.55 && clampedEnergy <= 0.78) {
+      canonicalGenre = "Melodic Techno";
+      subGenre = "Melodic House & Techno";
+      ruleApplied = "RULE: 122 <= BPM <= 128 & Atmospheric Melodic";
+      confidence = 0.9;
+    } else if (cleanBpm >= 124 && cleanBpm <= 129 && clampedIntensity < 0.48 && clampedAtmosphere >= 0.48) {
+      canonicalGenre = "Minimal / Deep Tech";
+      subGenre = "Microhouse / Romanian Club";
+      ruleApplied = "RULE: 124 <= BPM <= 129 & Low Intensity + Mid Atmosphere";
+      confidence = 0.89;
+    } else if (cleanBpm >= 118 && cleanBpm <= 125 && clampedIntensity < 0.35) {
+      canonicalGenre = "Deep House";
+      subGenre = "Classic Deep House";
+      ruleApplied = "RULE: BPM <= 125 & Very Low Intensity";
+      confidence = 0.91;
+    } else if (cleanBpm >= 138 && clampedEnergy >= 0.8 && clampedAtmosphere >= 0.5) {
+      canonicalGenre = "Trance";
+      subGenre = "Uplifting / Psytrance";
+      ruleApplied = "RULE: BPM >= 138 & High Energy + Atmosphere";
+      confidence = 0.93;
+    } else if (cleanBpm >= 126 && cleanBpm <= 133) {
+      canonicalGenre = clampedIntensity >= 0.55 ? "Techno" : "Tech House";
+      subGenre = "Driving Club";
+      ruleApplied = "HEURISTIC: Median Dance Window";
+      confidence = 0.84;
+    }
+    let energyTier = "CALMA";
+    if (clampedEnergy >= 0.85) {
+      energyTier = "A TOPE DE CA\xD1A";
+    } else if (clampedEnergy >= 0.65) {
+      energyTier = "AGITADO";
+    }
+    const isClubPeakTime = cleanBpm >= 132 && clampedEnergy >= 0.8 || canonicalGenre === "Peak-Time Techno";
+    const isAfterHours = clampedAtmosphere >= 0.65 && clampedIntensity <= 0.5 || canonicalGenre === "Minimal / Deep Tech";
+    const tacticalComment = `[${cleanBpm.toFixed(2)} BPM | ${camelotKey} | ${canonicalGenre.toUpperCase()}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b`;
+    const recommendation = {
+      djAction: isClubPeakTime ? "Pista de m\xE1xima tensi\xF3n. Soltar en el primer beat de la frase (Bar 1) tras un drop o breakdown." : isAfterHours ? "Mezcla continua y prolongada de 32 o 64 compases. Fundir graves mediante ecualizador aislador." : "Alineaci\xF3n de fraseo en Hot Cue 3 (Bassline In). Respetar regla arm\xF3nica Camelot.",
+      mixInStrategy: clampedIntensity > 0.6 ? "Corte seco o ecualizaci\xF3n agresiva: cortar graves de la pista saliente en beat 1 del drop." : "Entrada suave progresiva: subir fader progresivamente a lo largo de 16 compases.",
+      mixOutStrategy: clampedAtmosphere > 0.6 ? "Filtrar con High-Pass Filter (HPF) para dejar flotando las colas de reverberaci\xF3n." : "Swap de graves en el Hot Cue 8 (Outro Mix Point)."
+    };
+    return {
+      canonicalGenre,
+      subGenre,
+      energyTier,
+      tacticalComment,
+      ruleApplied,
+      confidence,
+      isClubPeakTime,
+      isAfterHours,
+      recommendation
+    };
+  }
+
   // web/js/app.jsx
   var { useState: useState5, useEffect: useEffect6, useRef: useRef6, useMemo, useCallback, createContext, useContext } = React;
   var PlayerContext = createContext({
@@ -4056,6 +4140,19 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     "12B": { classical: "E", name: "Mi Mayor", rel: "12A", up: "1B", down: "11B", color: "#15803d" }
   };
   var TAXONOMY_TREE = {
+    "Peak-Time Techno": [
+      "Peak Time / Driving (130-135 BPM)",
+      "Raw / Driving Techno",
+      "Acid Peak-Time",
+      "Festival Techno"
+    ],
+    "Tech House": [
+      "Tech House (126-129 BPM)",
+      "Groove Tech House",
+      "Minimal Tech House",
+      "Latin Tech House",
+      "Mainstage Tech"
+    ],
     "Hard Techno": [
       "Hard Techno / Schranz (150-160 BPM)",
       "Industrial Hard Techno",
@@ -7869,7 +7966,22 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       const byGenre = {};
       currentTracks.forEach((t) => {
-        const g = (t.genre || t.subgenre || "Electr\xF3nica General").trim();
+        const rawBpm = parseFloat(t.bpm || t.b) || 126;
+        const rawEnergy = t.energy !== void 0 ? parseFloat(t.energy) > 1 ? parseFloat(t.energy) / 100 : parseFloat(t.energy) : 0.65;
+        const rawIntensity = t.intensity !== void 0 ? parseFloat(t.intensity) : rawEnergy * 0.7 + 0.25;
+        const rawAtmo = t.atmosphere !== void 0 ? parseFloat(t.atmosphere) : 0.5;
+        const camelot = t.camelot_key || t.key || t.k || "8A";
+        const classified = classifyTrackGenre({
+          bpm: rawBpm,
+          energy: rawEnergy,
+          intensity: rawIntensity,
+          atmosphere: rawAtmo,
+          camelotKey: camelot
+        });
+        let g = (t.genre || t.subgenre || "").trim();
+        if (!g || ["electronic", "electr\xF3nica", "dance", "club", "pop", "other", "unknown", "electr\xF3nica general"].includes(g.toLowerCase()) || classified.ruleApplied.startsWith("HARD_RULE")) {
+          g = classified.canonicalGenre;
+        }
         if (!byGenre[g]) byGenre[g] = [];
         byGenre[g].push(t);
       });
@@ -7886,7 +7998,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       });
       if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
       if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
-      setFeedbackMsg(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero`);
+      setFeedbackMsg(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero (Motor BeatWave Neural)`);
       setTimeout(() => setFeedbackMsg(""), 3500);
     };
     const handleRemoveTrackFromFolder = (folderId, trackKey) => {
