@@ -987,21 +987,10 @@ const RekordboxWaveform = ({
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99.0, (downbeatMs / durMs) * 100)) : null;
     const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99.0, (trimMs / durMs) * 100)) : null;
 
-    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-        const padNum = idx + 1;
-        const existing = (cues && cues[idx]) ? cues[idx] : null;
-        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
-        if (existing) {
-            return {
-                ...defaultPreset,
-                ...existing,
-                id: padNum,
-                color: existing.color || defaultPreset.color
-            };
-        }
-        return defaultPreset;
-    });
+    // Hot Cues dinámicos reales (Sparse Cues de 4 a 8 pads)
+    const activeCues = (cues && Array.isArray(cues) && cues.length > 0)
+        ? cues.filter(c => c && !c.is_empty && ((c.pos_ms !== undefined && c.pos_ms !== null) || (c.pct !== undefined && c.pct !== null)))
+        : [];
 
     const handleCanvasClick = (e) => {
         if (!containerRef.current || !onSeekTrack || draggingCueIdx !== null) return;
@@ -1329,21 +1318,10 @@ const RekordboxWaveform = ({
 
 // Resumen Compacto y Elegante de los 8 Hot Cues para la columna derecha de Auditoría
 const CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
-    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-        const padNum = idx + 1;
-        const existing = (cues && cues[idx]) ? cues[idx] : null;
-        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
-        if (existing) {
-            return {
-                ...defaultPreset,
-                ...existing,
-                id: padNum,
-                color: existing.color || defaultPreset.color
-            };
-        }
-        return defaultPreset;
-    });
+    // Hot Cues dinámicos reales (Sparse Cues de 4 a 8 pads)
+    const activeCues = (cues && Array.isArray(cues) && cues.length > 0)
+        ? cues.filter(c => c && !c.is_empty && ((c.pos_ms !== undefined && c.pos_ms !== null) || (c.pct !== undefined && c.pct !== null)))
+        : [];
     return (
         <div className="bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md">
             <div className="flex items-center justify-between border-b border-djzinc-800 pb-1.5">
@@ -1439,21 +1417,10 @@ const ZoomableRekordboxWaveform = ({
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
 
-    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-        const padNum = idx + 1;
-        const existing = (cues && cues[idx]) ? cues[idx] : null;
-        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
-        if (existing) {
-            return {
-                ...defaultPreset,
-                ...existing,
-                id: padNum,
-                color: existing.color || defaultPreset.color
-            };
-        }
-        return defaultPreset;
-    });
+    // Hot Cues dinámicos reales (Sparse Cues de 4 a 8 pads)
+    const activeCues = (cues && Array.isArray(cues) && cues.length > 0)
+        ? cues.filter(c => c && !c.is_empty && ((c.pos_ms !== undefined && c.pos_ms !== null) || (c.pct !== undefined && c.pct !== null)))
+        : [];
     const totalWidth = Math.max(containerWidth, Math.round(containerWidth * Math.max(1, zoom)));
 
     // Medición del ancho visible del contenedor
@@ -1984,21 +1951,10 @@ const HotCueEditorPanel = ({
     onGuardarTrack,
     onOpenStudio
 }) => {
-    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-        const padNum = idx + 1;
-        const existing = (cues && cues[idx]) ? cues[idx] : null;
-        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
-        if (existing) {
-            return {
-                ...defaultPreset,
-                ...existing,
-                id: padNum,
-                color: existing.color || defaultPreset.color
-            };
-        }
-        return defaultPreset;
-    });
+    // Hot Cues dinámicos reales (Sparse Cues de 4 a 8 pads)
+    const activeCues = (cues && Array.isArray(cues) && cues.length > 0)
+        ? cues.filter(c => c && !c.is_empty && ((c.pos_ms !== undefined && c.pos_ms !== null) || (c.pct !== undefined && c.pct !== null)))
+        : [];
     const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
     const durMs = parseDurationMs(duration);
     const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
@@ -2457,21 +2413,10 @@ const HotCueStudioModal = ({
 }) => {
     if (!isOpen || !track) return null;
 
-    // Asegura 8 Hot Cues siempre visibles (Pads 1-4 y Pads 5-8)
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-        const padNum = idx + 1;
-        const existing = (cues && cues[idx]) ? cues[idx] : null;
-        const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: '#06b6d4', time: '00:00.00' };
-        if (existing) {
-            return {
-                ...defaultPreset,
-                ...existing,
-                id: padNum,
-                color: existing.color || defaultPreset.color
-            };
-        }
-        return defaultPreset;
-    });
+    // Hot Cues dinámicos reales (Sparse Cues de 4 a 8 pads)
+    const activeCues = (cues && Array.isArray(cues) && cues.length > 0)
+        ? cues.filter(c => c && !c.is_empty && ((c.pos_ms !== undefined && c.pos_ms !== null) || (c.pct !== undefined && c.pct !== null)))
+        : [];
     const currentCue = activeCues.find(c => (c.id || 1) === selectedCueId) || activeCues[0] || {};
     const durMs = parseDurationMs(duration);
     const bpm = (track && (track.bpm || track.b)) ? Math.max(30.0, parseFloat(track.bpm || track.b) || 128.0) : 128.0;
@@ -16193,7 +16138,23 @@ const HotCuesWorkspace = ({
                 pos_ms: cuePos,
                 pct: durMs > 0 ? (cuePos / durMs) : CLUB_CUE_RATIOS[idx],
                 bar: existing.bar || Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1),
-                bar_str: existing.bar_str || `Bar ${Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1)}`
+                bar_str: existing.bar_str || `Bar ${Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1)}`,
+                is_empty: false
+            };
+        }
+        const hasTrackCues = currentTrack && Array.isArray(currentTrack.cues) && currentTrack.cues.length > 0;
+        if (hasTrackCues) {
+            return {
+                id: padNum,
+                name: "Libre",
+                short_name: "Libre",
+                color: "#475569",
+                time: "--:--.--",
+                pos_ms: null,
+                pct: null,
+                bar: null,
+                bar_str: "--",
+                is_empty: true
             };
         }
         return {
@@ -16204,7 +16165,8 @@ const HotCuesWorkspace = ({
             pos_ms: defaultPosMs,
             pct: CLUB_CUE_RATIOS[idx],
             bar: Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1),
-            bar_str: `Bar ${Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1)}`
+            bar_str: `Bar ${Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1)}`,
+            is_empty: false
         };
     });
     const currentCue = activeCues.find(c => (c.id !== undefined ? c.id : 1) === selectedCueId) || activeCues[0] || {};
@@ -17153,8 +17115,31 @@ const HotCuesWorkspace = ({
                                         const isPlayingThisCue = (activePlayingCueId === padNum && isCurrentPlayingThis);
                                         const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : '#ef4444');
                                         const cueMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || '00:00.00');
-                                        const barNum = Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
+                                        const barNum = cue.bar || Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
                                         const staggerDelay = `${idx * 110}ms`;
+
+                                        if (cue.is_empty) {
+                                            return (
+                                                <div
+                                                    key={`${currentTrack?.id || 'cue'}_pad_${idx}`}
+                                                    onClick={() => setSelectedCueId(padNum)}
+                                                    className={`p-2 pt-2.5 select-none rounded-xl border border-dashed border-djzinc-800 bg-[#07070b]/60 flex flex-col justify-between min-h-[68px] opacity-40 hover:opacity-75 transition-all cursor-pointer ${isSelected ? 'ring-1 ring-gray-500 opacity-80' : ''}`}
+                                                    title={`PAD ${padNum}: Libre (sin asignar)`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-mono text-gray-500 font-bold">PAD {padNum}</span>
+                                                        <span className="w-2 h-2 rounded-full bg-gray-700/60"></span>
+                                                    </div>
+                                                    <div className="text-center my-1 text-[11px] font-mono text-gray-500 font-bold tracking-wider">
+                                                        [ LIBRE ]
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-[9px] font-mono text-gray-600 border-t border-djzinc-800/50 pt-1">
+                                                        <span>--:--.--</span>
+                                                        <span>Paso {padNum}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
 
                                         return (
                                             <div

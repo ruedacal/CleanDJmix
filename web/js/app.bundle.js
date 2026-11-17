@@ -3398,20 +3398,7 @@
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99, downbeatMs / durMs * 100)) : null;
     const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99, trimMs / durMs * 100)) : null;
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-      const padNum = idx + 1;
-      const existing = cues && cues[idx] ? cues[idx] : null;
-      const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: "#06b6d4", time: "00:00.00" };
-      if (existing) {
-        return {
-          ...defaultPreset,
-          ...existing,
-          id: padNum,
-          color: existing.color || defaultPreset.color
-        };
-      }
-      return defaultPreset;
-    });
+    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     const handleCanvasClick = (e) => {
       if (!containerRef.current || !onSeekTrack || draggingCueIdx !== null) return;
       const rect = containerRef.current.getBoundingClientRect();
@@ -3668,20 +3655,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     ));
   };
   var CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-      const padNum = idx + 1;
-      const existing = cues && cues[idx] ? cues[idx] : null;
-      const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: "#06b6d4", time: "00:00.00" };
-      if (existing) {
-        return {
-          ...defaultPreset,
-          ...existing,
-          id: padNum,
-          color: existing.color || defaultPreset.color
-        };
-      }
-      return defaultPreset;
-    });
+    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -3749,20 +3723,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-      const padNum = idx + 1;
-      const existing = cues && cues[idx] ? cues[idx] : null;
-      const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: "#06b6d4", time: "00:00.00" };
-      if (existing) {
-        return {
-          ...defaultPreset,
-          ...existing,
-          id: padNum,
-          color: existing.color || defaultPreset.color
-        };
-      }
-      return defaultPreset;
-    });
+    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     const totalWidth = Math.max(containerWidth, Math.round(containerWidth * Math.max(1, zoom)));
     useEffect6(() => {
       const updateWidth = () => {
@@ -4226,20 +4187,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     onAutoPhraseCues
   }) => {
     if (!isOpen || !track) return null;
-    const activeCues = Array.from({ length: 8 }, (_, idx) => {
-      const padNum = idx + 1;
-      const existing = cues && cues[idx] ? cues[idx] : null;
-      const defaultPreset = NV2_COLORS[idx] || { id: padNum, name: `Cue ${padNum}`, color: "#06b6d4", time: "00:00.00" };
-      if (existing) {
-        return {
-          ...defaultPreset,
-          ...existing,
-          id: padNum,
-          color: existing.color || defaultPreset.color
-        };
-      }
-      return defaultPreset;
-    });
+    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     const currentCue = activeCues.find((c) => (c.id || 1) === selectedCueId) || activeCues[0] || {};
     const durMs = parseDurationMs(duration);
     const bpm = track && (track.bpm || track.b) ? Math.max(30, parseFloat(track.bpm || track.b) || 128) : 128;
@@ -13805,7 +13753,23 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           pos_ms: cuePos,
           pct: durMs > 0 ? cuePos / durMs : CLUB_CUE_RATIOS[idx],
           bar: existing.bar || Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1),
-          bar_str: existing.bar_str || `Bar ${Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1)}`
+          bar_str: existing.bar_str || `Bar ${Math.max(1, Math.floor((cuePos - downbeatMs) / barMs) + 1)}`,
+          is_empty: false
+        };
+      }
+      const hasTrackCues = currentTrack && Array.isArray(currentTrack.cues) && currentTrack.cues.length > 0;
+      if (hasTrackCues) {
+        return {
+          id: padNum,
+          name: "Libre",
+          short_name: "Libre",
+          color: "#475569",
+          time: "--:--.--",
+          pos_ms: null,
+          pct: null,
+          bar: null,
+          bar_str: "--",
+          is_empty: true
         };
       }
       return {
@@ -13816,7 +13780,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         pos_ms: defaultPosMs,
         pct: CLUB_CUE_RATIOS[idx],
         bar: Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1),
-        bar_str: `Bar ${Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1)}`
+        bar_str: `Bar ${Math.max(1, Math.floor((defaultPosMs - downbeatMs) / barMs) + 1)}`,
+        is_empty: false
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
@@ -14490,8 +14455,22 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       const isPlayingThisCue = activePlayingCueId === padNum && isCurrentPlayingThis;
       const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#ef4444");
       const cueMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
-      const barNum = Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
+      const barNum = cue.bar || Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
       const staggerDelay = `${idx * 110}ms`;
+      if (cue.is_empty) {
+        return /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            key: `${(currentTrack == null ? void 0 : currentTrack.id) || "cue"}_pad_${idx}`,
+            onClick: () => setSelectedCueId(padNum),
+            className: `p-2 pt-2.5 select-none rounded-xl border border-dashed border-djzinc-800 bg-[#07070b]/60 flex flex-col justify-between min-h-[68px] opacity-40 hover:opacity-75 transition-all cursor-pointer ${isSelected ? "ring-1 ring-gray-500 opacity-80" : ""}`,
+            title: `PAD ${padNum}: Libre (sin asignar)`
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "PAD ", padNum), /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-gray-700/60" })),
+          /* @__PURE__ */ React.createElement("div", { className: "text-center my-1 text-[11px] font-mono text-gray-500 font-bold tracking-wider" }, "[ LIBRE ]"),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[9px] font-mono text-gray-600 border-t border-djzinc-800/50 pt-1" }, /* @__PURE__ */ React.createElement("span", null, "--:--.--"), /* @__PURE__ */ React.createElement("span", null, "Paso ", padNum))
+        );
+      }
       return /* @__PURE__ */ React.createElement(
         "div",
         {

@@ -1270,7 +1270,14 @@ return folderPath'''
         try:
             info = AudioProcessorService.analizar_track_avanzado(filepath, fast_mode=True)
             bpm_val = float(info.get("bpm") or 128.0)
-            dur_ms = int(float(info.get("duration_sec", 300)) * 1000)
+            if info.get("duration_ms"):
+                dur_ms = int(info["duration_ms"])
+            elif info.get("duration_sec"):
+                dur_ms = int(float(info["duration_sec"]) * 1000)
+            else:
+                import soundfile as sf
+                sfi = sf.info(filepath)
+                dur_ms = int(sfi.duration * 1000)
         except Exception:
             pass
 
@@ -1310,7 +1317,14 @@ return folderPath'''
         try:
             info = AudioProcessorService.analizar_track_avanzado(filepath, fast_mode=True)
             bpm_val = float(info.get("bpm") or 128.0)
-            dur_ms = int(float(info.get("duration_sec", 300)) * 1000)
+            if info.get("duration_ms"):
+                dur_ms = int(info["duration_ms"])
+            elif info.get("duration_sec"):
+                dur_ms = int(float(info["duration_sec"]) * 1000)
+            else:
+                import soundfile as sf
+                sfi = sf.info(filepath)
+                dur_ms = int(sfi.duration * 1000)
         except Exception:
             pass
 
