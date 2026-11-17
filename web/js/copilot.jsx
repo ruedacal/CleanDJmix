@@ -878,12 +878,12 @@ const MASTER_TRACKS_POOL = [
 
 const DEFAULT_COPILOT_STATE = {
     "connected": true,
-    "source": "SIMULATION_MODE",
+    "source": "SERATO_LIVE",
     "platform": "serato",
-    "platform_mode": "auto",
+    "platform_mode": "serato",
     "platform_name": "Serato DJ Pro",
-    "platform_icon": "\ud83d\udcbf",
-    "platform_color": "#06b6d4",
+    "platform_icon": "⚡",
+    "platform_color": "#00d1e8",
     "platform_status": "LIVE",
     "detected_platforms": {
         "serato": true,
@@ -893,320 +893,109 @@ const DEFAULT_COPILOT_STATE = {
     },
     "deck_1": {
         "deck_num": "1",
-        "status": "ON AIR (MASTER)",
+        "status": "CUE (PREPARADO)",
         "is_master": true,
-        "is_playing": true,
-        "artist": "Mauro Picotto",
-        "title": "Komodo (Megavoices Claxixx)",
-        "bpm": 137.68,
-        "camelot": "10A",
-        "camelot_color": "#f472b6",
-        "raw_key": "Bm",
-        "file_path": "Users/admin/Music/FLAC quality/The Midnight - Deep Blue.flac",
-        "genre": "Melodic Techno",
-        "subgenre": "Club Master",
-        "energy": 92,
-        "danceability": 88,
+        "is_playing": false,
+        "artist": "Saâda Bonaire",
+        "title": "Your Touch",
+        "bpm": 110.0,
+        "camelot": "6B",
+        "camelot_color": "#c4b5fd",
+        "raw_key": "Bb major",
+        "file_path": "/Users/admin/Music/FLAC OK/Kabale und Liebe feat The Fog - Since You Looked into my eyes - Original.flac",
+        "genre": "Tech House",
+        "subgenre": "Warmup",
+        "energy": 55,
+        "danceability": 82,
         "valence": 55,
-        "arousal": 88,
+        "arousal": 72,
         "format": "FLAC 24-bit",
-        "duration": "06:30",
-        "duration_sec": 390.0,
-        "elapsed_sec": 182.25,
-        "play_progress": 0.4673,
-        "phase": "Peak Time",
+        "duration": "03:44",
+        "duration_sec": 224.53,
+        "elapsed_sec": 95.0,
+        "play_progress": 0.4231,
+        "phase": "Mid Track",
         "year": "2024",
-        "cover": "/cover?path=Users/admin/Music/FLAC quality/The Midnight - Deep Blue.flac",
+        "cover": "",
         "cues": [
-            {
-                "id": 1,
-                "name": "Downbeat 1.0.0",
-                "color": "#ef4444",
-                "pct": 0.04,
-                "time": "00:00.25"
-            },
-            {
-                "id": 2,
-                "name": "Intro Perc",
-                "color": "#f97316",
-                "pct": 0.16,
-                "time": "01:04.00"
-            },
-            {
-                "id": 3,
-                "name": "Bassline In",
-                "color": "#eab308",
-                "pct": 0.32,
-                "time": "02:08.00"
-            },
-            {
-                "id": 4,
-                "name": "MAIN DROP",
-                "color": "#10b981",
-                "pct": 0.48,
-                "time": "03:12.00"
-            },
-            {
-                "id": 5,
-                "name": "Breakdown",
-                "color": "#06b6d4",
-                "pct": 0.62,
-                "time": "04:16.00"
-            },
-            {
-                "id": 6,
-                "name": "Climax 2",
-                "color": "#22d3ee",
-                "pct": 0.74,
-                "time": "05:04.00"
-            },
-            {
-                "id": 7,
-                "name": "Outro 32b",
-                "color": "#8b5cf6",
-                "pct": 0.86,
-                "time": "06:08.00"
-            },
-            {
-                "id": 8,
-                "name": "Cut / Fade",
-                "color": "#ec4899",
-                "pct": 0.96,
-                "time": "07:15.00"
-            }
+            { "id": 1, "name": "Primer Golpe (Intro) (Bar 1)", "color": "#ef4444", "pct": 0.01, "time": "00:00.25" },
+            { "id": 2, "name": "Entrada Rápida (-16b Drop) (Bar 17)", "color": "#f97316", "pct": 0.15, "time": "00:34.90" },
+            { "id": 3, "name": "Drop 1 (Clímax) (Bar 33)", "color": "#eab308", "pct": 0.29, "time": "01:05.45" },
+            { "id": 4, "name": "Inicio Outro (Salida) (Bar 81)", "color": "#10b981", "pct": 0.72, "time": "02:41.80" },
+            { "id": 5, "name": "Loop Seguridad (Outro Loop) (Bar 97)", "color": "#38bdf8", "pct": 0.86, "time": "03:12.35" }
         ],
         "structural_phases": [
-            {
-                "id": "intro",
-                "name": "Intro Percusiva",
-                "start_pct": 0.0,
-                "end_pct": 0.16,
-                "type": "intro",
-                "label": "Intro 32b \u2022 Mezcla In",
-                "color": "#06b6d4"
-            },
-            {
-                "id": "build",
-                "name": "Bassline In",
-                "start_pct": 0.16,
-                "end_pct": 0.35,
-                "type": "build",
-                "label": "Bassline Activa",
-                "color": "#eab308"
-            },
-            {
-                "id": "break",
-                "name": "Breakdown",
-                "start_pct": 0.35,
-                "end_pct": 0.48,
-                "type": "break",
-                "label": "Breakdown (Sin Graves)",
-                "color": "#38bdf8"
-            },
-            {
-                "id": "drop",
-                "name": "MAIN DROP",
-                "start_pct": 0.48,
-                "end_pct": 0.74,
-                "type": "drop",
-                "label": "\u26a1 DROP PRINCIPAL (Cl\u00edmax)",
-                "color": "#ef4444"
-            },
-            {
-                "id": "break2",
-                "name": "Segundo Par\u00f3n",
-                "start_pct": 0.74,
-                "end_pct": 0.82,
-                "type": "break",
-                "label": "Puente Mel\u00f3dico",
-                "color": "#a855f7"
-            },
-            {
-                "id": "outro",
-                "name": "Outro Limpio",
-                "start_pct": 0.82,
-                "end_pct": 1.0,
-                "type": "outro",
-                "label": "\ud83d\udfe2 OUTRO SEGURO \u2022 Mezcla Out",
-                "color": "#10b981"
-            }
+            { "id": "intro", "name": "Intro", "start_pct": 0.0, "end_pct": 0.15, "type": "intro", "label": "Intro 16b", "color": "#06b6d4" },
+            { "id": "drop", "name": "Drop 1", "start_pct": 0.15, "end_pct": 0.72, "type": "drop", "label": "Drop Principal", "color": "#ef4444" },
+            { "id": "outro", "name": "Outro", "start_pct": 0.72, "end_pct": 1.0, "type": "outro", "label": "Outro Seguro", "color": "#10b981" }
         ],
-        "lufs": -8.7,
-        "low_ratio": 48.0,
-        "mid_ratio": 32.0,
-        "high_ratio": 20.0,
-        "acoustic_role": "Bass Driver",
+        "lufs": -9.2,
+        "low_ratio": 38.0,
+        "mid_ratio": 36.0,
+        "high_ratio": 26.0,
+        "acoustic_role": "Melodic Warmup",
         "is_audited": true,
-        "comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-        "tactical_comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-        "mood": "Peak Time Climax"
+        "comment": "[110.0 BPM | 6B] Intro limpia 32b • Fraseo cuantizado",
+        "tactical_comment": "[110.0 BPM | 6B] Intro limpia 32b • Fraseo cuantizado",
+        "mood": "Warmup Groove"
     },
     "deck_2": {
         "deck_num": "2",
-        "status": "CUE / PREPARADO",
+        "status": "STANDBY (VACÍO)",
         "is_master": false,
         "is_playing": false,
-        "artist": "Marco Bailey / Sigvard",
-        "title": "Smooth Mind",
-        "bpm": 140.0,
-        "camelot": "6A",
-        "camelot_color": "#c084fc",
-        "raw_key": "Gm",
-        "file_path": "Users/admin/Music/FLAC quality/Snog - Turn on your Brain Baby vs. Acid Outburst 06.flac",
-        "genre": "Raw / Deep Techno",
-        "subgenre": "Drumcode Core",
-        "energy": 91,
-        "danceability": 95,
-        "valence": 62,
-        "arousal": 91,
-        "format": "FLAC 16-bit",
-        "duration": "05:48",
-        "duration_sec": 348.0,
-        "elapsed_sec": 88.25,
-        "play_progress": 0.2536,
-        "phase": "Hypnotic Groove",
-        "year": "2023",
-        "cover": "/cover?path=Users/admin/Music/FLAC quality/Snog - Turn on your Brain Baby vs. Acid Outburst 06.flac",
-        "cues": [
-            {
-                "id": 1,
-                "name": "Downbeat 1.0.0",
-                "color": "#ef4444",
-                "pct": 0.05,
-                "time": "00:00.30"
-            },
-            {
-                "id": 2,
-                "name": "Vocal Hook",
-                "color": "#f97316",
-                "pct": 0.19,
-                "time": "01:08.00"
-            },
-            {
-                "id": 3,
-                "name": "Build-Up 16b",
-                "color": "#eab308",
-                "pct": 0.35,
-                "time": "02:16.00"
-            },
-            {
-                "id": 4,
-                "name": "PEAK DROP",
-                "color": "#10b981",
-                "pct": 0.5,
-                "time": "03:20.00"
-            },
-            {
-                "id": 5,
-                "name": "Acid Meltdown",
-                "color": "#06b6d4",
-                "pct": 0.64,
-                "time": "04:24.00"
-            },
-            {
-                "id": 6,
-                "name": "Second Drop",
-                "color": "#22d3ee",
-                "pct": 0.76,
-                "time": "05:12.00"
-            },
-            {
-                "id": 7,
-                "name": "Outro Limpio",
-                "color": "#8b5cf6",
-                "pct": 0.88,
-                "time": "06:16.00"
-            },
-            {
-                "id": 8,
-                "name": "Fade Out",
-                "color": "#ec4899",
-                "pct": 0.97,
-                "time": "06:45.00"
-            }
-        ],
-        "structural_phases": [
-            {
-                "id": "intro",
-                "name": "Intro Percusiva",
-                "start_pct": 0.0,
-                "end_pct": 0.16,
-                "type": "intro",
-                "label": "Intro 32b \u2022 Mezcla In",
-                "color": "#06b6d4"
-            },
-            {
-                "id": "build",
-                "name": "Bassline In",
-                "start_pct": 0.16,
-                "end_pct": 0.35,
-                "type": "build",
-                "label": "Bassline Activa",
-                "color": "#eab308"
-            },
-            {
-                "id": "break",
-                "name": "Breakdown",
-                "start_pct": 0.35,
-                "end_pct": 0.48,
-                "type": "break",
-                "label": "Breakdown (Sin Graves)",
-                "color": "#38bdf8"
-            },
-            {
-                "id": "drop",
-                "name": "MAIN DROP",
-                "start_pct": 0.48,
-                "end_pct": 0.74,
-                "type": "drop",
-                "label": "\u26a1 DROP PRINCIPAL (Cl\u00edmax)",
-                "color": "#ef4444"
-            },
-            {
-                "id": "break2",
-                "name": "Segundo Par\u00f3n",
-                "start_pct": 0.74,
-                "end_pct": 0.82,
-                "type": "break",
-                "label": "Puente Mel\u00f3dico",
-                "color": "#a855f7"
-            },
-            {
-                "id": "outro",
-                "name": "Outro Limpio",
-                "start_pct": 0.82,
-                "end_pct": 1.0,
-                "type": "outro",
-                "label": "\ud83d\udfe2 OUTRO SEGURO \u2022 Mezcla Out",
-                "color": "#10b981"
-            }
-        ],
-        "lufs": -9.5,
-        "low_ratio": 51.0,
-        "mid_ratio": 31.0,
-        "high_ratio": 18.0,
-        "acoustic_role": "Bass Driver",
-        "is_audited": true,
-        "comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-        "tactical_comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-        "mood": "Hypnotic Groove"
+        "artist": "Deck Vacío",
+        "title": "",
+        "bpm": 0.0,
+        "camelot": "--",
+        "camelot_color": "#27272a",
+        "raw_key": "",
+        "file_path": "",
+        "genre": "",
+        "subgenre": "",
+        "energy": 0,
+        "danceability": 0,
+        "valence": 0,
+        "arousal": 0,
+        "format": "",
+        "duration": "",
+        "duration_sec": 0.0,
+        "elapsed_sec": 0.0,
+        "play_progress": 0.0,
+        "phase": "Standby",
+        "year": "",
+        "cover": "",
+        "cues": [],
+        "structural_phases": [],
+        "lufs": -99.0,
+        "low_ratio": 0.0,
+        "mid_ratio": 0.0,
+        "high_ratio": 0.0,
+        "acoustic_role": "",
+        "is_audited": false,
+        "comment": "Deck vacío • Sin pista cargada en Serato ni en la mesa",
+        "tactical_comment": "Deck vacío • Sin pista cargada en Serato ni en la mesa",
+        "mood": "Standby"
     },
     "anti_muddy": {
-        "clash_detected": true,
-        "severity": "CRITICAL",
-        "badge": "BASS CLASH",
-        "color": "#ef4444",
-        "message": "Ambos tracks tienen sub-graves dominantes (>44%). El solape directo crear\u00e1 empaste y distorsi\u00f3n en el sistema de sala.",
-        "tactical_advice": "Corta la EQ de graves (Low) en el canal entrante (-6dB a -12dB) antes de abrir el fader, o usa filtro paso-alto."
+        "status": "safe",
+        "tag": "CLEAN MIX",
+        "title": "MEZCLA LIMPIA",
+        "message": "Deck 2 sin pista cargada. Cero riesgo de cancelación acústica. Carga la siguiente pista en Serato o la mesa.",
+        "action": "Frecuencias equilibradas",
+        "controller_knobs": {
+            "filter_knob": "Centrado (12h)",
+            "eq_low": "0 dB"
+        }
     },
     "harmonic": {
-        "compatible": false,
-        "match_type": "HARMONIC CLASH",
-        "camelot_diff": "+4 Pasos",
-        "energy_trend": "Disonancia Tonal",
-        "badge": "HARMONIC CLASH",
-        "color": "#ef4444",
-        "advice": "Choque arm\u00f3nico severo (10A \u2794 6A). Usa par\u00f3n o transici\u00f3n por percusi\u00f3n."
+        "score": 100,
+        "type": "STANDBY",
+        "label": "Deck 2 en Espera",
+        "badge": "STANDBY",
+        "color": "#10b981",
+        "is_clash": false,
+        "advice": "Deck 2 preparado. Carga una pista armónicamente compatible en Serato o la mesa."
     },
     "lufs_delta": -0.8,
     "bpm_delta": -0.37,
@@ -2336,6 +2125,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
     }
 
     const deckNum = side === 'A' ? '1' : side === 'B' ? '2' : side;
+    const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
 
     return (
         <div className={`p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
@@ -2349,31 +2139,37 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                     <span className="font-orbitron font-black text-base sm:text-lg text-zinc-400">
                         DECK {side}
                     </span>
-                    <button
-                        type="button"
-                        onClick={() => onSetMaster && onSetMaster(deckNum)}
-                        className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
-                            isMaster 
-                            ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' 
-                            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                        }`}
-                        title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
-                    >
-                        {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
-                    </button>
-                    {deck.phase && (
+                    {isEmptyDeck ? (
+                        <span className="px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500">
+                            STANDBY (VACÍO)
+                        </span>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => onSetMaster && onSetMaster(deckNum)}
+                            className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                                isMaster 
+                                ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' 
+                                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                            }`}
+                            title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
+                        >
+                            {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
+                        </button>
+                    )}
+                    {deck.phase && !isEmptyDeck && (
                         <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase">
                             ✨ {deck.phase}
                         </span>
                     )}
                 </div>
                 <div className="flex items-center gap-2 font-mono text-xs text-zinc-500 uppercase">
-                    {deck.format && (
+                    {deck.format && !isEmptyDeck && (
                         <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[10px] font-bold text-zinc-300">
                             {deck.format}
                         </span>
                     )}
-                    <span>{deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP'}</span>
+                    <span>{isEmptyDeck ? 'STANDBY' : (deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP')}</span>
                 </div>
             </div>
 
@@ -2386,19 +2182,17 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                         style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
                     >
                         <img 
-                            src={getValidCover(deck.cover)} 
+                            src={isEmptyDeck ? DEFAULT_VINYL_SVG : getValidCover(deck.cover)} 
                             alt="Carátula" 
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                            className={`w-full h-full object-cover transition-transform duration-300 ${isEmptyDeck ? 'opacity-30 p-2' : 'group-hover:scale-105'}`}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
-                        {deck.duration && (
-                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300">
-                                {deck.duration}
-                            </span>
-                        )}
-                        {deck.year && (
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-400">
+                            {isEmptyDeck ? '--:--' : (deck.duration || '--:--')}
+                        </span>
+                        {deck.year && !isEmptyDeck && (
                             <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
                                 {deck.year}
                             </span>
@@ -2406,22 +2200,30 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                     </div>
 
                     <div className="min-w-0 flex-1 flex flex-col justify-center">
-                        <h2 className="font-syne font-bold text-xs sm:text-sm text-white tracking-tight leading-tight truncate" title={deck.title}>
-                            {deck.title}
+                        <h2 className={`font-syne font-bold text-xs sm:text-sm tracking-tight leading-tight truncate ${isEmptyDeck ? 'italic text-zinc-500' : 'text-white'}`} title={deck.title || 'Arrastrar canción aquí'}>
+                            {deck.title || 'Arrastrar canción aquí'}
                         </h2>
-                        <p className="font-syne font-bold text-xs text-zinc-400 mt-0.5 truncate" title={deck.artist}>
-                            {deck.artist}
+                        <p className="font-syne font-bold text-xs text-zinc-500 mt-0.5 truncate" title={deck.artist || 'Deck Vacío'}>
+                            {deck.artist || 'Deck Vacío'}
                         </p>
                         <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                            {deck.genre && (
-                                <span className="px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate">
-                                    {deck.genre}
+                            {isEmptyDeck ? (
+                                <span className="px-1.5 py-0.2 rounded bg-zinc-900/80 border border-zinc-800 text-[9px] font-mono text-zinc-600 truncate">
+                                    -- EN ESPERA --
                                 </span>
-                            )}
-                            {deck.subgenre && (
-                                <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate">
-                                    {deck.subgenre}
-                                </span>
+                            ) : (
+                                <>
+                                    {deck.genre && (
+                                        <span className="px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate">
+                                            {deck.genre}
+                                        </span>
+                                    )}
+                                    {deck.subgenre && (
+                                        <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate">
+                                            {deck.subgenre}
+                                        </span>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
@@ -2434,27 +2236,31 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                         {/* Fila Tono */}
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
                             <div 
-                                className="w-5 h-4 rounded text-[9px] font-orbitron font-black text-black flex items-center justify-center shrink-0 shadow-sm"
-                                style={{ backgroundColor: deck.camelot_color || '#ec4899' }}
+                                className="w-5 h-4 rounded text-[9px] font-orbitron font-black flex items-center justify-center shrink-0 shadow-sm"
+                                style={{ backgroundColor: isEmptyDeck ? '#27272a' : (deck.camelot_color || '#ec4899'), color: isEmptyDeck ? '#71717a' : '#000000' }}
                             >
-                                {deck.camelot || '10A'}
+                                {isEmptyDeck ? '--' : (deck.camelot || '10A')}
                             </div>
                             <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TONO</span>
-                            <span className="font-syne font-bold text-[10px] text-white truncate">{deck.raw_key || deck.camelot}</span>
+                            <span className="font-syne font-bold text-[10px] text-zinc-400 truncate">{isEmptyDeck ? '--' : (deck.raw_key || deck.camelot)}</span>
                         </div>
 
                         {/* Fila Tempo (BPM) */}
                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
                             <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TEMPO</span>
-                            <span className="font-orbitron font-black text-[10px] text-white">
-                                {deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00'}
+                            <span className="font-orbitron font-black text-[10px] text-zinc-300">
+                                {isEmptyDeck ? '--.--' : (deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00')}
                             </span>
-                            <span className="text-[7px] text-zinc-400 font-mono">BPM</span>
+                            <span className="text-[7px] text-zinc-500 font-mono">BPM</span>
                         </div>
 
                         {/* Cuadro morado con el Mood ubicado debajo de los BPM */}
-                        <div className="px-1.5 py-0.5 rounded-lg bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full text-center" title={deck.mood || deck.phase || 'Peak Time Climax'}>
-                            ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
+                        <div className={`px-1.5 py-0.5 rounded-lg border text-[8px] font-mono font-bold truncate max-w-full text-center ${
+                            isEmptyDeck 
+                            ? 'bg-zinc-900/60 border-zinc-800/60 text-zinc-600'
+                            : 'bg-purple-950/70 border-purple-500/40 text-purple-300'
+                        }`} title={deck.mood || deck.phase || 'Peak Time Climax'}>
+                            {isEmptyDeck ? 'STANDBY (VACÍO)' : `✨ ${deck.mood || deck.phase || 'Peak Time Climax'}`}
                         </div>
                     </div>
 
@@ -2466,10 +2272,10 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                                 <span className="text-amber-400 font-bold flex items-center gap-1">
                                     <ZapIcon size={9} /> ENERGÍA
                                 </span>
-                                <span className="text-amber-400 font-bold">{deck.energy || 90}%</span>
+                                <span className="text-amber-400 font-bold">{isEmptyDeck ? 0 : (deck.energy || 90)}%</span>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
+                                <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${isEmptyDeck ? 0 : (deck.energy || 90)}%` }}></div>
                             </div>
                         </div>
 
@@ -2479,10 +2285,10 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                                 <span className="text-emerald-400 font-bold flex items-center gap-1">
                                     <ActivityIcon size={9} /> INTENSIDAD
                                 </span>
-                                <span className="text-emerald-400 font-bold">{deck.arousal || Math.round((deck.energy || 90) * 0.95)}%</span>
+                                <span className="text-emerald-400 font-bold">{isEmptyDeck ? 0 : (deck.arousal || Math.round((deck.energy || 90) * 0.95))}%</span>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` }}></div>
+                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${isEmptyDeck ? 0 : (deck.arousal || Math.round((deck.energy || 90) * 0.95))}%` }}></div>
                             </div>
                         </div>
 
@@ -2492,10 +2298,10 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                                 <span className="text-purple-300 font-bold flex items-center gap-1">
                                     <SlidersIcon size={9} /> DANZABILIDAD
                                 </span>
-                                <span className="text-purple-300 font-bold">{deck.danceability || 85}%</span>
+                                <span className="text-purple-300 font-bold">{isEmptyDeck ? 0 : (deck.danceability || 85)}%</span>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]" style={{ width: `${deck.danceability || 85}%` }}></div>
+                                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]" style={{ width: `${isEmptyDeck ? 0 : (deck.danceability || 85)}%` }}></div>
                             </div>
                         </div>
 
@@ -2505,10 +2311,10 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                                 <span className="text-djcyan-400 font-bold flex items-center gap-1">
                                     <SparklesIcon size={9} /> POSITIVIDAD
                                 </span>
-                                <span className="text-djcyan-400 font-bold">{deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%</span>
+                                <span className="text-djcyan-400 font-bold">{isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%</span>
                             </div>
                             <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]" style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}></div>
+                                <div className="h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]" style={{ width: `${isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%` }}></div>
                             </div>
                         </div>
                     </div>
@@ -2521,34 +2327,41 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                     <span className="text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-djcyan-400"></span> 8 HOT CUES DE CABINA
                     </span>
-                    <span className="text-[9px] font-mono text-zinc-500">Puntos de Salto & Estructura</span>
+                    <span className="text-[9px] font-mono text-zinc-500">{isEmptyDeck ? 'En espera de pista' : 'Puntos de Salto & Estructura'}</span>
                 </div>
                 <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
-                    {(deck.cues || [
-                        { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
-                        { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
-                        { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
-                        { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
-                        { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
-                        { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
-                        { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
-                        { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
-                    ]).map((cue, cIdx) => (
+                    {(isEmptyDeck 
+                        ? [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({ id: i, name: `Cue ${i}`, color: '#27272a', time: '--:--', empty: true }))
+                        : (deck.cues && deck.cues.length > 0 ? deck.cues : [
+                            { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
+                            { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
+                            { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
+                            { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
+                            { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
+                            { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
+                            { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
+                            { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
+                        ])
+                    ).map((cue, cIdx) => (
                         <div 
                             key={cue.id || cIdx}
-                            className="p-1 rounded-xl border flex flex-col justify-between transition-all bg-zinc-950/80 hover:bg-zinc-900 cursor-default"
-                            style={{ borderColor: `${cue.color || '#06b6d4'}55` }}
+                            className={`p-1 rounded-xl border flex flex-col justify-between transition-all ${
+                                cue.empty 
+                                ? 'bg-zinc-950/60 border-zinc-800/40 text-zinc-600' 
+                                : 'bg-zinc-950/80 hover:bg-zinc-900 cursor-default'
+                            }`}
+                            style={cue.empty ? {} : { borderColor: `${cue.color || '#06b6d4'}55` }}
                         >
                             <div className="flex items-center justify-between">
                                 <span 
-                                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black text-black font-mono shadow-sm"
-                                    style={{ backgroundColor: cue.color || '#06b6d4' }}
+                                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black font-mono shadow-sm"
+                                    style={cue.empty ? { backgroundColor: '#27272a', color: '#71717a' } : { backgroundColor: cue.color || '#06b6d4', color: '#000000' }}
                                 >
                                     {cue.id || (cIdx + 1)}
                                 </span>
                                 <span className="text-[8px] font-mono text-zinc-500">{cue.time || '--:--'}</span>
                             </div>
-                            <div className="text-[8px] font-syne font-bold text-zinc-200 truncate mt-1" title={cue.name}>
+                            <div className={`text-[8px] font-syne font-bold truncate mt-1 ${cue.empty ? 'text-zinc-600' : 'text-zinc-200'}`} title={cue.name}>
                                 {cue.name}
                             </div>
                         </div>

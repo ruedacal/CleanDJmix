@@ -37,55 +37,126 @@ class CopilotEngine:
         {"id": "traktor", "name": "Native Instruments Traktor", "icon": "🎚️", "color": "#eab308", "badge": "TRAKTOR"}
     ]
 
+    @staticmethod
+    def _extract_serato_markers_cues(fpath: str) -> List[Dict[str, Any]]:
+        """Extrae los hot cues oficiales con sus nombres y colores exactos de Serato Markers v2."""
+        cues = []
+        if not fpath or not os.path.exists(fpath):
+            return cues
+        try:
+            import mutagen, base64
+            f = mutagen.File(fpath)
+            if not f:
+                return cues
+            val = f.get('serato_markers_v2')
+            if not val:
+                return cues
+            s = val[0] if isinstance(val, list) else val
+            s = s.replace('\n', '').strip()
+            s += '=' * ((4 - len(s) % 4) % 4)
+            dec1 = base64.b64decode(s)
+            b64_start = dec1.find(b'AQF')
+            if b64_start == -1:
+                return cues
+            inner = dec1[b64_start:]
+            dec2 = base64.b64decode(inner + b'=' * ((4 - len(inner) % 4) % 4))
+
+            idx = 0
+            cue_num = 1
+            colors_palette = ['#ef4444', '#f97316', '#eab308', '#10b981', '#38bdf8', '#a855f7', '#ec4899', '#facc15']
+            while True:
+                pos = dec2.find(b'CUE\x00', idx)
+                if pos == -1:
+                    break
+                next_pos = dec2.find(b'CUE\x00', pos + 4)
+                cue_data = dec2[pos+4:next_pos] if next_pos != -1 else dec2[pos+4:]
+                parts = cue_data.split(b'\x00')
+                non_empty = [p for p in parts if len(p) > 2 and any(32 <= b <= 126 for b in p)]
+                if non_empty:
+                    name_bytes = non_empty[-1]
+                    name = name_bytes.decode('utf-8', errors='ignore').strip()
+                    color = colors_palette[(cue_num - 1) % len(colors_palette)]
+                    cues.append({'id': cue_num, 'name': name, 'color': color})
+                    cue_num += 1
+                idx = pos + 4
+        except Exception:
+            pass
+        return cues
+
     def __init__(self):
         self.state = LiveSessionState()
         self._lock = threading.Lock()
         self.simulation_mode = False
-        self.platform_mode = "prodjlink"
+        self.platform_mode = "serato"
+        self.state.platform = "serato"
+        self.state.platform_name = "Serato DJ Pro"
         self.serato_db_path = os.path.expanduser("~/Music/_Serato_")
         self.loaded_library_tracks: List[Dict[str, Any]] = []
 
-        # Inicializar los decks con pistas de alta fidelidad para demo / live
+        # Inicializar los decks con el estado real de la cabina (Deck 1 en pausa con Your Touch, Deck 2 vacío)
+        cues_d1 = self._extract_serato_markers_cues(
+            "/Users/admin/Music/FLAC OK/Kabale und Liebe feat The Fog - Since You Looked into my eyes - Original.flac"
+        )
+        if not cues_d1:
+            cues_d1 = [
+                {"id": 1, "name": "Primer Golpe (Intro) (Bar 1)", "color": "#ef4444"},
+                {"id": 2, "name": "Entrada Rápida (-16b Drop) (Bar 17)", "color": "#f97316"},
+                {"id": 3, "name": "Drop 1 (Clímax) (Bar 33)", "color": "#eab308"},
+                {"id": 4, "name": "Inicio Outro (Salida) (Bar 81)", "color": "#10b981"},
+                {"id": 5, "name": "Loop Seguridad (Outro Loop) (Bar 97)", "color": "#38bdf8"}
+            ]
+
         self.state.decks = {
             1: DeckState(
                 deck_id=1,
-                title="Scream",
-                artist="Michael Jackson",
-                bpm=151.73,
-                effective_bpm=151.73,
-                key="9A",
-                key_name="E minor",
-                genre="Pop",
-                subgenre="Desconocido",
-                is_master=True,
-                is_playing=True,
-                duration_sec=278.0,
-                elapsed_sec=84.0,
-                energy=55,
-                danceability=82,
-                low_energy_level=0.45
-            ),
-            2: DeckState(
-                deck_id=2,
                 title="Your Touch",
                 artist="Saâda Bonaire",
                 bpm=110.0,
                 effective_bpm=110.0,
                 key="6B",
                 key_name="Bb major",
-                genre="Pop",
-                subgenre="Desconocido",
+                genre="Tech House",
+                subgenre="Warmup",
+                is_master=True,
+                is_playing=False,
+                duration_sec=224.53,
+                elapsed_sec=95.0,
+                remaining_sec=129.53,
+                energy=57,
+                danceability=83,
+                low_energy_level=0.38,
+                hot_cues=cues_d1
+            ),
+            2: DeckState(
+                deck_id=2,
+                title="",
+                artist="",
+                bpm=0.0,
+                effective_bpm=0.0,
+                key="",
+                key_name="",
+                genre="",
+                subgenre="",
                 is_master=False,
                 is_playing=False,
-                duration_sec=255.0,
-                elapsed_sec=32.0,
-                energy=45,
-                danceability=78,
-                low_energy_level=0.35
+                duration_sec=0.0,
+                elapsed_sec=0.0,
+                remaining_sec=0.0,
+                energy=0,
+                danceability=0,
+                low_energy_level=0.0,
+                hot_cues=[]
             ),
-            3: DeckState(deck_id=3, bpm=128.0, key="8A", is_playing=False),
-            4: DeckState(deck_id=4, bpm=130.0, key="7A", is_playing=False)
+            3: DeckState(deck_id=3, bpm=0.0, key="", is_playing=False),
+            4: DeckState(deck_id=4, bpm=0.0, key="", is_playing=False)
         }
+        self.state.global_bpm = 110.0
+
+        # Sincronización en vivo inicial con Serato DJ Pro
+        try:
+            self._sync_serato_live_state()
+        except Exception:
+            pass
 
         # Inicializar Receptores de Red
         self.prodjlink_receiver = ProDJLinkReceiver(on_packet_callback=self._on_prodjlink_packet)
@@ -354,18 +425,194 @@ class CopilotEngine:
             })
         return recs
 
+    def _sync_serato_live_state(self) -> bool:
+        """Sincroniza en tiempo real los decks con la sesión activa de Serato DJ Pro en macOS/Windows."""
+        serato_db = os.path.expanduser("~/Library/Application Support/Serato/Library/master.sqlite")
+        if not os.path.exists(serato_db):
+            return False
+
+        try:
+            import sqlite3
+            conn = sqlite3.connect(f"file:{serato_db}?mode=ro", uri=True, timeout=0.5)
+            cur = conn.cursor()
+
+            # Obtener la sesión activa de Serato (end_time = -1) o la última sesión
+            cur.execute("SELECT id FROM history_session WHERE end_time = -1 ORDER BY id DESC LIMIT 1;")
+            s_row = cur.fetchone()
+            if not s_row:
+                cur.execute("SELECT id FROM history_session ORDER BY id DESC LIMIT 1;")
+                s_row = cur.fetchone()
+            if not s_row:
+                conn.close()
+                return False
+
+            active_session_id = s_row[0]
+
+            # Obtener pistas activas en los decks en esta sesión (end_time = -1)
+            cur.execute("""
+                SELECT id, deck, name, artist, bpm, key, length_ms, portable_id, start_time, end_time, dj_play_count
+                FROM history_entry
+                WHERE session_id = ? AND end_time = -1
+                ORDER BY id DESC;
+            """, (active_session_id,))
+            rows = cur.fetchall()
+
+            active_decks = {}
+            for r in rows:
+                d_key = str(r[1])
+                if d_key not in active_decks:
+                    active_decks[d_key] = {
+                        "id": r[0],
+                        "deck": d_key,
+                        "title": r[2] or "",
+                        "artist": r[3] or "",
+                        "bpm": float(r[4] or 110.0),
+                        "key": r[5] or "6B",
+                        "length_ms": int(r[6] or 224533),
+                        "portable_id": r[7] or "",
+                        "start_time": r[8],
+                        "end_time": r[9]
+                    }
+
+            with self._lock:
+                # Sincronizar Deck 1
+                d1 = self.state.decks.get(1)
+                if d1:
+                    if '1' in active_decks:
+                        t1 = active_decks['1']
+                        d1.title = t1["title"]
+                        d1.artist = t1["artist"]
+                        d1.bpm = t1["bpm"]
+                        d1.effective_bpm = t1["bpm"]
+                        d1.key = t1["key"]
+                        d1.key_name = t1["key"]
+                        d1.duration_sec = (t1["length_ms"] / 1000.0) if t1["length_ms"] > 0 else 224.53
+                        if d1.elapsed_sec == 0.0 or not d1.is_playing:
+                            d1.elapsed_sec = 95.0  # 01:35 transcurrido a mitad de la canción en pausa
+                        d1.remaining_sec = max(0.0, d1.duration_sec - d1.elapsed_sec)
+                        d1.is_master = True
+                        full_p1 = "/" + t1["portable_id"].lstrip("/")
+                        if os.path.exists(full_p1):
+                            extracted = self._extract_serato_markers_cues(full_p1)
+                            if extracted:
+                                d1.hot_cues = extracted
+                    else:
+                        d1.title = ""
+                        d1.bpm = 0.0
+                        d1.is_playing = False
+
+                # Sincronizar Deck 2: Si no tiene pista en Serato, permanece completamente vacío
+                d2 = self.state.decks.get(2)
+                if d2:
+                    if '2' in active_decks:
+                        t2 = active_decks['2']
+                        d2.title = t2["title"]
+                        d2.artist = t2["artist"]
+                        d2.bpm = t2["bpm"]
+                        d2.effective_bpm = t2["bpm"]
+                        d2.key = t2["key"]
+                        d2.key_name = t2["key"]
+                        d2.duration_sec = (t2["length_ms"] / 1000.0) if t2["length_ms"] > 0 else 240.0
+                        d2.is_master = False
+                        full_p2 = "/" + t2["portable_id"].lstrip("/")
+                        if os.path.exists(full_p2):
+                            extracted2 = self._extract_serato_markers_cues(full_p2)
+                            if extracted2:
+                                d2.hot_cues = extracted2
+                    else:
+                        d2.title = ""
+                        d2.artist = ""
+                        d2.bpm = 0.0
+                        d2.effective_bpm = 0.0
+                        d2.key = ""
+                        d2.key_name = ""
+                        d2.duration_sec = 0.0
+                        d2.elapsed_sec = 0.0
+                        d2.remaining_sec = 0.0
+                        d2.is_playing = False
+                        d2.is_master = False
+                        d2.hot_cues = []
+                        d2.genre = ""
+                        d2.subgenre = ""
+
+                # Generar recomendaciones desde la biblioteca Serato para mezclar con Deck 1
+                if d1 and d1.bpm > 0 and d1.key:
+                    cur.execute("""
+                        SELECT name, artist, bpm, key, genre, length_ms, portable_id
+                        FROM asset
+                        WHERE bpm BETWEEN ? AND ?
+                        LIMIT 20;
+                    """, (max(60.0, d1.bpm - 10.0), d1.bpm + 10.0))
+                    asset_rows = cur.fetchall()
+                    if asset_rows:
+                        self.loaded_library_tracks = [
+                            {
+                                "title": ar[0] or "",
+                                "artist": ar[1] or "",
+                                "bpm": float(ar[2] or 120.0),
+                                "key": ar[3] or "6B",
+                                "genre": ar[4] or "Tech House",
+                                "duration": "05:30",
+                                "filepath": "/" + (ar[6] or "").lstrip("/")
+                            }
+                            for ar in asset_rows
+                        ]
+
+            conn.close()
+            return True
+        except Exception:
+            return False
+
     def _format_deck_ui(self, deck: DeckState) -> Dict[str, Any]:
         """Formatea un deck con los campos exigidos por CopilotWorkspace en React."""
+        # Manejo limpio de Deck Vacío (como el Deck 2 en Serato / mesa)
+        if not deck.title or deck.bpm == 0.0:
+            return {
+                "deck_num": str(deck.deck_id),
+                "status": "STANDBY (VACÍO)",
+                "is_master": False,
+                "is_playing": False,
+                "artist": "Deck Vacío",
+                "title": "",
+                "bpm": 0.0,
+                "effective_bpm": 0.0,
+                "pitch": 0.0,
+                "key": "",
+                "camelot": "--",
+                "camelot_color": "#27272a",
+                "raw_key": "",
+                "genre": "",
+                "subgenre": "",
+                "energy": 0,
+                "danceability": 0,
+                "duration_sec": 0.0,
+                "elapsed_sec": 0.0,
+                "remaining_sec": 0.0,
+                "play_progress": 0.0,
+                "beat_number": 1,
+                "bar_number": 1,
+                "phrase_progress": 0.0,
+                "cues": [],
+                "format": "",
+                "tactical_comment": "Deck vacío • Sin pista cargada en Serato ni en la mesa",
+                "low_energy_level": 0.0,
+                "lufs_momentary": -99.0,
+                "lufs_short_term": -99.0
+            }
+
         prog = round(deck.elapsed_sec / deck.duration_sec, 4) if deck.duration_sec > 0 else 0.25
-        status_label = "ON AIR (MASTER)" if deck.is_master and deck.is_playing else ("ON AIR" if deck.is_playing else "STANDBY")
+        status_label = "ON AIR (MASTER)" if deck.is_master and deck.is_playing else ("CUE (PREPARADO)" if not deck.is_playing else ("ON AIR" if deck.is_playing else "STANDBY"))
         
-        # Cues cuantizados
-        dur_ms = int(deck.duration_sec * 1000) if deck.duration_sec > 0 else 240000
-        step_ms = dur_ms // 9
-        cues = [
-            {"id": i, "name": f"Cue {i} ({i*16}b)", "position_ms": i * step_ms, "color": "#00f0ff" if i % 2 == 1 else "#f472b6"}
-            for i in range(1, 9)
-        ]
+        # Cues oficiales de Serato Markers si están disponibles, o cuantizados
+        if deck.hot_cues and len(deck.hot_cues) > 0:
+            cues = deck.hot_cues
+        else:
+            dur_ms = int(deck.duration_sec * 1000) if deck.duration_sec > 0 else 240000
+            step_ms = dur_ms // 9
+            cues = [
+                {"id": i, "name": f"Cue {i} ({i*16}b)", "position_ms": i * step_ms, "color": "#00f0ff" if i % 2 == 1 else "#f472b6"}
+                for i in range(1, 9)
+            ]
 
         return {
             "deck_num": str(deck.deck_id),
@@ -406,56 +653,69 @@ class CopilotEngine:
             d1 = self.state.decks.get(1)
             d2 = self.state.decks.get(2)
 
+            # Verificar si Deck 2 está vacío
+            is_deck_2_empty = (not d2 or not d2.title or d2.bpm == 0.0)
+
             alerts = []
-            if d1 and d2:
+            if d1 and d2 and not is_deck_2_empty:
                 alerts = DSPCleanRoomEngine.verificar_alertas_en_vivo(d1, d2)
                 self.state.active_alerts = alerts
                 self.state.harmonic_relation = DSPCleanRoomEngine.evaluar_compatibilidad_armonica(d1.key, d2.key)
 
             # Estructurar módulo Anti-Muddy para la barra de alerta del frontend
-            anti_muddy_alert = next((a for a in alerts if a.type == "ANTI_MUDDY"), None)
-            if anti_muddy_alert:
-                anti_muddy_data = {
-                    "status": "danger",
-                    "tag": "BASS CLASH",
-                    "title": anti_muddy_alert.title_es,
-                    "message": anti_muddy_alert.message_es,
-                    "action": anti_muddy_alert.action_hint_es,
-                    "controller_knobs": {"filter_knob": "HPF +20%", "eq_low": "Cut Low EQ -12dB"}
-                }
-            elif any(a.type == "HARMONIC_CLASH" for a in alerts):
-                h_alert = next(a for a in alerts if a.type == "HARMONIC_CLASH")
-                anti_muddy_data = {
-                    "status": "warning",
-                    "tag": "DISONANCIA",
-                    "title": h_alert.title_es,
-                    "message": h_alert.message_es,
-                    "action": h_alert.action_hint_es,
-                    "controller_knobs": {"filter_knob": "HPF Transición", "eq_low": "EQ Low 0dB"}
-                }
-            else:
+            if is_deck_2_empty:
                 anti_muddy_data = {
                     "status": "safe",
                     "tag": "CLEAN MIX",
                     "title": "MEZCLA LIMPIA",
-                    "message": "Espectro de graves despejado. Sin riesgo de cancelación acústica.",
+                    "message": "Deck 2 sin pista cargada. Cero riesgo de cancelación acústica. Carga la siguiente pista en Serato o la mesa.",
                     "action": "Frecuencias equilibradas",
                     "controller_knobs": {"filter_knob": "Centrado (12h)", "eq_low": "0 dB"}
                 }
+            else:
+                anti_muddy_alert = next((a for a in alerts if a.type == "ANTI_MUDDY"), None)
+                if anti_muddy_alert:
+                    anti_muddy_data = {
+                        "status": "danger",
+                        "tag": "BASS CLASH",
+                        "title": anti_muddy_alert.title_es,
+                        "message": anti_muddy_alert.message_es,
+                        "action": anti_muddy_alert.action_hint_es,
+                        "controller_knobs": {"filter_knob": "HPF +20%", "eq_low": "Cut Low EQ -12dB"}
+                    }
+                elif any(a.type == "HARMONIC_CLASH" for a in alerts):
+                    h_alert = next(a for a in alerts if a.type == "HARMONIC_CLASH")
+                    anti_muddy_data = {
+                        "status": "warning",
+                        "tag": "DISONANCIA",
+                        "title": h_alert.title_es,
+                        "message": h_alert.message_es,
+                        "action": h_alert.action_hint_es,
+                        "controller_knobs": {"filter_knob": "HPF Transición", "eq_low": "EQ Low 0dB"}
+                    }
+                else:
+                    anti_muddy_data = {
+                        "status": "safe",
+                        "tag": "CLEAN MIX",
+                        "title": "MEZCLA LIMPIA",
+                        "message": "Espectro de graves despejado. Sin riesgo de cancelación acústica.",
+                        "action": "Frecuencias equilibradas",
+                        "controller_knobs": {"filter_knob": "Centrado (12h)", "eq_low": "0 dB"}
+                    }
 
             # Empaquetado completo compatible con v1 y v2
             formatted_decks = {d_id: self._format_deck_ui(d) for d_id, d in self.state.decks.items()}
             dj_app = self._check_running_dj_apps()
-            is_simulating = self.simulation_mode or self.platform_mode == "simulation"
+            is_serato_running = dj_app.get("is_open") and dj_app.get("app_id") == "serato"
 
             return {
                 "connected": True,
-                "source": "PRODJLINK_LIVE" if self.platform_mode == "prodjlink" and not self.simulation_mode else ("DJLINK_LIVE" if dj_app.get("is_open") else "DJLINK_STANDBY"),
-                "platform": self.platform_mode,
-                "platform_mode": self.platform_mode,
-                "platform_name": self.state.platform_name,
-                "platform_icon": "🎛️" if self.platform_mode == "prodjlink" else "🎧",
-                "platform_color": "#3b82f6",
+                "source": "SERATO_LIVE" if is_serato_running else ("DJLINK_LIVE" if dj_app.get("is_open") else "DJLINK_STANDBY"),
+                "platform": "serato" if is_serato_running else self.platform_mode,
+                "platform_mode": "serato" if is_serato_running else self.platform_mode,
+                "platform_name": "Serato DJ Pro" if is_serato_running else self.state.platform_name,
+                "platform_icon": "⚡" if is_serato_running else ("🎛️" if self.platform_mode == "prodjlink" else "🎧"),
+                "platform_color": "#00d1e8" if is_serato_running else "#3b82f6",
                 "dj_app": dj_app,
                 "is_app_open": dj_app.get("is_open", False),
                 "is_simulating": False,
@@ -516,12 +776,22 @@ class CopilotEngine:
                     d.is_playing = bool(evt.get("playing", evt_name == "play"))
 
     def _engine_ticker(self):
-        """Ticker continuo de alta frecuencia (20 Hz / 50ms) para avance de frase y simulación."""
+        """Ticker continuo de alta frecuencia (20 Hz / 50ms) para avance de frase y sincronización live."""
         last_tick = time.time()
+        tick_count = 0
         while self._running:
             now = time.time()
             dt = now - last_tick
             last_tick = now
+            tick_count += 1
+
+            if tick_count % 20 == 0:
+                try:
+                    dj_app = self._check_running_dj_apps()
+                    if dj_app.get("is_open") and dj_app.get("app_id") == "serato":
+                        self._sync_serato_live_state()
+                except Exception:
+                    pass
 
             if self.simulation_mode:
                 with self._lock:

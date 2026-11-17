@@ -122,6 +122,7 @@ export const CopilotSeratoWaveform = ({
 
     const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
     const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44;
+    const isEmptyDeck = !deck || !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -141,6 +142,41 @@ export const CopilotSeratoWaveform = ({
 
         const midY = h / 2;
         const playheadX = w / 2; // Aguja central Serato
+
+        if (isEmptyDeck) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, midY);
+            ctx.lineTo(w, midY);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('ARRAS TRAR CANCIÓN AQUÍ (STANDBY)', w / 2, midY + 4);
+
+            const miniCanvas = minimapRef.current;
+            if (miniCanvas) {
+                const mRect = miniCanvas.getBoundingClientRect();
+                const mw = mRect.width || miniCanvas.parentElement.clientWidth || 550;
+                const mh = 22;
+                miniCanvas.width = Math.round(mw * dpr);
+                miniCanvas.height = Math.round(mh * dpr);
+                const mCtx = miniCanvas.getContext('2d');
+                if (mCtx.resetTransform) mCtx.resetTransform(); else mCtx.setTransform(1, 0, 0, 1, 0, 0);
+                mCtx.scale(dpr, dpr);
+                mCtx.fillStyle = '#06060e';
+                mCtx.fillRect(0, 0, mw, mh);
+                mCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                mCtx.lineWidth = 1;
+                mCtx.beginPath();
+                mCtx.moveTo(0, mh / 2);
+                mCtx.lineTo(mw, mh / 2);
+                mCtx.stroke();
+            }
+            return;
+        }
 
         const windowSec = durSec / zoom;
         const halfWindowSec = windowSec / 2;
@@ -412,6 +448,17 @@ export const CopilotSeratoWaveform = ({
             {/* TACTICAL ANTICIPATION HUD BOX: CONTADOR Y PUNTOS CLAVE CON TOOLTIP DETALLADO */}
             {showTacticalAids && (
                 <div className="relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md">
+                    {isEmptyDeck ? (
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800 text-zinc-400 font-mono text-[11px] font-medium">
+                                <span className="text-sm">⏹️</span>
+                                <span>DECK VACÍO ➔ Arrastrar canción aquí para activar análisis</span>
+                            </div>
+                            <div className="text-[10px] font-mono text-zinc-600">
+                                STANDBY
+                            </div>
+                        </div>
+                    ) : (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         {/* CONTADOR DE ANTICIPACIÓN (URGENCIA EN ROJO < 5s) */}
                         <div className="flex items-center gap-2">
@@ -480,6 +527,9 @@ export const CopilotSeratoWaveform = ({
                             })}
                         </div>
                     </div>
+                    )}
+
+                    {/* POPOVER CON INSTRUCCIÓN DETALLADA AL HACER HOVER */}
 
                     {/* POPOVER CON INSTRUCCIÓN DETALLADA AL HACER HOVER */}
                     {hoveredMilestone && (
@@ -553,9 +603,9 @@ export const CopilotSeratoWaveform = ({
 
                     {/* Tiempo Transcurrido y Restante */}
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]">
-                        <span className="text-white font-bold">{formatSec(elapsedSec)}</span>
+                        <span className={isEmptyDeck ? 'text-zinc-500 font-bold' : 'text-white font-bold'}>{isEmptyDeck ? '00:00' : formatSec(elapsedSec)}</span>
                         <span className="text-zinc-600">/</span>
-                        <span className="text-zinc-400">-{formatSec(remainSec)}</span>
+                        <span className="text-zinc-500">-{isEmptyDeck ? '00:00' : formatSec(remainSec)}</span>
                     </div>
                 </div>
             </div>

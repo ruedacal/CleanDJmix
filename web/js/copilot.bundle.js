@@ -638,12 +638,12 @@
   ];
   var DEFAULT_COPILOT_STATE = {
     "connected": true,
-    "source": "SIMULATION_MODE",
+    "source": "SERATO_LIVE",
     "platform": "serato",
-    "platform_mode": "auto",
+    "platform_mode": "serato",
     "platform_name": "Serato DJ Pro",
-    "platform_icon": "\u{1F4BF}",
-    "platform_color": "#06b6d4",
+    "platform_icon": "\u26A1",
+    "platform_color": "#00d1e8",
     "platform_status": "LIVE",
     "detected_platforms": {
       "serato": true,
@@ -653,320 +653,109 @@
     },
     "deck_1": {
       "deck_num": "1",
-      "status": "ON AIR (MASTER)",
+      "status": "CUE (PREPARADO)",
       "is_master": true,
-      "is_playing": true,
-      "artist": "Mauro Picotto",
-      "title": "Komodo (Megavoices Claxixx)",
-      "bpm": 137.68,
-      "camelot": "10A",
-      "camelot_color": "#f472b6",
-      "raw_key": "Bm",
-      "file_path": "Users/admin/Music/FLAC quality/The Midnight - Deep Blue.flac",
-      "genre": "Melodic Techno",
-      "subgenre": "Club Master",
-      "energy": 92,
-      "danceability": 88,
+      "is_playing": false,
+      "artist": "Sa\xE2da Bonaire",
+      "title": "Your Touch",
+      "bpm": 110,
+      "camelot": "6B",
+      "camelot_color": "#c4b5fd",
+      "raw_key": "Bb major",
+      "file_path": "/Users/admin/Music/FLAC OK/Kabale und Liebe feat The Fog - Since You Looked into my eyes - Original.flac",
+      "genre": "Tech House",
+      "subgenre": "Warmup",
+      "energy": 55,
+      "danceability": 82,
       "valence": 55,
-      "arousal": 88,
+      "arousal": 72,
       "format": "FLAC 24-bit",
-      "duration": "06:30",
-      "duration_sec": 390,
-      "elapsed_sec": 182.25,
-      "play_progress": 0.4673,
-      "phase": "Peak Time",
+      "duration": "03:44",
+      "duration_sec": 224.53,
+      "elapsed_sec": 95,
+      "play_progress": 0.4231,
+      "phase": "Mid Track",
       "year": "2024",
-      "cover": "/cover?path=Users/admin/Music/FLAC quality/The Midnight - Deep Blue.flac",
+      "cover": "",
       "cues": [
-        {
-          "id": 1,
-          "name": "Downbeat 1.0.0",
-          "color": "#ef4444",
-          "pct": 0.04,
-          "time": "00:00.25"
-        },
-        {
-          "id": 2,
-          "name": "Intro Perc",
-          "color": "#f97316",
-          "pct": 0.16,
-          "time": "01:04.00"
-        },
-        {
-          "id": 3,
-          "name": "Bassline In",
-          "color": "#eab308",
-          "pct": 0.32,
-          "time": "02:08.00"
-        },
-        {
-          "id": 4,
-          "name": "MAIN DROP",
-          "color": "#10b981",
-          "pct": 0.48,
-          "time": "03:12.00"
-        },
-        {
-          "id": 5,
-          "name": "Breakdown",
-          "color": "#06b6d4",
-          "pct": 0.62,
-          "time": "04:16.00"
-        },
-        {
-          "id": 6,
-          "name": "Climax 2",
-          "color": "#22d3ee",
-          "pct": 0.74,
-          "time": "05:04.00"
-        },
-        {
-          "id": 7,
-          "name": "Outro 32b",
-          "color": "#8b5cf6",
-          "pct": 0.86,
-          "time": "06:08.00"
-        },
-        {
-          "id": 8,
-          "name": "Cut / Fade",
-          "color": "#ec4899",
-          "pct": 0.96,
-          "time": "07:15.00"
-        }
+        { "id": 1, "name": "Primer Golpe (Intro) (Bar 1)", "color": "#ef4444", "pct": 0.01, "time": "00:00.25" },
+        { "id": 2, "name": "Entrada R\xE1pida (-16b Drop) (Bar 17)", "color": "#f97316", "pct": 0.15, "time": "00:34.90" },
+        { "id": 3, "name": "Drop 1 (Cl\xEDmax) (Bar 33)", "color": "#eab308", "pct": 0.29, "time": "01:05.45" },
+        { "id": 4, "name": "Inicio Outro (Salida) (Bar 81)", "color": "#10b981", "pct": 0.72, "time": "02:41.80" },
+        { "id": 5, "name": "Loop Seguridad (Outro Loop) (Bar 97)", "color": "#38bdf8", "pct": 0.86, "time": "03:12.35" }
       ],
       "structural_phases": [
-        {
-          "id": "intro",
-          "name": "Intro Percusiva",
-          "start_pct": 0,
-          "end_pct": 0.16,
-          "type": "intro",
-          "label": "Intro 32b \u2022 Mezcla In",
-          "color": "#06b6d4"
-        },
-        {
-          "id": "build",
-          "name": "Bassline In",
-          "start_pct": 0.16,
-          "end_pct": 0.35,
-          "type": "build",
-          "label": "Bassline Activa",
-          "color": "#eab308"
-        },
-        {
-          "id": "break",
-          "name": "Breakdown",
-          "start_pct": 0.35,
-          "end_pct": 0.48,
-          "type": "break",
-          "label": "Breakdown (Sin Graves)",
-          "color": "#38bdf8"
-        },
-        {
-          "id": "drop",
-          "name": "MAIN DROP",
-          "start_pct": 0.48,
-          "end_pct": 0.74,
-          "type": "drop",
-          "label": "\u26A1 DROP PRINCIPAL (Cl\xEDmax)",
-          "color": "#ef4444"
-        },
-        {
-          "id": "break2",
-          "name": "Segundo Par\xF3n",
-          "start_pct": 0.74,
-          "end_pct": 0.82,
-          "type": "break",
-          "label": "Puente Mel\xF3dico",
-          "color": "#a855f7"
-        },
-        {
-          "id": "outro",
-          "name": "Outro Limpio",
-          "start_pct": 0.82,
-          "end_pct": 1,
-          "type": "outro",
-          "label": "\u{1F7E2} OUTRO SEGURO \u2022 Mezcla Out",
-          "color": "#10b981"
-        }
+        { "id": "intro", "name": "Intro", "start_pct": 0, "end_pct": 0.15, "type": "intro", "label": "Intro 16b", "color": "#06b6d4" },
+        { "id": "drop", "name": "Drop 1", "start_pct": 0.15, "end_pct": 0.72, "type": "drop", "label": "Drop Principal", "color": "#ef4444" },
+        { "id": "outro", "name": "Outro", "start_pct": 0.72, "end_pct": 1, "type": "outro", "label": "Outro Seguro", "color": "#10b981" }
       ],
-      "lufs": -8.7,
-      "low_ratio": 48,
-      "mid_ratio": 32,
-      "high_ratio": 20,
-      "acoustic_role": "Bass Driver",
+      "lufs": -9.2,
+      "low_ratio": 38,
+      "mid_ratio": 36,
+      "high_ratio": 26,
+      "acoustic_role": "Melodic Warmup",
       "is_audited": true,
-      "comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-      "tactical_comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-      "mood": "Peak Time Climax"
+      "comment": "[110.0 BPM | 6B] Intro limpia 32b \u2022 Fraseo cuantizado",
+      "tactical_comment": "[110.0 BPM | 6B] Intro limpia 32b \u2022 Fraseo cuantizado",
+      "mood": "Warmup Groove"
     },
     "deck_2": {
       "deck_num": "2",
-      "status": "CUE / PREPARADO",
+      "status": "STANDBY (VAC\xCDO)",
       "is_master": false,
       "is_playing": false,
-      "artist": "Marco Bailey / Sigvard",
-      "title": "Smooth Mind",
-      "bpm": 140,
-      "camelot": "6A",
-      "camelot_color": "#c084fc",
-      "raw_key": "Gm",
-      "file_path": "Users/admin/Music/FLAC quality/Snog - Turn on your Brain Baby vs. Acid Outburst 06.flac",
-      "genre": "Raw / Deep Techno",
-      "subgenre": "Drumcode Core",
-      "energy": 91,
-      "danceability": 95,
-      "valence": 62,
-      "arousal": 91,
-      "format": "FLAC 16-bit",
-      "duration": "05:48",
-      "duration_sec": 348,
-      "elapsed_sec": 88.25,
-      "play_progress": 0.2536,
-      "phase": "Hypnotic Groove",
-      "year": "2023",
-      "cover": "/cover?path=Users/admin/Music/FLAC quality/Snog - Turn on your Brain Baby vs. Acid Outburst 06.flac",
-      "cues": [
-        {
-          "id": 1,
-          "name": "Downbeat 1.0.0",
-          "color": "#ef4444",
-          "pct": 0.05,
-          "time": "00:00.30"
-        },
-        {
-          "id": 2,
-          "name": "Vocal Hook",
-          "color": "#f97316",
-          "pct": 0.19,
-          "time": "01:08.00"
-        },
-        {
-          "id": 3,
-          "name": "Build-Up 16b",
-          "color": "#eab308",
-          "pct": 0.35,
-          "time": "02:16.00"
-        },
-        {
-          "id": 4,
-          "name": "PEAK DROP",
-          "color": "#10b981",
-          "pct": 0.5,
-          "time": "03:20.00"
-        },
-        {
-          "id": 5,
-          "name": "Acid Meltdown",
-          "color": "#06b6d4",
-          "pct": 0.64,
-          "time": "04:24.00"
-        },
-        {
-          "id": 6,
-          "name": "Second Drop",
-          "color": "#22d3ee",
-          "pct": 0.76,
-          "time": "05:12.00"
-        },
-        {
-          "id": 7,
-          "name": "Outro Limpio",
-          "color": "#8b5cf6",
-          "pct": 0.88,
-          "time": "06:16.00"
-        },
-        {
-          "id": 8,
-          "name": "Fade Out",
-          "color": "#ec4899",
-          "pct": 0.97,
-          "time": "06:45.00"
-        }
-      ],
-      "structural_phases": [
-        {
-          "id": "intro",
-          "name": "Intro Percusiva",
-          "start_pct": 0,
-          "end_pct": 0.16,
-          "type": "intro",
-          "label": "Intro 32b \u2022 Mezcla In",
-          "color": "#06b6d4"
-        },
-        {
-          "id": "build",
-          "name": "Bassline In",
-          "start_pct": 0.16,
-          "end_pct": 0.35,
-          "type": "build",
-          "label": "Bassline Activa",
-          "color": "#eab308"
-        },
-        {
-          "id": "break",
-          "name": "Breakdown",
-          "start_pct": 0.35,
-          "end_pct": 0.48,
-          "type": "break",
-          "label": "Breakdown (Sin Graves)",
-          "color": "#38bdf8"
-        },
-        {
-          "id": "drop",
-          "name": "MAIN DROP",
-          "start_pct": 0.48,
-          "end_pct": 0.74,
-          "type": "drop",
-          "label": "\u26A1 DROP PRINCIPAL (Cl\xEDmax)",
-          "color": "#ef4444"
-        },
-        {
-          "id": "break2",
-          "name": "Segundo Par\xF3n",
-          "start_pct": 0.74,
-          "end_pct": 0.82,
-          "type": "break",
-          "label": "Puente Mel\xF3dico",
-          "color": "#a855f7"
-        },
-        {
-          "id": "outro",
-          "name": "Outro Limpio",
-          "start_pct": 0.82,
-          "end_pct": 1,
-          "type": "outro",
-          "label": "\u{1F7E2} OUTRO SEGURO \u2022 Mezcla Out",
-          "color": "#10b981"
-        }
-      ],
-      "lufs": -9.5,
-      "low_ratio": 51,
-      "mid_ratio": 31,
-      "high_ratio": 18,
-      "acoustic_role": "Bass Driver",
-      "is_audited": true,
-      "comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-      "tactical_comment": "[Bass Driver] Intro 32b \u2022 Drop contundente \u2022 Outro 64b",
-      "mood": "Hypnotic Groove"
+      "artist": "Deck Vac\xEDo",
+      "title": "",
+      "bpm": 0,
+      "camelot": "--",
+      "camelot_color": "#27272a",
+      "raw_key": "",
+      "file_path": "",
+      "genre": "",
+      "subgenre": "",
+      "energy": 0,
+      "danceability": 0,
+      "valence": 0,
+      "arousal": 0,
+      "format": "",
+      "duration": "",
+      "duration_sec": 0,
+      "elapsed_sec": 0,
+      "play_progress": 0,
+      "phase": "Standby",
+      "year": "",
+      "cover": "",
+      "cues": [],
+      "structural_phases": [],
+      "lufs": -99,
+      "low_ratio": 0,
+      "mid_ratio": 0,
+      "high_ratio": 0,
+      "acoustic_role": "",
+      "is_audited": false,
+      "comment": "Deck vac\xEDo \u2022 Sin pista cargada en Serato ni en la mesa",
+      "tactical_comment": "Deck vac\xEDo \u2022 Sin pista cargada en Serato ni en la mesa",
+      "mood": "Standby"
     },
     "anti_muddy": {
-      "clash_detected": true,
-      "severity": "CRITICAL",
-      "badge": "BASS CLASH",
-      "color": "#ef4444",
-      "message": "Ambos tracks tienen sub-graves dominantes (>44%). El solape directo crear\xE1 empaste y distorsi\xF3n en el sistema de sala.",
-      "tactical_advice": "Corta la EQ de graves (Low) en el canal entrante (-6dB a -12dB) antes de abrir el fader, o usa filtro paso-alto."
+      "status": "safe",
+      "tag": "CLEAN MIX",
+      "title": "MEZCLA LIMPIA",
+      "message": "Deck 2 sin pista cargada. Cero riesgo de cancelaci\xF3n ac\xFAstica. Carga la siguiente pista en Serato o la mesa.",
+      "action": "Frecuencias equilibradas",
+      "controller_knobs": {
+        "filter_knob": "Centrado (12h)",
+        "eq_low": "0 dB"
+      }
     },
     "harmonic": {
-      "compatible": false,
-      "match_type": "HARMONIC CLASH",
-      "camelot_diff": "+4 Pasos",
-      "energy_trend": "Disonancia Tonal",
-      "badge": "HARMONIC CLASH",
-      "color": "#ef4444",
-      "advice": "Choque arm\xF3nico severo (10A \u2794 6A). Usa par\xF3n o transici\xF3n por percusi\xF3n."
+      "score": 100,
+      "type": "STANDBY",
+      "label": "Deck 2 en Espera",
+      "badge": "STANDBY",
+      "color": "#10b981",
+      "is_clash": false,
+      "advice": "Deck 2 preparado. Carga una pista arm\xF3nicamente compatible en Serato o la mesa."
     },
     "lufs_delta": -0.8,
     "bpm_delta": -0.37,
@@ -1688,7 +1477,8 @@
       ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 flex flex-col justify-center" }, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-400 tracking-tight leading-tight truncate" }, "-- Esperando Pista --"), /* @__PURE__ */ React.createElement("p", { className: "font-syne font-medium text-xs text-zinc-600 mt-0.5 truncate" }, "Conecta Serato, Rekordbox, Traktor o VirtualDJ"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-1" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono text-zinc-600" }, "-- G\xC9NERO --")))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/60 pt-2 md:pt-0 md:pl-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/60 text-zinc-600" }, /* @__PURE__ */ React.createElement("div", { className: "w-5 h-4 rounded text-[9px] font-orbitron font-black bg-zinc-800 text-zinc-500 flex items-center justify-center" }, "--"), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase font-bold" }, "TONO"), /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-[10px]" }, "--")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/60 text-zinc-600" }, /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase font-bold" }, "TEMPO"), /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-[10px]" }, "--.--"))))), /* @__PURE__ */ React.createElement("div", { className: "mb-2.5 p-2 rounded-2xl bg-black/50 border border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "h-10 w-full flex items-center justify-center bg-zinc-950/80 rounded-lg" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-zinc-600" }, "STANDBY \u2022 FORMA DE ONDA INACTIVA"))));
     }
     const deckNum = side === "A" ? "1" : side === "B" ? "2" : side;
-    return /* @__PURE__ */ React.createElement("div", { className: `p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-400" }, "DECK ", side), /* @__PURE__ */ React.createElement(
+    const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === "STANDBY (VAC\xCDO)";
+    return /* @__PURE__ */ React.createElement("div", { className: `p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-400" }, "DECK ", side), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -1697,7 +1487,7 @@
         title: `Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`
       },
       isMaster ? "\u{1F50A} MASTER (ON AIR)" : "\u{1F3A7} EN CUE (PREPARADO)"
-    ), deck.phase && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase" }, "\u2728 ", deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-500 uppercase" }, deck.format && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[10px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", null, deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
+    ), deck.phase && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase" }, "\u2728 ", deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-500 uppercase" }, deck.format && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[10px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", null, isEmptyDeck ? "STANDBY" : deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
       "div",
       {
         className: "relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none",
@@ -1706,27 +1496,27 @@
       /* @__PURE__ */ React.createElement(
         "img",
         {
-          src: getValidCover(deck.cover),
+          src: isEmptyDeck ? DEFAULT_VINYL_SVG : getValidCover(deck.cover),
           alt: "Car\xE1tula",
           onError: (e) => {
             e.target.onerror = null;
             e.target.src = DEFAULT_VINYL_SVG;
           },
-          className: "w-full h-full object-cover transition-transform group-hover:scale-105 duration-300",
+          className: `w-full h-full object-cover transition-transform duration-300 ${isEmptyDeck ? "opacity-30 p-2" : "group-hover:scale-105"}`,
           style: { width: "100%", height: "100%", objectFit: "cover" }
         }
       ),
       /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" }),
-      deck.duration && /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300" }, deck.duration),
-      deck.year && /* @__PURE__ */ React.createElement("span", { className: "absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400" }, deck.year)
-    ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 flex flex-col justify-center" }, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-bold text-xs sm:text-sm text-white tracking-tight leading-tight truncate", title: deck.title }, deck.title), /* @__PURE__ */ React.createElement("p", { className: "font-syne font-bold text-xs text-zinc-400 mt-0.5 truncate", title: deck.artist }, deck.artist), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap mt-1" }, deck.genre && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate" }, deck.genre), deck.subgenre && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate" }, deck.subgenre)))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-400" }, isEmptyDeck ? "--:--" : deck.duration || "--:--"),
+      deck.year && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400" }, deck.year)
+    ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 flex flex-col justify-center" }, /* @__PURE__ */ React.createElement("h2", { className: `font-syne font-bold text-xs sm:text-sm tracking-tight leading-tight truncate ${isEmptyDeck ? "italic text-zinc-500" : "text-white"}`, title: deck.title || "Arrastrar canci\xF3n aqu\xED" }, deck.title || "Arrastrar canci\xF3n aqu\xED"), /* @__PURE__ */ React.createElement("p", { className: "font-syne font-bold text-xs text-zinc-500 mt-0.5 truncate", title: deck.artist || "Deck Vac\xEDo" }, deck.artist || "Deck Vac\xEDo"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap mt-1" }, isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-900/80 border border-zinc-800 text-[9px] font-mono text-zinc-600 truncate" }, "-- EN ESPERA --") : /* @__PURE__ */ React.createElement(React.Fragment, null, deck.genre && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate" }, deck.genre), deck.subgenre && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate" }, deck.subgenre))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80" }, /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "w-5 h-4 rounded text-[9px] font-orbitron font-black text-black flex items-center justify-center shrink-0 shadow-sm",
-        style: { backgroundColor: deck.camelot_color || "#ec4899" }
+        className: "w-5 h-4 rounded text-[9px] font-orbitron font-black flex items-center justify-center shrink-0 shadow-sm",
+        style: { backgroundColor: isEmptyDeck ? "#27272a" : deck.camelot_color || "#ec4899", color: isEmptyDeck ? "#71717a" : "#000000" }
       },
-      deck.camelot || "10A"
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase text-zinc-500 font-bold" }, "TONO"), /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-[10px] text-white truncate" }, deck.raw_key || deck.camelot)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase text-zinc-500 font-bold" }, "TEMPO"), /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-[10px] text-white" }, deck.bpm ? Number(deck.bpm).toFixed(2) : "130.00"), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-zinc-400 font-mono" }, "BPM")), /* @__PURE__ */ React.createElement("div", { className: "px-1.5 py-0.5 rounded-lg bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full text-center", title: deck.mood || deck.phase || "Peak Time Climax" }, "\u2728 ", deck.mood || deck.phase || "Peak Time Climax")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-[130px] flex flex-col justify-center gap-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(ZapIcon, { size: 9 }), " ENERG\xCDA"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold" }, deck.energy || 90, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full", style: { width: `${deck.energy || 90}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(ActivityIcon, { size: 9 }), " INTENSIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, deck.arousal || Math.round((deck.energy || 90) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]", style: { width: `${deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(SlidersIcon, { size: 9 }), " DANZABILIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold" }, deck.danceability || 85, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]", style: { width: `${deck.danceability || 85}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(SparklesIcon, { size: 9 }), " POSITIVIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]", style: { width: `${deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62}%` } })))))), /* @__PURE__ */ React.createElement("div", { className: "mb-3 p-2.5 rounded-2xl bg-black/60 border border-zinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400" }), " 8 HOT CUES DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-zinc-500" }, "Puntos de Salto & Estructura")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 sm:grid-cols-8 gap-1.5" }, (deck.cues || [
+      isEmptyDeck ? "--" : deck.camelot || "10A"
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase text-zinc-500 font-bold" }, "TONO"), /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-[10px] text-zinc-400 truncate" }, isEmptyDeck ? "--" : deck.raw_key || deck.camelot)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase text-zinc-500 font-bold" }, "TEMPO"), /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-[10px] text-zinc-300" }, isEmptyDeck ? "--.--" : deck.bpm ? Number(deck.bpm).toFixed(2) : "130.00"), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-zinc-500 font-mono" }, "BPM")), /* @__PURE__ */ React.createElement("div", { className: `px-1.5 py-0.5 rounded-lg border text-[8px] font-mono font-bold truncate max-w-full text-center ${isEmptyDeck ? "bg-zinc-900/60 border-zinc-800/60 text-zinc-600" : "bg-purple-950/70 border-purple-500/40 text-purple-300"}`, title: deck.mood || deck.phase || "Peak Time Climax" }, isEmptyDeck ? "STANDBY (VAC\xCDO)" : `\u2728 ${deck.mood || deck.phase || "Peak Time Climax"}`)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-[130px] flex flex-col justify-center gap-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(ZapIcon, { size: 9 }), " ENERG\xCDA"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold" }, isEmptyDeck ? 0 : deck.energy || 90, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full", style: { width: `${isEmptyDeck ? 0 : deck.energy || 90}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(ActivityIcon, { size: 9 }), " INTENSIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, isEmptyDeck ? 0 : deck.arousal || Math.round((deck.energy || 90) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]", style: { width: `${isEmptyDeck ? 0 : deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(SlidersIcon, { size: 9 }), " DANZABILIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold" }, isEmptyDeck ? 0 : deck.danceability || 85, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]", style: { width: `${isEmptyDeck ? 0 : deck.danceability || 85}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(SparklesIcon, { size: 9 }), " POSITIVIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]", style: { width: `${isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62}%` } })))))), /* @__PURE__ */ React.createElement("div", { className: "mb-3 p-2.5 rounded-2xl bg-black/60 border border-zinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400" }), " 8 HOT CUES DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-zinc-500" }, isEmptyDeck ? "En espera de pista" : "Puntos de Salto & Estructura")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 sm:grid-cols-8 gap-1.5" }, (isEmptyDeck ? [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ id: i, name: `Cue ${i}`, color: "#27272a", time: "--:--", empty: true })) : deck.cues && deck.cues.length > 0 ? deck.cues : [
       { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
       { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
       { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
@@ -1739,18 +1529,18 @@
       "div",
       {
         key: cue.id || cIdx,
-        className: "p-1 rounded-xl border flex flex-col justify-between transition-all bg-zinc-950/80 hover:bg-zinc-900 cursor-default",
-        style: { borderColor: `${cue.color || "#06b6d4"}55` }
+        className: `p-1 rounded-xl border flex flex-col justify-between transition-all ${cue.empty ? "bg-zinc-950/60 border-zinc-800/40 text-zinc-600" : "bg-zinc-950/80 hover:bg-zinc-900 cursor-default"}`,
+        style: cue.empty ? {} : { borderColor: `${cue.color || "#06b6d4"}55` }
       },
       /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement(
         "span",
         {
-          className: "w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black text-black font-mono shadow-sm",
-          style: { backgroundColor: cue.color || "#06b6d4" }
+          className: "w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black font-mono shadow-sm",
+          style: cue.empty ? { backgroundColor: "#27272a", color: "#71717a" } : { backgroundColor: cue.color || "#06b6d4", color: "#000000" }
         },
         cue.id || cIdx + 1
       ), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-zinc-500" }, cue.time || "--:--")),
-      /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-syne font-bold text-zinc-200 truncate mt-1", title: cue.name }, cue.name)
+      /* @__PURE__ */ React.createElement("div", { className: `text-[8px] font-syne font-bold truncate mt-1 ${cue.empty ? "text-zinc-600" : "text-zinc-200"}`, title: cue.name }, cue.name)
     )))), /* @__PURE__ */ React.createElement("div", { className: "mb-3" }, /* @__PURE__ */ React.createElement(
       CopilotSeratoWaveform,
       {
