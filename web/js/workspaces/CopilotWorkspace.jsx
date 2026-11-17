@@ -1661,153 +1661,167 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 
     return (
         <div className="flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
-            {/* Cabecera de la Pantalla Táctica (Exactamente igual al montaje del usuario) */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-3">
-                {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
-                <div className="flex flex-col gap-1.5 shrink-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                        <div className="flex items-center gap-2 shrink-0">
-                            <span className={`w-3 h-3 rounded-full shrink-0 ${
-                                isLive 
-                                ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
-                                : isStandby
-                                ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
-                                : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
-                            }`}></span>
-                            <span className="w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                <Icons.Turntable size={16} />
-                            </span>
-                            <h2 className="font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1">
-                                Copilot <span className="text-djcyan-400">Cabina DJ</span>
-                            </h2>
-                        </div>
+            {/* Cabecera de la Pantalla Táctica: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
+            <div className="relative flex flex-col justify-between pb-2.5 border-b border-zinc-800 mb-3 overflow-hidden min-h-[96px] sm:min-h-[114px]">
+                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES */}
+                {controllerState.detected && (
+                    <img 
+                        src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
+                        alt={controllerState.name}
+                        onError={(e) => {
+                            e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
+                        }}
+                        className="absolute right-0 top-0 w-[930px] h-[114px] max-w-none object-cover object-right pointer-events-none select-none z-0"
+                        style={{ opacity: 0.4 }}
+                    />
+                )}
 
-                        {/* BADGE DEL SOFTWARE ACTIVO CON LOGO VECTORIAL */}
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]">
-                            {renderPlatformLogo(state.platform || 'serato', 13)}
-                            <strong style={{ color: state.platform_color || '#00d1e8' }}>{state.platform_name || 'DJ LINK'}</strong>
-                            <span className="text-zinc-600">|</span>
-                            <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
-                                {state.platform_status || (isLive ? 'LIVE' : 'STANDBY')}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA & PROTOCOLO NATIVO */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* HUD BADGE LATENCIA CABINA (<25ms) & SELECTOR MASTER */}
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                            <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
-                            <button
-                                type="button"
-                                onClick={() => setMasterDeck('toggle')}
-                                className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[9px]"
-                                title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
-                            >
-                                ⇄ DECK {deck_1.is_master ? '1' : '2'} [M]
-                            </button>
-                        </div>
-
-                        {/* BADGE SYNC PROTOCOLO NATIVO */}
-                        {state.sync_protocol && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]" title="Protocolo de cabina sincronizado">
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                                <span>🔗 {state.sync_protocol}:</span>
-                                <strong className="text-white">ACTIVO</strong>
+                {/* CONTENIDO SUPERIOR (Z-10) POR ENCIMA DE LA IMAGEN */}
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full">
+                    {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className={`w-3 h-3 rounded-full shrink-0 ${
+                                    isLive 
+                                    ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
+                                    : isStandby
+                                    ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
+                                    : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
+                                }`}></span>
+                                <span className="w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                                    <Icons.Turntable size={16} />
+                                </span>
+                                <h2 className="font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1">
+                                    Copilot <span className="text-djcyan-400">Cabina DJ</span>
+                                </h2>
                             </div>
-                        )}
-                    </div>
-                </div>
 
-                {/* CENTRO: WIDGET INTEGRADO DE CONTROLADORA (EXACTAMENTE COMO EL MONTAJE DEL USUARIO: MODELO SIN BORDE + IMAGEN SLICE ALPHA 0.4) */}
-                <div className="flex-1 hidden md:flex items-center justify-center px-2 min-w-0 select-none">
-                    {controllerState.detected ? (
-                        <div 
-                            className="flex flex-col items-center justify-center gap-0.5 cursor-pointer max-w-[210px] sm:max-w-[230px]"
-                            onClick={() => setControllerState({
-                                detected: false,
-                                name: 'controladora desconectada',
-                                status: 'DESCONECTADA'
-                            })}
-                            title="Haz clic para alternar prueba de desconexión"
-                        >
-                            {/* MODELO DE LA CONTROLADORA SIN BORDE VERDE, CON TIPOGRAFÍA DE TÍTULOS PEQUEÑA */}
-                            <div className="flex items-center gap-1.5 z-10">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse shrink-0"></span>
-                                <span className="font-syne font-black text-xs sm:text-sm text-white tracking-wider uppercase leading-none">
-                                    {(controllerState.name || 'NUMARK NV II').replace(/\s*\(USB\)\s*/i, '').trim()}
+                            {/* BADGE DEL SOFTWARE ACTIVO CON LOGO VECTORIAL */}
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]">
+                                {renderPlatformLogo(state.platform || 'serato', 13)}
+                                <strong style={{ color: state.platform_color || '#00d1e8' }}>{state.platform_name || 'DJ LINK'}</strong>
+                                <span className="text-zinc-600">|</span>
+                                <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
+                                    {state.platform_status || (isLive ? 'LIVE' : 'STANDBY')}
                                 </span>
                             </div>
-
-                            {/* TROZO DE LA CONTROLADORA CON ALPHA 0.4 PERMANENTE */}
-                            <img 
-                                src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
-                                alt={controllerState.name}
-                                onError={(e) => {
-                                    e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
-                                }}
-                                className="h-[48px] sm:h-[54px] max-h-[54px] w-auto max-w-[210px] object-contain drop-shadow-md select-none transition-none pointer-events-none"
-                                style={{ opacity: 0.4 }}
-                            />
                         </div>
-                    ) : (
-                        <div 
-                            className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-zinc-500 font-syne font-semibold text-xs tracking-wider uppercase select-none cursor-pointer hover:text-zinc-300 hover:border-zinc-700 transition-colors"
-                            onClick={() => setControllerState({
-                                detected: true,
-                                name: 'NUMARK NV II',
-                                status: 'CONECTADA'
-                            })}
-                            title="Haz clic para conectar controladora (Numark NV II)"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
-                            <span>controladora desconectada</span>
-                        </div>
-                    )}
-                </div>
 
-                {/* DERECHA: SELECTOR DE CABINA + RELOJ + POP-OUT (SIMULACIÓN ELIMINADA) */}
-                <div className="flex items-center gap-2 flex-wrap justify-between lg:justify-end shrink-0">
-                    {/* SELECTOR DE PLATAFORMA */}
-                    <div className="flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner">
-                        {platformsList.map(p => {
-                            const isSelected = (state.platform_mode === p.id) || (state.platform_mode === 'auto' && p.id === 'auto');
-                            return (
+                        {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
+                                <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
                                 <button
-                                    key={p.id}
                                     type="button"
-                                    onClick={() => setPlatform(p.id)}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
-                                        isSelected 
-                                        ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
-                                        : 'text-zinc-400 hover:text-zinc-200'
-                                    }`}
-                                    style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
-                                    title={`Conectar con ${p.label}`}
+                                    onClick={() => setMasterDeck('toggle')}
+                                    className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[9px]"
+                                    title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
                                 >
-                                    {renderPlatformLogo(p.id, 13)}
-                                    <span className="hidden sm:inline text-[10px]">{p.label}</span>
+                                    ⇄ DECK {deck_1.is_master ? '1' : '2'} [M]
                                 </button>
-                            );
-                        })}
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="font-mono text-xs font-bold text-white bg-zinc-900 px-2 py-1 rounded-xl border border-zinc-800 shadow-inner">
-                        {clock || state.last_updated}
-                    </div>
+                    {/* CENTRO-DERECHA: TEXTO ENCIMA DE LA IMAGEN + CONTROLES DE CABINA */}
+                    <div className="flex items-center gap-3 flex-wrap justify-between lg:justify-end shrink-0">
+                        {/* TEXTO ENCIMA DE LA IMAGEN: PRIMERA PALABRA BLANCA Y RESTO AZUL CON SOMBRA CLARA DESVANECIÉNDOSE */}
+                        {controllerState.detected ? (
+                            <div 
+                                className="flex items-center gap-2 select-none cursor-pointer py-1 px-2.5 rounded-lg hover:bg-white/5 transition-colors"
+                                onClick={() => setControllerState({
+                                    detected: false,
+                                    name: 'controladora desconectada',
+                                    status: 'DESCONECTADA'
+                                })}
+                                title="Haz clic para alternar prueba de desconexión"
+                            >
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)] animate-pulse shrink-0"></span>
+                                <h3 
+                                    className="font-syne font-black text-sm sm:text-base tracking-wider uppercase leading-none whitespace-nowrap"
+                                    style={{
+                                        textShadow: '0 0 14px rgba(6, 182, 212, 0.85), 0 0 28px rgba(6, 182, 212, 0.5), 0 0 50px rgba(6, 182, 212, 0.25)'
+                                    }}
+                                >
+                                    {(() => {
+                                        const rawName = (controllerState.name || 'NUMARK NV II').replace(/\s*\(USB\)\s*/i, '').trim();
+                                        const parts = rawName.split(/\s+/);
+                                        const firstWord = parts[0] || 'NUMARK';
+                                        const restWords = parts.slice(1).join(' ') || '';
+                                        return (
+                                            <>
+                                                <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{firstWord}</span>
+                                                {restWords && (
+                                                    <>
+                                                        {' '}
+                                                        <span className="text-[#00d1e8] text-djcyan-400 drop-shadow-[0_0_14px_rgba(6,182,212,0.9)]">
+                                                            {restWords}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </h3>
+                            </div>
+                        ) : (
+                            <div 
+                                className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-zinc-500 font-syne font-semibold text-xs tracking-wider uppercase select-none cursor-pointer hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+                                onClick={() => setControllerState({
+                                    detected: true,
+                                    name: 'NUMARK NV II',
+                                    status: 'CONECTADA'
+                                })}
+                                title="Haz clic para conectar controladora (Numark NV II)"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
+                                <span>controladora desconectada</span>
+                            </div>
+                        )}
 
-                    {onOpenPopOut && (
-                        <button
-                            type="button"
-                            onClick={onOpenPopOut}
-                            className="px-2 py-1 rounded-xl text-xs font-mono font-bold text-white bg-red-600/90 hover:bg-red-500 uppercase transition-all cursor-pointer shadow-sm flex items-center gap-1 shrink-0"
-                            title="Abrir en ventana independiente Pop-Out para segundo monitor"
-                        >
-                            <Icons.Grid size={12} />
-                            <span>Pop-Out ↗</span>
-                        </button>
-                    )}
+                        {/* SELECTOR DE PLATAFORMA */}
+                        <div className="flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner">
+                            {platformsList.map(p => {
+                                const isSelected = (state.platform_mode === p.id) || (state.platform_mode === 'auto' && p.id === 'auto');
+                                return (
+                                    <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => setPlatform(p.id)}
+                                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+                                            isSelected 
+                                            ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
+                                            : 'text-zinc-400 hover:text-zinc-200'
+                                        }`}
+                                        style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
+                                        title={`Conectar con ${p.label}`}
+                                    >
+                                        {renderPlatformLogo(p.id, 13)}
+                                        <span className="hidden sm:inline text-[10px]">{p.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* RELOJ CABINA */}
+                        <div className="font-mono text-xs font-bold text-white bg-zinc-900 px-2 py-1 rounded-xl border border-zinc-800 shadow-inner">
+                            {clock || state.last_updated}
+                        </div>
+
+                        {/* BOTÓN POP-OUT */}
+                        {onOpenPopOut && (
+                            <button
+                                type="button"
+                                onClick={onOpenPopOut}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-red-600/90 hover:bg-red-500 text-white text-xs font-mono font-bold uppercase transition-all shadow-[0_0_12px_rgba(239,68,68,0.4)] cursor-pointer"
+                                title="Abrir en ventana flotante independiente"
+                            >
+                                Pop-Out ↗
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

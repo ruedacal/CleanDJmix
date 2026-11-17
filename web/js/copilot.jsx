@@ -1773,165 +1773,188 @@ function LiveCopilotApp() {
 
     return (
         <div className="flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200">
-            {/* BARRA SUPERIOR DE CABINA HUD (Exactamente igual al montaje del usuario) */}
-            <header className="flex flex-col lg:flex-row lg:items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 gap-3">
-                {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
-                <div className="flex flex-col gap-1.5 shrink-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                        <div className="flex items-center gap-2 shrink-0">
-                            <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${
-                                isLive 
-                                ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
-                                : isStandby 
-                                ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
-                                : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
-                            }`}></span>
-                            <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
-                                <CopilotTurntableLogo size={18} />
-                            </span>
-                            <h1 className="font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase">
-                                BEATWAVE <span className="text-djcyan-400">COPILOT</span>
-                            </h1>
-                        </div>
+            {/* BARRA SUPERIOR DE CABINA HUD: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
+            <header className="relative flex flex-col justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 overflow-hidden min-h-[96px] sm:min-h-[114px]">
+                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES */}
+                {controllerState.detected && (
+                    <img 
+                        src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
+                        alt={controllerState.name}
+                        onError={(e) => {
+                            e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
+                        }}
+                        className="absolute right-0 top-0 w-[930px] h-[114px] max-w-none object-cover object-right pointer-events-none select-none z-0"
+                        style={{ opacity: 0.4 }}
+                    />
+                )}
 
-                        {/* BADGE DEL SOFTWARE ACTIVO CON LOGO OFICIAL */}
-                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs">
-                            {renderPlatformLogo(platform || 'serato', 16)}
-                            <strong style={{ color: platform_color || '#00d1e8' }}>{platform_name || 'DJ LINK'}</strong>
-                            <span className="text-zinc-600">|</span>
-                            <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
-                                {platform_status || (isLive ? 'LIVE' : 'STANDBY')}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA & MASTER */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                            <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
-                            <button
-                                type="button"
-                                onClick={() => setMasterDeck('toggle')}
-                                className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[10px]"
-                                title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
-                            >
-                                ⇄ MASTER: DECK {deck_1.is_master ? '1' : '2'} <span className="text-[9px] text-zinc-400">[M]</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CENTRO: WIDGET INTEGRADO DE CONTROLADORA (EXACTAMENTE COMO EL MONTAJE DEL USUARIO: MODELO SIN BORDE + IMAGEN SLICE ALPHA 0.4) */}
-                <div className="flex-1 hidden md:flex items-center justify-center px-2 min-w-0 select-none">
-                    {controllerState.detected ? (
-                        <div 
-                            className="flex flex-col items-center justify-center gap-0.5 cursor-pointer max-w-[210px] sm:max-w-[230px]"
-                            onClick={() => setControllerState({
-                                detected: false,
-                                name: 'controladora desconectada',
-                                status: 'DESCONECTADA'
-                            })}
-                            title="Haz clic para alternar prueba de desconexión"
-                        >
-                            {/* MODELO DE LA CONTROLADORA SIN BORDE VERDE, CON TIPOGRAFÍA DE TÍTULOS PEQUEÑA */}
-                            <div className="flex items-center gap-1.5 z-10">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse shrink-0"></span>
-                                <span className="font-syne font-black text-xs sm:text-sm text-white tracking-wider uppercase leading-none">
-                                    {(controllerState.name || 'NUMARK NV II').replace(/\s*\(USB\)\s*/i, '').trim()}
+                {/* CONTENIDO SUPERIOR (Z-10) POR ENCIMA DE LA IMAGEN */}
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full">
+                    {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                                    isLive 
+                                    ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
+                                    : isStandby 
+                                    ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
+                                    : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
+                                }`}></span>
+                                <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+                                    <CopilotTurntableLogo size={18} />
                                 </span>
+                                <h1 className="font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase">
+                                    BEATWAVE <span className="text-djcyan-400">COPILOT</span>
+                                </h1>
                             </div>
 
-                            {/* TROZO DE LA CONTROLADORA CON ALPHA 0.4 PERMANENTE */}
-                            <img 
-                                src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
-                                alt={controllerState.name}
-                                onError={(e) => {
-                                    e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
-                                }}
-                                className="h-[48px] sm:h-[54px] max-h-[54px] w-auto max-w-[210px] object-contain drop-shadow-md select-none transition-none pointer-events-none"
-                                style={{ opacity: 0.4 }}
-                            />
+                            {/* BADGE DEL SOFTWARE ACTIVO CON LOGO OFICIAL */}
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs">
+                                {renderPlatformLogo(platform || 'serato', 16)}
+                                <strong style={{ color: platform_color || '#00d1e8' }}>{platform_name || 'DJ LINK'}</strong>
+                                <span className="text-zinc-600">|</span>
+                                <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
+                                    {platform_status || (isLive ? 'LIVE' : 'STANDBY')}
+                                </span>
+                            </div>
                         </div>
-                    ) : (
-                        <div 
-                            className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-zinc-500 font-syne font-semibold text-xs tracking-wider uppercase select-none cursor-pointer hover:text-zinc-300 hover:border-zinc-700 transition-colors"
-                            onClick={() => setControllerState({
-                                detected: true,
-                                name: 'NUMARK NV II',
-                                status: 'CONECTADA'
-                            })}
-                            title="Haz clic para conectar controladora (Numark NV II)"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
-                            <span>controladora desconectada</span>
-                        </div>
-                    )}
-                </div>
 
-                {/* SELECTOR DE PLATAFORMA & CONTROLES (SIMULACIÓN ELIMINADA) */}
-                <div className="flex items-center gap-2 flex-wrap justify-between lg:justify-end shrink-0">
-                    {/* SELECTOR DE PLATAFORMA MULTI-DJ CON LOGOS OFICIALES */}
-                    <div className="flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800/90 shadow-inner">
-                        {platformsList.map(p => {
-                            const isSelected = (platform_mode === p.id) || (platform_mode === 'auto' && p.id === 'auto');
-                            return (
+                        {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA & MASTER */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
+                                <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
                                 <button
-                                    key={p.id}
                                     type="button"
-                                    onClick={() => setPlatform(p.id)}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
-                                        isSelected 
-                                        ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
-                                        : 'text-zinc-400 hover:text-zinc-200'
-                                    }`}
-                                    style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
-                                    title={`Conectar con ${p.label}`}
+                                    onClick={() => setMasterDeck('toggle')}
+                                    className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[10px]"
+                                    title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
                                 >
-                                    {renderPlatformLogo(p.id, 14)}
-                                    <span className="hidden sm:inline text-[10px]">{p.label}</span>
+                                    ⇄ MASTER: DECK {deck_1.is_master ? '1' : '2'} <span className="text-[9px] text-zinc-400">[M]</span>
                                 </button>
-                            );
-                        })}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* RELOJ CABINA */}
-                    <div className="font-mono text-xs sm:text-sm font-bold text-white bg-zinc-900/90 px-2.5 py-1 rounded-xl border border-zinc-800 shadow-inner">
-                        {clock || state.last_updated}
+                    {/* CENTRO-DERECHA: TEXTO ENCIMA DE LA IMAGEN + CONTROLES */}
+                    <div className="flex items-center gap-3 flex-wrap justify-between lg:justify-end shrink-0">
+                        {/* TEXTO ENCIMA DE LA IMAGEN: PRIMERA PALABRA BLANCA Y RESTO AZUL CON SOMBRA CLARA DESVANECIÉNDOSE */}
+                        {controllerState.detected ? (
+                            <div 
+                                className="flex items-center gap-2 select-none cursor-pointer py-1 px-2.5 rounded-lg hover:bg-white/5 transition-colors"
+                                onClick={() => setControllerState({
+                                    detected: false,
+                                    name: 'controladora desconectada',
+                                    status: 'DESCONECTADA'
+                                })}
+                                title="Haz clic para alternar prueba de desconexión"
+                            >
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)] animate-pulse shrink-0"></span>
+                                <h3 
+                                    className="font-syne font-black text-sm sm:text-base tracking-wider uppercase leading-none whitespace-nowrap"
+                                    style={{
+                                        textShadow: '0 0 14px rgba(6, 182, 212, 0.85), 0 0 28px rgba(6, 182, 212, 0.5), 0 0 50px rgba(6, 182, 212, 0.25)'
+                                    }}
+                                >
+                                    {(() => {
+                                        const rawName = (controllerState.name || 'NUMARK NV II').replace(/\s*\(USB\)\s*/i, '').trim();
+                                        const parts = rawName.split(/\s+/);
+                                        const firstWord = parts[0] || 'NUMARK';
+                                        const restWords = parts.slice(1).join(' ') || '';
+                                        return (
+                                            <>
+                                                <span className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{firstWord}</span>
+                                                {restWords && (
+                                                    <>
+                                                        {' '}
+                                                        <span className="text-[#00d1e8] text-djcyan-400 drop-shadow-[0_0_14px_rgba(6,182,212,0.9)]">
+                                                            {restWords}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </h3>
+                            </div>
+                        ) : (
+                            <div 
+                                className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-zinc-500 font-syne font-semibold text-xs tracking-wider uppercase select-none cursor-pointer hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+                                onClick={() => setControllerState({
+                                    detected: true,
+                                    name: 'NUMARK NV II',
+                                    status: 'CONECTADA'
+                                })}
+                                title="Haz clic para conectar controladora (Numark NV II)"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
+                                <span>controladora desconectada</span>
+                            </div>
+                        )}
+
+                        {/* SELECTOR DE PLATAFORMA MULTI-DJ CON LOGOS OFICIALES */}
+                        <div className="flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800/90 shadow-inner">
+                            {platformsList.map(p => {
+                                const isSelected = (platform_mode === p.id) || (platform_mode === 'auto' && p.id === 'auto');
+                                return (
+                                    <button
+                                        key={p.id}
+                                        type="button"
+                                        onClick={() => setPlatform(p.id)}
+                                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+                                            isSelected 
+                                            ? 'bg-zinc-800 text-white shadow-md border border-zinc-600'
+                                            : 'text-zinc-400 hover:text-zinc-200'
+                                        }`}
+                                        style={isSelected ? { color: p.color, borderColor: `${p.color}66` } : {}}
+                                        title={`Conectar con ${p.label}`}
+                                    >
+                                        {renderPlatformLogo(p.id, 14)}
+                                        <span className="hidden sm:inline text-[10px]">{p.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* RELOJ CABINA */}
+                        <div className="font-mono text-xs sm:text-sm font-bold text-white bg-zinc-900/90 px-2.5 py-1 rounded-xl border border-zinc-800 shadow-inner">
+                            {clock || state.last_updated}
+                        </div>
+
+                        {/* BOTÓN TEST MODO STANDBY SKIN */}
+                        <button
+                            onClick={() => setTestDisconnectSkin(v => !v)}
+                            className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${
+                                testDisconnectSkin
+                                ? 'bg-red-900/80 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] animate-pulse'
+                                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700/60'
+                            }`}
+                            title="Alternar prueba de aplicación desconectada (modo skin con bordes rojos)"
+                        >
+                            {testDisconnectSkin ? 'Standby Skin' : 'Probar Standby'}
+                        </button>
+
+                        {/* BOTÓN CONECTAR IPAD */}
+                        <button
+                            onClick={() => setQrModalOpen(true)}
+                            className="px-2.5 py-1 rounded-xl text-xs font-mono font-bold text-djcyan-400 bg-djcyan-950/40 hover:bg-djcyan-900/50 border border-djcyan-500/40 uppercase transition-all cursor-pointer shadow-sm"
+                            title="Mostrar enlace y código QR para iPad"
+                        >
+                            📱 iPad
+                        </button>
+
+                        {/* BOTÓN PANTALLA COMPLETA */}
+                        <button
+                            onClick={toggleFullscreen}
+                            className="p-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60 cursor-pointer transition-all"
+                            title="Pantalla Completa"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                        </button>
                     </div>
-
-                    {/* BOTÓN TEST MODO STANDBY SKIN */}
-                    <button
-                        onClick={() => setTestDisconnectSkin(v => !v)}
-                        className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${
-                            testDisconnectSkin
-                            ? 'bg-red-900/80 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] animate-pulse'
-                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700/60'
-                        }`}
-                        title="Alternar prueba de aplicación desconectada (modo skin con bordes rojos)"
-                    >
-                        {testDisconnectSkin ? 'Standby Skin' : 'Probar Standby'}
-                    </button>
-
-                    {/* BOTÓN CONECTAR IPAD */}
-                    <button
-                        onClick={() => setQrModalOpen(true)}
-                        className="px-2.5 py-1 rounded-xl text-xs font-mono font-bold text-djcyan-400 bg-djcyan-950/40 hover:bg-djcyan-900/50 border border-djcyan-500/40 uppercase transition-all cursor-pointer shadow-sm"
-                        title="Mostrar enlace y código QR para iPad"
-                    >
-                        📱 iPad
-                    </button>
-
-                    {/* BOTÓN PANTALLA COMPLETA */}
-                    <button
-                        onClick={toggleFullscreen}
-                        className="p-1 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/60 cursor-pointer transition-all"
-                        title="Pantalla Completa"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                        </svg>
-                    </button>
                 </div>
             </header>
 
