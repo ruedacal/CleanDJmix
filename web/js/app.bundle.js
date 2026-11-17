@@ -27665,8 +27665,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
                   0% { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(8px); }
                   100% { opacity: 1; transform: translateY(0px) scale(1); filter: blur(0px); }
                 }
-                .hero-subtitle { width: 100% !important; max-width: 640px !important; margin: 0 auto !important; text-align: center !important; color: #cbd5e1 !important; font-weight: 400 !important; font-size: 13.5px !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
-                @media (max-width: 767px) { .hero-subtitle { font-size: 12px !important; } }
+                .hero-subtitle { width: 100% !important; max-width: 640px !important; margin: 0 auto 36px auto !important; text-align: center !important; color: #cbd5e1 !important; font-weight: 400 !important; font-size: 13.5px !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+                @media (max-width: 767px) { .hero-subtitle { font-size: 12px !important; margin-bottom: 24px !important; } }
                 .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 5px 16px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
                 .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.45) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
                 .badge-sweep-run .badge-shimmer-bar { animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
@@ -27693,7 +27693,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         "p",
         {
           ref: subtitleRef,
-          className: "hero-subtitle mb-4 text-center w-full"
+          className: "hero-subtitle mb-8 text-center w-full"
         },
         currentSlide.subtitle
       ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6" }, /* @__PURE__ */ React.createElement("div", { ref: badgeRef, className: "tech-pill-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-shimmer-bar" }), /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4 text-emerald-400 shrink-0", viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("polyline", { points: "4 10.5 8 14.5 16 6" })), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" }, currentSlide.badge)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5" }, HERO_SHOWCASE_SLIDES.map((_, dotIdx) => /* @__PURE__ */ React.createElement(
@@ -27893,13 +27893,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           /* @__PURE__ */ React.createElement("span", null, "Entrar a la cabina"),
           /* @__PURE__ */ React.createElement(Icons.ChevronRight, { size: 14 })
         ))),
-        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            className: "flex items-center justify-center select-none group mt-2 sm:mt-4 mb-4 sm:mb-6 md:mb-8 max-w-full px-2"
-          },
-          /* @__PURE__ */ React.createElement(BeatWaveBrandIdentity, { variant: "hero" })
-        ), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none mb-4 sm:mb-6 md:mb-8" }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hero-logo-stage-wrap" }, /* @__PURE__ */ React.createElement(BeatWaveBrandIdentity, { variant: "hero" })), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none mb-4 sm:mb-6 md:mb-8" }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
