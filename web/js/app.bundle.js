@@ -3861,70 +3861,57 @@
     }
   ];
 
-  // web/js/app.jsx
-  var { useState: useState5, useEffect: useEffect6, useRef: useRef6, useMemo, useCallback, createContext, useContext } = React;
-  var PlayerContext = createContext({
-    playProgressRef: { current: 0 },
-    isPlaying: false,
-    nowPlayingTrack: null
-  });
-  var Icons = {
-    ...ShellIcons,
-    Edit: ShellIcons.Pencil
+  // web/js/waveforms/waveformUtils.js
+  var WAVEFORM_COLOR_LEGEND = [
+    { name: "Bass / Sub", color: "#22d3ee", rgb: [37, 99, 235], hex: "#2563EB", desc: "Subgraves y pegada de bombos (<150Hz)", text: "text-cyan-400", dot: "bg-blue-500" },
+    { name: "Drums / Impact", color: "#ef4444", rgb: [239, 68, 68], hex: "#EF4444", desc: "Cajas, claps y transitorios r\xEDtmicos (150-1kHz)", text: "text-red-400", dot: "bg-red-500" },
+    { name: "Vocal / Synth", color: "#10b981", rgb: [16, 185, 129], hex: "#10B981", desc: "Vocales, pads y sintetizadores mel\xF3dicos (1k-5kHz)", text: "text-emerald-400", dot: "bg-emerald-500" },
+    { name: "Hi-Hat / Treble", color: "#22d3ee", rgb: [34, 211, 238], hex: "#22D3EE", desc: "Platos, shakers y brillo a\xE9reo (>5kHz)", text: "text-djcyan-400", dot: "bg-djcyan-400" }
+  ];
+  var DJ_PAD_PALETTE = [
+    { id: 1, name: "Kick / Intro", color: "#ef4444", hex: "#EF4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", rgb: [239, 68, 68] },
+    { id: 2, name: "Hi-Hats In", color: "#f97316", hex: "#F97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", rgb: [249, 115, 22] },
+    { id: 3, name: "Bassline", color: "#eab308", hex: "#EAB308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", rgb: [234, 179, 8] },
+    { id: 4, name: "Main Break", color: "#22c55e", hex: "#22C55E", text: "text-green-400", border: "border-green-500/50", bg: "bg-green-500/10", rgb: [34, 197, 94] },
+    { id: 5, name: "Drop 1 (Climax)", color: "#06b6d4", hex: "#06B6D4", text: "text-cyan-400", border: "border-cyan-500/50", bg: "bg-cyan-500/10", rgb: [6, 182, 212] },
+    { id: 6, name: "Mid Break", color: "#22d3ee", hex: "#3B82F6", text: "text-cyan-400", border: "border-blue-500/50", bg: "bg-blue-500/10", rgb: [59, 130, 246] },
+    { id: 7, name: "Drop 2 (Re-Kick)", color: "#a855f7", hex: "#A855F7", text: "text-purple-400", border: "border-purple-500/50", bg: "bg-purple-500/10", rgb: [168, 85, 247] },
+    { id: 8, name: "Outro Mix Point", color: "#ec4899", hex: "#EC4899", text: "text-pink-400", border: "border-pink-500/50", bg: "bg-pink-500/10", rgb: [236, 72, 153] },
+    { id: 9, name: "Blanco Serato", color: "#f8fafc", hex: "#F8FAFC", text: "text-slate-100", border: "border-slate-400/50", bg: "bg-slate-400/10", rgb: [248, 250, 252] }
+  ];
+  var parseDurationMs = (dur) => {
+    if (!dur || typeof dur !== "string") return 3e5;
+    const parts = dur.split(":");
+    if (parts.length === 2) {
+      const m = parseInt(parts[0], 10) || 0;
+      const s = parseFloat(parts[1]) || 0;
+      return Math.max(1e3, (m * 60 + s) * 1e3);
+    }
+    return 3e5;
   };
-  var SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
-  var SectionTitle = ({ icon: Icon, title, accent, badge, accentColor = "cyan", className = "" }) => {
-    const isPurple = accentColor === "purple";
-    const iconBg = isPurple ? "bg-purple-500/15 border-purple-500/40 text-purple-300" : "bg-djcyan-500/10 border-djcyan-500/30 text-djcyan-400";
-    const accentText = isPurple ? "text-purple-400" : "text-djcyan-400";
-    const badgeStyle = isPurple ? "bg-purple-950/80 text-purple-300 border-purple-800" : "bg-djcyan-950 text-djcyan-400 border-djcyan-800";
-    return /* @__PURE__ */ React.createElement("div", { className: `flex items-center gap-2.5 min-w-0 shrink-0 ${className}` }, Icon && /* @__PURE__ */ React.createElement("span", { className: `w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}` }, /* @__PURE__ */ React.createElement(Icon, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: `${SECTION_TITLE_CLASS} truncate` }, title, accent && /* @__PURE__ */ React.createElement("span", { className: accentText }, " ", accent)), badge && /* @__PURE__ */ React.createElement("span", { className: `hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}` }, badge));
+  var parseTimeToMs = (timeStr) => {
+    if (!timeStr || typeof timeStr !== "string") return 0;
+    const parts = timeStr.trim().split(":");
+    if (parts.length === 2) {
+      const m = parseInt(parts[0], 10) || 0;
+      const s = parseFloat(parts[1]) || 0;
+      return Math.max(0, (m * 60 + s) * 1e3);
+    }
+    const num = parseFloat(timeStr);
+    return !isNaN(num) ? Math.max(0, num * 1e3) : 0;
   };
-  var InfoTip = ({ text, title }) => {
-    const [coords, setCoords] = useState5(null);
-    const btnRef = useRef6(null);
-    const handleEnter = () => {
-      if (!btnRef.current) return;
-      const rect = btnRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.top + rect.height / 2,
-        right: window.innerWidth - rect.left + 12
-      });
-    };
-    const handleLeave = () => setCoords(null);
-    return /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center ml-1.5 align-middle" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        ref: btnRef,
-        type: "button",
-        onMouseEnter: handleEnter,
-        onMouseLeave: handleLeave,
-        onClick: (e) => {
-          e.stopPropagation();
-          coords ? handleLeave() : handleEnter();
-        },
-        className: "w-3.5 h-3.5 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black border border-djzinc-600 flex items-center justify-center text-[9px] font-mono font-bold text-gray-400 transition-colors cursor-help select-none shrink-0"
-      },
-      "i"
-    ), coords && ReactDOM.createPortal(
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          style: {
-            position: "fixed",
-            top: `${coords.top}px`,
-            right: `${coords.right}px`,
-            transform: "translateY(-50%)",
-            zIndex: 999999
-          },
-          className: "w-72 bg-djzinc-900 border border-djzinc-700 rounded-lg p-3 text-xs text-gray-200 shadow-[0_12px_36px_rgba(0,0,0,0.95),0_0_15px_rgba(6,182,212,0.2)] pointer-events-none select-none"
-        },
-        /* @__PURE__ */ React.createElement("div", { className: "absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-djzinc-900 border-t border-r border-djzinc-700 rotate-45" }),
-        title && /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-bold text-djcyan-400 mb-1 uppercase tracking-wider flex items-center gap-1.5 border-b border-djzinc-800 pb-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400" }), title),
-        /* @__PURE__ */ React.createElement("div", { className: "text-[11px] leading-relaxed text-gray-300 font-sans break-words whitespace-normal" }, text)
-      ),
-      document.body
-    ));
+  var parseDurationToSeconds = (dur) => {
+    if (typeof dur === "number") return dur > 0 ? dur : 210;
+    if (!dur) return 210;
+    const ms = parseTimeToMs(String(dur));
+    return ms > 0 ? ms / 1e3 : 210;
+  };
+  var formatMsToTime = (ms) => {
+    const totalSec = Math.max(0, ms) / 1e3;
+    const m = Math.floor(totalSec / 60);
+    const s = (totalSec % 60).toFixed(2);
+    const sPadded = s.length < 5 ? "0" + s : s;
+    return `${String(m).padStart(2, "0")}:${sPadded}`;
   };
   function getTrackHash(track) {
     if (!track) return 1337;
@@ -4046,97 +4033,9 @@
     treble = Math.min(1, treble * (0.85 + 0.15 * microRipple));
     return { bass, drums, vocals, treble, isBreak, energy, archetype };
   }
-  function getAudioEQNodes(audioElement) {
-    if (!audioElement) return null;
-    if (window.__bwAudioNodes && window.__bwAudioNodes.audio === audioElement) {
-      if (window.__bwAudioNodes.ctx.state === "suspended") {
-        window.__bwAudioNodes.ctx.resume().catch(() => {
-        });
-      }
-      return window.__bwAudioNodes;
-    }
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return null;
-      const ctx = new AudioCtx();
-      const source = ctx.createMediaElementSource(audioElement);
-      const low = ctx.createBiquadFilter();
-      low.type = "lowshelf";
-      low.frequency.value = 250;
-      low.gain.value = 0;
-      const mid = ctx.createBiquadFilter();
-      mid.type = "peaking";
-      mid.frequency.value = 1e3;
-      mid.Q.value = 1;
-      mid.gain.value = 0;
-      const high = ctx.createBiquadFilter();
-      high.type = "highshelf";
-      high.frequency.value = 3500;
-      high.gain.value = 0;
-      source.connect(low);
-      low.connect(mid);
-      mid.connect(high);
-      high.connect(ctx.destination);
-      const nodes = { audio: audioElement, ctx, source, low, mid, high };
-      window.__bwAudioNodes = nodes;
-      return nodes;
-    } catch (e) {
-      console.warn("Web Audio EQ initialization note:", e);
-      return null;
-    }
-  }
-  var RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, onChange, color = "#06b6d4" }) => {
-    const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
-    const angle = -135 + normalized * 270;
-    const handlePointerDown = (e) => {
-      e.preventDefault();
-      const startY = e.clientY || e.touches && e.touches[0].clientY || 0;
-      const startVal = value;
-      const onPointerMove = (me) => {
-        const currentY = me.clientY || me.touches && me.touches[0].clientY || 0;
-        const deltaY = startY - currentY;
-        const range = max - min;
-        const step = deltaY * (range / 120);
-        const newVal = Math.min(max, Math.max(min, Math.round((startVal + step) * 10) / 10));
-        if (onChange) onChange(newVal);
-      };
-      const onPointerUp = () => {
-        window.removeEventListener("mousemove", onPointerMove);
-        window.removeEventListener("mouseup", onPointerUp);
-        window.removeEventListener("touchmove", onPointerMove);
-        window.removeEventListener("touchend", onPointerUp);
-      };
-      window.addEventListener("mousemove", onPointerMove);
-      window.addEventListener("mouseup", onPointerUp);
-      window.addEventListener("touchmove", onPointerMove);
-      window.addEventListener("touchend", onPointerUp);
-    };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1 select-none" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-gray-400 tracking-wider uppercase" }, label), /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        onMouseDown: handlePointerDown,
-        onTouchStart: handlePointerDown,
-        onDoubleClick: () => onChange && onChange(defaultValue),
-        className: "w-10 h-10 rounded-full bg-gradient-to-b from-[#181826] to-[#0c0c14] border-2 border-djzinc-700 hover:border-gray-400 relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center group active:scale-95 transition-transform",
-        title: `${label}: ${value > 0 ? "+" : ""}${value.toFixed(1)} dB (Doble clic para 0dB)`
-      },
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute w-full h-full rounded-full pointer-events-none",
-          style: { transform: `rotate(${angle}deg)` }
-        },
-        /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            className: "w-1 h-3 rounded-full mx-auto mt-0.5 shadow-sm",
-            style: { backgroundColor: color, boxShadow: `0 0 8px ${color}` }
-          }
-        )
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-1 rounded-full bg-djzinc-500" }))
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-300 font-extrabold" }, value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7.5px] text-gray-500 font-normal" }, "dB")));
-  };
+
+  // web/js/waveforms/TableHarmonicWaveform.jsx
+  var { useRef: useRef6, useEffect: useEffect6 } = React;
   var TableHarmonicWaveform = React.memo(
     ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
       const canvasRef = useRef6(null);
@@ -4255,57 +4154,9 @@
       return true;
     }
   );
-  var WAVEFORM_COLOR_LEGEND = [
-    { name: "Bass / Sub", color: "#22d3ee", rgb: [37, 99, 235], hex: "#2563EB", desc: "Subgraves y pegada de bombos (<150Hz)", text: "text-cyan-400", dot: "bg-blue-500" },
-    { name: "Drums / Impact", color: "#ef4444", rgb: [239, 68, 68], hex: "#EF4444", desc: "Cajas, claps y transitorios r\xEDtmicos (150-1kHz)", text: "text-red-400", dot: "bg-red-500" },
-    { name: "Vocal / Synth", color: "#10b981", rgb: [16, 185, 129], hex: "#10B981", desc: "Vocales, pads y sintetizadores mel\xF3dicos (1k-5kHz)", text: "text-emerald-400", dot: "bg-emerald-500" },
-    { name: "Hi-Hat / Treble", color: "#22d3ee", rgb: [34, 211, 238], hex: "#22D3EE", desc: "Platos, shakers y brillo a\xE9reo (>5kHz)", text: "text-djcyan-400", dot: "bg-djcyan-400" }
-  ];
-  var DJ_PAD_PALETTE = [
-    { id: 1, name: "Kick / Intro", color: "#ef4444", hex: "#EF4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", rgb: [239, 68, 68] },
-    { id: 2, name: "Hi-Hats In", color: "#f97316", hex: "#F97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", rgb: [249, 115, 22] },
-    { id: 3, name: "Bassline", color: "#eab308", hex: "#EAB308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", rgb: [234, 179, 8] },
-    { id: 4, name: "Main Break", color: "#22c55e", hex: "#22C55E", text: "text-green-400", border: "border-green-500/50", bg: "bg-green-500/10", rgb: [34, 197, 94] },
-    { id: 5, name: "Drop 1 (Climax)", color: "#06b6d4", hex: "#06B6D4", text: "text-cyan-400", border: "border-cyan-500/50", bg: "bg-cyan-500/10", rgb: [6, 182, 212] },
-    { id: 6, name: "Mid Break", color: "#22d3ee", hex: "#3B82F6", text: "text-cyan-400", border: "border-blue-500/50", bg: "bg-blue-500/10", rgb: [59, 130, 246] },
-    { id: 7, name: "Drop 2 (Re-Kick)", color: "#a855f7", hex: "#A855F7", text: "text-purple-400", border: "border-purple-500/50", bg: "bg-purple-500/10", rgb: [168, 85, 247] },
-    { id: 8, name: "Outro Mix Point", color: "#ec4899", hex: "#EC4899", text: "text-pink-400", border: "border-pink-500/50", bg: "bg-pink-500/10", rgb: [236, 72, 153] },
-    { id: 9, name: "Blanco Serato", color: "#f8fafc", hex: "#F8FAFC", text: "text-slate-100", border: "border-slate-400/50", bg: "bg-slate-400/10", rgb: [248, 250, 252] }
-  ];
-  var parseDurationMs = (dur) => {
-    if (!dur || typeof dur !== "string") return 3e5;
-    const parts = dur.split(":");
-    if (parts.length === 2) {
-      const m = parseInt(parts[0], 10) || 0;
-      const s = parseFloat(parts[1]) || 0;
-      return Math.max(1e3, (m * 60 + s) * 1e3);
-    }
-    return 3e5;
-  };
-  var parseTimeToMs = (timeStr) => {
-    if (!timeStr || typeof timeStr !== "string") return 0;
-    const parts = timeStr.trim().split(":");
-    if (parts.length === 2) {
-      const m = parseInt(parts[0], 10) || 0;
-      const s = parseFloat(parts[1]) || 0;
-      return Math.max(0, (m * 60 + s) * 1e3);
-    }
-    const num = parseFloat(timeStr);
-    return !isNaN(num) ? Math.max(0, num * 1e3) : 0;
-  };
-  var parseDurationToSeconds = (dur) => {
-    if (typeof dur === "number") return dur > 0 ? dur : 210;
-    if (!dur) return 210;
-    const ms = parseTimeToMs(String(dur));
-    return ms > 0 ? ms / 1e3 : 210;
-  };
-  var formatMsToTime = (ms) => {
-    const totalSec = Math.max(0, ms) / 1e3;
-    const m = Math.floor(totalSec / 60);
-    const s = (totalSec % 60).toFixed(2);
-    const sPadded = s.length < 5 ? "0" + s : s;
-    return `${String(m).padStart(2, "0")}:${sPadded}`;
-  };
+
+  // web/js/waveforms/RekordboxWaveform.jsx
+  var { useState: useState5, useEffect: useEffect7, useRef: useRef7, useCallback: useCallback2 } = React;
   var RekordboxWaveform = ({
     track,
     cues = NV2_COLORS,
@@ -4322,8 +4173,8 @@
     onToggleGrid
   }) => {
     var _a, _b;
-    const canvasRef = useRef6(null);
-    const containerRef = useRef6(null);
+    const canvasRef = useRef7(null);
+    const containerRef = useRef7(null);
     const [draggingCueIdx, setDraggingCueIdx] = useState5(null);
     const [dragInfo, setDragInfo] = useState5(null);
     const rawId = track && track.id ? String(track.id) : "1";
@@ -4352,7 +4203,7 @@
         onSelectCue(activeCues[idx].id || idx + 1);
       }
     };
-    useEffect6(() => {
+    useEffect7(() => {
       if (draggingCueIdx === null) return;
       const handleMouseMove = (e) => {
         if (!containerRef.current) return;
@@ -4404,7 +4255,7 @@
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues]);
-    useEffect6(() => {
+    useEffect7(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -4593,40 +4444,9 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       )
     ));
   };
-  var CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
-    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
-    return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: onOpenStudio,
-        className: "px-2 py-0.5 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black rounded border border-djcyan-500/40 cursor-pointer shadow transition-all flex items-center gap-1 active:scale-95 group",
-        title: "Abrir en el Estudio Completo de Hot Cues con Waveform Ampliado y Scroll Horizontal"
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " Abrir Estudio"),
-      /* @__PURE__ */ React.createElement("span", { className: "group-hover:translate-x-0.5 transition-transform" }, "\u2192")
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-1.5" }, activeCues.slice(0, 8).map((cue, idx) => {
-      const padNum = cue.id !== void 0 ? cue.id : idx + 1;
-      const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4");
-      const isSelected = selectedCueId === padNum;
-      return /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          key: idx,
-          onClick: () => onSelectCue && onSelectCue(padNum),
-          className: `flex items-center justify-between p-1.5 rounded border text-[10px] font-mono cursor-pointer transition-all ${isSelected ? "bg-djzinc-850 border-djcyan-500/80 shadow-[0_0_8px_rgba(6,182,212,0.3)]" : "bg-djzinc-900/60 border-djzinc-800/80 hover:border-djzinc-700 hover:bg-djzinc-850/60"}`
-        },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 truncate" }, /* @__PURE__ */ React.createElement(
-          "span",
-          {
-            className: "w-2.5 h-2.5 rounded-full shrink-0 shadow-sm",
-            style: { backgroundColor: color }
-          }
-        ), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-gray-300 truncate max-w-[70px]" }, "P", padNum, " ", cue.short_name || cue.name || `Cue ${padNum}`)),
-        /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-mono text-[9px] shrink-0 font-semibold ml-1" }, cue.time || "00:00.00")
-      );
-    })));
-  };
+
+  // web/js/waveforms/ZoomableRekordboxWaveform.jsx
+  var { useState: useState6, useEffect: useEffect8, useRef: useRef8, useCallback: useCallback3, useMemo } = React;
   var ZoomableRekordboxWaveform = ({
     track,
     cues = NV2_COLORS,
@@ -4645,14 +4465,14 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     lang = "es"
   }) => {
     var _a, _b;
-    const scrollContainerRef = useRef6(null);
-    const canvasRef = useRef6(null);
-    const minimapCanvasRef = useRef6(null);
-    const [containerWidth, setContainerWidth] = useState5(900);
-    const [scrollLeft, setScrollLeft] = useState5(0);
-    const [draggingCueIdx, setDraggingCueIdx] = useState5(null);
-    const [dragInfo, setDragInfo] = useState5(null);
-    const isMinimapDraggingRef = useRef6(false);
+    const scrollContainerRef = useRef8(null);
+    const canvasRef = useRef8(null);
+    const minimapCanvasRef = useRef8(null);
+    const [containerWidth, setContainerWidth] = useState6(900);
+    const [scrollLeft, setScrollLeft] = useState6(0);
+    const [draggingCueIdx, setDraggingCueIdx] = useState6(null);
+    const [dragInfo, setDragInfo] = useState6(null);
+    const isMinimapDraggingRef = useRef8(false);
     const rawId = track && track.id ? String(track.id) : "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
     const durMs = parseDurationMs(duration);
@@ -4664,7 +4484,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
     const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     const totalWidth = Math.max(containerWidth, Math.round(containerWidth * Math.max(1, zoom)));
-    useEffect6(() => {
+    useEffect8(() => {
       const updateWidth = () => {
         if (scrollContainerRef.current) {
           const w = scrollContainerRef.current.clientWidth;
@@ -4678,7 +4498,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const handleScroll = (e) => {
       setScrollLeft(e.target.scrollLeft);
     };
-    useEffect6(() => {
+    useEffect8(() => {
       if (!isCurrentPlaying || !followPlayhead || !scrollContainerRef.current) return;
       const playheadPx = playProgress * totalWidth;
       const targetScroll = playheadPx - containerWidth / 2;
@@ -4692,7 +4512,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         onSelectCue(activeCues[idx].id !== void 0 ? activeCues[idx].id : idx + 1);
       }
     };
-    useEffect6(() => {
+    useEffect8(() => {
       if (draggingCueIdx === null) return;
       const handleMouseMove = (e) => {
         if (!canvasRef.current) return;
@@ -4745,7 +4565,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues, totalWidth]);
-    const [isScrubbing, setIsScrubbing] = useState5(false);
+    const [isScrubbing, setIsScrubbing] = useState6(false);
     const handleSeekToX = (clientX) => {
       if (!canvasRef.current || !onSeekTrack) return;
       const rect = canvasRef.current.getBoundingClientRect();
@@ -4759,7 +4579,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       setIsScrubbing(true);
       handleSeekToX(e.clientX);
     };
-    useEffect6(() => {
+    useEffect8(() => {
       if (!isScrubbing) return;
       const handleMouseMove = (e) => {
         handleSeekToX(e.clientX);
@@ -4778,7 +4598,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       if (!canvasRef.current || !onSeekTrack || draggingCueIdx !== null) return;
       handleSeekToX(e.clientX);
     };
-    useEffect6(() => {
+    useEffect8(() => {
       const canvas = minimapCanvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -4818,7 +4638,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         onSeekTrack(track, pct, true, targetSec);
       }
     };
-    useEffect6(() => {
+    useEffect8(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -5107,6 +4927,741 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       )
     ));
   };
+
+  // web/js/waveforms/FooterMasterWaveform.jsx
+  var { useEffect: useEffect9, useRef: useRef9 } = React;
+  var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS, t = (k) => k }) => {
+    const canvasRef = useRef9(null);
+    const containerRef = useRef9(null);
+    const bitmapRef = useRef9(null);
+    const rafRef = useRef9(null);
+    const seed = getTrackHash(track);
+    const buildBitmap = useCallback((width) => {
+      const height = 42;
+      let offscreen;
+      try {
+        offscreen = new OffscreenCanvas(width, height);
+      } catch (_) {
+        offscreen = document.createElement("canvas");
+        offscreen.width = width;
+        offscreen.height = height;
+      }
+      const ctx = offscreen.getContext("2d");
+      const centerY = height / 2;
+      ctx.fillStyle = "#07080b";
+      ctx.fillRect(0, 0, width, height);
+      const barStep = 2;
+      const amp = height * 0.47;
+      for (let x = 0; x < width; x += barStep) {
+        const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(x / width, seed, track);
+        const dim = isBreak ? 0.55 : 1;
+        const low = Math.min(1, bass * 0.75 + drums * 0.35) * dim;
+        const mid = Math.min(1, vocals * 0.6 + drums * 0.3) * 0.78 * dim;
+        const high = Math.min(1, treble * 0.9 + drums * 0.15) * 0.48 * dim;
+        const hl = Math.max(1, amp * low), hm = Math.max(0.5, amp * mid), hh = Math.max(0.5, amp * high);
+        ctx.fillStyle = "rgba(37, 99, 235, 0.95)";
+        ctx.fillRect(x, centerY - hl, barStep - 0.6, hl * 2);
+        ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
+        ctx.fillRect(x, centerY - hm, barStep - 0.6, hm * 2);
+        ctx.fillStyle = "rgba(240, 253, 255, 0.92)";
+        ctx.fillRect(x, centerY - hh, barStep - 0.6, hh * 2);
+      }
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(width, centerY);
+      ctx.stroke();
+      if (typeof offscreen.transferToImageBitmap === "function") {
+        bitmapRef.current = offscreen.transferToImageBitmap();
+      } else {
+        bitmapRef.current = offscreen;
+      }
+    }, [seed, track]);
+    useEffect9(() => {
+      if (!track || !containerRef.current) {
+        bitmapRef.current = null;
+        return;
+      }
+      const el = containerRef.current;
+      const w = el.clientWidth || 640;
+      buildBitmap(w);
+      const ro = new ResizeObserver((entries) => {
+        var _a;
+        const newW = ((_a = entries[0]) == null ? void 0 : _a.contentRect.width) | 0;
+        if (newW > 0) buildBitmap(newW);
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, [track, buildBitmap]);
+    useEffect9(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      if (!track) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+      const dpr = window.devicePixelRatio || 1;
+      const height = 42;
+      let lastPx = -1;
+      const loop = () => {
+        rafRef.current = requestAnimationFrame(loop);
+        const bitmap = bitmapRef.current;
+        if (!bitmap) return;
+        const width = canvas.parentElement ? canvas.parentElement.clientWidth || 640 : 640;
+        if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+        }
+        const pct = playProgressRef ? playProgressRef.current : 0;
+        const px = Math.round(width * Math.min(1, Math.max(0, pct)));
+        if (px === lastPx) return;
+        lastPx = px;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        if (bitmap.width && bitmap.height) {
+          ctx.drawImage(bitmap, 0, 0, width, height);
+        }
+        ctx.fillStyle = "rgba(7, 8, 11, 0.55)";
+        ctx.fillRect(0, 0, px, height);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(px - 0.5, 0, 1, height);
+        ctx.beginPath();
+        ctx.moveTo(px - 4, 0);
+        ctx.lineTo(px + 4, 0);
+        ctx.lineTo(px, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(px - 4, height);
+        ctx.lineTo(px + 4, height);
+        ctx.lineTo(px, height - 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      };
+      rafRef.current = requestAnimationFrame(loop);
+      return () => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      };
+    }, [track, playProgressRef]);
+    if (!track) {
+      return /* @__PURE__ */ React.createElement("div", { className: "flex-1 h-11 bg-[#060609]/70 rounded-lg border border-djzinc-850/80 mx-6 flex items-center justify-center select-none shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-gray-600" }), /* @__PURE__ */ React.createElement("span", null, t("deck_standby_ready_hint") || "DECK 1 STANDBY \u2022 COMENTARIO T\xC1CTICO & WAVEFORM LISTOS")));
+    }
+    const handleScrub = (e) => {
+      if (!containerRef.current || !onSeek || !track) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      onSeek(pct);
+    };
+    return /* @__PURE__ */ React.createElement("div", { ref: containerRef, onClick: handleScrub, className: "ws-wave flex-1 h-11 relative overflow-hidden group cursor-pointer flex items-center mx-6" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "100%", height: "42px", display: "block" } }), cues.map((cue, idx) => {
+      const leftPos = cue.pct !== void 0 ? cue.pct * 100 : Math.min(96, Math.max(3, idx * 12.4 + 2.5));
+      return /* @__PURE__ */ React.createElement("div", { key: cue.id || idx, className: "absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10", style: { left: `${leftPos}%` } }, /* @__PURE__ */ React.createElement("div", { className: "w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow", style: { backgroundColor: cue.color || "#ef4444" } }, cue.id || idx + 1), /* @__PURE__ */ React.createElement("div", { className: "w-[1px] h-full opacity-50", style: { backgroundColor: cue.color || "#ef4444" } }));
+    }));
+  };
+
+  // web/js/waveforms/CopilotSeratoWaveform.jsx
+  var { useState: useState7, useEffect: useEffect10, useRef: useRef10, useMemo: useMemo2 } = React;
+  var CopilotSeratoWaveform = ({
+    deck,
+    side = "1",
+    antiMuddy = null,
+    partnerDeck = null
+  }) => {
+    const canvasRef = useRef10(null);
+    const minimapRef = useRef10(null);
+    const minimapCacheRef = useRef10(null);
+    const [zoom, setZoom] = useState7(4);
+    const [showTacticalAids, setShowTacticalAids] = useState7(true);
+    const [hoveredMilestone, setHoveredMilestone] = useState7(null);
+    const initialProgress = typeof deck.play_progress === "number" && !isNaN(deck.play_progress) ? deck.play_progress : 0;
+    const [progress, setProgress] = useState7(initialProgress);
+    const progressRef = useRef10(initialProgress);
+    const isPlayingRef = useRef10(Boolean(deck.is_playing));
+    const bpmRef = useRef10(deck.bpm || 130);
+    const durationSecRef = useRef10(deck.duration_sec || 390);
+    useEffect10(() => {
+      if (deck.play_progress !== void 0 && deck.play_progress !== null) {
+        const diff = Math.abs(progressRef.current - deck.play_progress);
+        if (diff > 0.01) {
+          progressRef.current = deck.play_progress;
+          setProgress(deck.play_progress);
+        }
+      }
+      isPlayingRef.current = Boolean(deck.is_playing);
+      bpmRef.current = parseFloat(deck.bpm) || 130;
+      durationSecRef.current = parseFloat(deck.duration_sec) || 390;
+    }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
+    useEffect10(() => {
+      let animId;
+      let lastTime = performance.now();
+      let lastUiUpdate = 0;
+      const tick = (now) => {
+        const dt = (now - lastTime) / 1e3;
+        lastTime = now;
+        if (isPlayingRef.current && durationSecRef.current > 0) {
+          const advance = dt / durationSecRef.current;
+          const next = (progressRef.current + advance) % 1;
+          progressRef.current = next;
+          if (now - lastUiUpdate >= 33) {
+            lastUiUpdate = now;
+            setProgress(next);
+          }
+        }
+        if (isPlayingRef.current) {
+          animId = requestAnimationFrame(tick);
+        }
+      };
+      if (isPlayingRef.current) {
+        animId = requestAnimationFrame(tick);
+      }
+      return () => {
+        if (animId) cancelAnimationFrame(animId);
+      };
+    }, [deck.is_playing]);
+    const rawId = deck.file_path || deck.title || "1";
+    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+    const durSec = deck.duration_sec || 390;
+    const elapsedSec = progress * durSec;
+    const remainSec = Math.max(0, durSec - elapsedSec);
+    const overviewBytes = useMemo2(() => {
+      if (!deck.serato_overview) return null;
+      try {
+        const bin = atob(deck.serato_overview);
+        const u8 = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) {
+          u8[i] = bin.charCodeAt(i);
+        }
+        return u8;
+      } catch (e) {
+        return null;
+      }
+    }, [deck.serato_overview]);
+    const formatSec = (s) => {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    };
+    const cues = deck.cues || [
+      { id: 1, name: "Downbeat 1.0.0", color: "#ef4444", pct: 0.04, time: "00:00.25", directive: "Punto de anclaje inicial. Arranca beatmatching aqu\xED." },
+      { id: 2, name: "Intro Perc", color: "#f97316", pct: 0.16, time: "01:04.00", directive: "Entrada de caja y charles. Inicia subida gradual del fader." },
+      { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck." },
+      { id: 4, name: "MAIN DROP", color: "#10b981", pct: 0.48, time: "03:12.00", directive: "Cl\xEDmax 100% de potencia. Corta totalmente los graves del deck saliente." },
+      { id: 5, name: "Breakdown", color: "#06b6d4", pct: 0.62, time: "04:16.00", directive: "Par\xF3n mel\xF3dico sin bombo. Ventana id\xF3nea para transiciones vocales." },
+      { id: 6, name: "Climax 2", color: "#22d3ee", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mant\xE9n energ\xEDa alta." },
+      { id: 7, name: "Outro 32b", color: "#8b5cf6", pct: 0.86, time: "06:08.00", directive: "Se retiran capas r\xEDtmicas. Zona recomendada para mezclar track entrante." },
+      { id: 8, name: "Cut / Fade", color: "#ec4899", pct: 0.96, time: "07:15.00", directive: "Final de pista. Fade-out o corte antes del silencio." }
+    ];
+    const phases = deck.structural_phases || [
+      { id: "intro", name: "Intro", start_pct: 0, end_pct: 0.16, type: "intro", label: "Intro 32b \u2022 Mezcla In", color: "#06b6d4", directive: "32 compases de entrada. Sincroniza beatgrid." },
+      { id: "build", name: "Bassline In", start_pct: 0.16, end_pct: 0.35, type: "build", label: "Bassline Activa", color: "#eab308", directive: "Filtra frecuencias sub con filtro High-Pass." },
+      { id: "break", name: "Breakdown", start_pct: 0.35, end_pct: 0.48, type: "break", label: "Breakdown (Sin Graves)", color: "#38bdf8", directive: "Sin bombo. Oportunidad para cruce de leads o acapellas." },
+      { id: "drop", name: "MAIN DROP", start_pct: 0.48, end_pct: 0.74, type: "drop", label: "\u26A1 DROP PRINCIPAL (Cl\xEDmax)", color: "#ef4444", directive: "Energ\xEDa m\xE1xima en pista. Kill switch en graves opuestos." },
+      { id: "break2", name: "Segundo Par\xF3n", start_pct: 0.74, end_pct: 0.82, type: "break", label: "Puente Mel\xF3dico", color: "#a855f7", directive: "Transici\xF3n mel\xF3dica antes del outro." },
+      { id: "outro", name: "Outro", start_pct: 0.82, end_pct: 1, type: "outro", label: "\u{1F7E2} MEZCLA SEGURA (Outro)", color: "#10b981", directive: "Zona segura de mezcla. Abre canal entrante." }
+    ];
+    const nextCue = cues.find((c) => (c.pct || 0) > progress);
+    const beatsToNextCue = nextCue && deck.bpm ? Math.round((nextCue.pct - progress) * durSec / (60 / deck.bpm)) : null;
+    const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
+    const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
+    const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
+    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44;
+    useEffect10(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || canvas.parentElement.clientWidth || 550;
+      const h = 88;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      const ctx = canvas.getContext("2d");
+      if (ctx.resetTransform) ctx.resetTransform();
+      else ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = "#05050a";
+      ctx.fillRect(0, 0, w, h);
+      const midY = h / 2;
+      const playheadX = w / 2;
+      const windowSec = durSec / zoom;
+      const halfWindowSec = windowSec / 2;
+      const currentSec = progress * durSec;
+      const startSec = currentSec - halfWindowSec;
+      const endSec = currentSec + halfWindowSec;
+      const bpm = deck.bpm || 130;
+      const beatSec = 60 / bpm;
+      const downbeatSec = deck && deck.first_downbeat_ms ? parseFloat(deck.first_downbeat_ms) / 1e3 : 0;
+      if (beatSec > 0) {
+        const firstBeatIdx = Math.floor((startSec - downbeatSec) / beatSec);
+        const lastBeatIdx = Math.ceil((endSec - downbeatSec) / beatSec);
+        for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
+          const bSec = downbeatSec + b * beatSec;
+          const bx = playheadX + (bSec - currentSec) / windowSec * w;
+          if (bx >= 0 && bx <= w) {
+            const isBar = b % 4 === 0;
+            const isPhrase = b % 16 === 0;
+            ctx.strokeStyle = isPhrase ? "rgba(255, 255, 255, 0.45)" : isBar ? "rgba(255, 255, 255, 0.22)" : "rgba(255, 255, 255, 0.08)";
+            ctx.lineWidth = isPhrase ? 1.5 : 1;
+            ctx.beginPath();
+            ctx.moveTo(bx, isBar ? 6 : 14);
+            ctx.lineTo(bx, h - (isBar ? 6 : 14));
+            ctx.stroke();
+            if (isBar && bx > 15 && bx < w - 25) {
+              ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+              ctx.font = "8px monospace";
+              ctx.fillText(`${Math.floor(b / 4) + 1}`, bx + 2, 12);
+            }
+          }
+        }
+      }
+      if (showTacticalAids) {
+        phases.forEach((ph) => {
+          const phStartSec = ph.start_pct * durSec;
+          const phEndSec = ph.end_pct * durSec;
+          if (phEndSec >= startSec && phStartSec <= endSec) {
+            const x1 = Math.max(0, playheadX + (phStartSec - currentSec) / windowSec * w);
+            const x2 = Math.min(w, playheadX + (phEndSec - currentSec) / windowSec * w);
+            if (x2 > x1) {
+              ctx.fillStyle = `${ph.color}14`;
+              ctx.fillRect(x1, 0, x2 - x1, h);
+              ctx.fillStyle = `${ph.color}88`;
+              ctx.fillRect(x1, 0, x2 - x1, 2);
+            }
+          }
+        });
+        if (isBassClashDanger) {
+          ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
+          ctx.fillRect(playheadX - 60, 0, 120, h);
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.8)";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(playheadX - 60, 0, 120, h);
+        }
+      }
+      const stepPx = 2;
+      const totalSlices = Math.ceil(w / stepPx);
+      for (let i = 0; i < totalSlices; i++) {
+        const x = i * stepPx;
+        const sliceSec = startSec + x / w * windowSec;
+        const sliceNorm = sliceSec / durSec;
+        if (sliceNorm >= 0 && sliceNorm <= 1) {
+          let bass, mid, treble;
+          if (overviewBytes && overviewBytes.length >= 3840) {
+            const colIdx = Math.min(1279, Math.max(0, Math.floor(sliceNorm * 1280)));
+            const byteOffset = colIdx * 3;
+            bass = Math.min(1, (overviewBytes[byteOffset] || 0) / 220);
+            mid = Math.min(1, (overviewBytes[byteOffset + 1] || 0) / 120);
+            treble = Math.min(1, (overviewBytes[byteOffset + 2] || 0) / 120);
+          } else {
+            const bands = computeTrackStructuralBands(sliceNorm, seed, deck);
+            bass = bands.bass;
+            mid = Math.max(bands.drums, bands.vocals);
+            treble = bands.treble;
+          }
+          const maxAmp = h / 2 - 8;
+          const bassAmp = bass * maxAmp * 0.95;
+          ctx.fillStyle = "#ef4444";
+          ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
+          const midAmp = mid * maxAmp * 0.72;
+          ctx.fillStyle = "#06b6d4";
+          ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
+          const trebAmp = treble * maxAmp * 0.48;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
+          if (bass > 0.85) {
+            ctx.fillStyle = "#fbbf24";
+            ctx.fillRect(x, midY - 2, stepPx - 0.4, 4);
+          }
+        }
+      }
+      if (showTacticalAids) {
+        cues.forEach((cue) => {
+          const cueSec = (cue.pct !== void 0 ? cue.pct : 0) * durSec;
+          if (cueSec >= startSec && cueSec <= endSec) {
+            const cx = playheadX + (cueSec - currentSec) / windowSec * w;
+            if (cx >= 0 && cx <= w) {
+              ctx.strokeStyle = cue.color || "#06b6d4";
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.moveTo(cx, 0);
+              ctx.lineTo(cx, h);
+              ctx.stroke();
+              ctx.fillStyle = cue.color || "#06b6d4";
+              ctx.fillRect(cx - 1, 2, 16, 12);
+              ctx.fillStyle = "#000000";
+              ctx.font = "bold 8px monospace";
+              ctx.fillText(`C${cue.id || ""}`, cx + 2, 11);
+            }
+          }
+        });
+      }
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(playheadX, 0);
+      ctx.lineTo(playheadX, h);
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(playheadX - 5, 0);
+      ctx.lineTo(playheadX + 5, 0);
+      ctx.lineTo(playheadX, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(playheadX - 5, h);
+      ctx.lineTo(playheadX + 5, h);
+      ctx.lineTo(playheadX, h - 8);
+      ctx.closePath();
+      ctx.fill();
+      const miniCanvas = minimapRef.current;
+      if (!miniCanvas) return;
+      const mRect = miniCanvas.getBoundingClientRect();
+      const mw = mRect.width || miniCanvas.parentElement.clientWidth || 550;
+      const mh = 22;
+      miniCanvas.width = Math.round(mw * dpr);
+      miniCanvas.height = Math.round(mh * dpr);
+      const mCtx = miniCanvas.getContext("2d");
+      if (mCtx.resetTransform) mCtx.resetTransform();
+      else mCtx.setTransform(1, 0, 0, 1, 0, 0);
+      mCtx.scale(dpr, dpr);
+      const cacheKey = `${rawId}_${mw}_${showTacticalAids}_${overviewBytes ? "real" : "synth"}`;
+      if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
+        const off = document.createElement("canvas");
+        off.width = Math.round(mw * dpr);
+        off.height = Math.round(mh * dpr);
+        const oCtx = off.getContext("2d");
+        if (oCtx.resetTransform) oCtx.resetTransform();
+        else oCtx.setTransform(1, 0, 0, 1, 0, 0);
+        oCtx.scale(dpr, dpr);
+        oCtx.fillStyle = "#06060e";
+        oCtx.fillRect(0, 0, mw, mh);
+        const mStep = 2;
+        const mSlices = Math.ceil(mw / mStep);
+        for (let j = 0; j < mSlices; j++) {
+          const mx = j * mStep;
+          const mNorm = mx / mw;
+          let bVal, mVal, tVal;
+          if (overviewBytes && overviewBytes.length >= 3840) {
+            const colIdx = Math.min(1279, Math.max(0, Math.floor(mNorm * 1280)));
+            const byteOffset = colIdx * 3;
+            bVal = Math.min(1, (overviewBytes[byteOffset] || 0) / 220);
+            mVal = Math.min(1, (overviewBytes[byteOffset + 1] || 0) / 120);
+            tVal = Math.min(1, (overviewBytes[byteOffset + 2] || 0) / 120);
+          } else {
+            const bands = computeTrackStructuralBands(mNorm, seed, deck);
+            bVal = bands.bass;
+            mVal = Math.max(bands.drums, bands.vocals);
+            tVal = bands.treble;
+          }
+          const mHalf = mh / 2;
+          const bAmp = bVal * (mHalf - 2);
+          const mAmp = mVal * (mHalf - 3);
+          const tAmp = tVal * (mHalf - 4);
+          oCtx.fillStyle = "#ef4444";
+          oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+          oCtx.fillStyle = "#06b6d4";
+          oCtx.fillRect(mx, mHalf - mAmp, mStep - 0.4, mAmp * 2);
+          oCtx.fillStyle = "#ffffff";
+          oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+        }
+        if (showTacticalAids) {
+          phases.forEach((ph) => {
+            const px1 = ph.start_pct * mw;
+            const px2 = ph.end_pct * mw;
+            oCtx.fillStyle = `${ph.color}25`;
+            oCtx.fillRect(px1, 0, px2 - px1, mh);
+            oCtx.fillStyle = ph.color;
+            oCtx.fillRect(px1, 0, px2 - px1, 1.5);
+          });
+          cues.forEach((cue) => {
+            const cx = (cue.pct || 0) * mw;
+            oCtx.fillStyle = cue.color || "#06b6d4";
+            oCtx.fillRect(cx - 0.5, 0, 1.5, mh);
+          });
+        }
+        minimapCacheRef.current = { key: cacheKey, canvas: off };
+      }
+      mCtx.drawImage(minimapCacheRef.current.canvas, 0, 0, mw, mh);
+      const vStart = Math.max(0, startSec / durSec * mw);
+      const vEnd = Math.min(mw, endSec / durSec * mw);
+      mCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
+      mCtx.fillRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+      mCtx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+      mCtx.lineWidth = 1;
+      mCtx.strokeRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+      const mPlayheadX = progress * mw;
+      mCtx.fillStyle = "#ffffff";
+      mCtx.fillRect(mPlayheadX - 1, 0, 2, mh);
+    }, [zoom, showTacticalAids, progress, deck, antiMuddy, isBassClashDanger]);
+    const handleMinimapClick = (e) => {
+      const miniCanvas = minimapRef.current;
+      if (!miniCanvas) return;
+      const rect = miniCanvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const newPct = Math.max(0, Math.min(1, clickX / rect.width));
+      progressRef.current = newPct;
+      setProgress(newPct);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner" }, showTacticalAids && /* @__PURE__ */ React.createElement("div", { className: "relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, !deck.is_playing ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/70 text-indigo-200 font-mono text-[11px] font-bold shadow-[0_0_12px_rgba(99,102,241,0.3)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("span", null, "EN CUE (PREPARADO) \u2794 Listo para soltar en primer bombo (Bar 1)")) : isBassClashDanger ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-500 text-red-200 font-mono text-[11px] font-bold shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse ring-1 ring-red-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "EN ", barsToNextCue || 8, " COMPASES (", formatSec(timeToNextCue || 16), ") \u2794 BASS CLASH: Cortar Low EQ")) : nextCue ? timeToNextCue <= 5 && timeToNextCue > 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-600 text-white font-mono text-[11px] font-black shadow-[0_0_25px_rgba(239,68,68,1)] ring-2 ring-red-400 border border-white animate-pulse scale-105" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm animate-bounce" }, "\u{1F6A8}"), /* @__PURE__ */ React.createElement("span", null, "\xA1ATENCI\xD3N! EN ", /* @__PURE__ */ React.createElement("strong", { className: "text-yellow-300 font-orbitron" }, formatSec(timeToNextCue)), " \u2794 ", /* @__PURE__ */ React.createElement("span", { className: "uppercase tracking-wider" }, nextCue.name))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djcyan-950/60 border border-djcyan-500/60 text-djcyan-300 font-mono text-[11px] font-bold" }, /* @__PURE__ */ React.createElement("span", null, "\u23F3"), /* @__PURE__ */ React.createElement("span", null, "EN ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-orbitron" }, barsToNextCue), " BARS (", formatSec(timeToNextCue), ") \u2794 ", /* @__PURE__ */ React.createElement("span", { className: "text-white uppercase" }, nextCue.name))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-mono text-[11px] font-bold" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F7E2}"), /* @__PURE__ */ React.createElement("span", null, "EN ZONA SEGURA DE MEZCLA (OUTRO)"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase text-amber-400 font-bold mr-1 hidden md:inline" }, "\u{1F3AF} Hitos:"), phases.map((ph) => {
+      const phStart = ph.start_pct || 0;
+      const isPassed = phStart <= progress;
+      const isCurrent = progress >= ph.start_pct && progress < ph.end_pct;
+      const iconsMap = { intro: "\u{1F680}", build: "\u{1F6D1}", break: "\u{1F30A}", break2: "\u{1F30A}", drop: "\u{1F3AF}", outro: "\u{1F3C1}" };
+      const icon = iconsMap[ph.type] || "\u26A1";
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: ph.id,
+          onMouseEnter: () => setHoveredMilestone({
+            name: ph.name || ph.label,
+            time: formatSec(ph.start_pct * durSec),
+            pct: ph.start_pct,
+            color: ph.color,
+            directive: ph.directive || ph.label
+          }),
+          onMouseLeave: () => setHoveredMilestone(null),
+          className: `relative px-1.5 py-0.5 rounded cursor-pointer transition-all text-[9px] font-mono font-bold flex items-center gap-1 border ${isCurrent ? "bg-amber-400 text-black border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)] scale-105 ring-1 ring-white" : isPassed ? "bg-zinc-900/80 text-zinc-400 border-zinc-800" : "bg-zinc-950 text-zinc-300 border-zinc-700/60 hover:border-amber-400"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, icon),
+        /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[70px]" }, ph.name.toUpperCase())
+      );
+    }))), hoveredMilestone && /* @__PURE__ */ React.createElement("div", { className: "absolute left-2 right-2 top-full mt-1.5 z-30 p-2.5 rounded-xl bg-black/95 border border-djcyan-500/60 shadow-2xl backdrop-blur-md text-xs font-mono animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-zinc-800 pb-1 mb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: hoveredMilestone.color } }), hoveredMilestone.name, " (", hoveredMilestone.time, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono" }, "Comp\xE1s ", Math.round(hoveredMilestone.pct * durSec / (60 / (deck.bpm || 130)) / 4))), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300 leading-relaxed" }, /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, "Acci\xF3n DJ:"), " ", hoveredMilestone.directive || "Ajuste de ganancia y sincron\xEDa arm\xF3nica antes del drop."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 flex-wrap text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowTacticalAids(!showTacticalAids),
+        className: `flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${showTacticalAids ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`,
+        title: "Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
+      },
+      /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "\u{1F3AF}" : "\u26AA"),
+      /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "Ayudas DJ" : "Puro Wave")
+    ), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400" }, overviewBytes && /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1 font-mono text-[8.5px] font-black px-1.5 py-0.2 rounded bg-red-950/70 border border-red-500/50 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.3)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" }), "SERATO OVERVIEW REAL"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ef4444]" }), "Graves (<200Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#06b6d4]" }), "Medios (200Hz-2.5kHz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ffffff]" }), "Agudos (>2.5kHz)"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]" }, [2, 4, 8, 16].map((z) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: z,
+        type: "button",
+        onClick: () => setZoom(z),
+        className: `px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${zoom === z ? "bg-djcyan-500 text-black shadow" : "text-zinc-400 hover:text-white"}`
+      },
+      z,
+      "x"
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, formatSec(elapsedSec)), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "-", formatSec(remainSec))))), /* @__PURE__ */ React.createElement("div", { className: "relative w-full rounded-xl overflow-hidden border border-zinc-800/80 bg-[#05050b]" }, /* @__PURE__ */ React.createElement(
+      "canvas",
+      {
+        ref: canvasRef,
+        style: { width: "100%", height: "88px", display: "block" }
+      }
+    )), /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onClick: handleMinimapClick,
+        className: "relative w-full rounded-lg overflow-hidden border border-zinc-800/60 bg-[#06060e] cursor-pointer hover:border-zinc-700 transition-colors",
+        title: "Haz clic en cualquier punto para saltar en la pista"
+      },
+      /* @__PURE__ */ React.createElement(
+        "canvas",
+        {
+          ref: minimapRef,
+          style: { width: "100%", height: "22px", display: "block" }
+        }
+      )
+    ));
+  };
+
+  // web/js/app.jsx
+  var { useState: useState8, useEffect: useEffect11, useRef: useRef11, useMemo: useMemo3, useCallback: useCallback4, createContext, useContext } = React;
+  var PlayerContext = createContext({
+    playProgressRef: { current: 0 },
+    isPlaying: false,
+    nowPlayingTrack: null
+  });
+  var Icons = {
+    ...ShellIcons,
+    Edit: ShellIcons.Pencil
+  };
+  var SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
+  var SectionTitle = ({ icon: Icon, title, accent, badge, accentColor = "cyan", className = "" }) => {
+    const isPurple = accentColor === "purple";
+    const iconBg = isPurple ? "bg-purple-500/15 border-purple-500/40 text-purple-300" : "bg-djcyan-500/10 border-djcyan-500/30 text-djcyan-400";
+    const accentText = isPurple ? "text-purple-400" : "text-djcyan-400";
+    const badgeStyle = isPurple ? "bg-purple-950/80 text-purple-300 border-purple-800" : "bg-djcyan-950 text-djcyan-400 border-djcyan-800";
+    return /* @__PURE__ */ React.createElement("div", { className: `flex items-center gap-2.5 min-w-0 shrink-0 ${className}` }, Icon && /* @__PURE__ */ React.createElement("span", { className: `w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}` }, /* @__PURE__ */ React.createElement(Icon, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: `${SECTION_TITLE_CLASS} truncate` }, title, accent && /* @__PURE__ */ React.createElement("span", { className: accentText }, " ", accent)), badge && /* @__PURE__ */ React.createElement("span", { className: `hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}` }, badge));
+  };
+  var InfoTip = ({ text, title }) => {
+    const [coords, setCoords] = useState8(null);
+    const btnRef = useRef11(null);
+    const handleEnter = () => {
+      if (!btnRef.current) return;
+      const rect = btnRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.top + rect.height / 2,
+        right: window.innerWidth - rect.left + 12
+      });
+    };
+    const handleLeave = () => setCoords(null);
+    return /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center ml-1.5 align-middle" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        ref: btnRef,
+        type: "button",
+        onMouseEnter: handleEnter,
+        onMouseLeave: handleLeave,
+        onClick: (e) => {
+          e.stopPropagation();
+          coords ? handleLeave() : handleEnter();
+        },
+        className: "w-3.5 h-3.5 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black border border-djzinc-600 flex items-center justify-center text-[9px] font-mono font-bold text-gray-400 transition-colors cursor-help select-none shrink-0"
+      },
+      "i"
+    ), coords && ReactDOM.createPortal(
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            position: "fixed",
+            top: `${coords.top}px`,
+            right: `${coords.right}px`,
+            transform: "translateY(-50%)",
+            zIndex: 999999
+          },
+          className: "w-72 bg-djzinc-900 border border-djzinc-700 rounded-lg p-3 text-xs text-gray-200 shadow-[0_12px_36px_rgba(0,0,0,0.95),0_0_15px_rgba(6,182,212,0.2)] pointer-events-none select-none"
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-djzinc-900 border-t border-r border-djzinc-700 rotate-45" }),
+        title && /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-bold text-djcyan-400 mb-1 uppercase tracking-wider flex items-center gap-1.5 border-b border-djzinc-800 pb-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400" }), title),
+        /* @__PURE__ */ React.createElement("div", { className: "text-[11px] leading-relaxed text-gray-300 font-sans break-words whitespace-normal" }, text)
+      ),
+      document.body
+    ));
+  };
+  function getAudioEQNodes(audioElement) {
+    if (!audioElement) return null;
+    if (window.__bwAudioNodes && window.__bwAudioNodes.audio === audioElement) {
+      if (window.__bwAudioNodes.ctx.state === "suspended") {
+        window.__bwAudioNodes.ctx.resume().catch(() => {
+        });
+      }
+      return window.__bwAudioNodes;
+    }
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return null;
+      const ctx = new AudioCtx();
+      const source = ctx.createMediaElementSource(audioElement);
+      const low = ctx.createBiquadFilter();
+      low.type = "lowshelf";
+      low.frequency.value = 250;
+      low.gain.value = 0;
+      const mid = ctx.createBiquadFilter();
+      mid.type = "peaking";
+      mid.frequency.value = 1e3;
+      mid.Q.value = 1;
+      mid.gain.value = 0;
+      const high = ctx.createBiquadFilter();
+      high.type = "highshelf";
+      high.frequency.value = 3500;
+      high.gain.value = 0;
+      source.connect(low);
+      low.connect(mid);
+      mid.connect(high);
+      high.connect(ctx.destination);
+      const nodes = { audio: audioElement, ctx, source, low, mid, high };
+      window.__bwAudioNodes = nodes;
+      return nodes;
+    } catch (e) {
+      console.warn("Web Audio EQ initialization note:", e);
+      return null;
+    }
+  }
+  var RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, onChange, color = "#06b6d4" }) => {
+    const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+    const angle = -135 + normalized * 270;
+    const handlePointerDown = (e) => {
+      e.preventDefault();
+      const startY = e.clientY || e.touches && e.touches[0].clientY || 0;
+      const startVal = value;
+      const onPointerMove = (me) => {
+        const currentY = me.clientY || me.touches && me.touches[0].clientY || 0;
+        const deltaY = startY - currentY;
+        const range = max - min;
+        const step = deltaY * (range / 120);
+        const newVal = Math.min(max, Math.max(min, Math.round((startVal + step) * 10) / 10));
+        if (onChange) onChange(newVal);
+      };
+      const onPointerUp = () => {
+        window.removeEventListener("mousemove", onPointerMove);
+        window.removeEventListener("mouseup", onPointerUp);
+        window.removeEventListener("touchmove", onPointerMove);
+        window.removeEventListener("touchend", onPointerUp);
+      };
+      window.addEventListener("mousemove", onPointerMove);
+      window.addEventListener("mouseup", onPointerUp);
+      window.addEventListener("touchmove", onPointerMove);
+      window.addEventListener("touchend", onPointerUp);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1 select-none" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-gray-400 tracking-wider uppercase" }, label), /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onMouseDown: handlePointerDown,
+        onTouchStart: handlePointerDown,
+        onDoubleClick: () => onChange && onChange(defaultValue),
+        className: "w-10 h-10 rounded-full bg-gradient-to-b from-[#181826] to-[#0c0c14] border-2 border-djzinc-700 hover:border-gray-400 relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center group active:scale-95 transition-transform",
+        title: `${label}: ${value > 0 ? "+" : ""}${value.toFixed(1)} dB (Doble clic para 0dB)`
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "absolute w-full h-full rounded-full pointer-events-none",
+          style: { transform: `rotate(${angle}deg)` }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "w-1 h-3 rounded-full mx-auto mt-0.5 shadow-sm",
+            style: { backgroundColor: color, boxShadow: `0 0 8px ${color}` }
+          }
+        )
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-1 rounded-full bg-djzinc-500" }))
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-300 font-extrabold" }, value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7.5px] text-gray-500 font-normal" }, "dB")));
+  };
+  var CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
+    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
+    return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onOpenStudio,
+        className: "px-2 py-0.5 text-[9px] font-mono font-bold bg-djcyan-500/20 hover:bg-djcyan-500 text-djcyan-300 hover:text-black rounded border border-djcyan-500/40 cursor-pointer shadow transition-all flex items-center gap-1 active:scale-95 group",
+        title: "Abrir en el Estudio Completo de Hot Cues con Waveform Ampliado y Scroll Horizontal"
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " Abrir Estudio"),
+      /* @__PURE__ */ React.createElement("span", { className: "group-hover:translate-x-0.5 transition-transform" }, "\u2192")
+    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-1.5" }, activeCues.slice(0, 8).map((cue, idx) => {
+      const padNum = cue.id !== void 0 ? cue.id : idx + 1;
+      const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4");
+      const isSelected = selectedCueId === padNum;
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: idx,
+          onClick: () => onSelectCue && onSelectCue(padNum),
+          className: `flex items-center justify-between p-1.5 rounded border text-[10px] font-mono cursor-pointer transition-all ${isSelected ? "bg-djzinc-850 border-djcyan-500/80 shadow-[0_0_8px_rgba(6,182,212,0.3)]" : "bg-djzinc-900/60 border-djzinc-800/80 hover:border-djzinc-700 hover:bg-djzinc-850/60"}`
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 truncate" }, /* @__PURE__ */ React.createElement(
+          "span",
+          {
+            className: "w-2.5 h-2.5 rounded-full shrink-0 shadow-sm",
+            style: { backgroundColor: color }
+          }
+        ), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-gray-300 truncate max-w-[70px]" }, "P", padNum, " ", cue.short_name || cue.name || `Cue ${padNum}`)),
+        /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-mono text-[9px] shrink-0 font-semibold ml-1" }, cue.time || "00:00.00")
+      );
+    })));
+  };
   var HotCueStudioModal = ({
     isOpen,
     onClose,
@@ -5135,13 +5690,13 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
-    const [snapToGrid, setSnapToGrid] = useState5(true);
-    const [showBeatgrid, setShowBeatgrid] = useState5(true);
-    const [timeInputValue, setTimeInputValue] = useState5(currentCue.time || "00:00.00");
-    const [nameInputValue, setNameInputValue] = useState5(currentCue.name || "");
-    const [isSavingLocal, setIsSavingLocal] = useState5(false);
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState5("");
-    useEffect6(() => {
+    const [snapToGrid, setSnapToGrid] = useState8(true);
+    const [showBeatgrid, setShowBeatgrid] = useState8(true);
+    const [timeInputValue, setTimeInputValue] = useState8(currentCue.time || "00:00.00");
+    const [nameInputValue, setNameInputValue] = useState8(currentCue.name || "");
+    const [isSavingLocal, setIsSavingLocal] = useState8(false);
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState8("");
+    useEffect11(() => {
       setTimeInputValue(currentCue.time || "00:00.00");
       setNameInputValue(currentCue.name || currentCue.short_name || `Cue ${currentCue.id || 1}`);
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -5546,139 +6101,6 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       /* @__PURE__ */ React.createElement("span", null, isSavingLocal ? "Guardando en Archivo..." : "Guardar Pista en Fichero")
     )))));
   };
-  var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS, t = (k) => k }) => {
-    const canvasRef = useRef6(null);
-    const containerRef = useRef6(null);
-    const bitmapRef = useRef6(null);
-    const rafRef = useRef6(null);
-    const seed = getTrackHash(track);
-    const buildBitmap = useCallback((width) => {
-      const height = 42;
-      let offscreen;
-      try {
-        offscreen = new OffscreenCanvas(width, height);
-      } catch (_) {
-        offscreen = document.createElement("canvas");
-        offscreen.width = width;
-        offscreen.height = height;
-      }
-      const ctx = offscreen.getContext("2d");
-      const centerY = height / 2;
-      ctx.fillStyle = "#07080b";
-      ctx.fillRect(0, 0, width, height);
-      const barStep = 2;
-      const amp = height * 0.47;
-      for (let x = 0; x < width; x += barStep) {
-        const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(x / width, seed, track);
-        const dim = isBreak ? 0.55 : 1;
-        const low = Math.min(1, bass * 0.75 + drums * 0.35) * dim;
-        const mid = Math.min(1, vocals * 0.6 + drums * 0.3) * 0.78 * dim;
-        const high = Math.min(1, treble * 0.9 + drums * 0.15) * 0.48 * dim;
-        const hl = Math.max(1, amp * low), hm = Math.max(0.5, amp * mid), hh = Math.max(0.5, amp * high);
-        ctx.fillStyle = "rgba(37, 99, 235, 0.95)";
-        ctx.fillRect(x, centerY - hl, barStep - 0.6, hl * 2);
-        ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
-        ctx.fillRect(x, centerY - hm, barStep - 0.6, hm * 2);
-        ctx.fillStyle = "rgba(240, 253, 255, 0.92)";
-        ctx.fillRect(x, centerY - hh, barStep - 0.6, hh * 2);
-      }
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(width, centerY);
-      ctx.stroke();
-      if (typeof offscreen.transferToImageBitmap === "function") {
-        bitmapRef.current = offscreen.transferToImageBitmap();
-      } else {
-        bitmapRef.current = offscreen;
-      }
-    }, [seed, track]);
-    useEffect6(() => {
-      if (!track || !containerRef.current) {
-        bitmapRef.current = null;
-        return;
-      }
-      const el = containerRef.current;
-      const w = el.clientWidth || 640;
-      buildBitmap(w);
-      const ro = new ResizeObserver((entries) => {
-        var _a;
-        const newW = ((_a = entries[0]) == null ? void 0 : _a.contentRect.width) | 0;
-        if (newW > 0) buildBitmap(newW);
-      });
-      ro.observe(el);
-      return () => ro.disconnect();
-    }, [track, buildBitmap]);
-    useEffect6(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      if (!track) {
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        return;
-      }
-      const dpr = window.devicePixelRatio || 1;
-      const height = 42;
-      let lastPx = -1;
-      const loop = () => {
-        rafRef.current = requestAnimationFrame(loop);
-        const bitmap = bitmapRef.current;
-        if (!bitmap) return;
-        const width = canvas.parentElement ? canvas.parentElement.clientWidth || 640 : 640;
-        if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
-          canvas.width = width * dpr;
-          canvas.height = height * dpr;
-        }
-        const pct = playProgressRef ? playProgressRef.current : 0;
-        const px = Math.round(width * Math.min(1, Math.max(0, pct)));
-        if (px === lastPx) return;
-        lastPx = px;
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.scale(dpr, dpr);
-        if (bitmap.width && bitmap.height) {
-          ctx.drawImage(bitmap, 0, 0, width, height);
-        }
-        ctx.fillStyle = "rgba(7, 8, 11, 0.55)";
-        ctx.fillRect(0, 0, px, height);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(px - 0.5, 0, 1, height);
-        ctx.beginPath();
-        ctx.moveTo(px - 4, 0);
-        ctx.lineTo(px + 4, 0);
-        ctx.lineTo(px, 4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(px - 4, height);
-        ctx.lineTo(px + 4, height);
-        ctx.lineTo(px, height - 4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      };
-      rafRef.current = requestAnimationFrame(loop);
-      return () => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      };
-    }, [track, playProgressRef]);
-    if (!track) {
-      return /* @__PURE__ */ React.createElement("div", { className: "flex-1 h-11 bg-[#060609]/70 rounded-lg border border-djzinc-850/80 mx-6 flex items-center justify-center select-none shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-mono text-gray-500 uppercase tracking-widest" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-gray-600" }), /* @__PURE__ */ React.createElement("span", null, t("deck_standby_ready_hint") || "DECK 1 STANDBY \u2022 COMENTARIO T\xC1CTICO & WAVEFORM LISTOS")));
-    }
-    const handleScrub = (e) => {
-      if (!containerRef.current || !onSeek || !track) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const pct = Math.max(0, Math.min(1, clickX / rect.width));
-      onSeek(pct);
-    };
-    return /* @__PURE__ */ React.createElement("div", { ref: containerRef, onClick: handleScrub, className: "ws-wave flex-1 h-11 relative overflow-hidden group cursor-pointer flex items-center mx-6" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "100%", height: "42px", display: "block" } }), cues.map((cue, idx) => {
-      const leftPos = cue.pct !== void 0 ? cue.pct * 100 : Math.min(96, Math.max(3, idx * 12.4 + 2.5));
-      return /* @__PURE__ */ React.createElement("div", { key: cue.id || idx, className: "absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10", style: { left: `${leftPos}%` } }, /* @__PURE__ */ React.createElement("div", { className: "w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow", style: { backgroundColor: cue.color || "#ef4444" } }, cue.id || idx + 1), /* @__PURE__ */ React.createElement("div", { className: "w-[1px] h-full opacity-50", style: { backgroundColor: cue.color || "#ef4444" } }));
-    }));
-  };
   var CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
     if (!isOpen) return null;
     const currentData = CAMELOT_WHEEL_DATA[currentKey] || CAMELOT_WHEEL_DATA["8A"];
@@ -5741,7 +6163,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     })))), /* @__PURE__ */ React.createElement("div", { className: "px-6 py-3.5 bg-djzinc-900/60 border-t border-djzinc-800 flex justify-end" }, /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "px-4 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 text-xs font-semibold rounded-lg cursor-pointer" }, "Cerrar"))));
   };
   var BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
-    const [opts, setOpts] = useState5({
+    const [opts, setOpts] = useState8({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -5817,13 +6239,13 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     ))));
   };
   var DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDeleted }) => {
-    const [dupData, setDupData] = useState5(null);
-    const [loading, setLoading] = useState5(false);
-    const [deleting, setDeleting] = useState5(false);
-    const [selectedToDelete, setSelectedToDelete] = useState5({});
-    const [statusMsg, setStatusMsg] = useState5("");
-    const [protectSisters, setProtectSisters] = useState5(true);
-    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState5(false);
+    const [dupData, setDupData] = useState8(null);
+    const [loading, setLoading] = useState8(false);
+    const [deleting, setDeleting] = useState8(false);
+    const [selectedToDelete, setSelectedToDelete] = useState8({});
+    const [statusMsg, setStatusMsg] = useState8("");
+    const [protectSisters, setProtectSisters] = useState8(true);
+    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState8(false);
     const loadDups = async (protect = true) => {
       setLoading(true);
       setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
@@ -5850,7 +6272,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         setStatusMsg("");
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       if (!isOpen) return;
       loadDups(protectSisters);
     }, [isOpen, tracks]);
@@ -5964,8 +6386,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
     )))));
   };
   function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 10) {
-    const [range, setRange] = useState5({ start: 0, end: 60 });
-    useEffect6(() => {
+    const [range, setRange] = useState8({ start: 0, end: 60 });
+    useEffect11(() => {
       const el = containerRef.current;
       if (!el) return;
       let rafId = null;
@@ -6112,44 +6534,44 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_account_drawer_width", 540);
-    const [activeTab, setActiveTab] = useState5("profile");
-    const [alias, setAlias] = useState5(userProfile && userProfile.alias || "DJ Alex BeatWave");
-    const [fullName, setFullName] = useState5(userProfile && userProfile.fullName || "Alejandro Rueda");
-    const [email, setEmail] = useState5(userProfile && userProfile.email || "alex.dj@beatwave.pro");
-    const [address, setAddress] = useState5(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
-    const [city, setCity] = useState5(userProfile && userProfile.city || "Madrid");
-    const [country, setCountry] = useState5(userProfile && userProfile.country || "Espa\xF1a");
-    const [phone, setPhone] = useState5(userProfile && userProfile.phone || "+34 612 345 678");
-    const [avatarUrl, setAvatarUrl] = useState5(userProfile && userProfile.avatarUrl || "");
-    const [currentPassword, setCurrentPassword] = useState5("");
-    const [newPassword, setNewPassword] = useState5("");
-    const [confirmPassword, setConfirmPassword] = useState5("");
-    const [passwordMsg, setPasswordMsg] = useState5({ text: "", type: "" });
-    const [djSoftware, setDjSoftware] = useState5(userProfile && userProfile.djSoftware || "Serato DJ Pro");
-    const [audioInterface, setAudioInterface] = useState5(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
-    const [targetLufs, setTargetLufs] = useState5(userProfile && userProfile.targetLufs || -9);
-    const [autoSaveEnabled, setAutoSaveEnabled] = useState5(userProfile ? userProfile.autoSave !== false : true);
-    const [sessionNameInput, setSessionNameInput] = useState5("");
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState5("");
-    const [savedPaymentMethods, setSavedPaymentMethods] = useState5([
+    const [activeTab, setActiveTab] = useState8("profile");
+    const [alias, setAlias] = useState8(userProfile && userProfile.alias || "DJ Alex BeatWave");
+    const [fullName, setFullName] = useState8(userProfile && userProfile.fullName || "Alejandro Rueda");
+    const [email, setEmail] = useState8(userProfile && userProfile.email || "alex.dj@beatwave.pro");
+    const [address, setAddress] = useState8(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
+    const [city, setCity] = useState8(userProfile && userProfile.city || "Madrid");
+    const [country, setCountry] = useState8(userProfile && userProfile.country || "Espa\xF1a");
+    const [phone, setPhone] = useState8(userProfile && userProfile.phone || "+34 612 345 678");
+    const [avatarUrl, setAvatarUrl] = useState8(userProfile && userProfile.avatarUrl || "");
+    const [currentPassword, setCurrentPassword] = useState8("");
+    const [newPassword, setNewPassword] = useState8("");
+    const [confirmPassword, setConfirmPassword] = useState8("");
+    const [passwordMsg, setPasswordMsg] = useState8({ text: "", type: "" });
+    const [djSoftware, setDjSoftware] = useState8(userProfile && userProfile.djSoftware || "Serato DJ Pro");
+    const [audioInterface, setAudioInterface] = useState8(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
+    const [targetLufs, setTargetLufs] = useState8(userProfile && userProfile.targetLufs || -9);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState8(userProfile ? userProfile.autoSave !== false : true);
+    const [sessionNameInput, setSessionNameInput] = useState8("");
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState8("");
+    const [savedPaymentMethods, setSavedPaymentMethods] = useState8([
       { id: "pm_card_main", type: "card", brand: "Mastercard", last4: "4242", exp: "08/29", holder: "Alejandro Rueda", isDefault: true },
       { id: "pm_applepay", type: "applepay", label: "Apple Pay (Wallet)", isDefault: false }
     ]);
-    const [showAddPaymentForm, setShowAddPaymentForm] = useState5(false);
-    const [newMethodType, setNewMethodType] = useState5("card");
-    const [newCardNumber, setNewCardNumber] = useState5("");
-    const [newCardExpiry, setNewCardExpiry] = useState5("");
-    const [newCardCvc, setNewCardCvc] = useState5("");
-    const [newCardHolder, setNewCardHolder] = useState5("Alejandro Rueda");
-    const [paypalEmail, setPaypalEmail] = useState5("");
-    const [demoFilled, setDemoFilled] = useState5(false);
-    const [billingMsg, setBillingMsg] = useState5({ text: "", type: "" });
-    const [fiscalName, setFiscalName] = useState5(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
-    const [fiscalTaxId, setFiscalTaxId] = useState5(userProfile && userProfile.taxId || "ES-48765432-W");
-    const [fiscalAddress, setFiscalAddress] = useState5(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
-    const [fiscalCity, setFiscalCity] = useState5(userProfile && userProfile.fiscalCity || "Madrid");
-    const [fiscalZip, setFiscalZip] = useState5(userProfile && userProfile.fiscalZip || "28013");
-    const [fiscalCountry, setFiscalCountry] = useState5(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
+    const [showAddPaymentForm, setShowAddPaymentForm] = useState8(false);
+    const [newMethodType, setNewMethodType] = useState8("card");
+    const [newCardNumber, setNewCardNumber] = useState8("");
+    const [newCardExpiry, setNewCardExpiry] = useState8("");
+    const [newCardCvc, setNewCardCvc] = useState8("");
+    const [newCardHolder, setNewCardHolder] = useState8("Alejandro Rueda");
+    const [paypalEmail, setPaypalEmail] = useState8("");
+    const [demoFilled, setDemoFilled] = useState8(false);
+    const [billingMsg, setBillingMsg] = useState8({ text: "", type: "" });
+    const [fiscalName, setFiscalName] = useState8(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
+    const [fiscalTaxId, setFiscalTaxId] = useState8(userProfile && userProfile.taxId || "ES-48765432-W");
+    const [fiscalAddress, setFiscalAddress] = useState8(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
+    const [fiscalCity, setFiscalCity] = useState8(userProfile && userProfile.fiscalCity || "Madrid");
+    const [fiscalZip, setFiscalZip] = useState8(userProfile && userProfile.fiscalZip || "28013");
+    const [fiscalCountry, setFiscalCountry] = useState8(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
     const fileInputRef = React.useRef(null);
     const handleAvatarUpload = (e) => {
       const file = e.target.files && e.target.files[0];
@@ -6225,7 +6647,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setSaveSuccessMsg(`\u2713 Sesi\xF3n "${name}" guardada con \xE9xito`);
       setTimeout(() => setSaveSuccessMsg(""), 3e3);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -6938,7 +7360,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
   var BitacoraDetailContent = ({ entry, onBack, onClose, onOpenBeatgridStudio, tracks = [] }) => {
     if (!entry) return null;
-    const [copied, setCopied] = useState5(false);
+    const [copied, setCopied] = useState8(false);
     const handleCopy = () => {
       const fullText = `=== BIT\xC1CORA BEATWAVE PRO ===
 Operaci\xF3n: ${entry.action || "--"}
@@ -7092,10 +7514,10 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries, onOpenBeatgridStudio, tracks = [] }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_bitacora_drawer_width", 540);
-    const [filterCategory, setFilterCategory] = useState5("all");
-    const [selectedIds, setSelectedIds] = useState5(() => new Set(entries.map((e) => e.id)));
-    const [searchTerm, setSearchTerm] = useState5("");
-    const [detailEntry, setDetailEntry] = useState5(null);
+    const [filterCategory, setFilterCategory] = useState8("all");
+    const [selectedIds, setSelectedIds] = useState8(() => new Set(entries.map((e) => e.id)));
+    const [searchTerm, setSearchTerm] = useState8("");
+    const [detailEntry, setDetailEntry] = useState8(null);
     const filteredEntries = entries.filter((e) => {
       const matchesCategory = filterCategory === "all" || e.category === filterCategory;
       const matchesSearch = !searchTerm || e.trackTitle && e.trackTitle.toLowerCase().includes(searchTerm.toLowerCase()) || e.action && e.action.toLowerCase().includes(searchTerm.toLowerCase()) || e.detailsAfter && e.detailsAfter.toLowerCase().includes(searchTerm.toLowerCase());
@@ -7338,8 +7760,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
   var DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     if (!isOpen) return null;
-    const detectedOS = useMemo(() => detectClientOS(), []);
-    const [selectedOS, setSelectedOS] = useState5(() => detectedOS);
+    const detectedOS = useMemo3(() => detectClientOS(), []);
+    const [selectedOS, setSelectedOS] = useState8(() => detectedOS);
     const isMac = selectedOS === "mac";
     const modKey = isMac ? "\u2318" : "Ctrl";
     const altKey = isMac ? "\u2325" : "Alt";
@@ -7755,23 +8177,23 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_manual_drawer_width", 540);
-    const [isFolded, setIsFolded] = useState5(false);
-    const [activeSectionKey, setActiveSectionKey] = useState5(initialSection || "audit");
+    const [isFolded, setIsFolded] = useState8(false);
+    const [activeSectionKey, setActiveSectionKey] = useState8(initialSection || "audit");
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
-    const [simStep, setSimStep] = useState5(0);
-    const [isSimPlaying, setIsSimPlaying] = useState5(true);
-    const [simSpeed, setSimSpeed] = useState5(1);
-    const [zoomFocus, setZoomFocus] = useState5(null);
-    const [activeManualTab, setActiveManualTab] = useState5("all");
-    const canvasRef = useRef6(null);
-    useEffect6(() => {
+    const [simStep, setSimStep] = useState8(0);
+    const [isSimPlaying, setIsSimPlaying] = useState8(true);
+    const [simSpeed, setSimSpeed] = useState8(1);
+    const [zoomFocus, setZoomFocus] = useState8(null);
+    const [activeManualTab, setActiveManualTab] = useState8("all");
+    const canvasRef = useRef11(null);
+    useEffect11(() => {
       if (initialSection && MANUAL_SECTIONS[initialSection]) {
         setActiveSectionKey(initialSection);
         setSimStep(0);
         setZoomFocus(null);
       }
     }, [initialSection]);
-    useEffect6(() => {
+    useEffect11(() => {
       if (!isSimPlaying) return;
       const interval = simSpeed === 2 ? 1500 : 3e3;
       const timer = setInterval(() => {
@@ -7779,7 +8201,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }, interval);
       return () => clearInterval(timer);
     }, [isSimPlaying, activeSectionKey, simSpeed]);
-    useEffect6(() => {
+    useEffect11(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -7797,7 +8219,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         window.removeEventListener("popstate", handlePopState);
       };
     }, [onClose]);
-    useEffect6(() => {
+    useEffect11(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -8856,24 +9278,24 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     setSelectedTrack
   }) => {
     var _a;
-    const [activeLibId, setActiveLibId] = useState5(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
-    const [libNameInput, setLibNameInput] = useState5("");
-    const [newFolderName, setNewFolderName] = useState5("");
-    const [selectedFolderId, setSelectedFolderId] = useState5("__ALL__");
-    const [feedbackMsg, setFeedbackMsg] = useState5("");
-    const [searchTrack, setSearchTrack] = useState5("");
-    const [dragOverFolderId, setDragOverFolderId] = useState5(null);
-    const [selectedTrackKeys, setSelectedTrackKeys] = useState5(/* @__PURE__ */ new Set());
-    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState5("/Users/admin/Music");
-    const [fsParentPath, setFsParentPath] = useState5("/Users/admin");
-    const [fsFolders, setFsFolders] = useState5([]);
-    const [fsFiles, setFsFiles] = useState5([]);
-    const [stagedFolders, setStagedFolders] = useState5([]);
-    const [stagedFiles, setStagedFiles] = useState5([]);
-    const [fsActiveTab, setFsActiveTab] = useState5("folders");
-    const [fsLoading, setFsLoading] = useState5(false);
-    const [leftColWidth, setLeftColWidth] = useState5(() => {
+    const [activeLibId, setActiveLibId] = useState8(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
+    const [libNameInput, setLibNameInput] = useState8("");
+    const [newFolderName, setNewFolderName] = useState8("");
+    const [selectedFolderId, setSelectedFolderId] = useState8("__ALL__");
+    const [feedbackMsg, setFeedbackMsg] = useState8("");
+    const [searchTrack, setSearchTrack] = useState8("");
+    const [dragOverFolderId, setDragOverFolderId] = useState8(null);
+    const [selectedTrackKeys, setSelectedTrackKeys] = useState8(/* @__PURE__ */ new Set());
+    const [fsBrowserOpen, setFsBrowserOpen] = useState8(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState8("/Users/admin/Music");
+    const [fsParentPath, setFsParentPath] = useState8("/Users/admin");
+    const [fsFolders, setFsFolders] = useState8([]);
+    const [fsFiles, setFsFiles] = useState8([]);
+    const [stagedFolders, setStagedFolders] = useState8([]);
+    const [stagedFiles, setStagedFiles] = useState8([]);
+    const [fsActiveTab, setFsActiveTab] = useState8("folders");
+    const [fsLoading, setFsLoading] = useState8(false);
+    const [leftColWidth, setLeftColWidth] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_library_col_width");
         return saved ? Math.max(260, Math.min(680, parseInt(saved, 10))) : 360;
@@ -8881,7 +9303,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         return 360;
       }
     });
-    const [isResizing, setIsResizing] = useState5(false);
+    const [isResizing, setIsResizing] = useState8(false);
     const handleSplitterPointerDown = (e) => {
       e.preventDefault();
       setIsResizing(true);
@@ -8912,12 +9334,12 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       tracks: [],
       folders: []
     };
-    useEffect6(() => {
+    useEffect11(() => {
       if (currentLib) {
         setLibNameInput(currentLib.name || "");
       }
     }, [currentLib == null ? void 0 : currentLib.id]);
-    useEffect6(() => {
+    useEffect11(() => {
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
     }, [selectedFolderId, activeLibId]);
     const handleCreateNewLibrary = () => {
@@ -9391,7 +9813,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         setTimeout(() => setFeedbackMsg(""), 3e3);
       }
     };
-    const allLibTracks = useMemo(() => {
+    const allLibTracks = useMemo3(() => {
       const map = /* @__PURE__ */ new Map();
       (currentLib.tracks || []).forEach((t) => {
         const k = t.id || t.path || t.file_path || t.f || t.filename;
@@ -10002,31 +10424,31 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     onOpenBeatgridStudio
   }) => {
     var _a;
-    const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
+    const [localRutaOrigen, setLocalRutaOrigen] = useState8("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
-    const [selectedLooseFiles, setSelectedLooseFiles] = useState5([]);
-    const [isAuditing, setIsAuditing] = useState5(false);
-    const [isLoadingDir, setIsLoadingDir] = useState5(false);
-    const [isExporting, setIsExporting] = useState5(false);
-    const [isInjecting, setIsInjecting] = useState5(false);
-    const [metrics, setMetrics] = useState5({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
-    const [filtro, setFiltro] = useState5("todos");
-    const [busqueda, setBusqueda] = useState5("");
-    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState5("ALL");
-    const [batchModalOpen, setBatchModalOpen] = useState5(false);
-    const [duplicateModalOpen, setDuplicateModalOpen] = useState5(false);
-    const [batchProgress, setBatchProgress] = useState5(0);
-    const [batchStatusMsg, setBatchStatusMsg] = useState5("");
-    const [saveFeedback, setSaveFeedback] = useState5("");
-    const [sidebarOpen, setSidebarOpen] = useState5(false);
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState8([]);
+    const [isAuditing, setIsAuditing] = useState8(false);
+    const [isLoadingDir, setIsLoadingDir] = useState8(false);
+    const [isExporting, setIsExporting] = useState8(false);
+    const [isInjecting, setIsInjecting] = useState8(false);
+    const [metrics, setMetrics] = useState8({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    const [filtro, setFiltro] = useState8("todos");
+    const [busqueda, setBusqueda] = useState8("");
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState8("ALL");
+    const [batchModalOpen, setBatchModalOpen] = useState8(false);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState8(false);
+    const [batchProgress, setBatchProgress] = useState8(0);
+    const [batchStatusMsg, setBatchStatusMsg] = useState8("");
+    const [saveFeedback, setSaveFeedback] = useState8("");
+    const [sidebarOpen, setSidebarOpen] = useState8(false);
     const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 540);
     const { width: columnsDrawerWidth, onPointerDown: onColumnsResizeDown, resetWidth: onColumnsResetWidth } = useDrawerResize("bw_columns_drawer_width", 540);
-    const [exportDropdownOpen, setExportDropdownOpen] = useState5(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState5("analizar");
-    const [batchConfigured, setBatchConfigured] = useState5(false);
-    const [isAppendMode, setIsAppendMode] = useState5(false);
-    const [batchConfigOpts, setBatchConfigOpts] = useState5({
+    const [exportDropdownOpen, setExportDropdownOpen] = useState8(false);
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState8("analizar");
+    const [batchConfigured, setBatchConfigured] = useState8(false);
+    const [isAppendMode, setIsAppendMode] = useState8(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState8({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -10042,38 +10464,38 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       stripWhitespace: true,
       onlyIncomplete: false
     });
-    const [mixOracleOpen, setMixOracleOpen] = useState5(false);
-    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState5(null);
-    const [selectedAuditIds, setSelectedAuditIds] = useState5(/* @__PURE__ */ new Set());
-    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState5(false);
-    const [deleteModalState, setDeleteModalState] = useState5({ open: false, tracks: [], mode: "trash" });
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState5(() => {
+    const [mixOracleOpen, setMixOracleOpen] = useState8(false);
+    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState8(null);
+    const [selectedAuditIds, setSelectedAuditIds] = useState8(/* @__PURE__ */ new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState8(false);
+    const [deleteModalState, setDeleteModalState] = useState8({ open: false, tracks: [], mode: "trash" });
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState8(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
         return false;
       }
     });
-    const [internalTracks, setInternalTracks] = useState5([]);
+    const [internalTracks, setInternalTracks] = useState8([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
-    const [fftModalOpen, setFftModalOpen] = useState5(false);
-    const [fftAnalysisData, setFftAnalysisData] = useState5(null);
-    const [isAnalyzingFft, setIsAnalyzingFft] = useState5(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState5("");
-    const [fsParentPath, setFsParentPath] = useState5("");
-    const [fsFolders, setFsFolders] = useState5([]);
-    const [fsFiles, setFsFiles] = useState5([]);
-    const [selectedFsFiles, setSelectedFsFiles] = useState5([]);
-    const [stagedFolders, setStagedFolders] = useState5([]);
-    const [stagedFiles, setStagedFiles] = useState5([]);
-    const [fsActiveTab, setFsActiveTab] = useState5("folders");
-    const [fsLoading, setFsLoading] = useState5(false);
-    const [camelotModalOpen, setCamelotModalOpen] = useState5(false);
-    const tapTimesRef = useRef6([]);
-    const tableScrollRef = useRef6(null);
-    const [metricsCollapsed, setMetricsCollapsed] = useState5(() => {
+    const [fftModalOpen, setFftModalOpen] = useState8(false);
+    const [fftAnalysisData, setFftAnalysisData] = useState8(null);
+    const [isAnalyzingFft, setIsAnalyzingFft] = useState8(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState8(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState8("");
+    const [fsParentPath, setFsParentPath] = useState8("");
+    const [fsFolders, setFsFolders] = useState8([]);
+    const [fsFiles, setFsFiles] = useState8([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState8([]);
+    const [stagedFolders, setStagedFolders] = useState8([]);
+    const [stagedFiles, setStagedFiles] = useState8([]);
+    const [fsActiveTab, setFsActiveTab] = useState8("folders");
+    const [fsLoading, setFsLoading] = useState8(false);
+    const [camelotModalOpen, setCamelotModalOpen] = useState8(false);
+    const tapTimesRef = useRef11([]);
+    const tableScrollRef = useRef11(null);
+    const [metricsCollapsed, setMetricsCollapsed] = useState8(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
       } catch (e) {
@@ -10090,20 +10512,20 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         return next;
       });
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const handleToggleEvent = () => toggleMetricsCollapsed();
       window.addEventListener("bw:toggle-metrics", handleToggleEvent);
       return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       if (tracks && tracks.length > 0) {
         setMetricsCollapsed(false);
       }
     }, [tracks && tracks.length > 0]);
-    const [selectedCueId, setSelectedCueId] = useState5(1);
-    const [snapToGrid, setSnapToGrid] = useState5(true);
-    const [showBeatgrid, setShowBeatgrid] = useState5(true);
-    const [cueStudioModalOpen, setCueStudioModalOpen] = useState5(false);
+    const [selectedCueId, setSelectedCueId] = useState8(1);
+    const [snapToGrid, setSnapToGrid] = useState8(true);
+    const [showBeatgrid, setShowBeatgrid] = useState8(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState8(false);
     const currentTrack = tracks.find((t2) => t2.id === selectedTrack) || tracks[0] || {};
     const resetAuditWorkspace = (keepFolder = false) => {
       if (!keepFolder) {
@@ -10143,7 +10565,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const handleAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -10288,7 +10710,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       );
       setTimeout(() => setSaveFeedback(""), 4e3);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
           isAuditing,
@@ -10297,7 +10719,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         });
       }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
-    useEffect6(() => {
+    useEffect11(() => {
       if (!tracks || tracks.length === 0) {
         setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
       } else {
@@ -10483,25 +10905,25 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       }
       return false;
     };
-    const badQualityTracks = useMemo(() => {
+    const badQualityTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => isBadQualityTrack(t2));
     }, [tracks]);
-    const flacUpgradeTracks = useMemo(() => {
+    const flacUpgradeTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => isFlacUpgradeCandidate(t2));
     }, [tracks]);
-    const missingMetaTracks = useMemo(() => {
+    const missingMetaTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido");
     }, [tracks]);
-    const missingCuesTracks = useMemo(() => {
+    const missingCuesTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues));
     }, [tracks]);
-    const trimmedSilenceTracks = useMemo(() => {
+    const trimmedSilenceTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim)));
     }, [tracks]);
-    const excellentQualityTracks = useMemo(() => {
+    const excellentQualityTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320));
     }, [tracks]);
-    const highEnergyTracks = useMemo(() => {
+    const highEnergyTracks = useMemo3(() => {
       return (tracks || []).filter((t2) => Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75);
     }, [tracks]);
     const handleToggleSelectRow = (id, e) => {
@@ -11624,7 +12046,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
-    const [isAuditPaused, setIsAuditPaused] = useState5(false);
+    const [isAuditPaused, setIsAuditPaused] = useState8(false);
     const handleTogglePausaProceso = async () => {
       const nextState = !isAuditPaused;
       setIsAuditPaused(nextState);
@@ -11667,28 +12089,28 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    const [auditSortField, setAuditSortField] = useState5("id");
-    const [auditSortDir, setAuditSortDir] = useState5("asc");
-    const [filterHeaderSearch, setFilterHeaderSearch] = useState5("");
-    const [filterHeaderArtist, setFilterHeaderArtist] = useState5("");
-    const [filterHeaderFormat, setFilterHeaderFormat] = useState5("ALL");
-    const [filterHeaderKhz, setFilterHeaderKhz] = useState5("ALL");
-    const [filterHeaderKbps, setFilterHeaderKbps] = useState5("ALL");
-    const [filterHeaderQuality, setFilterHeaderQuality] = useState5("ALL");
-    const [filterHeaderLoss, setFilterHeaderLoss] = useState5("ALL");
-    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState5("ALL");
-    const [filterHeaderLufs, setFilterHeaderLufs] = useState5("ALL");
-    const [filterHeaderDuration, setFilterHeaderDuration] = useState5("");
-    const [filterHeaderBpm, setFilterHeaderBpm] = useState5("");
-    const [filterHeaderKey, setFilterHeaderKey] = useState5("");
-    const [filterHeaderCues, setFilterHeaderCues] = useState5("ALL");
-    const [filterHeaderStatus, setFilterHeaderStatus] = useState5("ALL");
-    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState5("ALL");
-    const [filterHeaderDance, setFilterHeaderDance] = useState5("ALL");
-    const [filterHeaderPhase, setFilterHeaderPhase] = useState5("ALL");
-    const [filterHeaderGenre, setFilterHeaderGenre] = useState5("");
-    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState5("");
-    const [filterHeaderComment, setFilterHeaderComment] = useState5("");
+    const [auditSortField, setAuditSortField] = useState8("id");
+    const [auditSortDir, setAuditSortDir] = useState8("asc");
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState8("");
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState8("");
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState8("ALL");
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState8("ALL");
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState8("ALL");
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState8("ALL");
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState8("ALL");
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState8("ALL");
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState8("ALL");
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState8("");
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState8("");
+    const [filterHeaderKey, setFilterHeaderKey] = useState8("");
+    const [filterHeaderCues, setFilterHeaderCues] = useState8("ALL");
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState8("ALL");
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState8("ALL");
+    const [filterHeaderDance, setFilterHeaderDance] = useState8("ALL");
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState8("ALL");
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState8("");
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState8("");
+    const [filterHeaderComment, setFilterHeaderComment] = useState8("");
     const DEFAULT_AUDIT_COLUMNS = {
       id: true,
       waveform: true,
@@ -11781,7 +12203,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         ]
       }
     ];
-    const [visibleColumns, setVisibleColumns] = useState5(() => {
+    const [visibleColumns, setVisibleColumns] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_audit_visible_columns");
         if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
@@ -11789,10 +12211,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       return DEFAULT_AUDIT_COLUMNS;
     });
-    const [columnSelectorOpen, setColumnSelectorOpen] = useState5(false);
-    const [columnSearchText, setColumnSearchText] = useState5("");
-    const [isDragOver, setIsDragOver] = useState5(false);
-    const [libraryFolders, setLibraryFolders] = useState5(() => {
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState8(false);
+    const [columnSearchText, setColumnSearchText] = useState8("");
+    const [isDragOver, setIsDragOver] = useState8(false);
+    const [libraryFolders, setLibraryFolders] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_library_folders_v2");
         if (saved) {
@@ -11808,10 +12230,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         { id: "f_close", name: "04 - Closing & Anthems", color: "cyan", collapsed: false, trackIds: [], subfolders: [] }
       ];
     });
-    const [selectedFolderId, setSelectedFolderId] = useState5("all");
-    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState5(true);
-    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState5(false);
-    const [cloudSyncStatus, setCloudSyncStatus] = useState5({ isSyncing: false, synced: false, lastSyncText: "" });
+    const [selectedFolderId, setSelectedFolderId] = useState8("all");
+    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState8(true);
+    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState8(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState8({ isSyncing: false, synced: false, lastSyncText: "" });
     const handleCloudMetadataSync = async () => {
       setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: "Sincronizando..." });
       try {
@@ -12054,7 +12476,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }, 800);
       }
     };
-    const foldersFlatList = useMemo(() => {
+    const foldersFlatList = useMemo3(() => {
       const list = [];
       libraryFolders.forEach((f) => {
         list.push({ id: f.id, name: f.name, color: f.color, isSub: false });
@@ -12066,7 +12488,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       });
       return list;
     }, [libraryFolders]);
-    const activeFolderMeta = useMemo(() => {
+    const activeFolderMeta = useMemo3(() => {
       if (!selectedFolderId || selectedFolderId === "all") return null;
       const target = findFolderOrSub(libraryFolders, selectedFolderId);
       if (!target || !target.folder) return null;
@@ -12161,7 +12583,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       setFilterHeaderPhase("ALL");
       setFilterHeaderComment("");
     };
-    const searchIndex = useMemo(() => {
+    const searchIndex = useMemo3(() => {
       if (!tracks || tracks.length === 0) return null;
       const tokenMap = /* @__PURE__ */ new Map();
       const tokenize = (str) => {
@@ -12191,8 +12613,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return tokenMap;
     }, [tracks]);
-    const searchBenchmarkRef = useRef6(0.2);
-    const tracksFiltrados = useMemo(() => {
+    const searchBenchmarkRef = useRef11(0.2);
+    const tracksFiltrados = useMemo3(() => {
       const benchStart = performance.now();
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       let baseTracks = tracks;
@@ -14458,11 +14880,11 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     studioMode: propsStudioMode = "cues",
     onSetStudioMode
   }) => {
-    const [studioMode, setStudioMode] = useState5(propsStudioMode || "cues");
-    useEffect6(() => {
+    const [studioMode, setStudioMode] = useState8(propsStudioMode || "cues");
+    useEffect11(() => {
       if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
-    const [tapTimes, setTapTimes] = useState5([]);
+    const [tapTimes, setTapTimes] = useState8([]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
     const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
@@ -14484,33 +14906,33 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
     };
-    const [zoom, setZoom] = useState5(4);
-    const [snapToGrid, setSnapToGrid] = useState5(true);
-    const [showBeatgrid, setShowBeatgrid] = useState5(true);
-    const [followPlayhead, setFollowPlayhead] = useState5(true);
-    const [selectedCueId, setSelectedCueId] = useState5(1);
-    const [isRegeneratingMood, setIsRegeneratingMood] = useState5(false);
-    const [saveStatus, setSaveStatus] = useState5("");
-    const [isSavingBatch, setIsSavingBatch] = useState5(false);
-    const [filterQuery, setFilterQuery] = useState5("");
-    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
-    const [carpetasSistema, setCarpetasSistema] = useState5([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState5(currentFolder || "");
-    const [isLoadingDir, setIsLoadingDir] = useState5(false);
-    const [showTrackListDrawer, setShowTrackListDrawer] = useState5(false);
-    const [pitchPercent, setPitchPercent] = useState5(0);
-    const [pitchRange, setPitchRange] = useState5(8);
-    const [eqBass, setEqBass] = useState5(0);
-    const [eqMid, setEqMid] = useState5(0);
-    const [eqTreble, setEqTreble] = useState5(0);
-    const [mobileDeckMode, setMobileDeckMode] = useState5("pads");
-    const [autoMappingStatus, setAutoMappingStatus] = useState5("");
-    const [cuesVersionMode, setCuesVersionMode] = useState5("estandar");
-    const [cuesEstandar, setCuesEstandar] = useState5(null);
-    const [cuesAcustico, setCuesAcustico] = useState5(null);
-    const [isLoadingComparative, setIsLoadingComparative] = useState5(false);
-    const [showDiferenciasModal, setShowDiferenciasModal] = useState5(false);
-    const [diferenciasData, setDiferenciasData] = useState5(null);
+    const [zoom, setZoom] = useState8(4);
+    const [snapToGrid, setSnapToGrid] = useState8(true);
+    const [showBeatgrid, setShowBeatgrid] = useState8(true);
+    const [followPlayhead, setFollowPlayhead] = useState8(true);
+    const [selectedCueId, setSelectedCueId] = useState8(1);
+    const [isRegeneratingMood, setIsRegeneratingMood] = useState8(false);
+    const [saveStatus, setSaveStatus] = useState8("");
+    const [isSavingBatch, setIsSavingBatch] = useState8(false);
+    const [filterQuery, setFilterQuery] = useState8("");
+    const [fsBrowserOpen, setFsBrowserOpen] = useState8(false);
+    const [carpetasSistema, setCarpetasSistema] = useState8([]);
+    const [rutaNavegacion, setRutaNavegacion] = useState8(currentFolder || "");
+    const [isLoadingDir, setIsLoadingDir] = useState8(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState8(false);
+    const [pitchPercent, setPitchPercent] = useState8(0);
+    const [pitchRange, setPitchRange] = useState8(8);
+    const [eqBass, setEqBass] = useState8(0);
+    const [eqMid, setEqMid] = useState8(0);
+    const [eqTreble, setEqTreble] = useState8(0);
+    const [mobileDeckMode, setMobileDeckMode] = useState8("pads");
+    const [autoMappingStatus, setAutoMappingStatus] = useState8("");
+    const [cuesVersionMode, setCuesVersionMode] = useState8("estandar");
+    const [cuesEstandar, setCuesEstandar] = useState8(null);
+    const [cuesAcustico, setCuesAcustico] = useState8(null);
+    const [isLoadingComparative, setIsLoadingComparative] = useState8(false);
+    const [showDiferenciasModal, setShowDiferenciasModal] = useState8(false);
+    const [diferenciasData, setDiferenciasData] = useState8(null);
     const handleCargarComparativa = async (targetMode = "comparativa") => {
       if (!currentTrack) return;
       setIsLoadingComparative(true);
@@ -14837,15 +15259,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
-    const [cueNameInput, setCueNameInput] = useState5(currentCue.name || "");
-    const [cueTimeInput, setCueTimeInput] = useState5(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState5((currentTrack == null ? void 0 : currentTrack.comment) || "");
-    useEffect6(() => {
+    const [cueNameInput, setCueNameInput] = useState8(currentCue.name || "");
+    const [cueTimeInput, setCueTimeInput] = useState8(currentCue.time || "00:00.00");
+    const [tacticalComment, setTacticalComment] = useState8((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    useEffect11(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
     }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
-    useEffect6(() => {
+    useEffect11(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -16298,13 +16720,13 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     t = (k) => k
   }) => {
     var _a, _b;
-    const [internalTracks, setInternalTracks] = useState5([]);
+    const [internalTracks, setInternalTracks] = useState8([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
-    const [spotifyUrl, setSpotifyUrl] = useState5("");
-    const [isAnalyzing, setIsAnalyzing] = useState5(false);
-    const [destDir, setDestDir] = useState5("/Users/admin/Music/mi musica");
-    useEffect6(() => {
+    const [spotifyUrl, setSpotifyUrl] = useState8("");
+    const [isAnalyzing, setIsAnalyzing] = useState8(false);
+    const [destDir, setDestDir] = useState8("/Users/admin/Music/mi musica");
+    useEffect11(() => {
       fetch("/api/directorio_descarga").then((r) => r.json()).then((data) => {
         if (data && data.path && typeof data.path === "string" && data.path.startsWith("/") && !data.path.includes('"') && !data.path.includes(":")) {
           setDestDir(data.path);
@@ -16312,23 +16734,23 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }).catch(() => {
       });
     }, []);
-    const [selectedFormat, setSelectedFormat] = useState5("flac");
-    const [downloadingMsg, setDownloadingMsg] = useState5("");
-    const [downloadProgress, setDownloadProgress] = useState5(0);
-    const [isDownloading, setIsDownloading] = useState5(false);
-    const [isAuditingFft, setIsAuditingFft] = useState5(false);
-    const [fftProgress, setFftProgress] = useState5(0);
-    const [fftMsg, setFftMsg] = useState5("");
-    const [selectedId, setSelectedId] = useState5(null);
-    const [spInspectorOpen, setSpInspectorOpen] = useState5(false);
+    const [selectedFormat, setSelectedFormat] = useState8("flac");
+    const [downloadingMsg, setDownloadingMsg] = useState8("");
+    const [downloadProgress, setDownloadProgress] = useState8(0);
+    const [isDownloading, setIsDownloading] = useState8(false);
+    const [isAuditingFft, setIsAuditingFft] = useState8(false);
+    const [fftProgress, setFftProgress] = useState8(0);
+    const [fftMsg, setFftMsg] = useState8("");
+    const [selectedId, setSelectedId] = useState8(null);
+    const [spInspectorOpen, setSpInspectorOpen] = useState8(false);
     const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 540);
     const { width: poolColumnsDrawerWidth, onPointerDown: onPoolColumnsResizeDown, resetWidth: onPoolColumnsResetWidth } = useDrawerResize("bw_pool_columns_drawer_width", 540);
-    const [downloadSession, setDownloadSession] = useState5({ downloaded: [], failed: [] });
-    const [spSubView, setSpSubView] = useState5("catalog");
-    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState5(/* @__PURE__ */ new Set());
-    const [isExportingXls, setIsExportingXls] = useState5(false);
-    const [xlsToast, setXlsToast] = useState5("");
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState5(() => {
+    const [downloadSession, setDownloadSession] = useState8({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState8("catalog");
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState8(/* @__PURE__ */ new Set());
+    const [isExportingXls, setIsExportingXls] = useState8(false);
+    const [xlsToast, setXlsToast] = useState8("");
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState8(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
@@ -16342,7 +16764,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (e) {
       }
     };
-    const [candidateModal, setCandidateModal] = useState5({
+    const [candidateModal, setCandidateModal] = useState8({
       open: false,
       targetTrack: null,
       candidates: [],
@@ -16433,12 +16855,12 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }));
       setCandidateModal((prev) => ({ ...prev, open: false }));
     };
-    const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState5("");
-    const [fsParentPath, setFsParentPath] = useState5("");
-    const [fsFolders, setFsFolders] = useState5([]);
-    const [fsLoading, setFsLoading] = useState5(false);
-    useEffect6(() => {
+    const [fsBrowserOpen, setFsBrowserOpen] = useState8(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState8("");
+    const [fsParentPath, setFsParentPath] = useState8("");
+    const [fsFolders, setFsFolders] = useState8([]);
+    const [fsLoading, setFsLoading] = useState8(false);
+    useEffect11(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
@@ -16749,7 +17171,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (_) {
       }
     };
-    const [poolVisibleColumns, setPoolVisibleColumns] = useState5(() => {
+    const [poolVisibleColumns, setPoolVisibleColumns] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_pool_visible_columns");
         if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
@@ -16757,9 +17179,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
       return DEFAULT_POOL_COLUMNS;
     });
-    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState5(false);
-    const [poolColumnSearchText, setPoolColumnSearchText] = useState5("");
-    useEffect6(() => {
+    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState8(false);
+    const [poolColumnSearchText, setPoolColumnSearchText] = useState8("");
+    useEffect11(() => {
       if (!poolColumnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -16822,27 +17244,27 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         return next;
       });
     };
-    const [spSortField, setSpSortField] = useState5("title");
-    const [spSortDir, setSpSortDir] = useState5("asc");
-    const [spFilterSearch, setSpFilterSearch] = useState5("");
-    const [spFilterArtist, setSpFilterArtist] = useState5("");
-    const [spFilterGenre, setSpFilterGenre] = useState5("ALL");
-    const [spFilterSubgenre, setSpFilterSubgenre] = useState5("");
-    const [spFilterOrigin, setSpFilterOrigin] = useState5("ALL");
-    const [spFilterMatch, setSpFilterMatch] = useState5("ALL");
-    const [spFilterPreQuality, setSpFilterPreQuality] = useState5("ALL");
-    const [spFilterFormat, setSpFilterFormat] = useState5("ALL");
-    const [spFilterKhz, setSpFilterKhz] = useState5("ALL");
-    const [spFilterKbps, setSpFilterKbps] = useState5("ALL");
-    const [spFilterQuality, setSpFilterQuality] = useState5("ALL");
-    const [spFilterCutoff, setSpFilterCutoff] = useState5("ALL");
-    const [spFilterDuration, setSpFilterDuration] = useState5("");
-    const [spFilterBpm, setSpFilterBpm] = useState5("");
-    const [spFilterKey, setSpFilterKey] = useState5("ALL");
-    const [spFilterEnergy, setSpFilterEnergy] = useState5("ALL");
-    const [spFilterDance, setSpFilterDance] = useState5("ALL");
-    const [spFilterStatus, setSpFilterStatus] = useState5("ALL");
-    const poolUniqueGenres = useMemo(() => {
+    const [spSortField, setSpSortField] = useState8("title");
+    const [spSortDir, setSpSortDir] = useState8("asc");
+    const [spFilterSearch, setSpFilterSearch] = useState8("");
+    const [spFilterArtist, setSpFilterArtist] = useState8("");
+    const [spFilterGenre, setSpFilterGenre] = useState8("ALL");
+    const [spFilterSubgenre, setSpFilterSubgenre] = useState8("");
+    const [spFilterOrigin, setSpFilterOrigin] = useState8("ALL");
+    const [spFilterMatch, setSpFilterMatch] = useState8("ALL");
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState8("ALL");
+    const [spFilterFormat, setSpFilterFormat] = useState8("ALL");
+    const [spFilterKhz, setSpFilterKhz] = useState8("ALL");
+    const [spFilterKbps, setSpFilterKbps] = useState8("ALL");
+    const [spFilterQuality, setSpFilterQuality] = useState8("ALL");
+    const [spFilterCutoff, setSpFilterCutoff] = useState8("ALL");
+    const [spFilterDuration, setSpFilterDuration] = useState8("");
+    const [spFilterBpm, setSpFilterBpm] = useState8("");
+    const [spFilterKey, setSpFilterKey] = useState8("ALL");
+    const [spFilterEnergy, setSpFilterEnergy] = useState8("ALL");
+    const [spFilterDance, setSpFilterDance] = useState8("ALL");
+    const [spFilterStatus, setSpFilterStatus] = useState8("ALL");
+    const poolUniqueGenres = useMemo3(() => {
       const set = /* @__PURE__ */ new Set();
       (tracks || []).forEach((t2) => {
         if (t2.genre && typeof t2.genre === "string") set.add(t2.genre.trim());
@@ -16888,7 +17310,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       if (spSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, spSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const tracksFiltradosSp = useMemo(() => {
+    const tracksFiltradosSp = useMemo3(() => {
       let result = tracks.filter((t2) => {
         if (spFilterSearch) {
           const term = spFilterSearch.toLowerCase();
@@ -18511,21 +18933,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onAddTracksToSpotify,
     onRemoveTrack
   }) => {
-    const [activeSubView, setActiveSubView] = useState5("search");
-    const [searchScope, setSearchScope] = useState5("all");
-    const [isSearchingOnline, setIsSearchingOnline] = useState5(false);
-    const [onlineResults, setOnlineResults] = useState5([]);
-    const [searchLocalResults, setSearchLocalResults] = useState5([]);
-    const [hasExecutedSearch, setHasExecutedSearch] = useState5(false);
-    const [selectedTaxIds, setSelectedTaxIds] = useState5(/* @__PURE__ */ new Set());
-    const [displayMode, setDisplayMode] = useState5("table");
-    const [taxSortField, setTaxSortField] = useState5("matchScore");
-    const [taxSortDir, setTaxSortDir] = useState5("desc");
-    const [taxFilterSearch, setTaxFilterSearch] = useState5("");
-    const [taxFilterGenre, setTaxFilterGenre] = useState5("ALL");
-    const [taxFilterOrigin, setTaxFilterOrigin] = useState5("ALL");
-    const [taxFilterEnergy, setTaxFilterEnergy] = useState5("ALL");
-    const [taxFilterDance, setTaxFilterDance] = useState5("ALL");
+    const [activeSubView, setActiveSubView] = useState8("search");
+    const [searchScope, setSearchScope] = useState8("all");
+    const [isSearchingOnline, setIsSearchingOnline] = useState8(false);
+    const [onlineResults, setOnlineResults] = useState8([]);
+    const [searchLocalResults, setSearchLocalResults] = useState8([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState8(false);
+    const [selectedTaxIds, setSelectedTaxIds] = useState8(/* @__PURE__ */ new Set());
+    const [displayMode, setDisplayMode] = useState8("table");
+    const [taxSortField, setTaxSortField] = useState8("matchScore");
+    const [taxSortDir, setTaxSortDir] = useState8("desc");
+    const [taxFilterSearch, setTaxFilterSearch] = useState8("");
+    const [taxFilterGenre, setTaxFilterGenre] = useState8("ALL");
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState8("ALL");
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState8("ALL");
+    const [taxFilterDance, setTaxFilterDance] = useState8("ALL");
     const handleSortTax = (field) => {
       setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
       setTaxSortField(field);
@@ -18534,18 +18956,18 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const [aiQuery, setAiQuery] = useState5("");
-    const [selectedGenreFilter, setSelectedGenreFilter] = useState5("ALL");
-    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState5("ALL");
-    const [selectedVersionFilter, setSelectedVersionFilter] = useState5("ALL");
-    const [selectedBpmFilter, setSelectedBpmFilter] = useState5("ALL");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState5("ALL");
-    const [selectedMoodFilter, setSelectedMoodFilter] = useState5("ALL");
-    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState5(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState5(false);
-    const [feedbackMsg, setFeedbackMsg] = useState5("");
-    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState5(false);
-    const [activeTagTab, setActiveTagTab] = useState5("bpm");
+    const [aiQuery, setAiQuery] = useState8("");
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState8("ALL");
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState8("ALL");
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState8("ALL");
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState8("ALL");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState8("ALL");
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState8("ALL");
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState8(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState8(false);
+    const [feedbackMsg, setFeedbackMsg] = useState8("");
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState8(false);
+    const [activeTagTab, setActiveTagTab] = useState8("bpm");
     const handleRemoveToken = (tok) => {
       if (!tok) return;
       let newQuery = aiQuery;
@@ -18566,20 +18988,20 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setIsAddTagMenuOpen(false);
       handleEjecutarBusqueda(newQuery);
     };
-    const [rutaBase, setRutaBase] = useState5("/Users/admin/Music/mi musica");
-    const [modo, setModo] = useState5("copy");
-    const [isRouting, setIsRouting] = useState5(false);
-    const [routeProgress, setRouteProgress] = useState5(0);
-    const [routeStatusMsg, setRouteStatusMsg] = useState5("");
-    const [resultSummary, setResultSummary] = useState5(null);
-    const [expandedGenre, setExpandedGenre] = useState5("Techno");
-    const [searchTerm, setSearchTerm] = useState5("");
-    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState5(null);
-    useEffect6(() => {
+    const [rutaBase, setRutaBase] = useState8("/Users/admin/Music/mi musica");
+    const [modo, setModo] = useState8("copy");
+    const [isRouting, setIsRouting] = useState8(false);
+    const [routeProgress, setRouteProgress] = useState8(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState8("");
+    const [resultSummary, setResultSummary] = useState8(null);
+    const [expandedGenre, setExpandedGenre] = useState8("Techno");
+    const [searchTerm, setSearchTerm] = useState8("");
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState8(null);
+    useEffect11(() => {
       handleEjecutarBusqueda("");
     }, []);
-    const parsedQuery = useMemo(() => parseAIDJQuery(aiQuery), [aiQuery]);
-    const localTracks = useMemo(() => {
+    const parsedQuery = useMemo3(() => parseAIDJQuery(aiQuery), [aiQuery]);
+    const localTracks = useMemo3(() => {
       return (Array.isArray(tracks) ? tracks : []).map((t) => ({
         ...t,
         isLocal: true,
@@ -18595,7 +19017,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         displayCover: t.cover || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null)
       }));
     }, [tracks]);
-    const catalogTracks = useMemo(() => {
+    const catalogTracks = useMemo3(() => {
       return DJ_CURATED_CATALOG.map((t) => ({
         ...t,
         isCatalog: true,
@@ -18611,7 +19033,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         displayCover: t.cover
       }));
     }, []);
-    const allPoolTracks = useMemo(() => {
+    const allPoolTracks = useMemo3(() => {
       const combinedLocals = searchLocalResults.length > 0 ? searchLocalResults : localTracks;
       const combinedOnline = onlineResults.length > 0 ? onlineResults : catalogTracks;
       if (searchScope === "local") {
@@ -18679,7 +19101,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         setTimeout(() => setFeedbackMsg(""), 4500);
       }
     };
-    const searchResults = useMemo(() => {
+    const searchResults = useMemo3(() => {
       const hasTextQuery = Boolean(aiQuery && aiQuery.trim().length > 0);
       const qLower = (aiQuery || "").toLowerCase().trim();
       const queryWords = qLower.split(/\s+/).filter((w) => w.length >= 2 && !["para", "con", "del", "the", "los", "las", "por", "and"].includes(w));
@@ -20083,55 +20505,55 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
   var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     var _a, _b;
-    const [isListening, setIsListening] = useState5(false);
-    const [countdown, setCountdown] = useState5(10);
-    const [isAnalyzing, setIsAnalyzing] = useState5(false);
-    const [statusMsg, setStatusMsg] = useState5("");
-    const [identifiedTrack, setIdentifiedTrack] = useState5(null);
-    const [history, setHistory] = useState5([]);
-    const [previewPlaying, setPreviewPlaying] = useState5(false);
-    const [micLevel, setMicLevel] = useState5(0);
-    const audioRef = useRef6(new Audio());
-    const mediaRecorderRef = useRef6(null);
-    const audioStreamRef = useRef6(null);
-    const fileInputRef = useRef6(null);
-    const timerRef = useRef6(null);
-    const animFrameRef = useRef6(null);
-    const audioCtxRef = useRef6(null);
-    const [dragOver, setDragOver] = useState5(false);
-    const [selectedEngine, setSelectedEngine] = useState5(() => {
+    const [isListening, setIsListening] = useState8(false);
+    const [countdown, setCountdown] = useState8(10);
+    const [isAnalyzing, setIsAnalyzing] = useState8(false);
+    const [statusMsg, setStatusMsg] = useState8("");
+    const [identifiedTrack, setIdentifiedTrack] = useState8(null);
+    const [history, setHistory] = useState8([]);
+    const [previewPlaying, setPreviewPlaying] = useState8(false);
+    const [micLevel, setMicLevel] = useState8(0);
+    const audioRef = useRef11(new Audio());
+    const mediaRecorderRef = useRef11(null);
+    const audioStreamRef = useRef11(null);
+    const fileInputRef = useRef11(null);
+    const timerRef = useRef11(null);
+    const animFrameRef = useRef11(null);
+    const audioCtxRef = useRef11(null);
+    const [dragOver, setDragOver] = useState8(false);
+    const [selectedEngine, setSelectedEngine] = useState8(() => {
       try {
         return localStorage.getItem("bw_radar_engine") || "radar_edge";
       } catch (e) {
         return "radar_edge";
       }
     });
-    const [radarEnvironment, setRadarEnvironment] = useState5(() => {
+    const [radarEnvironment, setRadarEnvironment] = useState8(() => {
       try {
         return localStorage.getItem("bw_radar_env") || "club";
       } catch (e) {
         return "club";
       }
     });
-    const [radarEvent, setRadarEvent] = useState5(null);
-    const recognizerRef = useRef6(null);
-    const [auddToken, setAuddToken] = useState5(() => {
+    const [radarEvent, setRadarEvent] = useState8(null);
+    const recognizerRef = useRef11(null);
+    const [auddToken, setAuddToken] = useState8(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
       } catch (e) {
         return "";
       }
     });
-    const [showConfig, setShowConfig] = useState5(false);
-    const [micCaptureMode, setMicCaptureMode] = useState5("auto");
-    const [micPermissionError, setMicPermissionError] = useState5(null);
-    useEffect6(() => {
+    const [showConfig, setShowConfig] = useState8(false);
+    const [micCaptureMode, setMicCaptureMode] = useState8("auto");
+    const [micPermissionError, setMicPermissionError] = useState8(null);
+    useEffect11(() => {
       try {
         localStorage.setItem("bw_radar_engine", selectedEngine);
       } catch (e) {
       }
     }, [selectedEngine]);
-    useEffect6(() => {
+    useEffect11(() => {
       try {
         localStorage.setItem("bw_radar_env", radarEnvironment);
       } catch (e) {
@@ -20140,7 +20562,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         recognizerRef.current.setEnvironment(radarEnvironment);
       }
     }, [radarEnvironment]);
-    useEffect6(() => {
+    useEffect11(() => {
       recognizerRef.current = new Phase1FastRecognizer({
         workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
         environment: radarEnvironment,
@@ -20187,13 +20609,13 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       });
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       try {
         localStorage.setItem("bw_audd_token", auddToken);
       } catch (e) {
       }
     }, [auddToken]);
-    const [notebookTracks, setNotebookTracks] = useState5(() => {
+    const [notebookTracks, setNotebookTracks] = useState8(() => {
       try {
         const saved = localStorage.getItem("beatwave_shazam_notebook");
         return saved ? JSON.parse(saved) : [];
@@ -20201,8 +20623,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         return [];
       }
     });
-    const [notebookFeedback, setNotebookFeedback] = useState5("");
-    useEffect6(() => {
+    const [notebookFeedback, setNotebookFeedback] = useState8("");
+    useEffect11(() => {
       try {
         localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
       } catch (e) {
@@ -20330,7 +20752,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const audio = audioRef.current;
       const handleEnded = () => setPreviewPlaying(false);
       const handlePause = () => setPreviewPlaying(false);
@@ -21217,7 +21639,7 @@ ${text}`);
     )))));
   };
   var TrendsWorkspace = ({ lang = "es" }) => {
-    const [trendsData, setTrendsData] = useState5({
+    const [trendsData, setTrendsData] = useState8({
       last_crawled_at: "Sincronizando...",
       next_scheduled_run: "Martes 23:00",
       items: [],
@@ -21229,14 +21651,14 @@ ${text}`);
       dj_gear: [],
       trends_radar: []
     });
-    const [loading, setLoading] = useState5(true);
-    const [isCrawling, setIsCrawling] = useState5(false);
-    const [selectedCategory, setSelectedCategory] = useState5("todas");
-    const [selectedCity, setSelectedCity] = useState5("Madrid");
-    const [searchQuery, setSearchQuery] = useState5("");
-    const [dateFilter, setDateFilter] = useState5("all");
-    const [readingArticle, setReadingArticle] = useState5(null);
-    const [copiedRef, setCopiedRef] = useState5(false);
+    const [loading, setLoading] = useState8(true);
+    const [isCrawling, setIsCrawling] = useState8(false);
+    const [selectedCategory, setSelectedCategory] = useState8("todas");
+    const [selectedCity, setSelectedCity] = useState8("Madrid");
+    const [searchQuery, setSearchQuery] = useState8("");
+    const [dateFilter, setDateFilter] = useState8("all");
+    const [readingArticle, setReadingArticle] = useState8(null);
+    const [copiedRef, setCopiedRef] = useState8(false);
     const categories = [
       { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
       { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
@@ -21268,7 +21690,7 @@ ${text}`);
         setLoading(false);
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       fetchTrends();
     }, []);
     const handleRunCrawler = async () => {
@@ -21299,7 +21721,7 @@ ${text}`);
       } catch (_) {
       }
     };
-    const filteredItems = useMemo(() => {
+    const filteredItems = useMemo3(() => {
       const items = trendsData.items || [];
       return items.filter((item) => {
         const matchCat = selectedCategory === "todas" || item.category === selectedCategory;
@@ -21322,7 +21744,7 @@ ${text}`);
         return true;
       });
     }, [trendsData, selectedCategory, searchQuery, dateFilter]);
-    const festivals = useMemo(() => {
+    const festivals = useMemo3(() => {
       let list = trendsData.festivals_calendar || [];
       if (selectedCity && selectedCity !== "Todas") {
         list = list.filter((f) => (f.city || "").toLowerCase() === selectedCity.toLowerCase());
@@ -21333,7 +21755,7 @@ ${text}`);
         (f) => (f.name || "").toLowerCase().includes(q) || (f.city || "").toLowerCase().includes(q) || (f.venue || "").toLowerCase().includes(q) || (f.headliners || []).some((h) => h.toLowerCase().includes(q))
       );
     }, [trendsData, selectedCity, searchQuery]);
-    const setBreakdowns = useMemo(() => {
+    const setBreakdowns = useMemo3(() => {
       const list = trendsData.set_breakdowns || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -21341,7 +21763,7 @@ ${text}`);
         (s) => (s.artist || "").toLowerCase().includes(q) || (s.event || "").toLowerCase().includes(q) || (s.tactical_breakdown || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const interviews = useMemo(() => {
+    const interviews = useMemo3(() => {
       const list = trendsData.interviews || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -21349,7 +21771,7 @@ ${text}`);
         (it) => (it.artist || "").toLowerCase().includes(q) || (it.headline || "").toLowerCase().includes(q) || (it.quote || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const controllers = useMemo(() => {
+    const controllers = useMemo3(() => {
       const list = trendsData.controllers || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -21357,7 +21779,7 @@ ${text}`);
         (c) => (c.name || "").toLowerCase().includes(q) || (c.brand || "").toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const gadgets = useMemo(() => {
+    const gadgets = useMemo3(() => {
       const list = trendsData.gadgets || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -21365,7 +21787,7 @@ ${text}`);
         (g) => (g.name || "").toLowerCase().includes(q) || (g.category || "").toLowerCase().includes(q) || (g.utility || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const djGear = useMemo(() => {
+    const djGear = useMemo3(() => {
       const list = trendsData.dj_gear || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -21373,7 +21795,7 @@ ${text}`);
         (dg) => (dg.name || "").toLowerCase().includes(q) || (dg.brand || "").toLowerCase().includes(q) || (dg.type || "").toLowerCase().includes(q) || (dg.description || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const radarItems = useMemo(() => {
+    const radarItems = useMemo3(() => {
       const list = trendsData.trends_radar || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -21861,23 +22283,23 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onNavigateTab,
     lang = "es"
   }) => {
-    const [setName, setSetName] = useState5("BeatWave_Mainstage_Set");
-    const [selectedTrackIdx, setSelectedTrackIdx] = useState5(null);
-    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState5(false);
-    const [searchAddQuery, setSearchAddQuery] = useState5("");
-    const [exportStatus, setExportStatus] = useState5(null);
-    const [isExporting, setIsExporting] = useState5(false);
-    const [isAuditingSet, setIsAuditingSet] = useState5(false);
-    const [auditSetProgress, setAuditSetProgress] = useState5(0);
-    const [folderLoading, setFolderLoading] = useState5(false);
-    const [folderProgress, setFolderProgress] = useState5({ pct: 0, msg: "" });
-    const [viewMode, setViewMode] = useState5("list");
-    const [graphData, setGraphData] = useState5({ nodes: [], edges: [] });
-    const [isLoadingGraph, setIsLoadingGraph] = useState5(false);
-    const [aiAuditResult, setAiAuditResult] = useState5(null);
-    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState5(false);
-    const [hoveredFlowIdx, setHoveredFlowIdx] = useState5(null);
-    useEffect6(() => {
+    const [setName, setSetName] = useState8("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState8(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState8(false);
+    const [searchAddQuery, setSearchAddQuery] = useState8("");
+    const [exportStatus, setExportStatus] = useState8(null);
+    const [isExporting, setIsExporting] = useState8(false);
+    const [isAuditingSet, setIsAuditingSet] = useState8(false);
+    const [auditSetProgress, setAuditSetProgress] = useState8(0);
+    const [folderLoading, setFolderLoading] = useState8(false);
+    const [folderProgress, setFolderProgress] = useState8({ pct: 0, msg: "" });
+    const [viewMode, setViewMode] = useState8("list");
+    const [graphData, setGraphData] = useState8({ nodes: [], edges: [] });
+    const [isLoadingGraph, setIsLoadingGraph] = useState8(false);
+    const [aiAuditResult, setAiAuditResult] = useState8(null);
+    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState8(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState8(null);
+    useEffect11(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
       const updated = setTracks.map((st) => {
@@ -21910,7 +22332,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setSetTracks(updated);
       }
     }, [auditTracks]);
-    const stats = useMemo(() => {
+    const stats = useMemo3(() => {
       if (!setTracks || setTracks.length === 0) {
         return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100, pendingAuditCount: 0 };
       }
@@ -21946,7 +22368,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
       return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore, pendingAuditCount: pendingAudit };
     }, [setTracks]);
-    const formattedDuration = useMemo(() => {
+    const formattedDuration = useMemo3(() => {
       const s = stats.totalDurationSec;
       const hrs = Math.floor(s / 3600);
       const mins = Math.floor(s % 3600 / 60);
@@ -23289,37 +23711,37 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onSelectDirectory,
     lang = "es"
   }) => {
-    const [useDemo, setUseDemo] = useState5(false);
+    const [useDemo, setUseDemo] = useState8(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS : [];
-    const [projectionMode, setProjectionMode] = useState5("energy_dance");
-    const [colorMode, setColorMode] = useState5("genre");
-    const [toolMode, setToolMode] = useState5("pan");
-    const [searchQuery, setSearchQuery] = useState5("");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState5("ALL");
-    const [showHarmonicPaths, setShowHarmonicPaths] = useState5(true);
-    const [selectedTrack, setSelectedTrack] = useState5(null);
-    const [selectedMapTracks, setSelectedMapTracks] = useState5([]);
-    const [hoveredTrack, setHoveredTrack] = useState5(null);
-    const tooltipRef = useRef6(null);
-    const mousePosRef = useRef6({ x: -100, y: -100 });
-    const zoomThrottleRef = useRef6(null);
-    const zoomTrailingRef = useRef6(null);
-    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState5(true);
-    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState5(true);
-    const [zoomDisplay, setZoomDisplay] = useState5(1);
-    const [isPanning, setIsPanning] = useState5(false);
-    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState5(true);
+    const [projectionMode, setProjectionMode] = useState8("energy_dance");
+    const [colorMode, setColorMode] = useState8("genre");
+    const [toolMode, setToolMode] = useState8("pan");
+    const [searchQuery, setSearchQuery] = useState8("");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState8("ALL");
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState8(true);
+    const [selectedTrack, setSelectedTrack] = useState8(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState8([]);
+    const [hoveredTrack, setHoveredTrack] = useState8(null);
+    const tooltipRef = useRef11(null);
+    const mousePosRef = useRef11({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef11(null);
+    const zoomTrailingRef = useRef11(null);
+    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState8(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState8(true);
+    const [zoomDisplay, setZoomDisplay] = useState8(1);
+    const [isPanning, setIsPanning] = useState8(false);
+    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState8(true);
     const {
       width: mapConsoleWidth,
       onPointerDown: onMapConsoleResizeDown,
       resetWidth: onResetMapConsoleWidth
     } = useDrawerResize("bw_map_console_width", 270, 220, 520, true);
-    const [filterMinEnergy, setFilterMinEnergy] = useState5(0);
-    const [filterMinDance, setFilterMinDance] = useState5(0);
-    const [filterMinIntensity, setFilterMinIntensity] = useState5(0);
-    const [filterMinValence, setFilterMinValence] = useState5(0);
-    const [filterQualityMode, setFilterQualityMode] = useState5("ALL");
-    const handleResetAcousticFilters = useCallback(() => {
+    const [filterMinEnergy, setFilterMinEnergy] = useState8(0);
+    const [filterMinDance, setFilterMinDance] = useState8(0);
+    const [filterMinIntensity, setFilterMinIntensity] = useState8(0);
+    const [filterMinValence, setFilterMinValence] = useState8(0);
+    const [filterQualityMode, setFilterQualityMode] = useState8("ALL");
+    const handleResetAcousticFilters = useCallback4(() => {
       setFilterMinEnergy(0);
       setFilterMinDance(0);
       setFilterMinIntensity(0);
@@ -23327,22 +23749,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setFilterQualityMode("ALL");
       setSelectedKeyFilter("ALL");
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       return () => {
         if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
         if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
       };
     }, []);
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== "ALL" || selectedKeyFilter !== "ALL" || Boolean(searchQuery);
-    const canvasRef = useRef6(null);
-    const containerRef = useRef6(null);
-    const animRef = useRef6(null);
-    const imageCacheRef = useRef6(/* @__PURE__ */ new Map());
-    const panTimerRef = useRef6(null);
-    const spatialGridRef = useRef6(/* @__PURE__ */ new Map());
-    const mouseRafRef = useRef6(null);
-    const activeLoadingCountRef = useRef6(0);
-    const pendingLoadQueueRef = useRef6([]);
+    const canvasRef = useRef11(null);
+    const containerRef = useRef11(null);
+    const animRef = useRef11(null);
+    const imageCacheRef = useRef11(/* @__PURE__ */ new Map());
+    const panTimerRef = useRef11(null);
+    const spatialGridRef = useRef11(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef11(null);
+    const activeLoadingCountRef = useRef11(0);
+    const pendingLoadQueueRef = useRef11([]);
     const processCoverQueue = () => {
       const MAX_CONCURRENT = 8;
       while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
@@ -23388,7 +23810,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       processCoverQueue();
     };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
-    const transformRef = useRef6({
+    const transformRef = useRef11({
       scale: 1,
       panX: 0,
       panY: 0,
@@ -23458,7 +23880,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
-    const handleAutoFrame = useCallback((targetZoom = null) => {
+    const handleAutoFrame = useCallback4((targetZoom = null) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -23534,13 +23956,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       tr.isContinuousPanning = false;
       setZoomDisplay(finalScale);
     }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
-    const selectionRef = useRef6({
+    const selectionRef = useRef11({
       isSelecting: false,
       points: [],
       boxStart: null
     });
-    const nodesRef = useRef6([]);
-    useEffect6(() => {
+    const nodesRef = useRef11([]);
+    useEffect11(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
       const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
@@ -23634,7 +24056,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
-    useEffect6(() => {
+    useEffect11(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -24210,7 +24632,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         selectionRef.current.boxStart = null;
       }
     };
-    const handleWheel = useCallback((e) => {
+    const handleWheel = useCallback4((e) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -24241,7 +24663,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }, 80);
       }
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const onWheelNative = (e) => {
@@ -24262,13 +24684,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const handleResetZoom = () => {
       handleAutoFrame(1);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const timer = setTimeout(() => {
         handleAutoFrame();
       }, 120);
       return () => clearTimeout(timer);
     }, [projectionMode, activeTracks.length, handleAutoFrame]);
-    const mapStats = useMemo(() => {
+    const mapStats = useMemo3(() => {
       const q = searchQuery.trim().toLowerCase();
       const vis = activeTracks.filter((t) => {
         const k = (t.key || t.k || "8A").toUpperCase();
@@ -24663,18 +25085,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
     )));
   };
   var KnowledgeWorkspace = ({ lang = "es" }) => {
-    const [activeSection, setActiveSection] = useState5("courses");
-    const [knowledgeData, setKnowledgeData] = useState5({
+    const [activeSection, setActiveSection] = useState8("courses");
+    const [knowledgeData, setKnowledgeData] = useState8({
       courses: [],
       videos: [],
       manuals: [],
       tricks: [],
       glossary: []
     });
-    const [loading, setLoading] = useState5(true);
-    const [expandedCourseId, setExpandedCourseId] = useState5("course_01");
-    const [glossarySearch, setGlossarySearch] = useState5("");
-    const [glossaryCategory, setGlossaryCategory] = useState5("all");
+    const [loading, setLoading] = useState8(true);
+    const [expandedCourseId, setExpandedCourseId] = useState8("course_01");
+    const [glossarySearch, setGlossarySearch] = useState8("");
+    const [glossaryCategory, setGlossaryCategory] = useState8("all");
     const fetchKnowledge = async () => {
       try {
         setLoading(true);
@@ -24694,10 +25116,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setLoading(false);
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       fetchKnowledge();
     }, []);
-    const filteredGlossary = useMemo(() => {
+    const filteredGlossary = useMemo3(() => {
       const dynamicItems = knowledgeData.glossary || [];
       const combined = [...BEATWAVE_MASTER_GLOSSARY];
       dynamicItems.forEach((d) => {
@@ -24954,411 +25376,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const key = (id || "auto").toLowerCase();
     const Comp = PlatformLogos[key] || PlatformLogos.auto;
     return /* @__PURE__ */ React.createElement(Comp, { size, className });
-  };
-  var CopilotSeratoWaveform = ({
-    deck,
-    side = "1",
-    antiMuddy = null,
-    partnerDeck = null
-  }) => {
-    const canvasRef = useRef6(null);
-    const minimapRef = useRef6(null);
-    const minimapCacheRef = useRef6(null);
-    const [zoom, setZoom] = useState5(4);
-    const [showTacticalAids, setShowTacticalAids] = useState5(true);
-    const [hoveredMilestone, setHoveredMilestone] = useState5(null);
-    const initialProgress = typeof deck.play_progress === "number" && !isNaN(deck.play_progress) ? deck.play_progress : 0;
-    const [progress, setProgress] = useState5(initialProgress);
-    const progressRef = useRef6(initialProgress);
-    const isPlayingRef = useRef6(Boolean(deck.is_playing));
-    const bpmRef = useRef6(deck.bpm || 130);
-    const durationSecRef = useRef6(deck.duration_sec || 390);
-    useEffect6(() => {
-      if (deck.play_progress !== void 0 && deck.play_progress !== null) {
-        const diff = Math.abs(progressRef.current - deck.play_progress);
-        if (diff > 0.01) {
-          progressRef.current = deck.play_progress;
-          setProgress(deck.play_progress);
-        }
-      }
-      isPlayingRef.current = Boolean(deck.is_playing);
-      bpmRef.current = parseFloat(deck.bpm) || 130;
-      durationSecRef.current = parseFloat(deck.duration_sec) || 390;
-    }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
-    useEffect6(() => {
-      let animId;
-      let lastTime = performance.now();
-      let lastUiUpdate = 0;
-      const tick = (now) => {
-        const dt = (now - lastTime) / 1e3;
-        lastTime = now;
-        if (isPlayingRef.current && durationSecRef.current > 0) {
-          const advance = dt / durationSecRef.current;
-          const next = (progressRef.current + advance) % 1;
-          progressRef.current = next;
-          if (now - lastUiUpdate >= 33) {
-            lastUiUpdate = now;
-            setProgress(next);
-          }
-        }
-        if (isPlayingRef.current) {
-          animId = requestAnimationFrame(tick);
-        }
-      };
-      if (isPlayingRef.current) {
-        animId = requestAnimationFrame(tick);
-      }
-      return () => {
-        if (animId) cancelAnimationFrame(animId);
-      };
-    }, [deck.is_playing]);
-    const rawId = deck.file_path || deck.title || "1";
-    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-    const durSec = deck.duration_sec || 390;
-    const elapsedSec = progress * durSec;
-    const remainSec = Math.max(0, durSec - elapsedSec);
-    const overviewBytes = useMemo(() => {
-      if (!deck.serato_overview) return null;
-      try {
-        const bin = atob(deck.serato_overview);
-        const u8 = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) {
-          u8[i] = bin.charCodeAt(i);
-        }
-        return u8;
-      } catch (e) {
-        return null;
-      }
-    }, [deck.serato_overview]);
-    const formatSec = (s) => {
-      const m = Math.floor(s / 60);
-      const sec = Math.floor(s % 60);
-      return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-    };
-    const cues = deck.cues || [
-      { id: 1, name: "Downbeat 1.0.0", color: "#ef4444", pct: 0.04, time: "00:00.25", directive: "Punto de anclaje inicial. Arranca beatmatching aqu\xED." },
-      { id: 2, name: "Intro Perc", color: "#f97316", pct: 0.16, time: "01:04.00", directive: "Entrada de caja y charles. Inicia subida gradual del fader." },
-      { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck." },
-      { id: 4, name: "MAIN DROP", color: "#10b981", pct: 0.48, time: "03:12.00", directive: "Cl\xEDmax 100% de potencia. Corta totalmente los graves del deck saliente." },
-      { id: 5, name: "Breakdown", color: "#06b6d4", pct: 0.62, time: "04:16.00", directive: "Par\xF3n mel\xF3dico sin bombo. Ventana id\xF3nea para transiciones vocales." },
-      { id: 6, name: "Climax 2", color: "#22d3ee", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mant\xE9n energ\xEDa alta." },
-      { id: 7, name: "Outro 32b", color: "#8b5cf6", pct: 0.86, time: "06:08.00", directive: "Se retiran capas r\xEDtmicas. Zona recomendada para mezclar track entrante." },
-      { id: 8, name: "Cut / Fade", color: "#ec4899", pct: 0.96, time: "07:15.00", directive: "Final de pista. Fade-out o corte antes del silencio." }
-    ];
-    const phases = deck.structural_phases || [
-      { id: "intro", name: "Intro", start_pct: 0, end_pct: 0.16, type: "intro", label: "Intro 32b \u2022 Mezcla In", color: "#06b6d4", directive: "32 compases de entrada. Sincroniza beatgrid." },
-      { id: "build", name: "Bassline In", start_pct: 0.16, end_pct: 0.35, type: "build", label: "Bassline Activa", color: "#eab308", directive: "Filtra frecuencias sub con filtro High-Pass." },
-      { id: "break", name: "Breakdown", start_pct: 0.35, end_pct: 0.48, type: "break", label: "Breakdown (Sin Graves)", color: "#38bdf8", directive: "Sin bombo. Oportunidad para cruce de leads o acapellas." },
-      { id: "drop", name: "MAIN DROP", start_pct: 0.48, end_pct: 0.74, type: "drop", label: "\u26A1 DROP PRINCIPAL (Cl\xEDmax)", color: "#ef4444", directive: "Energ\xEDa m\xE1xima en pista. Kill switch en graves opuestos." },
-      { id: "break2", name: "Segundo Par\xF3n", start_pct: 0.74, end_pct: 0.82, type: "break", label: "Puente Mel\xF3dico", color: "#a855f7", directive: "Transici\xF3n mel\xF3dica antes del outro." },
-      { id: "outro", name: "Outro", start_pct: 0.82, end_pct: 1, type: "outro", label: "\u{1F7E2} MEZCLA SEGURA (Outro)", color: "#10b981", directive: "Zona segura de mezcla. Abre canal entrante." }
-    ];
-    const nextCue = cues.find((c) => (c.pct || 0) > progress);
-    const beatsToNextCue = nextCue && deck.bpm ? Math.round((nextCue.pct - progress) * durSec / (60 / deck.bpm)) : null;
-    const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
-    const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
-    const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
-    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44;
-    useEffect6(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width || canvas.parentElement.clientWidth || 550;
-      const h = 88;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      const ctx = canvas.getContext("2d");
-      if (ctx.resetTransform) ctx.resetTransform();
-      else ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = "#05050a";
-      ctx.fillRect(0, 0, w, h);
-      const midY = h / 2;
-      const playheadX = w / 2;
-      const windowSec = durSec / zoom;
-      const halfWindowSec = windowSec / 2;
-      const currentSec = progress * durSec;
-      const startSec = currentSec - halfWindowSec;
-      const endSec = currentSec + halfWindowSec;
-      const bpm = deck.bpm || 130;
-      const beatSec = 60 / bpm;
-      const downbeatSec = deck && deck.first_downbeat_ms ? parseFloat(deck.first_downbeat_ms) / 1e3 : 0;
-      if (beatSec > 0) {
-        const firstBeatIdx = Math.floor((startSec - downbeatSec) / beatSec);
-        const lastBeatIdx = Math.ceil((endSec - downbeatSec) / beatSec);
-        for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
-          const bSec = downbeatSec + b * beatSec;
-          const bx = playheadX + (bSec - currentSec) / windowSec * w;
-          if (bx >= 0 && bx <= w) {
-            const isBar = b % 4 === 0;
-            const isPhrase = b % 16 === 0;
-            ctx.strokeStyle = isPhrase ? "rgba(255, 255, 255, 0.45)" : isBar ? "rgba(255, 255, 255, 0.22)" : "rgba(255, 255, 255, 0.08)";
-            ctx.lineWidth = isPhrase ? 1.5 : 1;
-            ctx.beginPath();
-            ctx.moveTo(bx, isBar ? 6 : 14);
-            ctx.lineTo(bx, h - (isBar ? 6 : 14));
-            ctx.stroke();
-            if (isBar && bx > 15 && bx < w - 25) {
-              ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-              ctx.font = "8px monospace";
-              ctx.fillText(`${Math.floor(b / 4) + 1}`, bx + 2, 12);
-            }
-          }
-        }
-      }
-      if (showTacticalAids) {
-        phases.forEach((ph) => {
-          const phStartSec = ph.start_pct * durSec;
-          const phEndSec = ph.end_pct * durSec;
-          if (phEndSec >= startSec && phStartSec <= endSec) {
-            const x1 = Math.max(0, playheadX + (phStartSec - currentSec) / windowSec * w);
-            const x2 = Math.min(w, playheadX + (phEndSec - currentSec) / windowSec * w);
-            if (x2 > x1) {
-              ctx.fillStyle = `${ph.color}14`;
-              ctx.fillRect(x1, 0, x2 - x1, h);
-              ctx.fillStyle = `${ph.color}88`;
-              ctx.fillRect(x1, 0, x2 - x1, 2);
-            }
-          }
-        });
-        if (isBassClashDanger) {
-          ctx.fillStyle = "rgba(239, 68, 68, 0.18)";
-          ctx.fillRect(playheadX - 60, 0, 120, h);
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.8)";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(playheadX - 60, 0, 120, h);
-        }
-      }
-      const stepPx = 2;
-      const totalSlices = Math.ceil(w / stepPx);
-      for (let i = 0; i < totalSlices; i++) {
-        const x = i * stepPx;
-        const sliceSec = startSec + x / w * windowSec;
-        const sliceNorm = sliceSec / durSec;
-        if (sliceNorm >= 0 && sliceNorm <= 1) {
-          let bass, mid, treble;
-          if (overviewBytes && overviewBytes.length >= 3840) {
-            const colIdx = Math.min(1279, Math.max(0, Math.floor(sliceNorm * 1280)));
-            const byteOffset = colIdx * 3;
-            bass = Math.min(1, (overviewBytes[byteOffset] || 0) / 220);
-            mid = Math.min(1, (overviewBytes[byteOffset + 1] || 0) / 120);
-            treble = Math.min(1, (overviewBytes[byteOffset + 2] || 0) / 120);
-          } else {
-            const bands = computeTrackStructuralBands(sliceNorm, seed, deck);
-            bass = bands.bass;
-            mid = Math.max(bands.drums, bands.vocals);
-            treble = bands.treble;
-          }
-          const maxAmp = h / 2 - 8;
-          const bassAmp = bass * maxAmp * 0.95;
-          ctx.fillStyle = "#ef4444";
-          ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
-          const midAmp = mid * maxAmp * 0.72;
-          ctx.fillStyle = "#06b6d4";
-          ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
-          const trebAmp = treble * maxAmp * 0.48;
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
-          if (bass > 0.85) {
-            ctx.fillStyle = "#fbbf24";
-            ctx.fillRect(x, midY - 2, stepPx - 0.4, 4);
-          }
-        }
-      }
-      if (showTacticalAids) {
-        cues.forEach((cue) => {
-          const cueSec = (cue.pct !== void 0 ? cue.pct : 0) * durSec;
-          if (cueSec >= startSec && cueSec <= endSec) {
-            const cx = playheadX + (cueSec - currentSec) / windowSec * w;
-            if (cx >= 0 && cx <= w) {
-              ctx.strokeStyle = cue.color || "#06b6d4";
-              ctx.lineWidth = 1.5;
-              ctx.beginPath();
-              ctx.moveTo(cx, 0);
-              ctx.lineTo(cx, h);
-              ctx.stroke();
-              ctx.fillStyle = cue.color || "#06b6d4";
-              ctx.fillRect(cx - 1, 2, 16, 12);
-              ctx.fillStyle = "#000000";
-              ctx.font = "bold 8px monospace";
-              ctx.fillText(`C${cue.id || ""}`, cx + 2, 11);
-            }
-          }
-        });
-      }
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(playheadX, 0);
-      ctx.lineTo(playheadX, h);
-      ctx.stroke();
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.moveTo(playheadX - 5, 0);
-      ctx.lineTo(playheadX + 5, 0);
-      ctx.lineTo(playheadX, 8);
-      ctx.closePath();
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(playheadX - 5, h);
-      ctx.lineTo(playheadX + 5, h);
-      ctx.lineTo(playheadX, h - 8);
-      ctx.closePath();
-      ctx.fill();
-      const miniCanvas = minimapRef.current;
-      if (!miniCanvas) return;
-      const mRect = miniCanvas.getBoundingClientRect();
-      const mw = mRect.width || miniCanvas.parentElement.clientWidth || 550;
-      const mh = 22;
-      miniCanvas.width = Math.round(mw * dpr);
-      miniCanvas.height = Math.round(mh * dpr);
-      const mCtx = miniCanvas.getContext("2d");
-      if (mCtx.resetTransform) mCtx.resetTransform();
-      else mCtx.setTransform(1, 0, 0, 1, 0, 0);
-      mCtx.scale(dpr, dpr);
-      const cacheKey = `${rawId}_${mw}_${showTacticalAids}_${overviewBytes ? "real" : "synth"}`;
-      if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
-        const off = document.createElement("canvas");
-        off.width = Math.round(mw * dpr);
-        off.height = Math.round(mh * dpr);
-        const oCtx = off.getContext("2d");
-        if (oCtx.resetTransform) oCtx.resetTransform();
-        else oCtx.setTransform(1, 0, 0, 1, 0, 0);
-        oCtx.scale(dpr, dpr);
-        oCtx.fillStyle = "#06060e";
-        oCtx.fillRect(0, 0, mw, mh);
-        const mStep = 2;
-        const mSlices = Math.ceil(mw / mStep);
-        for (let j = 0; j < mSlices; j++) {
-          const mx = j * mStep;
-          const mNorm = mx / mw;
-          let bVal, mVal, tVal;
-          if (overviewBytes && overviewBytes.length >= 3840) {
-            const colIdx = Math.min(1279, Math.max(0, Math.floor(mNorm * 1280)));
-            const byteOffset = colIdx * 3;
-            bVal = Math.min(1, (overviewBytes[byteOffset] || 0) / 220);
-            mVal = Math.min(1, (overviewBytes[byteOffset + 1] || 0) / 120);
-            tVal = Math.min(1, (overviewBytes[byteOffset + 2] || 0) / 120);
-          } else {
-            const bands = computeTrackStructuralBands(mNorm, seed, deck);
-            bVal = bands.bass;
-            mVal = Math.max(bands.drums, bands.vocals);
-            tVal = bands.treble;
-          }
-          const mHalf = mh / 2;
-          const bAmp = bVal * (mHalf - 2);
-          const mAmp = mVal * (mHalf - 3);
-          const tAmp = tVal * (mHalf - 4);
-          oCtx.fillStyle = "#ef4444";
-          oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
-          oCtx.fillStyle = "#06b6d4";
-          oCtx.fillRect(mx, mHalf - mAmp, mStep - 0.4, mAmp * 2);
-          oCtx.fillStyle = "#ffffff";
-          oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
-        }
-        if (showTacticalAids) {
-          phases.forEach((ph) => {
-            const px1 = ph.start_pct * mw;
-            const px2 = ph.end_pct * mw;
-            oCtx.fillStyle = `${ph.color}25`;
-            oCtx.fillRect(px1, 0, px2 - px1, mh);
-            oCtx.fillStyle = ph.color;
-            oCtx.fillRect(px1, 0, px2 - px1, 1.5);
-          });
-          cues.forEach((cue) => {
-            const cx = (cue.pct || 0) * mw;
-            oCtx.fillStyle = cue.color || "#06b6d4";
-            oCtx.fillRect(cx - 0.5, 0, 1.5, mh);
-          });
-        }
-        minimapCacheRef.current = { key: cacheKey, canvas: off };
-      }
-      mCtx.drawImage(minimapCacheRef.current.canvas, 0, 0, mw, mh);
-      const vStart = Math.max(0, startSec / durSec * mw);
-      const vEnd = Math.min(mw, endSec / durSec * mw);
-      mCtx.fillStyle = "rgba(255, 255, 255, 0.15)";
-      mCtx.fillRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
-      mCtx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-      mCtx.lineWidth = 1;
-      mCtx.strokeRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
-      const mPlayheadX = progress * mw;
-      mCtx.fillStyle = "#ffffff";
-      mCtx.fillRect(mPlayheadX - 1, 0, 2, mh);
-    }, [zoom, showTacticalAids, progress, deck, antiMuddy, isBassClashDanger]);
-    const handleMinimapClick = (e) => {
-      const miniCanvas = minimapRef.current;
-      if (!miniCanvas) return;
-      const rect = miniCanvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const newPct = Math.max(0, Math.min(1, clickX / rect.width));
-      progressRef.current = newPct;
-      setProgress(newPct);
-    };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner" }, showTacticalAids && /* @__PURE__ */ React.createElement("div", { className: "relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, !deck.is_playing ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/70 text-indigo-200 font-mono text-[11px] font-bold shadow-[0_0_12px_rgba(99,102,241,0.3)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u{1F3A7}"), /* @__PURE__ */ React.createElement("span", null, "EN CUE (PREPARADO) \u2794 Listo para soltar en primer bombo (Bar 1)")) : isBassClashDanger ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-500 text-red-200 font-mono text-[11px] font-bold shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse ring-1 ring-red-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm" }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("span", null, "EN ", barsToNextCue || 8, " COMPASES (", formatSec(timeToNextCue || 16), ") \u2794 BASS CLASH: Cortar Low EQ")) : nextCue ? timeToNextCue <= 5 && timeToNextCue > 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-600 text-white font-mono text-[11px] font-black shadow-[0_0_25px_rgba(239,68,68,1)] ring-2 ring-red-400 border border-white animate-pulse scale-105" }, /* @__PURE__ */ React.createElement("span", { className: "text-sm animate-bounce" }, "\u{1F6A8}"), /* @__PURE__ */ React.createElement("span", null, "\xA1ATENCI\xD3N! EN ", /* @__PURE__ */ React.createElement("strong", { className: "text-yellow-300 font-orbitron" }, formatSec(timeToNextCue)), " \u2794 ", /* @__PURE__ */ React.createElement("span", { className: "uppercase tracking-wider" }, nextCue.name))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djcyan-950/60 border border-djcyan-500/60 text-djcyan-300 font-mono text-[11px] font-bold" }, /* @__PURE__ */ React.createElement("span", null, "\u23F3"), /* @__PURE__ */ React.createElement("span", null, "EN ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-orbitron" }, barsToNextCue), " BARS (", formatSec(timeToNextCue), ") \u2794 ", /* @__PURE__ */ React.createElement("span", { className: "text-white uppercase" }, nextCue.name))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-mono text-[11px] font-bold" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F7E2}"), /* @__PURE__ */ React.createElement("span", null, "EN ZONA SEGURA DE MEZCLA (OUTRO)"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase text-amber-400 font-bold mr-1 hidden md:inline" }, "\u{1F3AF} Hitos:"), phases.map((ph) => {
-      const phStart = ph.start_pct || 0;
-      const isPassed = phStart <= progress;
-      const isCurrent = progress >= ph.start_pct && progress < ph.end_pct;
-      const iconsMap = { intro: "\u{1F680}", build: "\u{1F6D1}", break: "\u{1F30A}", break2: "\u{1F30A}", drop: "\u{1F3AF}", outro: "\u{1F3C1}" };
-      const icon = iconsMap[ph.type] || "\u26A1";
-      return /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          key: ph.id,
-          onMouseEnter: () => setHoveredMilestone({
-            name: ph.name || ph.label,
-            time: formatSec(ph.start_pct * durSec),
-            pct: ph.start_pct,
-            color: ph.color,
-            directive: ph.directive || ph.label
-          }),
-          onMouseLeave: () => setHoveredMilestone(null),
-          className: `relative px-1.5 py-0.5 rounded cursor-pointer transition-all text-[9px] font-mono font-bold flex items-center gap-1 border ${isCurrent ? "bg-amber-400 text-black border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)] scale-105 ring-1 ring-white" : isPassed ? "bg-zinc-900/80 text-zinc-400 border-zinc-800" : "bg-zinc-950 text-zinc-300 border-zinc-700/60 hover:border-amber-400"}`
-        },
-        /* @__PURE__ */ React.createElement("span", null, icon),
-        /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[70px]" }, ph.name.toUpperCase())
-      );
-    }))), hoveredMilestone && /* @__PURE__ */ React.createElement("div", { className: "absolute left-2 right-2 top-full mt-1.5 z-30 p-2.5 rounded-xl bg-black/95 border border-djcyan-500/60 shadow-2xl backdrop-blur-md text-xs font-mono animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-zinc-800 pb-1 mb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: hoveredMilestone.color } }), hoveredMilestone.name, " (", hoveredMilestone.time, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-djcyan-400 font-mono" }, "Comp\xE1s ", Math.round(hoveredMilestone.pct * durSec / (60 / (deck.bpm || 130)) / 4))), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-300 leading-relaxed" }, /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, "Acci\xF3n DJ:"), " ", hoveredMilestone.directive || "Ajuste de ganancia y sincron\xEDa arm\xF3nica antes del drop."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 flex-wrap text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setShowTacticalAids(!showTacticalAids),
-        className: `flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${showTacticalAids ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`,
-        title: "Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
-      },
-      /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "\u{1F3AF}" : "\u26AA"),
-      /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "Ayudas DJ" : "Puro Wave")
-    ), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400" }, overviewBytes && /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1 font-mono text-[8.5px] font-black px-1.5 py-0.2 rounded bg-red-950/70 border border-red-500/50 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.3)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" }), "SERATO OVERVIEW REAL"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ef4444]" }), "Graves (<200Hz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#06b6d4]" }), "Medios (200Hz-2.5kHz)"), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-[#ffffff]" }), "Agudos (>2.5kHz)"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]" }, [2, 4, 8, 16].map((z) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: z,
-        type: "button",
-        onClick: () => setZoom(z),
-        className: `px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer ${zoom === z ? "bg-djcyan-500 text-black shadow" : "text-zinc-400 hover:text-white"}`
-      },
-      z,
-      "x"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, formatSec(elapsedSec)), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "-", formatSec(remainSec))))), /* @__PURE__ */ React.createElement("div", { className: "relative w-full rounded-xl overflow-hidden border border-zinc-800/80 bg-[#05050b]" }, /* @__PURE__ */ React.createElement(
-      "canvas",
-      {
-        ref: canvasRef,
-        style: { width: "100%", height: "88px", display: "block" }
-      }
-    )), /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        onClick: handleMinimapClick,
-        className: "relative w-full rounded-lg overflow-hidden border border-zinc-800/60 bg-[#06060e] cursor-pointer hover:border-zinc-700 transition-colors",
-        title: "Haz clic en cualquier punto para saltar en la pista"
-      },
-      /* @__PURE__ */ React.createElement(
-        "canvas",
-        {
-          ref: minimapRef,
-          style: { width: "100%", height: "22px", display: "block" }
-        }
-      )
-    ));
   };
   var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, onCue = null }) => {
     if (!deck) return null;
@@ -26129,17 +26146,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     var _a, _b;
-    const [state, setState] = useState5(DEFAULT_COPILOT_STATE);
-    const [clock, setClock] = useState5("");
-    const [latency, setLatency] = useState5(2);
-    const [visibleCount, setVisibleCount] = useState5(4);
-    const [tracksList, setTracksList] = useState5(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState5(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState5(null);
-    const [lowEqApplied, setLowEqApplied] = useState5(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState5(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState5("");
-    const wsRef = useRef6(null);
+    const [state, setState] = useState8(DEFAULT_COPILOT_STATE);
+    const [clock, setClock] = useState8("");
+    const [latency, setLatency] = useState8(2);
+    const [visibleCount, setVisibleCount] = useState8(4);
+    const [tracksList, setTracksList] = useState8(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState8(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState8(null);
+    const [lowEqApplied, setLowEqApplied] = useState8(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState8(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState8("");
+    const wsRef = useRef11(null);
     const togglePlayDeck = async (targetSide) => {
       const sideStr = targetSide === "2" ? "2" : "1";
       setState((prev) => {
@@ -26252,12 +26269,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState5({
+    const [controllerState, setControllerState] = useState8({
       detected: true,
       name: "NUMARK NV II (USB)",
       status: "CONECTADA"
     });
-    useEffect6(() => {
+    useEffect11(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -26314,14 +26331,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         });
       }
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       let isMounted = true;
       let ws = null;
       let fallbackInterval = null;
@@ -26459,7 +26476,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         };
       });
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const handleKeyDown = (e) => {
         var _a2, _b2;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
@@ -26790,10 +26807,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })))));
   };
   var CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState5({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
-    const [copied, setCopied] = useState5(false);
-    const [qrShown, setQrShown] = useState5(false);
-    useEffect6(() => {
+    const [copilotInfo, setCopilotInfo] = useState8({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
+    const [copied, setCopied] = useState8(false);
+    const [qrShown, setQrShown] = useState8(false);
+    useEffect11(() => {
       if (isOpen) {
         fetch("/api/copilot/info").then((r) => r.json()).then((data) => setCopilotInfo(data)).catch(() => {
         });
@@ -27189,18 +27206,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
   ];
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
-    const [currentIndex, setCurrentIndex] = useState5(0);
-    const [isHovered, setIsHovered] = useState5(false);
-    const slideRef = useRef6(null);
-    const titleRef = useRef6(null);
-    const subtitleRef = useRef6(null);
-    const badgeRef = useRef6(null);
-    const trailRef = useRef6(null);
-    const timersRef = useRef6([]);
-    const intervalsRef = useRef6([]);
-    const isHoveredRef = useRef6(false);
+    const [currentIndex, setCurrentIndex] = useState8(0);
+    const [isHovered, setIsHovered] = useState8(false);
+    const slideRef = useRef11(null);
+    const titleRef = useRef11(null);
+    const subtitleRef = useRef11(null);
+    const badgeRef = useRef11(null);
+    const trailRef = useRef11(null);
+    const timersRef = useRef11([]);
+    const intervalsRef = useRef11([]);
+    const isHoveredRef = useRef11(false);
     isHoveredRef.current = isHovered;
-    const isTransitioningRef = useRef6(false);
+    const isTransitioningRef = useRef11(false);
     const clearAsync = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
@@ -27327,7 +27344,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         transitionToSlide(nextIdx, false);
       }, 4200);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       transitionToSlide(0, true);
       return () => clearAsync();
     }, []);
@@ -27401,21 +27418,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
-    const [phase, setPhase] = useState5("video");
-    const [videoOpacity, setVideoOpacity] = useState5(1);
-    const [isTransitioning, setIsTransitioning] = useState5(false);
-    const [selectedAlpha, setSelectedAlpha] = useState5(0.85);
-    const [isMuted, setIsMuted] = useState5(false);
-    const [isBassShaking, setIsBassShaking] = useState5(false);
-    const videoRef = useRef6(null);
-    const canvasRef = useRef6(null);
-    useEffect6(() => {
+    const [phase, setPhase] = useState8("video");
+    const [videoOpacity, setVideoOpacity] = useState8(1);
+    const [isTransitioning, setIsTransitioning] = useState8(false);
+    const [selectedAlpha, setSelectedAlpha] = useState8(0.85);
+    const [isMuted, setIsMuted] = useState8(false);
+    const [isBassShaking, setIsBassShaking] = useState8(false);
+    const videoRef = useRef11(null);
+    const canvasRef = useRef11(null);
+    useEffect11(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
       }, 50);
       return () => clearTimeout(timer);
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       const vid = videoRef.current;
       if (!vid) return;
       vid.currentTime = 0;
@@ -27497,7 +27514,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClose();
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       if (phase !== "portal" && !isTransitioning) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -27652,10 +27669,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return null;
   };
   var App = () => {
-    const [pricingOpen, setPricingOpen] = useState5(false);
-    const [registerModalOpen, setRegisterModalOpen] = useState5(false);
-    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState5("pro");
-    const [cinematicIntroOpen, setCinematicIntroOpen] = useState5(() => {
+    const [pricingOpen, setPricingOpen] = useState8(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState8(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState8("pro");
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState8(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("intro") === "1" || p.get("portal") === "1") return true;
@@ -27665,7 +27682,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return false;
       }
     });
-    const [lang, setLang] = useState5(() => {
+    const [lang, setLang] = useState8(() => {
       try {
         return localStorage.getItem("beatwave_lang") || "es";
       } catch (e) {
@@ -27680,7 +27697,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState5(() => {
+    const [activeTab, setActiveTab] = useState8(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         const q = p.get("tab") || window.location.hash.replace("#", "");
@@ -27718,19 +27735,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "library";
     });
-    const [isSimulationMode, setIsSimulationMode] = useState5(false);
-    const [currentFolder, setCurrentFolder] = useState5("");
-    const [studioMode, setStudioMode] = useState5("cues");
-    const [auditTracks, setAuditTracks] = useState5([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState5([]);
-    const [spotifyTracks, setSpotifyTracks] = useState5([]);
-    const [selectedTrack, setSelectedTrack] = useState5(null);
+    const [isSimulationMode, setIsSimulationMode] = useState8(false);
+    const [currentFolder, setCurrentFolder] = useState8("");
+    const [studioMode, setStudioMode] = useState8("cues");
+    const [auditTracks, setAuditTracks] = useState8([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState8([]);
+    const [spotifyTracks, setSpotifyTracks] = useState8([]);
+    const [selectedTrack, setSelectedTrack] = useState8(null);
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-    const [nowPlayingTrack, setNowPlayingTrack] = useState5(null);
-    const [isPlaying, setIsPlaying] = useState5(false);
-    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState5(false);
-    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState5(false);
-    const localAudioInputRef = useRef6(null);
+    const [nowPlayingTrack, setNowPlayingTrack] = useState8(null);
+    const [isPlaying, setIsPlaying] = useState8(false);
+    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState8(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState8(false);
+    const localAudioInputRef = useRef11(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -27770,21 +27787,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setLoadTrackMenuOpen(false);
     };
-    const playProgressRef = useRef6(0);
-    const setPlayProgress = useCallback((pct) => {
+    const playProgressRef = useRef11(0);
+    const setPlayProgress = useCallback4((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
-    const audioRef = useRef6(null);
-    const [mobileProgress, setMobileProgress] = useState5(0);
-    useEffect6(() => {
+    const audioRef = useRef11(null);
+    const [mobileProgress, setMobileProgress] = useState8(0);
+    useEffect11(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState5(0);
-    useEffect6(() => {
+    const [playProgress, setPlayProgressForWorkspaces] = useState8(0);
+    useEffect11(() => {
       let lastUpdate = 0;
       const THROTTLE_MS = 100;
       const onProgress = (e) => {
@@ -27797,8 +27814,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState5({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
-    useEffect6(() => {
+    const [globalAuditInfo, setGlobalAuditInfo] = useState8({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect11(() => {
       fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
         if (data && data.ready) {
           console.log(`[RAM WARM-UP] Cat\xE1logo precalentado: ${data.total_cached} pistas en memoria RAM.`);
@@ -27806,7 +27823,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }).catch(() => {
       });
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       const handleGlobalAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -27839,14 +27856,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return () => window.removeEventListener("bw:audit_progress", handleGlobalAuditEvt);
     }, []);
-    const [tutorialOpen, setTutorialOpen] = useState5(false);
-    const [tutorialInitialMode, setTutorialInitialMode] = useState5("launcher");
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState5(false);
-    const [railExpanded, setRailExpanded] = useState5(true);
+    const [tutorialOpen, setTutorialOpen] = useState8(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState8("launcher");
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState8(false);
+    const [railExpanded, setRailExpanded] = useState8(true);
     const toggleRailExpanded = () => {
       setRailExpanded((prev) => !prev);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       if (!railExpanded) return;
       const handleAutoCollapse = (e) => {
         const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
@@ -27861,8 +27878,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         window.removeEventListener("pointerdown", handleAutoCollapse, true);
       };
     }, [railExpanded]);
-    const [copilotModalOpen, setCopilotModalOpen] = useState5(false);
-    const [customLibraries, setCustomLibraries] = useState5(() => {
+    const [copilotModalOpen, setCopilotModalOpen] = useState8(false);
+    const [customLibraries, setCustomLibraries] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_user_custom_libraries");
         if (saved) {
@@ -27890,14 +27907,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState5(() => {
+    const [activeCustomLibId, setActiveCustomLibId] = useState8(() => {
       try {
         return localStorage.getItem("bw_user_active_library_id") || "lib_default";
       } catch (_) {
         return "lib_default";
       }
     });
-    useEffect6(() => {
+    useEffect11(() => {
       const loadSavedLibraryFromBackend = async () => {
         try {
           const r = await fetch("/api/biblioteca/cargar");
@@ -27924,8 +27941,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
       loadSavedLibraryFromBackend();
     }, []);
-    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState5(false);
-    const [activeCrateFilter, setActiveCrateFilter] = useState5(null);
+    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState8(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState8(null);
     const handleAuditarCrateDesdeModal = (folder, lib) => {
       if (!folder) return;
       const keys = new Set((folder.tracks || []).map((t2) => t2.id !== void 0 ? t2.id : t2.file_path || t2.filename || t2.path));
@@ -27983,8 +28000,8 @@ ${res.path}`);
         }
       }
     };
-    const [manualModalOpen, setManualModalOpen] = useState5(false);
-    const [manualSection, setManualSection] = useState5("audit");
+    const [manualModalOpen, setManualModalOpen] = useState8(false);
+    const [manualSection, setManualSection] = useState8("audit");
     const handleOpenManual = (section = null) => {
       const secMap = {
         "audit": "audit",
@@ -28010,8 +28027,8 @@ ${res.path}`);
         setManualModalOpen(true);
       }
     };
-    const [userModalOpen, setUserModalOpen] = useState5(false);
-    const [userProfile, setUserProfile] = useState5(() => {
+    const [userModalOpen, setUserModalOpen] = useState8(false);
+    const [userProfile, setUserProfile] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_user_profile");
         if (saved) return JSON.parse(saved);
@@ -28044,7 +28061,7 @@ ${res.path}`);
         activeTab: "audit"
       }
     ];
-    const [savedSessions, setSavedSessions] = useState5(() => {
+    const [savedSessions, setSavedSessions] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
@@ -28146,8 +28163,8 @@ ${res.path}`);
         status: "\u2713 Sincronizado"
       }
     ];
-    const [bitacoraModalOpen, setBitacoraModalOpen] = useState5(false);
-    const [bitacoraEntries, setBitacoraEntries] = useState5(() => {
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState8(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState8(() => {
       try {
         const saved = localStorage.getItem("bw_audit_bitacora");
         if (saved) return JSON.parse(saved);
@@ -28162,7 +28179,7 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const handleBitacoraSync = (e) => {
         if (e && e.detail && Array.isArray(e.detail)) {
           setBitacoraEntries(e.detail);
@@ -28171,7 +28188,7 @@ ${res.path}`);
       window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
       return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
     }, []);
-    useEffect6(() => {
+    useEffect11(() => {
       if (userProfile && userProfile.autoSave !== false) {
         try {
           const autoSession = {
@@ -28185,7 +28202,7 @@ ${res.path}`);
         }
       }
     }, [currentFolder, activeTab, selectedTrack, userProfile]);
-    const [clubMode, setClubMode] = useState5(() => {
+    const [clubMode, setClubMode] = useState8(() => {
       try {
         return localStorage.getItem("bw_club_mode") === "true";
       } catch (e) {
@@ -28202,8 +28219,8 @@ ${res.path}`);
         return next;
       });
     };
-    const [shortcutsModalOpen, setShortcutsModalOpen] = useState5(false);
-    const [speakerLogoMode, setSpeakerLogoMode] = useState5(() => {
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState8(false);
+    const [speakerLogoMode, setSpeakerLogoMode] = useState8(() => {
       try {
         return localStorage.getItem("cleandjmix_speaker_logo_mode") || "neon";
       } catch (e) {
@@ -28217,15 +28234,15 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
       window.toggleSpeakerLogoMode = () => {
         handleSetSpeakerLogoMode(speakerLogoMode === "neon" ? "original" : "neon");
       };
     }, [speakerLogoMode]);
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState5(false);
-    const logoTechnoTimerRef = useRef6(null);
-    const initialTechnoPlayedRef = useRef6(false);
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState8(false);
+    const logoTechnoTimerRef = useRef11(null);
+    const initialTechnoPlayedRef = useRef11(false);
     const triggerLogoTechno = () => {
       setIsLogoTechnoActive(true);
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
@@ -28233,13 +28250,13 @@ ${res.path}`);
         setIsLogoTechnoActive(false);
       }, 1e4);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       if (tutorialOpen || copilotModalOpen) {
         if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
         setIsLogoTechnoActive(false);
       }
     }, [tutorialOpen, copilotModalOpen]);
-    useEffect6(() => {
+    useEffect11(() => {
       window.abrirIntroCinematica = () => {
         setCinematicIntroOpen(true);
       };
@@ -28309,14 +28326,14 @@ ${res.path}`);
       setActiveTab("spotify");
     };
     const handleAddTrackToSpotify = handleAddTracksToSpotify;
-    const [logs, setLogs] = useState5([
+    const [logs, setLogs] = useState8([
       { type: "info", text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
       { type: "divider", text: "--------------------------------------------------" },
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
-    const synthAudioCtxRef = useRef6(null);
-    const synthIntervalRef = useRef6(null);
+    const synthAudioCtxRef = useRef11(null);
+    const synthIntervalRef = useRef11(null);
     const stopSynthPreview = () => {
       if (synthIntervalRef.current) {
         clearInterval(synthIntervalRef.current);
@@ -28334,7 +28351,7 @@ ${res.path}`);
       stopSynthPreview();
       setIsPlaying(false);
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
@@ -28536,7 +28553,7 @@ ${res.path}`);
         window.eel.cue_audio_mac(trk.path || trk.f || "")();
       }
     };
-    useEffect6(() => {
+    useEffect11(() => {
       const handleKeyDown = (e) => {
         const active = document.activeElement;
         const tag = active ? active.tagName.toLowerCase() : "";
