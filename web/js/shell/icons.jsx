@@ -30,7 +30,6 @@ export const ShellIcons = {
             <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
             <circle cx="12" cy="12" r="3.5" />
             <circle cx="12" cy="12" r="1.25" fill="currentColor" />
-            <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5" strokeWidth={1.5} opacity={0.7} />
         </>
     ),
     Cue: makeIcon(<><path d="M4 22V3" /><path d="M4 4h12.5l-2.8 4.5 2.8 4.5H4" /><circle cx="4" cy="4" r="1.5" /><circle cx="4" cy="21" r="1.25" fill="currentColor" /></>),

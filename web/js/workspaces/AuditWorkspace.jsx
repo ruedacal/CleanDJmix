@@ -3291,7 +3291,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                 <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20">
                     {/* IZQUIERDA: Contexto Activo de Biblioteca & Crear Biblioteca */}
                     <div data-tour="tour-audit-select" className="flex items-center gap-3 shrink-0">
-                        <SectionTitle icon={Icons.Library} title="Biblioteca" accent="Auditoría" />
+                        <SectionTitle icon={Icons.AuditEye} title="Biblioteca" accent="Auditoría" />
                         {tracks && tracks.length > 0 && (
                             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djzinc-900 border border-djzinc-750 text-xs font-mono text-gray-300 shadow-sm max-w-[200px] sm:max-w-[280px] truncate shrink-0" title={typeof rutaOrigen === 'string' ? rutaOrigen : 'Selección múltiple'}>
                                 <span className="w-2 h-2 rounded-full bg-djgreen-400 shrink-0"></span>

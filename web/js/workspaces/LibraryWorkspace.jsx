@@ -3,7 +3,7 @@ import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
-import { CamelotKeyBadge } from '../shell/workspace-ui.jsx';
+import { CamelotKeyBadge, SectionTitle } from '../shell/workspace-ui.jsx';
 
 // ─── PALETA Y CONSTANTES DE COLOR PARA CARPETAS Y CRATES ────────────────────
 export const FOLDER_COLORS = [
@@ -1099,31 +1099,16 @@ export const LibraryWorkspace = ({
     const totalTracksInLib = allLibTracks.length;
 
     return (
-        <div style={{ backgroundColor: '#070812' }} className="w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans">
-            {/* Cabecera Principal de Página Corporativa */}
-            <div style={{ backgroundColor: '#0d0f1e', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-6 py-4 flex items-center justify-between shrink-0 shadow-lg">
-                <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black">
-                        <Icons.Library size={22} className="text-cyan-400" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <h3 className="font-syne font-black text-lg sm:text-xl uppercase tracking-wider text-white">
-                                COLECCIÓN & BIBLIOTECA
-                            </h3>
-                            <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold">
-                                {totalTracksInLib} PISTAS EN COLECCIÓN
-                            </span>
-                        </div>
-                        <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                            GESTOR AVANZADO DE COLECCIÓN, CRATES, ANÁLISIS ACÚSTICO Y MATERIALIZACIÓN EN DISCO / USB
-                        </p>
-                    </div>
+        <div className="w-full h-full flex flex-col bg-[#09090e] text-gray-200 select-none overflow-hidden font-sans">
+            {/* Cabecera Principal de Página Corporativa — Idéntica en estilo, tipografía, recuadro y espaciado a Auditoría */}
+            <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20">
+                <div className="flex items-center gap-3 shrink-0">
+                    <SectionTitle icon={Icons.Library} title="Colección" accent="Biblioteca" badge={`${totalTracksInLib} PISTAS`} />
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                     {feedbackMsg && (
-                        <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60">
+                        <span className="text-xs font-mono text-emerald-400 font-bold animate-pulse px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60">
                             {feedbackMsg}
                         </span>
                     )}
@@ -1132,28 +1117,28 @@ export const LibraryWorkspace = ({
                     <button
                         type="button"
                         onClick={handleCargarDesdeAuditoria}
-                        className="px-3.5 py-2 min-h-[38px] rounded-xl bg-cyan-950/90 hover:bg-cyan-900 border border-cyan-500/70 text-cyan-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                        className="px-3 py-1.5 min-h-[34px] rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/60 text-cyan-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
                         title="Importar a esta colección las pistas que tienes cargadas actualmente en la Mesa de Auditoría"
                     >
-                        <Icons.Download size={15} />
-                        <span>Cargar desde Mesa de Auditoría ({currentTracks?.length || 0})</span>
+                        <Icons.Download size={14} />
+                        <span>Cargar desde Auditoría ({currentTracks?.length || 0})</span>
                     </button>
 
                     {/* Botón para cargar archivos o carpetas desde el ordenador */}
                     <button
                         type="button"
                         onClick={() => handleAbrirNavegadorCarpetas()}
-                        className="px-3.5 py-2 min-h-[38px] rounded-xl bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/70 text-emerald-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                        className="px-3 py-1.5 min-h-[34px] rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 hover:text-white flex items-center gap-2 font-mono text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
                         title="Seleccionar y cargar archivos sueltos o carpetas de música desde tu ordenador"
                     >
-                        <Icons.Folder size={15} />
-                        <span>Cargar desde el ordenador</span>
+                        <Icons.Folder size={14} />
+                        <span>Cargar desde Ordenador</span>
                     </button>
                 </div>
             </div>
 
             {/* Barra de Selección y Nombre de Biblioteca */}
-            <div style={{ backgroundColor: '#070810', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }} className="px-5 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="px-3.5 py-2 border-b border-djzinc-800 bg-[#0c0d14] flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
                     <span className="text-[11px] font-mono uppercase font-bold text-gray-400">Biblioteca:</span>
                     <select
@@ -1511,7 +1496,7 @@ export const LibraryWorkspace = ({
                     )}
 
                     {/* TABLA SIMPLIFICADA CON LAS 10 COLUMNAS EXACTAS (CON CHECKBOX DE SELECCIÓN Y FORMATO) */}
-                    <div style={{ backgroundColor: '#070810', borderColor: 'rgba(255, 255, 255, 0.08)' }} className="flex-1 overflow-y-auto custom-scrollbar border rounded-xl overflow-x-auto">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#09090f] border border-djzinc-800 rounded-xl overflow-x-auto">
                         {filteredTracks.length === 0 ? (
                             <div className="py-16 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center gap-3">
                                 <div className="w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
