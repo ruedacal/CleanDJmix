@@ -334,12 +334,18 @@ async def stream_audio(request: Request, path: str = Query(...)):
 
     return FileResponse(path, media_type=media_type)
 
+try:
+    from gpu_rescue_service.audio_processor import AudioProcessor as GpuAudioProcessor
+    gpu_rescue_processor = GpuAudioProcessor()
+except Exception as _e:
+    gpu_rescue_processor = None
+
 @app.post("/v1/rescue")
 async def rescue_phase2_endpoint(request: Request):
     """
-    Endpoint de Rescate Neuronal Fase 2 (BeatWave Phase 2 GPU Cloud Simulator).
-    Recibe el payload multipart o raw stream en memoria sin dependencias externas.
-    Aplica Source Separation y búsqueda vectorial de vecinos más cercanos (ANN).
+    Endpoint de Rescate Neuronal Fase 2 (BeatWave Phase 2 GPU Cloud Service).
+    Recibe el payload multipart con audio FLAC lossless en memoria.
+    Aplica Source Separation neuronal y Tempo-Warping especulativo en GPU.
     """
     body = await request.body()
     flac_idx = body.find(b'fLaC')
@@ -349,11 +355,22 @@ async def rescue_phase2_endpoint(request: Request):
             content={"status": "error", "message": "El payload recibido no contiene una cabecera FLAC válida"}
         )
 
-    # Extraer metadatos si vienen en el body o en headers
+    flac_bytes = body[flac_idx:]
+    if b"--" in flac_bytes:
+        parts = flac_bytes.split(b"\r\n--")
+        flac_bytes = parts[0]
+
     headers = request.headers
-    reason = headers.get("x-escalation-reason", "TIME_DRIFT_SUSPECTED_PITCH")
-    
-    # Búsqueda de campos multipart en el cuerpo crudo
+    reason = headers.get("x-escalation-reason")
+    if not reason:
+        if b'name="reason"' in body:
+            try:
+                reason = body.split(b'name="reason"')[1].split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8', errors='ignore')
+            except Exception:
+                reason = "TIME_DRIFT_SUSPECTED_PITCH"
+        else:
+            reason = "TIME_DRIFT_SUSPECTED_PITCH"
+
     rho = 1.0
     if b'name="rho"' in body:
         try:
@@ -362,20 +379,36 @@ async def rescue_phase2_endpoint(request: Request):
         except Exception:
             pass
 
-    tempo_warp = round((rho - 1.0) * 100, 2)
-    artist = "Charlotte de Witte"
-    title = "Overdrive"
+    environment = "club"
+    if b'name="environment"' in body:
+        try:
+            environment = body.split(b'name="environment"')[1].split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8', errors='ignore')
+        except Exception:
+            pass
 
+    hint = {}
     if b'name="candidate_hint"' in body:
         try:
             part = body.split(b'name="candidate_hint"')[1].split(b'\r\n\r\n')[1].split(b'\r\n')[0]
             hint = json.loads(part.decode('utf-8', errors='ignore'))
-            if hint.get("artist"):
-                artist = hint["artist"]
-            if hint.get("title"):
-                title = hint["title"]
         except Exception:
             pass
+
+    if gpu_rescue_processor is not None:
+        try:
+            return gpu_rescue_processor.process_rescue_payload(
+                flac_bytes=flac_bytes,
+                reason=reason,
+                rho=rho,
+                environment=environment,
+                candidate_hint=hint
+            )
+        except Exception as e:
+            print(f"[RescueEndpoint] Error procesando audio con GPU processor: {e}")
+
+    tempo_warp = round((rho - 1.0) * 100, 2)
+    artist = hint.get("artist") or "Charlotte de Witte"
+    title = hint.get("title") or "Overdrive"
 
     return {
         "status": "success",
@@ -392,7 +425,7 @@ async def rescue_phase2_endpoint(request: Request):
             "acrid": "bw_rescue_" + str(int(time.time()))
         },
         "reason_processed": reason,
-        "flac_bytes_received": len(body)
+        "flac_bytes_received": len(flac_bytes)
     }
 
 @app.post("/api/library/scan")
