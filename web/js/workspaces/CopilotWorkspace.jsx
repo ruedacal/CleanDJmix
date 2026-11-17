@@ -1,5 +1,5 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
-import { Icons } from '../shell/icons.jsx';
+import { Icons, renderPlatformLogo } from '../shell/icons.jsx';
 import { CopilotSeratoWaveform, computeTrackStructuralBands } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover, NV2_COLORS } from '../data/constants.js';
 import { BeatWaveLogoBadge, BeatWaveBrandIdentity } from '../shell/workspace-ui.jsx';
@@ -676,6 +676,292 @@ const DEFAULT_COPILOT_STATE = {
     "timestamp": 1794309847.254317,
     "last_updated": "12:24:07",
     "is_simulating": true
+};
+
+export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, onCue = null }) => {
+    if (!deck) return null;
+    return (
+        <div className={`p-3.5 sm:p-4 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+            isMaster 
+            ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.2)]' 
+            : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
+        }`}>
+            {/* Cabecera del Deck */}
+            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60">
+                <div className="flex items-center gap-2">
+                    <span className="font-orbitron font-black text-sm sm:text-base text-zinc-400">DECK {side}</span>
+                    <button
+                        type="button"
+                        onClick={() => onSetMaster && onSetMaster(side)}
+                        className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                            isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                        title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
+                    >
+                        {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
+                    </button>
+
+                    {/* BOTONES TÁCTICOS DE TRANSPORTE CABINA: PLAY/PAUSA & CUE */}
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onTogglePlay && onTogglePlay(side);
+                        }}
+                        className={`px-3 py-1 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center gap-1 border shadow-sm ${
+                            deck.is_playing
+                            ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse'
+                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-600 hover:text-white'
+                        }`}
+                        title={`Alternar Play/Pausa en Deck ${side} (Atajo de teclado: '${side}')`}
+                    >
+                        <span>{deck.is_playing ? '⏸ PAUSA' : '▶ PLAY'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onCue && onCue(side);
+                        }}
+                        className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all bg-zinc-900 hover:bg-zinc-800 text-indigo-300 border border-indigo-500/50 hover:text-white"
+                        title={`Rebobinar a CUE Bar 1 (Atajo: tecla 'C')`}
+                    >
+                        <span>⏮ CUE</span>
+                    </button>
+
+                    {(deck.mood || deck.phase) && (
+                        <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase">
+                            <Icons.Sparkles size={12} className="inline-block align-[-1px] mr-1" /> {deck.mood || deck.phase}
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase">
+                    {deck.format && (
+                        <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300">
+                            {deck.format}
+                        </span>
+                    )}
+                    <span className="hidden sm:inline">{deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP'}</span>
+                </div>
+            </div>
+
+            {/* SECCIÓN PISTA EN 2 COLUMNAS (IZQUIERDA: COVER+INFO | DERECHA: CAMELOT+BPM+ENERGÍA+MOOD) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch">
+                {/* COLUMNA IZQUIERDA: Carátula 1:1 Cuadrada Full Height + Título + Artista + Taxonomía */}
+                <div className="flex items-stretch gap-3 min-w-0">
+                    <div 
+                        className="relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none"
+                        style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
+                    >
+                        <img 
+                            src={getValidCover(deck.cover)} 
+                            alt="Carátula" 
+                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+                        {deck.duration && (
+                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-300">
+                                {deck.duration}
+                            </span>
+                        )}
+                        {deck.year && (
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
+                                {deck.year}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="min-w-0 flex-1 flex flex-col justify-center">
+                        <h2 className="font-syne font-bold text-xs sm:text-sm text-white tracking-tight leading-tight truncate" title={deck.title}>
+                            {deck.title}
+                        </h2>
+                        <p className="font-syne font-bold text-xs text-zinc-400 mt-0.5 truncate" title={deck.artist}>
+                            {deck.artist}
+                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                            {deck.genre && (
+                                <span className="px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate">
+                                    {deck.genre}
+                                </span>
+                            )}
+                            {deck.subgenre && (
+                                <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate">
+                                    {deck.subgenre}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD */}
+                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
+                    {/* BLOQUE TONO, TEMPO Y MOOD DEBAJO DE LOS BPM */}
+                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
+                        {/* Fila Tono */}
+                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
+                            <div 
+                                className="w-5 h-4 rounded text-[9px] font-orbitron font-black text-black flex items-center justify-center shrink-0 shadow-sm"
+                                style={{ backgroundColor: deck.camelot_color || '#ec4899' }}
+                            >
+                                {deck.camelot || '10A'}
+                            </div>
+                            <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TONO</span>
+                            <span className="font-syne font-bold text-[10px] text-white truncate">{deck.raw_key || deck.camelot}</span>
+                        </div>
+
+                        {/* Fila Tempo (BPM) */}
+                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
+                            <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TEMPO</span>
+                            <span className="font-orbitron font-black text-[10px] text-white">
+                                {deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00'}
+                            </span>
+                            <span className="text-[7px] text-zinc-400 font-mono">BPM</span>
+                        </div>
+
+                        {/* Cuadro morado con el Mood ubicado debajo de los BPM */}
+                        <div className="px-1.5 py-0.5 rounded-lg bg-purple-950/70 border border-purple-500/40 text-[8px] font-mono font-bold text-purple-300 truncate max-w-full text-center" title={deck.mood || deck.phase || 'Peak Time Climax'}>
+                            ✨ {deck.mood || deck.phase || 'Peak Time Climax'}
+                        </div>
+                    </div>
+
+                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD APILADAS */}
+                    <div className="flex-1 min-w-[130px] flex flex-col justify-center gap-1">
+                        {/* Fila 1: Energía */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-amber-400 font-bold flex items-center gap-1">
+                                    <Icons.Zap size={9} /> ENERGÍA
+                                </span>
+                                <span className="text-amber-400 font-bold">{deck.energy || 90}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${deck.energy || 90}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* Fila 2: Intensidad */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                    <Icons.Activity size={9} /> INTENSIDAD
+                                </span>
+                                <span className="text-emerald-400 font-bold">{deck.arousal || Math.round((deck.energy || 90) * 0.95)}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* Fila 3: Danzabilidad */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-purple-300 font-bold flex items-center gap-1">
+                                    <Icons.Sliders size={9} /> DANZABILIDAD
+                                </span>
+                                <span className="text-purple-300 font-bold">{deck.danceability || 85}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]" style={{ width: `${deck.danceability || 85}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* Fila 4: Positividad */}
+                        <div>
+                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
+                                <span className="text-djcyan-400 font-bold flex items-center gap-1">
+                                    <Icons.Sparkles size={9} /> POSITIVIDAD
+                                </span>
+                                <span className="text-djcyan-400 font-bold">{deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
+                                <div className="h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]" style={{ width: `${deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62)}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Tira Visual de 8 Hot Cues de Cabina */}
+            <div className="mb-2.5 p-2 rounded-2xl bg-black/60 border border-zinc-800/80">
+                <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span> 8 HOT CUES DE CABINA
+                    </span>
+                    <span className="text-[8px] font-mono text-zinc-500">Puntos de Salto & Estructura</span>
+                </div>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
+                    {(deck.cues || [
+                        { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
+                        { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
+                        { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
+                        { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
+                        { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
+                        { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
+                        { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
+                        { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
+                    ]).map((cue, cIdx) => (
+                        <div 
+                            key={cue.id || cIdx}
+                            className="p-1 rounded-xl border flex flex-col justify-between transition-all bg-zinc-950/80 hover:bg-zinc-900 cursor-default"
+                            style={{ borderColor: `${cue.color || '#06b6d4'}55` }}
+                        >
+                            <div className="flex items-center justify-between">
+                                <span 
+                                    className="w-3 h-3 rounded-full flex items-center justify-center text-[7px] font-black text-black font-mono shadow-sm"
+                                    style={{ backgroundColor: cue.color || '#06b6d4' }}
+                                >
+                                    {cue.id || (cIdx + 1)}
+                                </span>
+                                <span className="text-[7px] font-mono text-zinc-500">{cue.time || '--:--'}</span>
+                            </div>
+                            <div className="text-[7px] font-syne font-bold text-zinc-200 truncate mt-0.5" title={cue.name}>
+                                {cue.name}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* WAVEFORM SERATO EN TIEMPO REAL CON ZOOM Y AYUDAS TÁCTICAS */}
+            <div className="mb-2">
+                <CopilotSeratoWaveform 
+                    deck={deck} 
+                    side={side} 
+                    antiMuddy={antiMuddy} 
+                    partnerDeck={partnerDeck} 
+                />
+            </div>
+
+            {/* Densidad Sub-Graves y Espectro */}
+            <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[11px]">
+                <div className="flex items-center justify-between text-zinc-400">
+                    <span>Densidad Sub-Graves (Sub-Bass)</span>
+                    <span className={deck.low_ratio >= 44 ? 'text-red-400 font-bold' : 'text-zinc-200'}>{deck.low_ratio}%</span>
+                </div>
+                <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
+                    <div className={`h-full transition-all duration-300 ${deck.low_ratio >= 44 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-djcyan-400'}`} style={{ width: `${Math.min(100, deck.low_ratio * 1.5)}%` }}></div>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                    <span>Medios: {deck.mid_ratio}%</span>
+                    <span>Agudos: {deck.high_ratio}%</span>
+                    <span>LUFS: <strong className="text-zinc-300">{deck.lufs} dB</strong></span>
+                </div>
+            </div>
+
+            {/* Comentario Táctico DJ */}
+            <div className="mt-2 p-2 rounded-xl bg-black/50 border border-zinc-800/80 flex items-start gap-2">
+                <Icons.MessageSquare size={13} className="inline-block text-emerald-400 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                    <div className="text-[8px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ (Tag ID3)</div>
+                    <div className="font-mono text-[11px] text-zinc-200 truncate" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
+                        {deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
