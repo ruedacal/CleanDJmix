@@ -44,6 +44,7 @@ class CopilotEngine:
         self.simulation_mode = True
         self.platform_mode = "prodjlink"
         self.serato_db_path = os.path.expanduser("~/Music/_Serato_")
+        self.loaded_library_tracks: List[Dict[str, Any]] = []
 
         # Inicializar los decks con pistas de alta fidelidad para demo / live
         self.state.decks = {
@@ -136,8 +137,84 @@ class CopilotEngine:
     def get_available_platforms(self) -> List[Dict[str, Any]]:
         return self.AVAILABLE_PLATFORMS
 
+    def _apply_library_tracks(self, tracks: List[Dict[str, Any]]):
+        """Carga pistas reales extraídas de Rekordbox, Serato o Traktor en los decks."""
+        if not tracks:
+            return
+        self.loaded_library_tracks = tracks
+        t1 = tracks[0]
+        t2 = tracks[1] if len(tracks) > 1 else tracks[0]
+
+        d1 = self.state.decks.get(1)
+        if d1:
+            d1.title = t1.get("title", "Track 1")
+            d1.artist = t1.get("artist", "Desconocido")
+            d1.bpm = float(t1.get("bpm", 128.0))
+            d1.effective_bpm = d1.bpm
+            d1.key = t1.get("key", "8A")
+            d1.key_name = t1.get("key_name", "Am")
+            d1.genre = t1.get("genre", "Desconocido")
+            d1.subgenre = t1.get("subgenre", "Desconocido")
+            d1.duration_sec = float(t1.get("duration", 240))
+            d1.elapsed_sec = 24.0
+            d1.is_playing = True
+            d1.is_master = True
+
+        d2 = self.state.decks.get(2)
+        if d2:
+            d2.title = t2.get("title", "Track 2")
+            d2.artist = t2.get("artist", "Desconocido")
+            d2.bpm = float(t2.get("bpm", 128.0))
+            d2.effective_bpm = d2.bpm
+            d2.key = t2.get("key", "8A")
+            d2.key_name = t2.get("key_name", "Am")
+            d2.genre = t2.get("genre", "Desconocido")
+            d2.subgenre = t2.get("subgenre", "Desconocido")
+            d2.duration_sec = float(t2.get("duration", 240))
+            d2.elapsed_sec = 0.0
+            d2.is_playing = False
+            d2.is_master = False
+
+        if d1:
+            self.state.global_bpm = d1.effective_bpm
+
+    def _restore_simulation_tracks(self):
+        """Restaura las pistas de demostración de alta fidelidad."""
+        d1 = self.state.decks.get(1)
+        if d1:
+            d1.title = "Scream"
+            d1.artist = "Michael Jackson"
+            d1.bpm = 151.73
+            d1.effective_bpm = 151.73
+            d1.key = "9A"
+            d1.key_name = "E minor"
+            d1.genre = "Pop"
+            d1.subgenre = "Desconocido"
+            d1.duration_sec = 278.0
+            d1.elapsed_sec = 84.0
+            d1.is_master = True
+            d1.is_playing = True
+
+        d2 = self.state.decks.get(2)
+        if d2:
+            d2.title = "Your Touch"
+            d2.artist = "Saâda Bonaire"
+            d2.bpm = 110.0
+            d2.effective_bpm = 110.0
+            d2.key = "6B"
+            d2.key_name = "Bb major"
+            d2.genre = "Pop"
+            d2.subgenre = "Desconocido"
+            d2.duration_sec = 255.0
+            d2.elapsed_sec = 32.0
+            d2.is_master = False
+            d2.is_playing = False
+
+        self.state.global_bpm = 151.73
+        self.loaded_library_tracks = []
+
     def set_platform(self, platform_id: str) -> Dict[str, Any]:
-        """Cambia el modo de plataforma activa."""
+        """Cambia el modo de plataforma activa y carga pistas de la biblioteca correspondiente."""
         with self._lock:
             self.platform_mode = platform_id
             self.state.platform = platform_id
@@ -146,6 +223,20 @@ class CopilotEngine:
                     self.state.platform_name = p["name"]
                     break
             self.simulation_mode = (platform_id == "simulation")
+
+            rutas = LibraryReader.detectar_rutas_locales()
+            if platform_id == "rekordbox":
+                tracks = LibraryReader.leer_rekordbox_tracks(rutas.get("rekordbox_db"))
+                self._apply_library_tracks(tracks)
+            elif platform_id == "serato":
+                tracks = LibraryReader.leer_serato_tracks(rutas.get("serato_dir"))
+                self._apply_library_tracks(tracks)
+            elif platform_id == "traktor":
+                tracks = LibraryReader.leer_traktor_tracks(rutas.get("traktor_nml"))
+                self._apply_library_tracks(tracks)
+            elif platform_id == "simulation":
+                self._restore_simulation_tracks()
+
         return self.get_live_state()
 
     def set_manual_master(self, deck_id: Any) -> Dict[str, Any]:
@@ -174,6 +265,44 @@ class CopilotEngine:
                 d = self.state.decks[target_id]
                 d.is_playing = not d.is_playing
         return self.get_live_state()
+
+    def _generate_recommendations(self) -> List[Dict[str, Any]]:
+        """Genera recomendaciones armónicas y de tempo a partir de la biblioteca cargada."""
+        master_id = self.state.master_deck
+        master_deck = self.state.decks.get(master_id)
+        if not master_deck:
+            return []
+
+        m_key = master_deck.key
+        m_bpm = master_deck.effective_bpm
+
+        recs = []
+        for i, tr in enumerate(self.loaded_library_tracks[2:12]):
+            t_key = tr.get("key", "8A")
+            t_bpm = float(tr.get("bpm", 128.0))
+            harm = DSPCleanRoomEngine.evaluar_compatibilidad_armonica(m_key, t_key)
+            bpm_diff = round(t_bpm - m_bpm, 1)
+
+            recs.append({
+                "id": f"rec_{i+1}",
+                "title": tr.get("title", f"Track {i+1}"),
+                "artist": tr.get("artist", "Desconocido"),
+                "bpm": t_bpm,
+                "camelot": t_key,
+                "camelot_color": CAMELOT_PALETTE.get(t_key, "#00f0ff"),
+                "role": "Next Track",
+                "lufs": -6.5,
+                "low_ratio": 38.0,
+                "genre": tr.get("genre", "Desconocido"),
+                "subgenre": tr.get("subgenre", "Desconocido"),
+                "energy": 85,
+                "danceability": 80,
+                "duration": "05:30",
+                "strategy": harm.get("label", "Mezcla Armónica"),
+                "reason": f"{harm.get('label')}. Diferencia de tempo: {bpm_diff:+.1f} BPM.",
+                "filepath": tr.get("filepath", "")
+            })
+        return recs
 
     def _format_deck_ui(self, deck: DeckState) -> Dict[str, Any]:
         """Formatea un deck con los campos exigidos por CopilotWorkspace en React."""
@@ -286,7 +415,7 @@ class CopilotEngine:
                 "harmonic": self.state.harmonic_relation,
                 "harmonic_relation": self.state.harmonic_relation,
                 "active_alerts": [a.to_dict() for a in self.state.active_alerts],
-                "recommendations": [],
+                "recommendations": self._generate_recommendations(),
                 "capture_latency_ms": 1.2,
                 "last_updated": time.time()
             }

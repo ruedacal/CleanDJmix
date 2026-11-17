@@ -111,3 +111,43 @@ def test_copilot_platform_management():
     # Cambiar master manualmente
     res_master = engine.set_manual_master(2)
     assert res_master["master_deck"] == 2
+
+
+def test_copilot_to_camelot_conversion():
+    assert DSPCleanRoomEngine.to_camelot("Am") == "8A"
+    assert DSPCleanRoomEngine.to_camelot("A minor") == "8A"
+    assert DSPCleanRoomEngine.to_camelot("Bbm") == "3A"
+    assert DSPCleanRoomEngine.to_camelot("Bb minor") == "3A"
+    assert DSPCleanRoomEngine.to_camelot("C") == "8B"
+    assert DSPCleanRoomEngine.to_camelot("C maj") == "8B"
+    assert DSPCleanRoomEngine.to_camelot("F#m") == "11A"
+    assert DSPCleanRoomEngine.to_camelot("10A") == "10A"
+    assert DSPCleanRoomEngine.to_camelot("Unknown") == "8A"
+
+
+def test_copilot_library_reader_and_recommendations():
+    engine = CopilotEngine()
+    rutas = LibraryReader.detectar_rutas_locales()
+    assert isinstance(rutas, dict)
+    assert "rekordbox_db" in rutas
+    assert "serato_dir" in rutas
+
+    # Probar cambio a rekordbox si existe base de datos en el host
+    if rutas.get("rekordbox_db"):
+        res_rb = engine.set_platform("rekordbox")
+        assert res_rb["platform"] == "rekordbox"
+        assert res_rb["deck_1"]["artist"] != ""
+        assert isinstance(res_rb.get("recommendations"), list)
+
+    # Probar cambio a serato si existe carpeta en el host
+    if rutas.get("serato_dir"):
+        res_serato = engine.set_platform("serato")
+        assert res_serato["platform"] == "serato"
+        assert res_serato["deck_1"]["title"] != ""
+        assert isinstance(res_serato.get("recommendations"), list)
+
+    # Volver a simulación
+    res_sim = engine.set_platform("simulation")
+    assert res_sim["platform"] == "simulation"
+    assert res_sim["deck_1"]["title"] == "Scream"
+    assert res_sim["deck_2"]["title"] == "Your Touch"

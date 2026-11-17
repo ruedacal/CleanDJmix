@@ -1345,6 +1345,73 @@ def api_audit_resume():
 # RUTAS Y EEL EXPOSURES: BEATWAVE LIVE COPILOT
 # ==========================================
 
+try:
+    import bottle_websocket as wbs
+except ImportError:
+    try:
+        import bottle.ext.websocket as wbs
+    except Exception:
+        wbs = None
+
+if wbs:
+    @bottle.get('/ws/copilot', apply=[wbs.websocket])
+    def ws_copilot_endpoint(ws):
+        """WebSocket nativo para BeatWave Live Copilot (telemetría a 20Hz / 50ms y ping-pong RTT <5ms)."""
+        if not ws:
+            bottle.response.status = 400
+            return "Expected WebSocket connection."
+
+        import gevent
+        from gevent.lock import Semaphore
+        import json, time
+
+        send_lock = Semaphore(1)
+
+        def safe_send(msg_dict):
+            try:
+                payload = json.dumps(msg_dict)
+                with send_lock:
+                    if ws and not getattr(ws, 'closed', False):
+                        ws.send(payload)
+            except Exception:
+                pass
+
+        def streamer():
+            while ws and not getattr(ws, 'closed', False):
+                try:
+                    state = copilot_service.get_live_state()
+                    safe_send(state)
+                except Exception:
+                    break
+                gevent.sleep(0.05)  # 20 Hz (50 ms)
+
+        streamer_worker = gevent.spawn(streamer)
+
+        try:
+            while ws and not getattr(ws, 'closed', False):
+                msg = ws.receive()
+                if msg is None:
+                    break
+                try:
+                    data = json.loads(msg)
+                    action = data.get("action")
+                    if action == "ping":
+                        safe_send({
+                            "type": "pong",
+                            "client_ts": data.get("client_ts"),
+                            "server_ts": time.time()
+                        })
+                    elif action == "set_master":
+                        copilot_service.set_manual_master(data.get("master", 1))
+                    elif action == "toggle_play":
+                        copilot_service.toggle_play(data.get("deck", 1))
+                    elif action == "set_platform":
+                        copilot_service.set_platform(data.get("platform", "simulation"))
+                except Exception:
+                    pass
+        finally:
+            streamer_worker.kill(block=False)
+
 @bottle.route('/api/copilot/status', method=['GET', 'OPTIONS'])
 def api_copilot_status():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")

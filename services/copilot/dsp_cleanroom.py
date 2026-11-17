@@ -14,6 +14,51 @@ from services.copilot.models import DeckState, ClashAlert
 
 class DSPCleanRoomEngine:
     # Mapeo de compatibilidad armónica Camelot Wheel
+    KEY_TO_CAMELOT = {
+        # Minor keys (A)
+        "ABM": "1A", "G#M": "1A", "G# MINOR": "1A", "AB MINOR": "1A", "G#MIN": "1A", "ABMIN": "1A",
+        "EBM": "2A", "D#M": "2A", "EB MINOR": "2A", "D# MINOR": "2A", "EBMIN": "2A", "D#MIN": "2A",
+        "BBM": "3A", "A#M": "3A", "BB MINOR": "3A", "A# MINOR": "3A", "BBMIN": "3A", "A#MIN": "3A",
+        "FM": "4A", "F MINOR": "4A", "FMIN": "4A",
+        "CM": "5A", "C MINOR": "5A", "CMIN": "5A",
+        "GM": "6A", "G MINOR": "6A", "GMIN": "6A",
+        "DM": "7A", "D MINOR": "7A", "DMIN": "7A",
+        "AM": "8A", "A MINOR": "8A", "AMIN": "8A",
+        "EM": "9A", "E MINOR": "9A", "EMIN": "9A",
+        "BM": "10A", "B MINOR": "10A", "BMIN": "10A",
+        "F#M": "11A", "GBM": "11A", "F# MINOR": "11A", "GB MINOR": "11A", "F#MIN": "11A", "GBMIN": "11A",
+        "C#M": "12A", "DBM": "12A", "C# MINOR": "12A", "DB MINOR": "12A", "C#MIN": "12A", "DBMIN": "12A",
+
+        # Major keys (B)
+        "B": "1B", "B MAJ": "1B", "B MAJOR": "1B", "BMAJ": "1B",
+        "F#": "2B", "GB": "2B", "F# MAJ": "2B", "GB MAJOR": "2B", "F#MAJ": "2B", "GBMAJ": "2B",
+        "C#": "3B", "DB": "3B", "DB MAJOR": "3B", "C# MAJOR": "3B", "C#MAJ": "3B", "DBMAJ": "3B",
+        "G#": "4B", "AB": "4B", "AB MAJOR": "4B", "G# MAJOR": "4B", "ABMAJ": "4B", "G#MAJ": "4B",
+        "D#": "5B", "EB": "5B", "EB MAJOR": "5B", "D# MAJOR": "5B", "EBMAJ": "5B", "D#MAJ": "5B",
+        "A#": "6B", "BB": "6B", "BB MAJOR": "6B", "A# MAJOR": "6B", "BBMAJ": "6B", "A#MAJ": "6B",
+        "F": "7B", "F MAJ": "7B", "F MAJOR": "7B", "FMAJ": "7B",
+        "C": "8B", "C MAJ": "8B", "C MAJOR": "8B", "CMAJ": "8B",
+        "G": "9B", "G MAJ": "9B", "G MAJOR": "9B", "GMAJ": "9B",
+        "D": "10B", "D MAJ": "10B", "D MAJOR": "10B", "DMAJ": "10B",
+        "A": "11B", "A MAJ": "11B", "A MAJOR": "11B", "AMAJ": "11B",
+        "E": "12B", "E MAJ": "12B", "E MAJOR": "12B", "EMAJ": "12B",
+    }
+
+    @classmethod
+    def to_camelot(cls, raw_key: Optional[str]) -> str:
+        """Convierte cualquier formato de clave musical estándar a notación Camelot Wheel (1A..12B)."""
+        if not raw_key:
+            return "8A"
+        clean = str(raw_key).strip().upper()
+        # Si ya es Camelot válido (e.g. 8A, 11B)
+        if clean in cls.CAMELOT_NEIGHBORS:
+            return clean
+        if clean in cls.KEY_TO_CAMELOT:
+            return cls.KEY_TO_CAMELOT[clean]
+        if clean.endswith("M") and clean[:-1] in cls.KEY_TO_CAMELOT:
+            return cls.KEY_TO_CAMELOT[clean[:-1]]
+        return cls.KEY_TO_CAMELOT.get(clean, "8A")
+
     CAMELOT_NEIGHBORS = {
         "1A": {"same": "1A", "up": "2A", "down": "12A", "rel": "1B", "boost": "3A"},
         "2A": {"same": "2A", "up": "3A", "down": "1A", "rel": "2B", "boost": "4A"},
