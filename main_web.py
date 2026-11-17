@@ -111,7 +111,7 @@ from services.tag_sanitizer_service import TagSanitizerService
 from services.trends_service import trends_service
 from services.knowledge_service import knowledge_service
 from services.genre_classifier_service import GenreClassifierDSP
-from services.copilot_service import copilot_service
+from services.copilot import copilot_service, copilot_engine
 from services.session_graph_advisor_service import SessionGraphAdvisorService
 
 def compilar_frontend_si_necesario():

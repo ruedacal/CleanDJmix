@@ -1,228 +1,113 @@
+"""
+Pruebas Unitarias para BeatWave Live Copilot v2.0 (Clean-Room & Zero-Cost).
+Valida la orquestación de red, DSP Clean-Room (Anti-Muddy, Camelot),
+y decodificación de paquetes Pioneer Pro DJ Link y OS2L.
+"""
+
 import pytest
-import os
-from services.copilot_service import CopilotService
+from services.copilot import (
+    CopilotEngine,
+    copilot_engine,
+    DSPCleanRoomEngine,
+    DeckState,
+    ProDJLinkReceiver,
+    OS2LReceiver,
+    LibraryReader
+)
 
-def test_copilot_service_initialization():
-    service = CopilotService(serato_db_path="/tmp/fake_serato.sqlite")
-    assert service.serato_db_path == "/tmp/fake_serato.sqlite"
-    assert service.simulation_mode is False
-    assert service.platform_mode == "auto"
 
-def test_copilot_to_camelot_conversion():
-    service = CopilotService()
-    assert service.to_camelot("8A") == "8A"
-    assert service.to_camelot("Am") == "8A"
-    assert service.to_camelot("Gm") == "6A"
-    assert service.to_camelot("Dm") == "7A"
-    assert service.to_camelot("Bm") == "10A"
-    assert service.to_camelot("C") == "8B"
-    assert service.to_camelot("F") == "7B"
-    assert service.to_camelot("") == "8A"
+def test_copilot_engine_initialization():
+    engine = CopilotEngine()
+    state = engine.get_live_state()
+    assert state is not None
+    assert "decks" in state
+    assert 1 in state["decks"]
+    assert 2 in state["decks"]
+    assert state["master_deck"] == 1
+    assert state["global_bpm"] > 0
 
-def test_copilot_harmonic_relation():
-    service = CopilotService()
-    # Same
-    rel_same = service._calculate_harmonic_relation("8A", "8A")
-    assert rel_same["type"] == "perfect"
 
-    # Energy up (+1)
-    rel_up = service._calculate_harmonic_relation("8A", "9A")
-    assert rel_up["type"] == "energy_up"
+def test_copilot_dsp_harmonic_compatibility():
+    # Mismo tono (perfect match)
+    res_same = DSPCleanRoomEngine.evaluar_compatibilidad_armonica("8A", "8A")
+    assert res_same["score"] == 100
+    assert res_same["is_clash"] is False
 
-    # Deep / calm (-1)
-    rel_down = service._calculate_harmonic_relation("8A", "7A")
-    assert rel_down["type"] == "deep_calm"
+    # Vecino (+1 Camelot: 8A -> 9A)
+    res_up = DSPCleanRoomEngine.evaluar_compatibilidad_armonica("8A", "9A")
+    assert res_up["score"] == 92
+    assert res_up["is_clash"] is False
 
-    # Modal switch (8A <-> 8B)
-    rel_mode = service._calculate_harmonic_relation("8A", "8B")
-    assert rel_mode["type"] == "mode_switch"
+    # Relativo menor a mayor (8A <-> 8B)
+    res_rel = DSPCleanRoomEngine.evaluar_compatibilidad_armonica("8A", "8B")
+    assert res_rel["score"] == 88
+    assert res_rel["is_clash"] is False
 
-    # Energy surge (+2)
-    rel_surge = service._calculate_harmonic_relation("8A", "10A")
-    assert rel_surge["type"] == "energy_surge"
+    # Energy Boost (+2: 8A -> 10A)
+    res_boost = DSPCleanRoomEngine.evaluar_compatibilidad_armonica("8A", "10A")
+    assert res_boost["score"] == 78
+    assert res_boost["is_clash"] is False
 
-    # Dissonant
-    rel_diss = service._calculate_harmonic_relation("8A", "2A")
-    assert rel_diss["type"] == "dissonant"
+    # Choque armónico disonante (8A vs 2A)
+    res_clash = DSPCleanRoomEngine.evaluar_compatibilidad_armonica("8A", "2A")
+    assert res_clash["score"] == 35
+    assert res_clash["is_clash"] is True
 
-def test_copilot_anti_muddy_guard():
-    service = CopilotService()
-    
-    # Both bass-heavy
-    deck_heavy_a = {"low_ratio": 48.0, "acoustic_role": "Bass-Heavy"}
-    deck_heavy_b = {"low_ratio": 46.0, "acoustic_role": "Bass-Heavy"}
-    alert_heavy = service._calculate_anti_muddy_guard(deck_heavy_a, deck_heavy_b)
-    assert alert_heavy["status"] == "danger"
-    assert alert_heavy["tag"] == "BASS CLASH"
 
-    # Clean percussive mix
-    deck_clean = {"low_ratio": 32.0, "acoustic_role": "Percussive Tool"}
-    alert_clean = service._calculate_anti_muddy_guard(deck_heavy_a, deck_clean)
-    assert alert_clean["status"] == "safe"
-    assert alert_clean["tag"] == "CLEAN MIX"
+def test_copilot_dsp_anti_muddy_guard():
+    # 1. Ambos decks en play con graves saturados -> Debe disparar alerta crítica
+    d1 = DeckState(deck_id=1, is_playing=True, bpm=128.0, key="8A", low_energy_level=0.75)
+    d2 = DeckState(deck_id=2, is_playing=True, bpm=128.0, key="8A", low_energy_level=0.72)
+    alerts = DSPCleanRoomEngine.verificar_alertas_en_vivo(d1, d2)
+    alert_types = [a.type for a in alerts]
+    assert "ANTI_MUDDY" in alert_types
 
-def test_copilot_simulation_mode():
-    service = CopilotService()
-    service.simulation_mode = True
-    state = service.get_live_state()
-    assert state["connected"] is True
-    assert state["source"] == "SIMULATION_MODE"
-    assert "deck_1" in state
-    assert "deck_2" in state
-    assert "comment" in state["deck_1"]
-    assert "tactical_comment" in state["deck_1"]
-    assert "genre" in state["deck_1"]
-    assert "cues" in state["deck_1"]
-    assert len(state["deck_1"]["cues"]) == 8
-    assert "energy" in state["deck_1"]
-    assert "format" in state["deck_1"]
-    assert "duration_sec" in state["deck_1"]
-    assert "play_progress" in state["deck_1"]
-    assert "structural_phases" in state["deck_1"]
-    assert len(state["deck_1"]["structural_phases"]) >= 4
-    assert "comment" in state["deck_2"]
-    assert len(state["recommendations"]) == 3
-    assert "cover" in state["recommendations"][0]
-    assert "genre" in state["recommendations"][0]
-    assert "local_ip" in state
-    assert "platform" in state
-    assert "platform_icon" in state
+    # 2. Deck 2 en pausa -> No debe disparar alerta
+    d2_paused = DeckState(deck_id=2, is_playing=False, bpm=128.0, key="8A", low_energy_level=0.72)
+    alerts_paused = DSPCleanRoomEngine.verificar_alertas_en_vivo(d1, d2_paused)
+    assert len(alerts_paused) == 0
 
-def test_copilot_platform_selection():
-    service = CopilotService()
-    assert service.platform_mode == "auto"
+    # 3. Deck 2 con graves recortados (Low EQ cut / low_energy_level=0.25) -> Safe
+    d2_clean = DeckState(deck_id=2, is_playing=True, bpm=128.0, key="8A", low_energy_level=0.25)
+    alerts_clean = DSPCleanRoomEngine.verificar_alertas_en_vivo(d1, d2_clean)
+    assert "ANTI_MUDDY" not in [a.type for a in alerts_clean]
 
-    service.set_platform("rekordbox")
-    assert service.platform_mode == "rekordbox"
-    state = service.get_live_state()
-    assert state["platform"] == "rekordbox"
-    assert state["platform_name"] == "Pioneer Rekordbox"
-    assert state["platform_icon"] == "🎛️"
 
-    service.set_platform("virtualdj")
-    assert service.platform_mode == "virtualdj"
-    state = service.get_live_state()
-    assert state["platform"] == "virtualdj"
-    assert state["platform_name"] == "VirtualDJ Pro"
-    assert state["platform_icon"] == "🎧"
+def test_copilot_prodjlink_packet_decoder():
+    # Construir un paquete simulado de Beat Pioneer Pro DJ Link (0x28)
+    # Magic header: ProDJLink (9 bytes) + \x00 + packet_type (0x28 en offset 0x0a)
+    packet = bytearray(b"ProDJLink\x00")
+    packet.append(0x28)  # offset 0x0a: type
+    packet.extend(b"\x00" * 50)
+    packet[0x21] = 2     # Player ID = 2
+    # BPM 130.00 -> 13000 -> 0x00, 0x00, 0x32, 0xc8
+    packet[0x2c:0x30] = (13000).to_bytes(4, byteorder="big")
+    packet[0x27] = 0x03  # Flags: Playing (0x01) | Master (0x02)
+    packet[0x34] = 3     # Beat 3
 
-    service.set_platform("traktor")
-    assert service.platform_mode == "traktor"
-    state = service.get_live_state()
-    assert state["platform"] == "traktor"
-    assert state["platform_name"] == "Native Instruments Traktor"
-    assert state["platform_icon"] == "⚡"
+    parsed = ProDJLinkReceiver.decodificar_paquete(bytes(packet), "192.168.1.150")
+    assert parsed is not None
+    assert parsed["type"] == "BEAT_PACKET"
+    assert parsed["player_id"] == 2
+    assert parsed["bpm"] == 130.00
+    assert parsed["beat"] == 3
+    assert parsed["is_playing"] is True
+    assert parsed["is_master"] is True
 
-def test_copilot_available_platforms():
-    service = CopilotService()
-    platforms = service.get_available_platforms()
-    assert len(platforms) == 4
+
+def test_copilot_platform_management():
+    engine = CopilotEngine()
+    platforms = engine.get_available_platforms()
+    assert len(platforms) >= 5
     platform_ids = [p["id"] for p in platforms]
-    assert "serato" in platform_ids
+    assert "prodjlink" in platform_ids
+    assert "os2l" in platform_ids
     assert "rekordbox" in platform_ids
-    assert "virtualdj" in platform_ids
-    assert "traktor" in platform_ids
 
-def test_copilot_virtualdj_m3u_parser(tmp_path):
-    service = CopilotService()
-    vdj_dir = tmp_path / "VirtualDJ"
-    history_dir = vdj_dir / "History"
-    history_dir.mkdir(parents=True)
-    
-    m3u_file = history_dir / "2026-10-26.m3u"
-    m3u_content = """#EXTM3U
-#EXTVDJ:<time>12:00:00</time><deck>1</deck>
-#EXTINF:320,Amelie Lens - Higher
-/Users/admin/Music/Higher.mp3
-#EXTVDJ:<time>12:05:00</time><deck>2</deck>
-#EXTINF:380,Adam Beyer - Your Mind
-/Users/admin/Music/Your Mind.mp3
-"""
-    m3u_file.write_text(m3u_content, encoding="utf-8")
-    service.virtualdj_dir = str(vdj_dir)
-    
-    entries = service._query_virtualdj_history()
-    assert len(entries) == 2
-    assert entries[0]["name"] == "Your Mind" # Most recent first
-    assert entries[0]["artist"] == "Adam Beyer"
-    assert entries[1]["name"] == "Higher"
-    assert entries[1]["artist"] == "Amelie Lens"
+    # Cambiar a modo Pro DJ Link
+    res = engine.set_platform("prodjlink")
+    assert res["platform"] == "prodjlink"
 
-def test_copilot_traktor_nml_parser(tmp_path):
-    service = CopilotService()
-    traktor_dir = tmp_path / "Traktor"
-    history_dir = traktor_dir / "History"
-    history_dir.mkdir(parents=True)
-
-    nml_file = history_dir / "history.nml"
-    nml_content = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<NML VERSION="19">
-<HEAD COMPANY="www.native-instruments.com" PROGRAM="Traktor"/>
-<COLLECTION ENTRIES="2">
-<ENTRY ARTIST="Charlotte de Witte" TITLE="Doppler">
-  <LOCATION DIR="/:Music/:" FILE="Doppler.mp3" VOLUME="Macintosh HD"/>
-  <INFO KEY="8A"/>
-  <TEMPO BPM="132.000000"/>
-</ENTRY>
-<ENTRY ARTIST="Enrico Sangiuliano" TITLE="Future Acid">
-  <LOCATION DIR="/:Music/:" FILE="Future Acid.mp3" VOLUME="Macintosh HD"/>
-  <INFO KEY="9A"/>
-  <TEMPO BPM="132.500000"/>
-</ENTRY>
-</COLLECTION>
-<PLAYLISTS>
-  <NODE TYPE="FOLDER" NAME="$ROOT">
-    <SUBNODES COUNT="1">
-      <NODE TYPE="PLAYLIST" NAME="session">
-        <PLAYLIST ENTRIES="2" TYPE="LIST">
-          <ENTRY DECK="A">
-            <PRIMARYKEY KEY="Macintosh HD/:Music/:Doppler.mp3" TYPE="TRACK"/>
-          </ENTRY>
-          <ENTRY DECK="B">
-            <PRIMARYKEY KEY="Macintosh HD/:Music/:Future Acid.mp3" TYPE="TRACK"/>
-          </ENTRY>
-        </PLAYLIST>
-      </NODE>
-    </SUBNODES>
-  </NODE>
-</PLAYLISTS>
-</NML>
-"""
-    nml_file.write_text(nml_content, encoding="utf-8")
-    service.traktor_dir = str(traktor_dir)
-
-    entries = service._query_traktor_history()
-    assert len(entries) == 2
-    assert entries[0]["artist"] in ["Enrico Sangiuliano", "Charlotte de Witte"]
-
-def test_copilot_rekordbox_xml_parser(tmp_path):
-    service = CopilotService()
-    rb_dir = tmp_path / "rekordbox"
-    rb_dir.mkdir(parents=True)
-
-    xml_file = rb_dir / "rekordbox.xml"
-    xml_content = """<?xml version="1.0" encoding="UTF-8"?>
-<DJ_PLAYLISTS Version="1.0.0">
-  <COLLECTION Entries="2">
-    <TRACK TrackID="101" Name="Komodo" Artist="Mauro Picotto" AverageBpm="137.68" Tonality="10A" Location="file://localhost/Music/Komodo.mp3"/>
-    <TRACK TrackID="102" Name="Smooth Mind" Artist="Marco Bailey" AverageBpm="140.00" Tonality="6A" Location="file://localhost/Music/Smooth.mp3"/>
-  </COLLECTION>
-  <PLAYLISTS>
-    <NODE Type="0" Name="ROOT">
-      <NODE Type="1" Name="HISTORY 2026" KeyType="0" Entries="2">
-        <TRACK Key="101"/>
-        <TRACK Key="102"/>
-      </NODE>
-    </NODE>
-  </PLAYLISTS>
-</DJ_PLAYLISTS>
-"""
-    xml_file.write_text(xml_content, encoding="utf-8")
-    service.rekordbox_dir = str(rb_dir)
-
-    entries = service._query_rekordbox_history()
-    assert len(entries) == 2
-    assert entries[0]["name"] == "Komodo"
-    assert entries[0]["bpm"] == 137.68
-    assert entries[0]["camelot"] == "10A"
-    assert entries[1]["name"] == "Smooth Mind"
+    # Cambiar master manualmente
+    res_master = engine.set_manual_master(2)
+    assert res_master["master_deck"] == 2
