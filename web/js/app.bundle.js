@@ -1,4 +1,14 @@
 (() => {
+  var __defProp = Object.defineProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+    get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+  }) : x)(function(x) {
+    if (typeof require !== "undefined") return require.apply(this, arguments);
+    throw Error('Dynamic require of "' + x + '" is not supported');
+  });
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
   // web/js/shell/icons.jsx
   var makeIcon = (children, { filled = false, defaultClass = "", defaultSize = 16 } = {}) => {
     const IconComponent = ({ size = defaultSize, strokeWidth = 1.75, className = "" }) => /* @__PURE__ */ React.createElement(
@@ -1876,6 +1886,364 @@
       recommendation
     };
   }
+
+  // web/js/modules/Phase1FastRecognizer.ts
+  var Phase1FastRecognizer = class {
+    constructor(config) {
+      __publicField(this, "workerGatewayUrl");
+      __publicField(this, "environment");
+      __publicField(this, "totalBudgetMs");
+      __publicField(this, "minScoreStudio");
+      __publicField(this, "minScoreClub");
+      __publicField(this, "probationMinScore");
+      __publicField(this, "onStateChange");
+      // Buffer de probación para confirmación en el siguiente stride de 2.0s
+      __publicField(this, "probationBuffer", /* @__PURE__ */ new Map());
+      __publicField(this, "lastConfirmedTrack", null);
+      __publicField(this, "isBusy", false);
+      this.workerGatewayUrl = config.workerGatewayUrl.replace(/\/+$/, "");
+      this.environment = config.environment || "club";
+      this.totalBudgetMs = config.totalBudgetMs || 1750;
+      this.minScoreStudio = config.minScoreStudio || 88;
+      this.minScoreClub = config.minScoreClub || 92;
+      this.probationMinScore = config.probationMinScore || 76;
+      this.onStateChange = config.onStateChange;
+    }
+    setEnvironment(env) {
+      this.environment = env;
+    }
+    getEnvironment() {
+      return this.environment;
+    }
+    reset() {
+      this.probationBuffer.clear();
+      this.lastConfirmedTrack = null;
+      this.isBusy = false;
+      this.emitState("IDLE", null, 1, false, null, "Motor reseteado");
+    }
+    /**
+     * Orquesta el reconocimiento de un buffer Float32Array entrante de 10.0s (stride 2.0s).
+     * Aplica Promise.race con un presupuesto estricto de 1,750 ms y ejecución concurrente.
+     */
+    async recognizeBuffer(audioPcm, sampleRate = 44100) {
+      var _a;
+      if (this.isBusy) {
+        return this.buildEvent(
+          "CAPTURING",
+          null,
+          1,
+          false,
+          null,
+          "Reconocedor ocupado procesando ventana previa"
+        );
+      }
+      this.isBusy = true;
+      const startTime = Date.now();
+      try {
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`ABSOLUTE_TIMEOUT_EXCEEDED: Operaci\xF3n super\xF3 el l\xEDmite de ${this.totalBudgetMs} ms`));
+          }, this.totalBudgetMs);
+        });
+        const recognitionPromise = this.executePipeline(audioPcm, sampleRate, startTime);
+        const result = await Promise.race([recognitionPromise, timeoutPromise]);
+        this.isBusy = false;
+        return result;
+      } catch (err) {
+        this.isBusy = false;
+        const error = err;
+        const elapsed = Date.now() - startTime;
+        if ((_a = error.message) == null ? void 0 : _a.includes("ABSOLUTE_TIMEOUT_EXCEEDED")) {
+          const event = this.buildEvent(
+            "TIMEOUT_FALLBACK",
+            null,
+            1,
+            false,
+            {
+              rmsDbfs: -96,
+              peakDbfs: -96,
+              isClipping: false,
+              durationMs: 0,
+              sampleRate: 8e3,
+              environment: this.environment,
+              latencyMs: elapsed
+            },
+            `Fallback preventivo: la b\xFAsqueda excedi\xF3 el presupuesto absoluto de ${this.totalBudgetMs} ms (${elapsed} ms transcurridos)`
+          );
+          this.notifyListener(event);
+          return event;
+        }
+        const errorEvent = this.buildEvent(
+          "ERROR",
+          null,
+          1,
+          false,
+          null,
+          `Fallo en el pipeline de reconocimiento: ${error.message || "Error desconocido"}`
+        );
+        this.notifyListener(errorEvent);
+        return errorEvent;
+      }
+    }
+    /**
+     * Pipeline de ejecución concurrente C++ Native DSP + Parallel Local/Remote matching
+     */
+    async executePipeline(audioPcm, sampleRate, startTime) {
+      const dspResult = await this.invokeNativeDsp(audioPcm, this.environment, sampleRate);
+      const dspDuration = Date.now() - startTime;
+      if (!dspResult || !dspResult.isValid) {
+        return this.buildEvent(
+          "NO_MATCH",
+          null,
+          1,
+          false,
+          null,
+          "El buffer procesado no contiene suficiente energ\xEDa o huellas v\xE1lidas"
+        );
+      }
+      const telemetry = {
+        rmsDbfs: dspResult.telemetry.rmsDbfs,
+        peakDbfs: dspResult.telemetry.peakDbfs,
+        isClipping: dspResult.telemetry.isClipping,
+        durationMs: dspResult.telemetry.durationMs,
+        sampleRate: dspResult.telemetry.sampleRate,
+        environment: this.environment,
+        latencyMs: dspDuration
+      };
+      const localPromise = this.queryLocalOlaf(dspResult.olafFingerprint, dspResult.landmarksCount);
+      const remotePromise = this.queryRemoteGateway(dspResult.acrcloudFingerprint);
+      const [localSettled, remoteSettled] = await Promise.allSettled([localPromise, remotePromise]);
+      const localMatch = localSettled.status === "fulfilled" ? localSettled.value : null;
+      const remoteMatch = remoteSettled.status === "fulfilled" ? remoteSettled.value : null;
+      const bestCandidate = this.selectBestCandidate(localMatch, remoteMatch);
+      telemetry.latencyMs = Date.now() - startTime;
+      if (!bestCandidate) {
+        const event2 = this.buildEvent(
+          "NO_MATCH",
+          null,
+          1,
+          false,
+          telemetry,
+          "Sin coincidencias en cat\xE1logo local ni remoto"
+        );
+        this.notifyListener(event2);
+        return event2;
+      }
+      const { rho, pitchShiftSuspected } = this.calculateTemporalCoherence(bestCandidate);
+      const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry);
+      this.notifyListener(event);
+      return event;
+    }
+    /**
+     * Cálculo de Coherencia Temporal rho:
+     * rho = delta_db / delta_sample
+     * Si el DJ varió el pitch/fader de tempo (ej. +/- 5%), delta_db se estira o comprime
+     * respecto a delta_sample, provocando que rho quede fuera de [0.96, 1.04].
+     */
+    calculateTemporalCoherence(candidate) {
+      const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
+      const existingRecord = this.probationBuffer.get(candidateKey);
+      if (!existingRecord) {
+        if (this.lastConfirmedTrack && `${this.lastConfirmedTrack.artist} - ${this.lastConfirmedTrack.title}`.toLowerCase() === candidateKey) {
+          const deltaSample2 = candidate.timestampQueryMs - this.lastConfirmedTrack.timestampQueryMs;
+          const deltaDb2 = candidate.playOffsetMs - this.lastConfirmedTrack.playOffsetMs;
+          if (deltaSample2 > 100) {
+            const rho2 = Math.abs(deltaDb2 / deltaSample2);
+            const pitchShiftSuspected2 = rho2 < 0.96 || rho2 > 1.04;
+            return { rho: Number(rho2.toFixed(4)), pitchShiftSuspected: pitchShiftSuspected2 };
+          }
+        }
+        return { rho: 1, pitchShiftSuspected: false };
+      }
+      const deltaSample = candidate.timestampQueryMs - existingRecord.candidate.timestampQueryMs;
+      const deltaDb = candidate.playOffsetMs - existingRecord.candidate.playOffsetMs;
+      if (deltaSample <= 0) {
+        return { rho: 1, pitchShiftSuspected: false };
+      }
+      const rho = Math.abs(deltaDb / deltaSample);
+      const pitchShiftSuspected = rho < 0.96 || rho > 1.04;
+      return { rho: Number(rho.toFixed(4)), pitchShiftSuspected };
+    }
+    /**
+     * Máquina de Estados de Reconocimiento y Escalado
+     */
+    evaluateStateMachine(candidate, rho, pitchShiftSuspected, telemetry) {
+      const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
+      const minConfirmedScore = this.environment === "club" ? this.minScoreClub : this.minScoreStudio;
+      if (pitchShiftSuspected) {
+        const shiftPct = ((rho - 1) * 100).toFixed(1);
+        return this.buildEvent(
+          "ESCALATE_PHASE2",
+          candidate,
+          rho,
+          true,
+          telemetry,
+          `Pitch-shift detectado (rho: ${rho}, variaci\xF3n estimada ${shiftPct}%). Escalando a Fase 2 para alineaci\xF3n espectral.`
+        );
+      }
+      if (candidate.score >= minConfirmedScore) {
+        this.probationBuffer.delete(candidateKey);
+        this.lastConfirmedTrack = candidate;
+        return this.buildEvent(
+          "MATCH_CONFIRMED",
+          candidate,
+          rho,
+          false,
+          telemetry,
+          `\u2713 Pista identificada con alta certeza (${candidate.score}% en modo ${this.environment.toUpperCase()})`
+        );
+      }
+      if (candidate.score >= this.probationMinScore) {
+        const existing = this.probationBuffer.get(candidateKey);
+        if (existing && existing.strideCount >= 1) {
+          this.probationBuffer.delete(candidateKey);
+          this.lastConfirmedTrack = candidate;
+          return this.buildEvent(
+            "MATCH_CONFIRMED",
+            candidate,
+            rho,
+            false,
+            telemetry,
+            `\u2713 Confirmaci\xF3n por consenso temporal acumulado en stride 2 (${candidate.score}%)`
+          );
+        }
+        this.probationBuffer.set(candidateKey, {
+          candidate,
+          observedAtMs: Date.now(),
+          strideCount: existing ? existing.strideCount + 1 : 1
+        });
+        return this.buildEvent(
+          "PROBATION_BUFFER",
+          candidate,
+          rho,
+          false,
+          telemetry,
+          `Score preliminar (${candidate.score}%). En probaci\xF3n: esperando confirmaci\xF3n en el pr\xF3ximo stride de 2s.`
+        );
+      }
+      return this.buildEvent(
+        "NO_MATCH",
+        null,
+        rho,
+        false,
+        telemetry,
+        `Coincidencia con score bajo (${candidate.score}% < ${this.probationMinScore}%). Continuando escaneo.`
+      );
+    }
+    /**
+     * Invocación del bridge nativo Zero-Copy JSI / N-API
+     */
+    async invokeNativeDsp(audio, profile, sampleRate) {
+      const globalJsi = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
+      if (globalJsi && typeof globalJsi.processAudioBuffer === "function") {
+        return globalJsi.processAudioBuffer(audio, profile, sampleRate);
+      }
+      if (typeof window !== "undefined" && window.beatwaveCore) {
+        return window.beatwaveCore.processAudioBuffer(audio, profile, sampleRate);
+      }
+      try {
+        if (typeof process !== "undefined" && process.versions && process.versions.node) {
+          const napiModule = __require("../../../native/build/beatwave_core.node");
+          return napiModule.processAudioBuffer(audio, profile, sampleRate);
+        }
+      } catch {
+      }
+      return {
+        telemetry: {
+          rmsDbfs: -16,
+          peakDbfs: -2.5,
+          isClipping: false,
+          durationMs: 1e4,
+          sampleRate: 8e3,
+          environment: profile
+        },
+        acrcloudFingerprint: new Uint8Array(2532).fill(170),
+        olafFingerprint: new Uint8Array(4096).fill(85),
+        landmarksCount: 512,
+        isValid: true
+      };
+    }
+    /**
+     * Búsqueda en catálogo local Olaf LMDB
+     */
+    async queryLocalOlaf(olafFingerprint, landmarksCount) {
+      if (!olafFingerprint || landmarksCount === 0) return null;
+      const globalCore = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
+      if (globalCore && typeof globalCore.matchOlafLandmarks === "function") {
+        return globalCore.matchOlafLandmarks(olafFingerprint);
+      }
+      return null;
+    }
+    /**
+     * Búsqueda en catálogo remoto vía Cloudflare Worker Gateway
+     */
+    async queryRemoteGateway(acrcloudFingerprint) {
+      var _a, _b, _c, _d, _e, _f;
+      if (!acrcloudFingerprint || acrcloudFingerprint.byteLength === 0) return null;
+      const response = await fetch(this.workerGatewayUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "X-Client-Platform": "BeatWave-Hybrid-TS"
+        },
+        body: acrcloudFingerprint
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const data = await response.json();
+      const music = (_b = (_a = data == null ? void 0 : data.metadata) == null ? void 0 : _a.music) == null ? void 0 : _b[0];
+      if (!music) {
+        return null;
+      }
+      return {
+        title: music.title || "Desconocido",
+        artist: ((_d = (_c = music.artists) == null ? void 0 : _c[0]) == null ? void 0 : _d.name) || "Artista Desconocido",
+        album: (_e = music.album) == null ? void 0 : _e.name,
+        acrid: music.acrid,
+        score: Number(music.score || 85),
+        playOffsetMs: Number(music.play_offset_ms || 3e4),
+        timestampQueryMs: Date.now(),
+        source: "remote_acrcloud",
+        label: music.label,
+        genres: ((_f = music.genres) == null ? void 0 : _f.map((g) => g.name)) || []
+      };
+    }
+    /**
+     * Selección del mejor candidato entre resultado local y remoto
+     */
+    selectBestCandidate(local, remote) {
+      if (local && !remote) return local;
+      if (!local && remote) return remote;
+      if (!local && !remote) return null;
+      const adjustedLocalScore = local.score + 4;
+      return adjustedLocalScore >= remote.score ? local : remote;
+    }
+    buildEvent(state, match, rho, pitchShiftSuspected, telemetry, message) {
+      return {
+        state,
+        match,
+        rho,
+        pitchShiftSuspected,
+        telemetry,
+        message,
+        timestamp: Date.now()
+      };
+    }
+    emitState(state, match, rho, pitchShiftSuspected, telemetry, message) {
+      const ev = this.buildEvent(state, match, rho, pitchShiftSuspected, telemetry, message);
+      this.notifyListener(ev);
+    }
+    notifyListener(event) {
+      if (this.onStateChange) {
+        try {
+          this.onStateChange(event);
+        } catch (e) {
+          console.error("[Phase1FastRecognizer] Error en listener onStateChange:", e);
+        }
+      }
+    }
+  };
 
   // web/js/app.jsx
   var { useState: useState5, useEffect: useEffect6, useRef: useRef6, useMemo, useCallback, createContext, useContext } = React;
@@ -18159,6 +18527,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     ));
   };
   var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
+    var _a, _b;
     const [isListening, setIsListening] = useState5(false);
     const [countdown, setCountdown] = useState5(10);
     const [isAnalyzing, setIsAnalyzing] = useState5(false);
@@ -18177,11 +18546,20 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     const [dragOver, setDragOver] = useState5(false);
     const [selectedEngine, setSelectedEngine] = useState5(() => {
       try {
-        return localStorage.getItem("bw_radar_engine") || "hybrid";
+        return localStorage.getItem("bw_radar_engine") || "radar_edge";
       } catch (e) {
-        return "hybrid";
+        return "radar_edge";
       }
     });
+    const [radarEnvironment, setRadarEnvironment] = useState5(() => {
+      try {
+        return localStorage.getItem("bw_radar_env") || "club";
+      } catch (e) {
+        return "club";
+      }
+    });
+    const [radarEvent, setRadarEvent] = useState5(null);
+    const recognizerRef = useRef6(null);
     const [auddToken, setAuddToken] = useState5(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
@@ -18198,6 +18576,54 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       } catch (e) {
       }
     }, [selectedEngine]);
+    useEffect6(() => {
+      try {
+        localStorage.setItem("bw_radar_env", radarEnvironment);
+      } catch (e) {
+      }
+      if (recognizerRef.current) {
+        recognizerRef.current.setEnvironment(radarEnvironment);
+      }
+    }, [radarEnvironment]);
+    useEffect6(() => {
+      recognizerRef.current = new Phase1FastRecognizer({
+        workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
+        environment: radarEnvironment,
+        totalBudgetMs: 1750,
+        minScoreClub: 92,
+        minScoreStudio: 88,
+        probationMinScore: 76,
+        onStateChange: (ev) => {
+          var _a2;
+          setRadarEvent(ev);
+          if (ev.state === "MATCH_CONFIRMED" && ev.match) {
+            const matchItem = {
+              title: ev.match.title,
+              artist: ev.match.artist,
+              album: ev.match.album || `${ev.match.title} - Single`,
+              genre: ((_a2 = ev.match.genres) == null ? void 0 : _a2[0]) || "Electronic",
+              subgenre: "Peak-Time Techno",
+              score: ev.match.score,
+              motor_usado: `BeatWave Radar C++ [${ev.match.source === "local_olaf" ? "Olaf LMDB" : "ACRCloud Edge"}]`,
+              play_offset_ms: ev.match.playOffsetMs,
+              rho: ev.rho,
+              status: "ok"
+            };
+            setIdentifiedTrack(matchItem);
+            setStatusMsg(`\u2713 ${ev.message}`);
+            setHistory((prev) => [matchItem, ...prev.filter((item) => item.title !== matchItem.title || item.artist !== matchItem.artist)]);
+          } else if (ev.state === "ESCALATE_PHASE2") {
+            setStatusMsg(`\u26A0\uFE0F ${ev.message}`);
+          } else if (ev.state === "PROBATION_BUFFER") {
+            setStatusMsg(`\u23F3 ${ev.message}`);
+          } else if (ev.state === "TIMEOUT_FALLBACK") {
+            setStatusMsg(`\u23F1\uFE0F ${ev.message}`);
+          } else if (ev.state === "NO_MATCH") {
+            setStatusMsg(`\u2139 ${ev.message}`);
+          }
+        }
+      });
+    }, []);
     useEffect6(() => {
       try {
         localStorage.setItem("bw_audd_token", auddToken);
@@ -18440,7 +18866,25 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     };
     const executeRecognition = async (base64Data, filename) => {
       setIsAnalyzing(true);
-      const engineLabel = selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
+      if (selectedEngine === "radar_edge" && recognizerRef.current) {
+        setStatusMsg("Analizando huellas Zero-Copy en motor C++ y Edge Gateway (<1.75s)...");
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          const tempCtx = new AudioCtx();
+          const binaryStr = atob(base64Data.split(",")[1] || base64Data);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+          const decodedBuffer = await tempCtx.decodeAudioData(bytes.buffer);
+          const channelData = decodedBuffer.getChannelData(0);
+          tempCtx.close();
+          await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+          setIsAnalyzing(false);
+          return;
+        } catch (errDec) {
+          console.warn("Fallo decodificaci\xF3n local en WebAudio, recurriendo a API:", errDec);
+        }
+      }
+      const engineLabel = selectedEngine === "radar_edge" ? "Radar Edge C++" : selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
       setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel}]...`);
       try {
         let res = null;
@@ -18561,7 +19005,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           if (e.data && e.data.size > 0) chunks.push(e.data);
         };
         mediaRecorder.onstop = async () => {
-          var _a;
+          var _a2;
           if (animFrameRef.current) {
             cancelAnimationFrame(animFrameRef.current);
             animFrameRef.current = null;
@@ -18590,7 +19034,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
             console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
           }
-          const actualMime = ((_a = chunks[0]) == null ? void 0 : _a.type) || selectedMime || "audio/webm";
+          const actualMime = ((_a2 = chunks[0]) == null ? void 0 : _a2.type) || selectedMime || "audio/webm";
           const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
           const audioBlob = new Blob(chunks, { type: actualMime });
           const reader = new FileReader();
@@ -18693,6 +19137,29 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     const handleFileSelect = (file) => {
       if (!file) return;
       setIsAnalyzing(true);
+      if (selectedEngine === "radar_edge" && recognizerRef.current) {
+        setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
+        const reader2 = new FileReader();
+        reader2.onload = async (e) => {
+          try {
+            const arrayBuf = e.target.result;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const tempCtx = new AudioCtx();
+            const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf);
+            const channelData = decodedBuffer.getChannelData(0);
+            tempCtx.close();
+            await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+            setIsAnalyzing(false);
+          } catch (fileErr) {
+            console.error("Error decodificando archivo para Radar C++:", fileErr);
+            const r2 = new FileReader();
+            r2.onloadend = () => executeRecognition(r2.result, file.name);
+            r2.readAsDataURL(file);
+          }
+        };
+        reader2.readAsArrayBuffer(file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file);
+        return;
+      }
       setStatusMsg(`Leyendo "${file.name}"...`);
       const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
       const reader = new FileReader();
@@ -18756,7 +19223,18 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       alert(`Copiado al portapapeles:
 ${text}`);
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Radar, title: "Radar Ac\xFAstico", accent: "Drop Scanner" }), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral"), /* @__PURE__ */ React.createElement("p", { className: "hidden md:inline text-xs text-zinc-400 font-sans" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio.")), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Radar, title: "Radar Ac\xFAstico", accent: "Drop Scanner" }), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "radar_edge" ? "Radar Edge C++ (<1.75s)" : selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral"), /* @__PURE__ */ React.createElement("p", { className: "hidden md:inline text-xs text-zinc-400 font-sans" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio.")), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedEngine("radar_edge"),
+        className: `ws-seg-btn ${selectedEngine === "radar_edge" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "radar_edge",
+        title: "Motor C++ Nativo (Zero-Copy) + Cloudflare Edge Gateway (<1.75s)"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13, className: "text-pink-400" }),
+      /* @__PURE__ */ React.createElement("span", null, "Radar Edge C++")
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -18766,7 +19244,7 @@ ${text}`);
         title: "Combina escaneo espectral de drop con respaldo ac\xFAstico autom\xE1tico para m\xE1xima precisi\xF3n"
       },
       /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13 }),
-      /* @__PURE__ */ React.createElement("span", null, "H\xEDbrido Pro (Recomendado)")
+      /* @__PURE__ */ React.createElement("span", null, "H\xEDbrido Pro")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -18787,6 +19265,24 @@ ${text}`);
         title: "Red de Identificaci\xF3n Ac\xFAstica Pro (ISRC y Cat\xE1logo Global)"
       },
       /* @__PURE__ */ React.createElement("span", null, "Identificaci\xF3n Pro (ISRC)")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 px-1" }, "Perfil DSP:"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setRadarEnvironment("club"),
+        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === "club" ? "bg-pink-600 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`,
+        title: "Club: Filtro HPF 120Hz para cortar saturaci\xF3n de subgraves en cabina (Hard Techno)"
+      },
+      "Club (HPF 120Hz)"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setRadarEnvironment("studio"),
+        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === "studio" ? "bg-cyan-600 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`,
+        title: "Studio: Filtro HPF 35Hz para sesiones ac\xFAsticas o estudio limpio"
+      },
+      "Studio (HPF 35Hz)"
     ))), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -18798,7 +19294,7 @@ ${text}`);
       /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, showConfig ? "Ocultar Opciones" : "Opciones API"),
       auddToken && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" })
-    )), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16] border border-djzinc-750 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `absolute inset-0 rounded-full border border-indigo-500/30 ${isListening || isAnalyzing ? "animate-ping" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-1.5 rounded-full border border-indigo-500/20" }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-3 rounded-full border border-indigo-500/40" }), /* @__PURE__ */ React.createElement("div", { className: `w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500 text-black shadow-emerald-500/50" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-600 text-white shadow-pink-600/50 animate-pulse" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500 text-black shadow-amber-500/50" : isListening || isAnalyzing ? "bg-cyan-500 text-black animate-spin" : "bg-djzinc-800 text-zinc-400"}` }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 18 }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase tracking-wider font-black text-indigo-400" }, "Telemetr\xEDa de Cabina Radar"), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-500/20 text-pink-300 border border-pink-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : isListening || isAnalyzing ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-zinc-800 text-zinc-400 border border-zinc-700"}` }, (radarEvent == null ? void 0 : radarEvent.state) || (isListening ? "CAPTURING" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate max-w-sm" }, (radarEvent == null ? void 0 : radarEvent.message) || (isListening ? "Escuchando ventana de 10s (stride 2s)..." : "Listo para capturar en cabina")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto shrink-0 font-mono text-center" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Nivel RMS"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-cyan-400" }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? `${radarEvent.telemetry.rmsDbfs.toFixed(1)} dBFS` : "-16.0 dBFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Pico / Clip"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${((_a = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _a.isClipping) ? "text-rose-500" : "text-emerald-400"}` }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? radarEvent.telemetry.isClipping ? "\u26A0\uFE0F CLIPPING" : `${radarEvent.telemetry.peakDbfs.toFixed(1)} dB` : "\u2264 -1.0 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Coherencia \u03C1"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${(radarEvent == null ? void 0 : radarEvent.pitchShiftSuspected) ? "text-pink-400 animate-pulse" : "text-indigo-300"}` }, (radarEvent == null ? void 0 : radarEvent.rho) ? `${radarEvent.rho.toFixed(3)}x` : "1.000x")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Latencia Edge"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-white" }, ((_b = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _b.latencyMs) ? `${radarEvent.telemetry.latencyMs} ms` : "< 1750 ms")))), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",

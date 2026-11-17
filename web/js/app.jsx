@@ -7,6 +7,7 @@ import { PricingModal } from './shell/pricing-modal.jsx';
 import { RegisterFlowModal } from './shell/register-modal.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
 import { classifyTrackGenre } from './modules/genreClassifier.ts';
+import { Phase1FastRecognizer } from './modules/Phase1FastRecognizer.ts';
 const { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } = React;
 
 // ─── PERF: PlayerContext ──────────────────────────────────────────────────────
@@ -23659,10 +23660,15 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const audioCtxRef = useRef(null);
     const [dragOver, setDragOver] = useState(false);
 
-    // Selector de motor acústico: 'hybrid' (recomendado), 'shazamio', 'audd'
+    // Selector de motor acústico: 'radar_edge' (C++ Nativo / Edge), 'hybrid', 'shazamio', 'audd'
     const [selectedEngine, setSelectedEngine] = useState(() => {
-        try { return localStorage.getItem('bw_radar_engine') || 'hybrid'; } catch(e) { return 'hybrid'; }
+        try { return localStorage.getItem('bw_radar_engine') || 'radar_edge'; } catch(e) { return 'radar_edge'; }
     });
+    const [radarEnvironment, setRadarEnvironment] = useState(() => {
+        try { return localStorage.getItem('bw_radar_env') || 'club'; } catch(e) { return 'club'; }
+    });
+    const [radarEvent, setRadarEvent] = useState(null);
+    const recognizerRef = useRef(null);
     const [auddToken, setAuddToken] = useState(() => {
         try { return localStorage.getItem('bw_audd_token') || ''; } catch(e) { return ''; }
     });
@@ -23673,6 +23679,52 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     useEffect(() => {
         try { localStorage.setItem('bw_radar_engine', selectedEngine); } catch(e) {}
     }, [selectedEngine]);
+
+    useEffect(() => {
+        try { localStorage.setItem('bw_radar_env', radarEnvironment); } catch(e) {}
+        if (recognizerRef.current) {
+            recognizerRef.current.setEnvironment(radarEnvironment);
+        }
+    }, [radarEnvironment]);
+
+    useEffect(() => {
+        recognizerRef.current = new Phase1FastRecognizer({
+            workerGatewayUrl: 'https://beatwave-radar-gateway.workers.dev',
+            environment: radarEnvironment,
+            totalBudgetMs: 1750,
+            minScoreClub: 92,
+            minScoreStudio: 88,
+            probationMinScore: 76,
+            onStateChange: (ev) => {
+                setRadarEvent(ev);
+                if (ev.state === 'MATCH_CONFIRMED' && ev.match) {
+                    const matchItem = {
+                        title: ev.match.title,
+                        artist: ev.match.artist,
+                        album: ev.match.album || `${ev.match.title} - Single`,
+                        genre: ev.match.genres?.[0] || 'Electronic',
+                        subgenre: 'Peak-Time Techno',
+                        score: ev.match.score,
+                        motor_usado: `BeatWave Radar C++ [${ev.match.source === 'local_olaf' ? 'Olaf LMDB' : 'ACRCloud Edge'}]`,
+                        play_offset_ms: ev.match.playOffsetMs,
+                        rho: ev.rho,
+                        status: 'ok'
+                    };
+                    setIdentifiedTrack(matchItem);
+                    setStatusMsg(`✓ ${ev.message}`);
+                    setHistory(prev => [matchItem, ...prev.filter(item => item.title !== matchItem.title || item.artist !== matchItem.artist)]);
+                } else if (ev.state === 'ESCALATE_PHASE2') {
+                    setStatusMsg(`⚠️ ${ev.message}`);
+                } else if (ev.state === 'PROBATION_BUFFER') {
+                    setStatusMsg(`⏳ ${ev.message}`);
+                } else if (ev.state === 'TIMEOUT_FALLBACK') {
+                    setStatusMsg(`⏱️ ${ev.message}`);
+                } else if (ev.state === 'NO_MATCH') {
+                    setStatusMsg(`ℹ ${ev.message}`);
+                }
+            }
+        });
+    }, []);
 
     useEffect(() => {
         try { localStorage.setItem('bw_audd_token', auddToken); } catch(e) {}
@@ -23898,7 +23950,27 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
 
     const executeRecognition = async (base64Data, filename) => {
         setIsAnalyzing(true);
-        const engineLabel = selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'Identificación Pro' : 'Escaneo Espectral Smart';
+        if (selectedEngine === 'radar_edge' && recognizerRef.current) {
+            setStatusMsg("Analizando huellas Zero-Copy en motor C++ y Edge Gateway (<1.75s)...");
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const tempCtx = new AudioCtx();
+                const binaryStr = atob(base64Data.split(',')[1] || base64Data);
+                const bytes = new Uint8Array(binaryStr.length);
+                for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                
+                const decodedBuffer = await tempCtx.decodeAudioData(bytes.buffer);
+                const channelData = decodedBuffer.getChannelData(0);
+                tempCtx.close();
+
+                await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+                setIsAnalyzing(false);
+                return;
+            } catch (errDec) {
+                console.warn("Fallo decodificación local en WebAudio, recurriendo a API:", errDec);
+            }
+        }
+        const engineLabel = selectedEngine === 'radar_edge' ? 'Radar Edge C++' : selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'Identificación Pro' : 'Escaneo Espectral Smart';
         setStatusMsg(`Consultando huella acústica en [${engineLabel}]...`);
 
         try {
@@ -24180,11 +24252,33 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
     const handleFileSelect = (file) => {
         if (!file) return;
         setIsAnalyzing(true);
+        if (selectedEngine === 'radar_edge' && recognizerRef.current) {
+            setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const arrayBuf = e.target.result;
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    const tempCtx = new AudioCtx();
+                    const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf);
+                    const channelData = decodedBuffer.getChannelData(0);
+                    tempCtx.close();
+
+                    await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+                    setIsAnalyzing(false);
+                } catch (fileErr) {
+                    console.error("Error decodificando archivo para Radar C++:", fileErr);
+                    const r2 = new FileReader();
+                    r2.onloadend = () => executeRecognition(r2.result, file.name);
+                    r2.readAsDataURL(file);
+                }
+            };
+            reader.readAsArrayBuffer(file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file);
+            return;
+        }
+
         setStatusMsg(`Leyendo "${file.name}"...`);
-
-        // Slicing de archivo a un máximo de 8MB en el navegador para transferencias ultrarrápidas
         const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
-
         const reader = new FileReader();
         reader.onloadend = () => {
             executeRecognition(reader.result, file.name);
@@ -24257,7 +24351,7 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                 <div className="flex items-center gap-3">
                     <SectionTitle icon={Icons.Radar} title="Radar Acústico" accent="Drop Scanner" />
                     <span className="hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded">
-                        {selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
+                        {selectedEngine === 'radar_edge' ? 'Radar Edge C++ (<1.75s)' : selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
                     </span>
                     <p className="hidden md:inline text-xs text-zinc-400 font-sans">
                         Identifica pistas desconocidas al instante escuchando con el micrófono o cargando archivos de audio.
@@ -24279,13 +24373,23 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     <div className="ws-seg" role="group" aria-label="Motor activo">
                         <button
                             type="button"
+                            onClick={() => setSelectedEngine('radar_edge')}
+                            className={`ws-seg-btn ${selectedEngine === 'radar_edge' ? 'ws-seg-on' : ''}`}
+                            aria-pressed={selectedEngine === 'radar_edge'}
+                            title="Motor C++ Nativo (Zero-Copy) + Cloudflare Edge Gateway (<1.75s)"
+                        >
+                            <Icons.Zap size={13} className="text-pink-400" />
+                            <span>Radar Edge C++</span>
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setSelectedEngine('hybrid')}
                             className={`ws-seg-btn ${selectedEngine === 'hybrid' ? 'ws-seg-on' : ''}`}
                             aria-pressed={selectedEngine === 'hybrid'}
                             title="Combina escaneo espectral de drop con respaldo acústico automático para máxima precisión"
                         >
                             <Icons.Zap size={13} />
-                            <span>Híbrido Pro (Recomendado)</span>
+                            <span>Híbrido Pro</span>
                         </button>
                         <button
                             type="button"
@@ -24306,6 +24410,26 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                             <span>Identificación Pro (ISRC)</span>
                         </button>
                     </div>
+
+                    <div className="flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-[var(--bw-line)]">
+                        <span className="text-[10px] font-mono text-zinc-400 px-1">Perfil DSP:</span>
+                        <button
+                            type="button"
+                            onClick={() => setRadarEnvironment('club')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === 'club' ? 'bg-pink-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                            title="Club: Filtro HPF 120Hz para cortar saturación de subgraves en cabina (Hard Techno)"
+                        >
+                            Club (HPF 120Hz)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setRadarEnvironment('studio')}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === 'studio' ? 'bg-cyan-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                            title="Studio: Filtro HPF 35Hz para sesiones acústicas o estudio limpio"
+                        >
+                            Studio (HPF 35Hz)
+                        </button>
+                    </div>
                 </div>
 
                 <button
@@ -24318,6 +24442,69 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     <span>{showConfig ? 'Ocultar Opciones' : 'Opciones API'}</span>
                     {auddToken && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
                 </button>
+            </div>
+
+            {/* Panel de Control y Telemetría Radar Live HUD */}
+            <div className="bg-[#0b0c16] border border-djzinc-750 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
+                <div className="flex items-center gap-4 shrink-0">
+                    <div className="relative w-14 h-14 flex items-center justify-center">
+                        <span className={`absolute inset-0 rounded-full border border-indigo-500/30 ${isListening || isAnalyzing ? 'animate-ping' : ''}`} />
+                        <span className="absolute inset-1.5 rounded-full border border-indigo-500/20" />
+                        <span className="absolute inset-3 rounded-full border border-indigo-500/40" />
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                            radarEvent?.state === 'MATCH_CONFIRMED' ? 'bg-emerald-500 text-black shadow-emerald-500/50' :
+                            radarEvent?.state === 'ESCALATE_PHASE2' ? 'bg-pink-600 text-white shadow-pink-600/50 animate-pulse' :
+                            radarEvent?.state === 'PROBATION_BUFFER' ? 'bg-amber-500 text-black shadow-amber-500/50' :
+                            isListening || isAnalyzing ? 'bg-cyan-500 text-black animate-spin' : 'bg-djzinc-800 text-zinc-400'
+                        }`}>
+                            <Icons.Radar size={18} />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-wider font-black text-indigo-400">Telemetría de Cabina Radar</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${
+                                radarEvent?.state === 'MATCH_CONFIRMED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+                                radarEvent?.state === 'ESCALATE_PHASE2' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40' :
+                                radarEvent?.state === 'PROBATION_BUFFER' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
+                                isListening || isAnalyzing ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' :
+                                'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                            }`}>
+                                {radarEvent?.state || (isListening ? 'CAPTURING' : 'STANDBY')}
+                            </span>
+                        </div>
+                        <div className="text-xs font-mono font-bold text-white truncate max-w-sm">
+                            {radarEvent?.message || (isListening ? 'Escuchando ventana de 10s (stride 2s)...' : 'Listo para capturar en cabina')}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Telemetría en Cuadrícula (RMS, Clipping, Rho, Latencia) */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto shrink-0 font-mono text-center">
+                    <div className="bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5">
+                        <div className="text-[9px] text-zinc-400 uppercase">Nivel RMS</div>
+                        <div className="text-xs font-bold text-cyan-400">{radarEvent?.telemetry ? `${radarEvent.telemetry.rmsDbfs.toFixed(1)} dBFS` : '-16.0 dBFS'}</div>
+                    </div>
+                    <div className="bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5">
+                        <div className="text-[9px] text-zinc-400 uppercase">Pico / Clip</div>
+                        <div className={`text-xs font-bold ${radarEvent?.telemetry?.isClipping ? 'text-rose-500' : 'text-emerald-400'}`}>
+                            {radarEvent?.telemetry ? (radarEvent.telemetry.isClipping ? '⚠️ CLIPPING' : `${radarEvent.telemetry.peakDbfs.toFixed(1)} dB`) : '≤ -1.0 dB'}
+                        </div>
+                    </div>
+                    <div className="bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5">
+                        <div className="text-[9px] text-zinc-400 uppercase">Coherencia ρ</div>
+                        <div className={`text-xs font-bold ${radarEvent?.pitchShiftSuspected ? 'text-pink-400 animate-pulse' : 'text-indigo-300'}`}>
+                            {radarEvent?.rho ? `${radarEvent.rho.toFixed(3)}x` : '1.000x'}
+                        </div>
+                    </div>
+                    <div className="bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5">
+                        <div className="text-[9px] text-zinc-400 uppercase">Latencia Edge</div>
+                        <div className="text-xs font-bold text-white">
+                            {radarEvent?.telemetry?.latencyMs ? `${radarEvent.telemetry.latencyMs} ms` : '< 1750 ms'}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {showConfig && (
