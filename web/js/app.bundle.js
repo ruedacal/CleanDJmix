@@ -1,14 +1,4 @@
 (() => {
-  var __defProp = Object.defineProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-    get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-  }) : x)(function(x) {
-    if (typeof require !== "undefined") return require.apply(this, arguments);
-    throw Error('Dynamic require of "' + x + '" is not supported');
-  });
-  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-
   // web/js/shell/icons.jsx
   var makeIcon = (children, { filled = false, defaultClass = "", defaultSize = 16 } = {}) => {
     const IconComponent = ({ size = defaultSize, strokeWidth = 1.75, className = "" }) => /* @__PURE__ */ React.createElement(
@@ -1810,677 +1800,8 @@
     );
   };
 
-  // web/js/modules/Phase2RescueClient.ts
-  var Phase2RescueClient = class _Phase2RescueClient {
-    constructor(config = {}) {
-      __publicField(this, "rescueEndpoint");
-      __publicField(this, "timeoutMs");
-      __publicField(this, "onRescueProgress");
-      __publicField(this, "isRescuing", false);
-      this.rescueEndpoint = config.rescueEndpoint || "/v1/rescue";
-      this.timeoutMs = config.timeoutMs || 8e3;
-      this.onRescueProgress = config.onRescueProgress;
-    }
-    /**
-     * Extrae el buffer FLAC retenido a 16 kHz en memoria RAM desde el bridge nativo.
-     * Soporta JSI (React Native), N-API (Desktop / Tauri) y Node.js.
-     */
-    static retrieveNativeFlacBuffer(fallbackAudio, sampleRate = 44100) {
-      var _a;
-      const globalJsi = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
-      if (globalJsi && typeof globalJsi.getEscalationBufferFLAC === "function") {
-        try {
-          const res = globalJsi.getEscalationBufferFLAC(fallbackAudio, sampleRate);
-          if (res && res instanceof Uint8Array && res.byteLength > 0) {
-            return res;
-          }
-        } catch (e) {
-          console.warn("[Phase2RescueClient] Error en JSI getEscalationBufferFLAC:", e);
-        }
-      }
-      if (typeof window !== "undefined" && ((_a = window.beatwaveCore) == null ? void 0 : _a.getEscalationBufferFLAC)) {
-        try {
-          const res = window.beatwaveCore.getEscalationBufferFLAC(fallbackAudio, sampleRate);
-          if (res && res instanceof Uint8Array && res.byteLength > 0) {
-            return res;
-          }
-        } catch (e) {
-          console.warn("[Phase2RescueClient] Error en window.beatwaveCore getEscalationBufferFLAC:", e);
-        }
-      }
-      try {
-        if (typeof process !== "undefined" && process.versions && process.versions.node) {
-          const nodeRequire = typeof __require === "function" ? __require : typeof module !== "undefined" && module.require ? module.require : null;
-          if (nodeRequire) {
-            const nodePath = "path";
-            const pathMod = nodeRequire(nodePath);
-            const nodeAddonPath = pathMod.resolve("native/build/beatwave_core.node");
-            const napi = nodeRequire(nodeAddonPath);
-            if (typeof napi.getEscalationBufferFLAC === "function") {
-              const res = napi.getEscalationBufferFLAC(fallbackAudio, sampleRate);
-              if (res && res instanceof Uint8Array && res.byteLength > 0) {
-                return res;
-              }
-            }
-          }
-        }
-      } catch {
-      }
-      return null;
-    }
-    /**
-     * Orquesta la subida asíncrona del búfer FLAC al microservicio GPU Cloud.
-     * No bloquea el hilo de renderizado (UI), aplica AbortController con timeout de 8s.
-     */
-    async rescueTrack(request) {
-      var _a;
-      const startTime = Date.now();
-      this.isRescuing = true;
-      this.emitProgress("UPLOADING", `Preparando payload FLAC para rescate neuronal GPU (Motivo: ${request.reason})...`);
-      let flacBytes = request.flacBuffer;
-      if (!flacBytes || flacBytes.byteLength === 0) {
-        flacBytes = _Phase2RescueClient.retrieveNativeFlacBuffer();
-      }
-      if (!flacBytes || flacBytes.byteLength === 0) {
-        this.isRescuing = false;
-        const msg = "No se encontr\xF3 un b\xFAfer FLAC retenido v\xE1lido en memoria RAM para el rescate";
-        this.emitProgress("FAILED", msg);
-        return {
-          success: false,
-          state: "UNIDENTIFIED_ID",
-          match: null,
-          latencyMs: Date.now() - startTime,
-          reason: request.reason,
-          errorMessage: msg,
-          diagnosticLog: `[Phase2RescueClient] Buffer FLAC vac\xEDo. Estado final marcado como UNIDENTIFIED_ID.`
-        };
-      }
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, this.timeoutMs);
-      try {
-        const formData = new FormData();
-        const blobBytes = flacBytes.buffer.slice(flacBytes.byteOffset, flacBytes.byteOffset + flacBytes.byteLength);
-        const flacBlob = new Blob([blobBytes], { type: "audio/flac" });
-        formData.append("audio", flacBlob, "escalation_rescue.flac");
-        formData.append("reason", request.reason);
-        formData.append("rho", request.rho.toString());
-        formData.append("environment", request.environment);
-        formData.append("timestamp", (request.timestampQueryMs || Date.now()).toString());
-        if (request.candidateHint) {
-          formData.append("candidate_hint", JSON.stringify(request.candidateHint));
-        }
-        this.emitProgress("PROCESSING_GPU", `Audio FLAC transmitido (${(flacBytes.byteLength / 1024).toFixed(1)} KB). Inferencia Conformer + Source Separation en ejecuci\xF3n...`);
-        const response = await fetch(this.rescueEndpoint, {
-          method: "POST",
-          headers: {
-            "X-Client-Platform": "BeatWave-Hybrid-Phase2",
-            "X-Escalation-Reason": request.reason
-          },
-          body: formData,
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        const elapsed = Date.now() - startTime;
-        if (!response.ok) {
-          const statusText = response.statusText || `HTTP ${response.status}`;
-          const msg = `El servidor GPU respondi\xF3 con error de rescate: ${statusText}`;
-          this.isRescuing = false;
-          this.emitProgress("FAILED", msg);
-          return {
-            success: false,
-            state: "UNIDENTIFIED_ID",
-            match: null,
-            latencyMs: elapsed,
-            reason: request.reason,
-            errorMessage: msg,
-            diagnosticLog: `[Phase2RescueClient] Error HTTP ${response.status} tras ${elapsed} ms. Marcado UNIDENTIFIED_ID.`
-          };
-        }
-        const data = await response.json();
-        if ((data == null ? void 0 : data.status) === "success" && (data == null ? void 0 : data.match)) {
-          const match = {
-            title: data.match.title || "Desconocido",
-            artist: data.match.artist || "Artista Desconocido",
-            album: data.match.album,
-            label: data.match.label,
-            score: Number(data.match.score || 95),
-            stemIsolated: data.match.stem_isolated || "full_mix",
-            tempoWarpApplied: data.match.tempo_warp_applied ? Number(data.match.tempo_warp_applied) : void 0,
-            source: data.match.source || "gpu_neural_conformer",
-            playOffsetMs: data.match.play_offset_ms,
-            genres: data.match.genres || ["Electronic"],
-            acrid: data.match.acrid
-          };
-          this.isRescuing = false;
-          this.emitProgress("RESOLVED", `\u2713 Pista rescatada por red neuronal (${match.artist} - ${match.title}, Score: ${match.score}%)`);
-          return {
-            success: true,
-            state: "RESCUED_MATCH",
-            match,
-            latencyMs: elapsed,
-            reason: request.reason,
-            diagnosticLog: `[Phase2RescueClient] Coincidencia neuronal verificada: ${match.artist} - ${match.title} en ${elapsed} ms.`
-          };
-        }
-        this.isRescuing = false;
-        const notFoundMsg = "El motor neuronal GPU no hall\xF3 coincidencias concluyentes en el cat\xE1logo vectorial";
-        this.emitProgress("FAILED", notFoundMsg);
-        return {
-          success: false,
-          state: "UNIDENTIFIED_ID",
-          match: null,
-          latencyMs: elapsed,
-          reason: request.reason,
-          errorMessage: notFoundMsg,
-          diagnosticLog: `[Phase2RescueClient] ANN Search no arroj\xF3 vecinos cercanos suficientes. Marcado definitivamente como UNIDENTIFIED_ID.`
-        };
-      } catch (err) {
-        clearTimeout(timeoutId);
-        this.isRescuing = false;
-        const elapsed = Date.now() - startTime;
-        const error = err;
-        const isTimeout = error.name === "AbortError" || ((_a = error.message) == null ? void 0 : _a.includes("aborted")) || elapsed >= this.timeoutMs;
-        const errDescription = isTimeout ? `Timeout extendido de rescate agotado tras ${elapsed} ms (l\xEDmite: ${this.timeoutMs} ms)` : `Fallo de red o transporte: ${error.message || "Error desconocido"}`;
-        this.emitProgress("FAILED", errDescription);
-        return {
-          success: false,
-          state: "UNIDENTIFIED_ID",
-          match: null,
-          latencyMs: elapsed,
-          reason: request.reason,
-          errorMessage: errDescription,
-          diagnosticLog: `[Phase2RescueClient] ${errDescription}. Pista marcada definitivamente como UNIDENTIFIED_ID.`
-        };
-      }
-    }
-    getIsRescuing() {
-      return this.isRescuing;
-    }
-    emitProgress(stage, message) {
-      if (this.onRescueProgress) {
-        try {
-          this.onRescueProgress(stage, message);
-        } catch (e) {
-          console.error("[Phase2RescueClient] Error en callback de progreso:", e);
-        }
-      }
-    }
-  };
-
-  // web/js/modules/Phase1FastRecognizer.ts
-  var Phase1FastRecognizer = class {
-    constructor(config) {
-      __publicField(this, "workerGatewayUrl");
-      __publicField(this, "environment");
-      __publicField(this, "totalBudgetMs");
-      __publicField(this, "minScoreStudio");
-      __publicField(this, "minScoreClub");
-      __publicField(this, "probationMinScore");
-      __publicField(this, "onStateChange");
-      // Cliente de Rescate Neuronal GPU (Fase 2)
-      __publicField(this, "rescueClient");
-      __publicField(this, "autoRescuePhase2");
-      // Buffer de probación para confirmación en el siguiente stride de 2.0s
-      __publicField(this, "probationBuffer", /* @__PURE__ */ new Map());
-      __publicField(this, "lastConfirmedTrack", null);
-      __publicField(this, "isBusy", false);
-      this.workerGatewayUrl = config.workerGatewayUrl.replace(/\/+$/, "");
-      this.environment = config.environment || "club";
-      this.totalBudgetMs = config.totalBudgetMs || 1750;
-      this.minScoreStudio = config.minScoreStudio || 88;
-      this.minScoreClub = config.minScoreClub || 92;
-      this.probationMinScore = config.probationMinScore || 76;
-      this.onStateChange = config.onStateChange;
-      this.autoRescuePhase2 = config.autoRescuePhase2 !== false;
-      this.rescueClient = new Phase2RescueClient({
-        rescueEndpoint: config.rescueEndpoint || "/v1/rescue",
-        timeoutMs: config.rescueTimeoutMs || 8e3,
-        onRescueProgress: (stage, message) => {
-          if (stage === "PROCESSING_GPU" || stage === "UPLOADING") {
-            this.emitState(
-              "RESCUING_PHASE2",
-              null,
-              1,
-              true,
-              null,
-              `[Fase 2 GPU] ${message}`
-            );
-          }
-        }
-      });
-    }
-    setEnvironment(env) {
-      this.environment = env;
-    }
-    getEnvironment() {
-      return this.environment;
-    }
-    reset() {
-      this.probationBuffer.clear();
-      this.lastConfirmedTrack = null;
-      this.isBusy = false;
-      this.emitState("IDLE", null, 1, false, null, "Motor reseteado");
-    }
-    /**
-     * Orquesta el reconocimiento de un buffer Float32Array entrante de 10.0s (stride 2.0s).
-     * Aplica Promise.race con un presupuesto estricto de 1,750 ms y ejecución concurrente.
-     */
-    async recognizeBuffer(audioPcm, sampleRate = 44100) {
-      var _a;
-      if (this.isBusy) {
-        return this.buildEvent(
-          "CAPTURING",
-          null,
-          1,
-          false,
-          null,
-          "Reconocedor ocupado procesando ventana previa"
-        );
-      }
-      this.isBusy = true;
-      const startTime = Date.now();
-      try {
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => {
-            reject(new Error(`ABSOLUTE_TIMEOUT_EXCEEDED: Operaci\xF3n super\xF3 el l\xEDmite de ${this.totalBudgetMs} ms`));
-          }, this.totalBudgetMs);
-        });
-        const recognitionPromise = this.executePipeline(audioPcm, sampleRate, startTime);
-        const result = await Promise.race([recognitionPromise, timeoutPromise]);
-        this.isBusy = false;
-        return result;
-      } catch (err) {
-        this.isBusy = false;
-        const error = err;
-        const elapsed = Date.now() - startTime;
-        if ((_a = error.message) == null ? void 0 : _a.includes("ABSOLUTE_TIMEOUT_EXCEEDED")) {
-          const event = this.buildEvent(
-            "TIMEOUT_FALLBACK",
-            null,
-            1,
-            false,
-            {
-              rmsDbfs: -96,
-              peakDbfs: -96,
-              isClipping: false,
-              durationMs: 0,
-              sampleRate: 8e3,
-              environment: this.environment,
-              latencyMs: elapsed
-            },
-            `Fallback preventivo: la b\xFAsqueda excedi\xF3 el presupuesto absoluto de ${this.totalBudgetMs} ms (${elapsed} ms transcurridos)`
-          );
-          this.notifyListener(event);
-          return event;
-        }
-        const errorEvent = this.buildEvent(
-          "ERROR",
-          null,
-          1,
-          false,
-          null,
-          `Fallo en el pipeline de reconocimiento: ${error.message || "Error desconocido"}`
-        );
-        this.notifyListener(errorEvent);
-        return errorEvent;
-      }
-    }
-    /**
-     * Pipeline de ejecución concurrente C++ Native DSP + Parallel Local/Remote matching
-     */
-    async executePipeline(audioPcm, sampleRate, startTime) {
-      const dspResult = await this.invokeNativeDsp(audioPcm, this.environment, sampleRate);
-      const dspDuration = Date.now() - startTime;
-      if (!dspResult || !dspResult.isValid) {
-        return this.buildEvent(
-          "NO_MATCH",
-          null,
-          1,
-          false,
-          null,
-          "El buffer procesado no contiene suficiente energ\xEDa o huellas v\xE1lidas"
-        );
-      }
-      const telemetry = {
-        rmsDbfs: dspResult.telemetry.rmsDbfs,
-        peakDbfs: dspResult.telemetry.peakDbfs,
-        isClipping: dspResult.telemetry.isClipping,
-        durationMs: dspResult.telemetry.durationMs,
-        sampleRate: dspResult.telemetry.sampleRate,
-        environment: this.environment,
-        latencyMs: dspDuration
-      };
-      const localPromise = this.queryLocalOlaf(dspResult.olafFingerprint, dspResult.landmarksCount);
-      const remotePromise = this.queryRemoteGateway(dspResult.acrcloudFingerprint);
-      const [localSettled, remoteSettled] = await Promise.allSettled([localPromise, remotePromise]);
-      const localMatch = localSettled.status === "fulfilled" ? localSettled.value : null;
-      const remoteMatch = remoteSettled.status === "fulfilled" ? remoteSettled.value : null;
-      const bestCandidate = this.selectBestCandidate(localMatch, remoteMatch);
-      telemetry.latencyMs = Date.now() - startTime;
-      if (!bestCandidate) {
-        const event2 = this.buildEvent(
-          "NO_MATCH",
-          null,
-          1,
-          false,
-          telemetry,
-          "Sin coincidencias en cat\xE1logo local ni remoto"
-        );
-        this.notifyListener(event2);
-        return event2;
-      }
-      const { rho, pitchShiftSuspected } = this.calculateTemporalCoherence(bestCandidate);
-      const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry);
-      this.notifyListener(event);
-      if (event.state === "ESCALATE_PHASE2" && this.autoRescuePhase2) {
-        this.triggerPhase2Rescue(event, audioPcm).catch((err) => {
-          console.error("[Phase1FastRecognizer] Error no capturado en rescate Fase 2:", err);
-        });
-      }
-      return event;
-    }
-    /**
-     * Orquesta el Rescate Neuronal de Fase 2 (GPU Cloud)
-     * Puede invocarse de manera automática ante ESCALATE_PHASE2 o explícitamente desde la UI.
-     */
-    async triggerPhase2Rescue(escalationEvent, fallbackAudio) {
-      var _a, _b, _c, _d, _e, _f;
-      const startTime = Date.now();
-      let reason = "TIME_DRIFT_SUSPECTED_PITCH";
-      if (escalationEvent.pitchShiftSuspected) {
-        reason = "TIME_DRIFT_SUSPECTED_PITCH";
-      } else if (escalationEvent.match && escalationEvent.match.score < this.probationMinScore) {
-        reason = "LOW_CONFIDENCE_PROBATION_EXHAUSTED";
-      } else {
-        reason = "MANUAL_RESCUE_TRIGGER";
-      }
-      this.emitState(
-        "RESCUING_PHASE2",
-        escalationEvent.match,
-        escalationEvent.rho,
-        true,
-        escalationEvent.telemetry,
-        `\u{1F680} Rescate Neuronal Fase 2 activo: aislando stems y corrigiendo pitch-shift en GPU (Motivo: ${reason})...`
-      );
-      const rescueResult = await this.rescueClient.rescueTrack({
-        reason,
-        rho: escalationEvent.rho,
-        environment: this.environment,
-        candidateHint: escalationEvent.match ? {
-          artist: escalationEvent.match.artist,
-          title: escalationEvent.match.title,
-          score: escalationEvent.match.score
-        } : null,
-        timestampQueryMs: escalationEvent.timestamp
-      });
-      const elapsed = Date.now() - startTime;
-      const telemetry = {
-        rmsDbfs: (_b = (_a = escalationEvent.telemetry) == null ? void 0 : _a.rmsDbfs) != null ? _b : -16,
-        peakDbfs: (_d = (_c = escalationEvent.telemetry) == null ? void 0 : _c.peakDbfs) != null ? _d : -1,
-        isClipping: (_f = (_e = escalationEvent.telemetry) == null ? void 0 : _e.isClipping) != null ? _f : false,
-        durationMs: 1e4,
-        sampleRate: 16e3,
-        environment: this.environment,
-        latencyMs: elapsed
-      };
-      if (rescueResult.success && rescueResult.match) {
-        const confirmedMatch = {
-          title: rescueResult.match.title,
-          artist: rescueResult.match.artist,
-          album: rescueResult.match.album,
-          label: rescueResult.match.label,
-          score: rescueResult.match.score,
-          playOffsetMs: rescueResult.match.playOffsetMs || 0,
-          timestampQueryMs: Date.now(),
-          source: rescueResult.match.source,
-          genres: rescueResult.match.genres,
-          stemIsolated: rescueResult.match.stemIsolated,
-          tempoWarpApplied: rescueResult.match.tempoWarpApplied
-        };
-        const confirmedEvent = this.buildEvent(
-          "MATCH_CONFIRMED",
-          confirmedMatch,
-          escalationEvent.rho,
-          false,
-          telemetry,
-          `\u2713 Pista identificada mediante Rescate Neuronal GPU (${confirmedMatch.artist} - ${confirmedMatch.title}, Stem: ${confirmedMatch.stemIsolated || "mix"}, Warp: ${confirmedMatch.tempoWarpApplied ? confirmedMatch.tempoWarpApplied + "%" : "0%"})`
-        );
-        this.lastConfirmedTrack = confirmedMatch;
-        this.notifyListener(confirmedEvent);
-        return confirmedEvent;
-      }
-      const unidentifiedEvent = this.buildEvent(
-        "UNIDENTIFIED_ID",
-        null,
-        escalationEvent.rho,
-        escalationEvent.pitchShiftSuspected,
-        telemetry,
-        `\u274C UNIDENTIFIED_ID: Pista no identificada tras agotar escaneo r\xE1pido y rescate neuronal (${rescueResult.errorMessage || "Sin coincidencias en cat\xE1logo vectorial"}).`
-      );
-      this.notifyListener(unidentifiedEvent);
-      return unidentifiedEvent;
-    }
-    /**
-     * Cálculo de Coherencia Temporal rho:
-     * rho = delta_db / delta_sample
-     * Si el DJ varió el pitch/fader de tempo (ej. +/- 5%), delta_db se estira o comprime
-     * respecto a delta_sample, provocando que rho quede fuera de [0.96, 1.04].
-     */
-    calculateTemporalCoherence(candidate) {
-      const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
-      const existingRecord = this.probationBuffer.get(candidateKey);
-      if (!existingRecord) {
-        if (this.lastConfirmedTrack && `${this.lastConfirmedTrack.artist} - ${this.lastConfirmedTrack.title}`.toLowerCase() === candidateKey) {
-          const deltaSample2 = candidate.timestampQueryMs - this.lastConfirmedTrack.timestampQueryMs;
-          const deltaDb2 = candidate.playOffsetMs - this.lastConfirmedTrack.playOffsetMs;
-          if (deltaSample2 > 100) {
-            const rho2 = Math.abs(deltaDb2 / deltaSample2);
-            const pitchShiftSuspected2 = rho2 < 0.96 || rho2 > 1.04;
-            return { rho: Number(rho2.toFixed(4)), pitchShiftSuspected: pitchShiftSuspected2 };
-          }
-        }
-        return { rho: 1, pitchShiftSuspected: false };
-      }
-      const deltaSample = candidate.timestampQueryMs - existingRecord.candidate.timestampQueryMs;
-      const deltaDb = candidate.playOffsetMs - existingRecord.candidate.playOffsetMs;
-      if (deltaSample <= 0) {
-        return { rho: 1, pitchShiftSuspected: false };
-      }
-      const rho = Math.abs(deltaDb / deltaSample);
-      const pitchShiftSuspected = rho < 0.96 || rho > 1.04;
-      return { rho: Number(rho.toFixed(4)), pitchShiftSuspected };
-    }
-    /**
-     * Máquina de Estados de Reconocimiento y Escalado
-     */
-    evaluateStateMachine(candidate, rho, pitchShiftSuspected, telemetry) {
-      const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
-      const minConfirmedScore = this.environment === "club" ? this.minScoreClub : this.minScoreStudio;
-      if (pitchShiftSuspected) {
-        const shiftPct = ((rho - 1) * 100).toFixed(1);
-        return this.buildEvent(
-          "ESCALATE_PHASE2",
-          candidate,
-          rho,
-          true,
-          telemetry,
-          `Pitch-shift detectado (rho: ${rho}, variaci\xF3n estimada ${shiftPct}%). Escalando a Fase 2 para alineaci\xF3n espectral.`
-        );
-      }
-      if (candidate.score >= minConfirmedScore) {
-        this.probationBuffer.delete(candidateKey);
-        this.lastConfirmedTrack = candidate;
-        return this.buildEvent(
-          "MATCH_CONFIRMED",
-          candidate,
-          rho,
-          false,
-          telemetry,
-          `\u2713 Pista identificada con alta certeza (${candidate.score}% en modo ${this.environment.toUpperCase()})`
-        );
-      }
-      if (candidate.score >= this.probationMinScore) {
-        const existing = this.probationBuffer.get(candidateKey);
-        if (existing && existing.strideCount >= 1) {
-          this.probationBuffer.delete(candidateKey);
-          this.lastConfirmedTrack = candidate;
-          return this.buildEvent(
-            "MATCH_CONFIRMED",
-            candidate,
-            rho,
-            false,
-            telemetry,
-            `\u2713 Confirmaci\xF3n por consenso temporal acumulado en stride 2 (${candidate.score}%)`
-          );
-        }
-        this.probationBuffer.set(candidateKey, {
-          candidate,
-          observedAtMs: Date.now(),
-          strideCount: existing ? existing.strideCount + 1 : 1
-        });
-        return this.buildEvent(
-          "PROBATION_BUFFER",
-          candidate,
-          rho,
-          false,
-          telemetry,
-          `Score preliminar (${candidate.score}%). En probaci\xF3n: esperando confirmaci\xF3n en el pr\xF3ximo stride de 2s.`
-        );
-      }
-      return this.buildEvent(
-        "NO_MATCH",
-        null,
-        rho,
-        false,
-        telemetry,
-        `Coincidencia con score bajo (${candidate.score}% < ${this.probationMinScore}%). Continuando escaneo.`
-      );
-    }
-    /**
-     * Invocación del bridge nativo Zero-Copy JSI / N-API
-     */
-    async invokeNativeDsp(audio, profile, sampleRate) {
-      const globalJsi = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
-      if (globalJsi && typeof globalJsi.processAudioBuffer === "function") {
-        return globalJsi.processAudioBuffer(audio, profile, sampleRate);
-      }
-      if (typeof window !== "undefined" && window.beatwaveCore) {
-        return window.beatwaveCore.processAudioBuffer(audio, profile, sampleRate);
-      }
-      try {
-        if (typeof process !== "undefined" && process.versions && process.versions.node) {
-          const nodeRequire = typeof __require === "function" ? __require : typeof module !== "undefined" && module.require ? module.require : null;
-          if (nodeRequire) {
-            const nodePath = "path";
-            const pathMod = nodeRequire(nodePath);
-            const nodeAddonPath = pathMod.resolve("native/build/beatwave_core.node");
-            const napiModule = nodeRequire(nodeAddonPath);
-            return napiModule.processAudioBuffer(audio, profile, sampleRate);
-          }
-        }
-      } catch {
-      }
-      return {
-        telemetry: {
-          rmsDbfs: -16,
-          peakDbfs: -2.5,
-          isClipping: false,
-          durationMs: 1e4,
-          sampleRate: 8e3,
-          environment: profile
-        },
-        acrcloudFingerprint: new Uint8Array(2532).fill(170),
-        olafFingerprint: new Uint8Array(4096).fill(85),
-        landmarksCount: 512,
-        isValid: true
-      };
-    }
-    /**
-     * Búsqueda en catálogo local Olaf LMDB
-     */
-    async queryLocalOlaf(olafFingerprint, landmarksCount) {
-      if (!olafFingerprint || landmarksCount === 0) return null;
-      const globalCore = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
-      if (globalCore && typeof globalCore.matchOlafLandmarks === "function") {
-        return globalCore.matchOlafLandmarks(olafFingerprint);
-      }
-      return null;
-    }
-    /**
-     * Búsqueda en catálogo remoto vía Cloudflare Worker Gateway
-     */
-    async queryRemoteGateway(acrcloudFingerprint) {
-      var _a, _b, _c, _d, _e, _f;
-      if (!acrcloudFingerprint || acrcloudFingerprint.byteLength === 0) return null;
-      const response = await fetch(this.workerGatewayUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "X-Client-Platform": "BeatWave-Hybrid-TS"
-        },
-        body: acrcloudFingerprint
-      });
-      if (!response.ok) {
-        return null;
-      }
-      const data = await response.json();
-      const music = (_b = (_a = data == null ? void 0 : data.metadata) == null ? void 0 : _a.music) == null ? void 0 : _b[0];
-      if (!music) {
-        return null;
-      }
-      return {
-        title: music.title || "Desconocido",
-        artist: ((_d = (_c = music.artists) == null ? void 0 : _c[0]) == null ? void 0 : _d.name) || "Artista Desconocido",
-        album: (_e = music.album) == null ? void 0 : _e.name,
-        acrid: music.acrid,
-        score: Number(music.score || 85),
-        playOffsetMs: Number(music.play_offset_ms || 3e4),
-        timestampQueryMs: Date.now(),
-        source: "remote_acrcloud",
-        label: music.label,
-        genres: ((_f = music.genres) == null ? void 0 : _f.map((g) => g.name)) || []
-      };
-    }
-    /**
-     * Selección del mejor candidato entre resultado local y remoto
-     */
-    selectBestCandidate(local, remote) {
-      if (local && !remote) return local;
-      if (!local && remote) return remote;
-      if (!local && !remote) return null;
-      const adjustedLocalScore = local.score + 4;
-      return adjustedLocalScore >= remote.score ? local : remote;
-    }
-    buildEvent(state, match, rho, pitchShiftSuspected, telemetry, message) {
-      return {
-        state,
-        match,
-        rho,
-        pitchShiftSuspected,
-        telemetry,
-        message,
-        timestamp: Date.now()
-      };
-    }
-    emitState(state, match, rho, pitchShiftSuspected, telemetry, message) {
-      const ev = this.buildEvent(state, match, rho, pitchShiftSuspected, telemetry, message);
-      this.notifyListener(ev);
-    }
-    notifyListener(event) {
-      if (this.onStateChange) {
-        try {
-          this.onStateChange(event);
-        } catch (e) {
-          console.error("[Phase1FastRecognizer] Error en listener onStateChange:", e);
-        }
-      }
-    }
-  };
-
   // web/js/data/constants.js
-  var NV2_COLORS = [
+  var NV2_COLORS2 = [
     { id: 1, name: "Kick / Intro", color: "#ef4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", time: "00:00.215" },
     { id: 2, name: "Hi-Hats In", color: "#f97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", time: "00:15.110" },
     { id: 3, name: "Bassline", color: "#eab308", text: "text-yellow-400", border: "border-yellow-500/50", bg: "bg-yellow-500/10", time: "00:30.005" },
@@ -2940,15 +2261,6 @@
     ]
   };
   var DJ_GENRES_LIST = Object.keys(TAXONOMY_TREE);
-  var DJ_VERSIONS_LIST = [
-    "Extended Mix",
-    "Intro / Outro",
-    "Remix / Club Mix",
-    "Mashup / Bootleg",
-    "Transition",
-    "Acapella / DIY",
-    "Short Edit / Radio"
-  ];
   var AI_PROMPT_CHIPS = [
     { label: "\u{1F528} Hard Techno 150 BPM Ca\xF1a", query: "hard techno 150 bpm a tope de ca\xF1a" },
     { label: "\u26A1 Techno Peak Time 132 BPM", query: "techno peak time driving 132 bpm" },
@@ -2976,7 +2288,7 @@
       cover: "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       duration: "05:42",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_1",
@@ -2992,7 +2304,7 @@
       cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       duration: "06:40",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_2",
@@ -3008,7 +2320,7 @@
       cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
       duration: "07:15",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_3",
@@ -3024,7 +2336,7 @@
       cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
       duration: "05:50",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_4",
@@ -3040,7 +2352,7 @@
       cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
       duration: "03:45",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_5",
@@ -3056,7 +2368,7 @@
       cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
       duration: "03:12",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_6",
@@ -3072,7 +2384,7 @@
       cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
       duration: "04:30",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_7",
@@ -3088,7 +2400,7 @@
       cover: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
       duration: "06:55",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_8",
@@ -3104,7 +2416,7 @@
       cover: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
       duration: "06:10",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_9",
@@ -3120,7 +2432,7 @@
       cover: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
       duration: "03:50",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_10",
@@ -3136,7 +2448,7 @@
       cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
       duration: "05:15",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_11",
@@ -3152,7 +2464,7 @@
       cover: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
       duration: "07:40",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     },
     {
       id: "cat_12",
@@ -3168,7 +2480,7 @@
       cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=300&fit=crop",
       preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
       duration: "05:30",
-      cues: NV2_COLORS
+      cues: NV2_COLORS2
     }
   ];
   function parseAIDJQuery(query) {
@@ -4062,7 +3374,7 @@
   var { useState: useState5, useEffect: useEffect7, useRef: useRef8, useCallback: useCallback2 } = React;
   var RekordboxWaveform2 = ({
     track,
-    cues = NV2_COLORS,
+    cues = NV2_COLORS2,
     duration = "06:12",
     onSeekTrack,
     playProgress = 0,
@@ -4352,7 +3664,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
   var { useState: useState6, useEffect: useEffect8, useRef: useRef9, useCallback: useCallback3, useMemo: useMemo2 } = React;
   var ZoomableRekordboxWaveform = ({
     track,
-    cues = NV2_COLORS,
+    cues = NV2_COLORS2,
     duration = "06:12",
     onSeekTrack,
     playProgress = 0,
@@ -4524,7 +3836,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       activeCues.slice(0, 8).forEach((cue, idx) => {
         const pct = cue.pct !== void 0 ? cue.pct : parseTimeToMs2(cue.time || "0") / durMs;
         const cx = Math.max(0, Math.min(mWidth, pct * mWidth));
-        const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4");
+        const color = cue.color || (NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#06b6d4");
         ctx.fillStyle = color;
         ctx.fillRect(cx - 1, 0, 2, mHeight);
       });
@@ -4763,7 +4075,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           const padNum = cue.id !== void 0 ? cue.id : idx + 1;
           const cuePct = cue.pct !== void 0 ? cue.pct * 100 : parseTimeToMs2(cue.time || "0") / durMs * 100;
           const isSelected = selectedCueId === padNum;
-          const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#ef4444");
+          const color = cue.color || (NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#ef4444");
           const staggerDelay = `${idx * 110}ms`;
           return /* @__PURE__ */ React.createElement(
             "div",
@@ -4833,7 +4145,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
 
   // web/js/waveforms/FooterMasterWaveform.jsx
   var { useEffect: useEffect9, useRef: useRef10 } = React;
-  var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS, t = (k) => k }) => {
+  var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS2, t = (k) => k }) => {
     const canvasRef = useRef10(null);
     const containerRef = useRef10(null);
     const bitmapRef = useRef10(null);
@@ -5111,7 +4423,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     isOpen,
     onClose,
     track,
-    cues = NV2_COLORS,
+    cues = NV2_COLORS2,
     duration = "05:00",
     onUpdateCues,
     selectedCueId = 1,
@@ -5549,7 +4861,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
 
   // web/js/modals/CamelotWheelModal.jsx
   var { useState: useState10 } = React;
-  var CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
+  var CamelotWheelModal2 = ({ isOpen, onClose, currentKey, onSelectKey }) => {
     if (!isOpen) return null;
     const currentData = CAMELOT_WHEEL_DATA[currentKey] || CAMELOT_WHEEL_DATA["8A"];
     const compatibleKeys = [
@@ -9987,8 +9299,3194 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     ))))));
   };
 
+  // web/js/workspaces/TaxonomyWorkspace.jsx
+  var { useState: useState20, useEffect: useEffect21, useRef: useRef18, useMemo: useMemo7, useCallback: useCallback8 } = React;
+  var TaxonomyWorkspace = ({
+    tracks = [],
+    onTracksUpdated,
+    onNavigateTab,
+    onPlayTrack,
+    nowPlayingTrack = null,
+    isPlaying = false,
+    onTogglePlay = () => {
+    },
+    onSelectTrackForCues,
+    onSendToSpotify,
+    onAddTrackToSpotify,
+    onAddTracksToSpotify,
+    onRemoveTrack
+  }) => {
+    const [activeSubView, setActiveSubView] = useState20("search");
+    const [searchScope, setSearchScope] = useState20("all");
+    const [isSearchingOnline, setIsSearchingOnline] = useState20(false);
+    const [onlineResults, setOnlineResults] = useState20([]);
+    const [searchLocalResults, setSearchLocalResults] = useState20([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState20(false);
+    const [selectedTaxIds, setSelectedTaxIds] = useState20(/* @__PURE__ */ new Set());
+    const [displayMode, setDisplayMode] = useState20("table");
+    const [taxSortField, setTaxSortField] = useState20("matchScore");
+    const [taxSortDir, setTaxSortDir] = useState20("desc");
+    const [taxFilterSearch, setTaxFilterSearch] = useState20("");
+    const [taxFilterGenre, setTaxFilterGenre] = useState20("ALL");
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState20("ALL");
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState20("ALL");
+    const [taxFilterDance, setTaxFilterDance] = useState20("ALL");
+    const handleSortTax = (field) => {
+      setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
+      setTaxSortField(field);
+    };
+    const renderSortArrowTax = (field) => {
+      if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
+      return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
+    };
+    const [aiQuery, setAiQuery] = useState20("");
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState20("ALL");
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState20("ALL");
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState20("ALL");
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState20("ALL");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState20("ALL");
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState20("ALL");
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState20(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState20(false);
+    const [feedbackMsg, setFeedbackMsg] = useState20("");
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState20(false);
+    const [activeTagTab, setActiveTagTab] = useState20("bpm");
+    const handleRemoveToken = (tok) => {
+      if (!tok) return;
+      let newQuery = aiQuery;
+      const matchStr = tok.rawMatch || tok.label;
+      if (matchStr) {
+        newQuery = newQuery.replace(new RegExp(`\\b${matchStr.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\b`, "i"), "");
+        if (newQuery === aiQuery) {
+          newQuery = newQuery.replace(new RegExp(matchStr.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&"), "i"), "");
+        }
+      }
+      newQuery = newQuery.replace(/\s+/g, " ").trim();
+      setAiQuery(newQuery);
+      handleEjecutarBusqueda(newQuery);
+    };
+    const handleAddTagToQuery = (tagStr) => {
+      const newQuery = (aiQuery ? `${aiQuery} ${tagStr}` : tagStr).trim();
+      setAiQuery(newQuery);
+      setIsAddTagMenuOpen(false);
+      handleEjecutarBusqueda(newQuery);
+    };
+    const [rutaBase, setRutaBase] = useState20("/Users/admin/Music/mi musica");
+    const [modo, setModo] = useState20("copy");
+    const [isRouting, setIsRouting] = useState20(false);
+    const [routeProgress, setRouteProgress] = useState20(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState20("");
+    const [resultSummary, setResultSummary] = useState20(null);
+    const [expandedGenre, setExpandedGenre] = useState20("Techno");
+    const [searchTerm, setSearchTerm] = useState20("");
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState20(null);
+    useEffect21(() => {
+      handleEjecutarBusqueda("");
+    }, []);
+    const parsedQuery = useMemo7(() => parseAIDJQuery(aiQuery), [aiQuery]);
+    const localTracks = useMemo7(() => {
+      return (Array.isArray(tracks) ? tracks : []).map((t) => ({
+        ...t,
+        isLocal: true,
+        displayTitle: t.t || t.title || "Pista Local",
+        displayArtist: t.a || t.artist || "Artista",
+        displayAlbum: t.album || "",
+        displayBpm: parseFloat(t.b || t.bpm || 128),
+        displayKey: (t.k || t.key || "8A").toUpperCase(),
+        displayGenre: t.genre || "House",
+        displaySubgenre: t.subgenre || "Tech House",
+        displayVersion: t.version || "Extended Mix",
+        displayMood: t.mood_subtag || t.mood || "Peak Time / Pista",
+        displayCover: t.cover || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null)
+      }));
+    }, [tracks]);
+    const catalogTracks = useMemo7(() => {
+      return DJ_CURATED_CATALOG.map((t) => ({
+        ...t,
+        isCatalog: true,
+        displayTitle: t.title,
+        displayArtist: t.artist,
+        displayAlbum: t.album || "",
+        displayBpm: t.bpm,
+        displayKey: t.key,
+        displayGenre: t.genre,
+        displaySubgenre: t.subgenre,
+        displayVersion: t.version,
+        displayMood: t.mood,
+        displayCover: t.cover
+      }));
+    }, []);
+    const allPoolTracks = useMemo7(() => {
+      const combinedLocals = searchLocalResults.length > 0 ? searchLocalResults : localTracks;
+      const combinedOnline = onlineResults.length > 0 ? onlineResults : catalogTracks;
+      if (searchScope === "local") {
+        return combinedLocals;
+      } else if (searchScope === "online") {
+        return combinedOnline;
+      } else {
+        return [...combinedLocals, ...combinedOnline];
+      }
+    }, [localTracks, searchLocalResults, onlineResults, catalogTracks, searchScope]);
+    const handleEjecutarBusqueda = async (queryOverride) => {
+      const q = (queryOverride !== void 0 ? queryOverride : aiQuery).trim();
+      setIsSearchingOnline(true);
+      setHasExecutedSearch(true);
+      const scopeLabel = searchScope === "local" ? "Biblioteca Local" : searchScope === "online" ? "Record Pool Online" : "Local y Pool Online";
+      setFeedbackMsg(`Buscando ${q ? `"${q}"` : "cat\xE1logo"} en ${scopeLabel}...`);
+      try {
+        if (window.eel && window.eel.buscar_temas_taxonomia) {
+          const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 40)();
+          if (res && res.status === "ok") {
+            const onlineItems = (res.online || []).map((item) => ({
+              ...item,
+              isOnlinePool: true,
+              isFromSearch: true,
+              displayTitle: item.title,
+              displayArtist: item.artist,
+              displayAlbum: item.album || "",
+              displayBpm: parseFloat(item.bpm || 128),
+              displayKey: (item.key || "8A").toUpperCase(),
+              displayGenre: item.genre || "House",
+              displaySubgenre: item.subgenre || "Tech House",
+              displayVersion: item.version || "Original Mix",
+              displayMood: item.mood || "Peak Time / Pista",
+              displayCover: item.cover,
+              matchScore: 98
+            }));
+            const localItems = (res.locales || []).map((item) => ({
+              ...item,
+              isLocal: true,
+              isLocalSearch: true,
+              isFromSearch: true,
+              displayTitle: item.title || item.t || "Pista Local",
+              displayArtist: item.artist || item.a || "Artista Local",
+              displayAlbum: item.album || "",
+              displayBpm: parseFloat(item.bpm || item.b || 128),
+              displayKey: (item.key || item.k || "8A").toUpperCase(),
+              displayGenre: item.genre || "House",
+              displaySubgenre: item.subgenre || "Tech House",
+              displayVersion: item.version || "Extended Mix",
+              displayMood: item.mood || "Peak Time / Pista",
+              displayCover: item.cover || (item.path ? `/cover?path=${encodeURIComponent(item.path)}` : null),
+              matchScore: 98
+            }));
+            setOnlineResults(onlineItems);
+            setSearchLocalResults(localItems);
+            const totalFound = localItems.length + onlineItems.length;
+            setFeedbackMsg(`\u2713 Encontrados ${totalFound} temas (${localItems.length} en disco + ${onlineItems.length} en Record Pool)`);
+          }
+        }
+      } catch (err) {
+        console.error("Error al buscar temas en taxonom\xEDa:", err);
+        setFeedbackMsg(`\u2713 B\xFAsqueda filtrada en pistas de biblioteca.`);
+      } finally {
+        setIsSearchingOnline(false);
+        setTimeout(() => setFeedbackMsg(""), 4500);
+      }
+    };
+    const searchResults = useMemo7(() => {
+      const hasTextQuery = Boolean(aiQuery && aiQuery.trim().length > 0);
+      const qLower = (aiQuery || "").toLowerCase().trim();
+      const queryWords = qLower.split(/\s+/).filter((w) => w.length >= 2 && !["para", "con", "del", "the", "los", "las", "por", "and"].includes(w));
+      let scored = allPoolTracks.map((trk) => {
+        let score = 0;
+        let matchedReasons = [];
+        const trkGenre = (trk.displayGenre || "").toLowerCase();
+        const trkSubgenre = (trk.displaySubgenre || "").toLowerCase();
+        const trkBpm = trk.displayBpm || 128;
+        const trkKey = (trk.displayKey || "").toUpperCase();
+        const trkTitle = (trk.displayTitle || "").toLowerCase();
+        const trkArtist = (trk.displayArtist || "").toLowerCase();
+        const trkAlbum = (trk.displayAlbum || "").toLowerCase();
+        const trkVersion = (trk.displayVersion || "").toLowerCase();
+        const trkMood = (trk.displayMood || "").toLowerCase();
+        if (hasTextQuery) {
+          if (trk.isFromSearch) {
+            score += 80;
+            matchedReasons.push("Resultado directo");
+          }
+          if (trkTitle.includes(qLower) || trkArtist.includes(qLower) || trkAlbum.includes(qLower) || trkGenre.includes(qLower) || trkSubgenre.includes(qLower)) {
+            score += 65;
+            matchedReasons.push("Coincidencia directa");
+          }
+          if (parsedQuery.genre && trkGenre.includes(parsedQuery.genre.toLowerCase())) {
+            score += 35;
+            matchedReasons.push(parsedQuery.genre);
+          }
+          if (parsedQuery.subgenre && (trkSubgenre.includes(parsedQuery.subgenre.toLowerCase()) || trkTitle.includes(parsedQuery.subgenre.toLowerCase()))) {
+            score += 30;
+            matchedReasons.push(parsedQuery.subgenre);
+          }
+          if (parsedQuery.targetBpm && trkBpm > 0) {
+            const diff = Math.abs(trkBpm - parsedQuery.targetBpm);
+            if (diff <= 1.5) {
+              score += 30;
+              matchedReasons.push(`${trkBpm} BPM`);
+            } else if (diff <= 3.5) {
+              score += 20;
+              matchedReasons.push(`\xB1${Math.round(diff)} BPM`);
+            } else if (diff <= 6) {
+              score += 10;
+            }
+          } else if (parsedQuery.minBpm && parsedQuery.maxBpm && trkBpm >= parsedQuery.minBpm && trkBpm <= parsedQuery.maxBpm) {
+            score += 25;
+            matchedReasons.push(`${trkBpm} BPM`);
+          }
+          if (parsedQuery.key) {
+            if (trkKey === parsedQuery.key) {
+              score += 30;
+              matchedReasons.push(`Key ${trkKey}`);
+            } else if (parsedQuery.compatibleKeys.includes(trkKey)) {
+              score += 20;
+              matchedReasons.push(`Harmonic ${trkKey}`);
+            }
+          }
+          if (parsedQuery.version) {
+            const vLower = parsedQuery.version.toLowerCase();
+            if (trkVersion.includes(vLower) || trkTitle.includes(vLower)) {
+              score += 20;
+              matchedReasons.push(parsedQuery.version);
+            }
+          }
+          if (parsedQuery.mood) {
+            const mLower = parsedQuery.mood.toLowerCase();
+            if (trkMood.includes(mLower) || parsedQuery.mood.includes("Previa") && (trkBpm < 118 || trkMood.includes("warm")) || parsedQuery.mood.includes("Pista") && (trkBpm >= 124 || trkMood.includes("peak"))) {
+              score += 15;
+              matchedReasons.push(parsedQuery.mood);
+            }
+          }
+          queryWords.forEach((word) => {
+            if (trkArtist.includes(word)) {
+              score += 35;
+              matchedReasons.push(`Artista: ${word}`);
+            }
+            if (trkTitle.includes(word)) {
+              score += 30;
+              matchedReasons.push(`T\xEDtulo: ${word}`);
+            }
+            if (trkAlbum.includes(word)) {
+              score += 25;
+              matchedReasons.push(`\xC1lbum: ${word}`);
+            }
+            if (trkGenre.includes(word) || trkSubgenre.includes(word)) {
+              score += 25;
+              matchedReasons.push(`Estilo: ${word}`);
+            }
+          });
+        } else {
+          score = 85;
+        }
+        let matchesManual = true;
+        if (selectedGenreFilter !== "ALL" && !trkGenre.includes(selectedGenreFilter.toLowerCase())) {
+          matchesManual = false;
+        }
+        if (selectedSubgenreFilterUI !== "ALL" && !trkSubgenre.includes(selectedSubgenreFilterUI.toLowerCase())) {
+          matchesManual = false;
+        }
+        if (selectedVersionFilter !== "ALL") {
+          const sv = selectedVersionFilter.toLowerCase();
+          if (!trkVersion.includes(sv) && !trkTitle.includes(sv)) matchesManual = false;
+        }
+        if (selectedBpmFilter !== "ALL") {
+          if (selectedBpmFilter === "<120" && trkBpm >= 120) matchesManual = false;
+          if (selectedBpmFilter === "120-125" && (trkBpm < 120 || trkBpm > 125)) matchesManual = false;
+          if (selectedBpmFilter === "126-129" && (trkBpm < 126 || trkBpm > 129)) matchesManual = false;
+          if (selectedBpmFilter === "130-135" && (trkBpm < 130 || trkBpm > 135)) matchesManual = false;
+          if (selectedBpmFilter === ">135" && trkBpm <= 135) matchesManual = false;
+        }
+        if (selectedKeyFilter !== "ALL" && trkKey !== selectedKeyFilter) {
+          matchesManual = false;
+        }
+        if (selectedMoodFilter !== "ALL" && !trkMood.includes(selectedMoodFilter.toLowerCase())) {
+          matchesManual = false;
+        }
+        if (taxFilterSearch) {
+          const hTerm = taxFilterSearch.toLowerCase();
+          const mSearch = trkTitle.includes(hTerm) || trkArtist.includes(hTerm) || trkAlbum.includes(hTerm);
+          if (!mSearch) matchesManual = false;
+        }
+        if (taxFilterGenre !== "ALL") {
+          if (!trkGenre.includes(taxFilterGenre.toLowerCase())) matchesManual = false;
+        }
+        if (taxFilterOrigin !== "ALL") {
+          const isLoc = Boolean(trk.isLocal || trk.is_local);
+          if (taxFilterOrigin === "local" && !isLoc) matchesManual = false;
+          if (taxFilterOrigin === "online" && isLoc) matchesManual = false;
+        }
+        if (taxFilterEnergy !== "ALL") {
+          const eVal = Number(trk.energy || trk.e || 80);
+          if (taxFilterEnergy === "HIGH" && eVal < 80) matchesManual = false;
+          if (taxFilterEnergy === "MED" && (eVal < 65 || eVal >= 80)) matchesManual = false;
+          if (taxFilterEnergy === "LOW" && eVal >= 65) matchesManual = false;
+        }
+        if (taxFilterDance !== "ALL") {
+          const dVal = Number(trk.danceability || trk.dance || 80);
+          if (taxFilterDance === "HIGH" && dVal < 80) matchesManual = false;
+          if (taxFilterDance === "MED" && (dVal < 65 || dVal >= 80)) matchesManual = false;
+          if (taxFilterDance === "LOW" && dVal >= 65) matchesManual = false;
+        }
+        const finalPct = Math.min(100, Math.max(10, score));
+        return {
+          ...trk,
+          matchScore: finalPct,
+          matchedReasons,
+          matchesManual
+        };
+      }).filter((t) => t.matchesManual && (!hasTextQuery || t.matchScore >= 15 || t.isFromSearch));
+      scored.sort((a, b) => {
+        let valA = a[taxSortField];
+        let valB = b[taxSortField];
+        if (taxSortField === "title") {
+          valA = a.displayTitle || "";
+          valB = b.displayTitle || "";
+        } else if (taxSortField === "artist") {
+          valA = a.displayArtist || "";
+          valB = b.displayArtist || "";
+        } else if (taxSortField === "album") {
+          valA = a.displayAlbum || "";
+          valB = b.displayAlbum || "";
+        } else if (taxSortField === "genre") {
+          valA = a.displayGenre || "";
+          valB = b.displayGenre || "";
+        } else if (taxSortField === "subgenre") {
+          valA = a.displaySubgenre || "";
+          valB = b.displaySubgenre || "";
+        } else if (taxSortField === "key") {
+          valA = a.displayKey || "";
+          valB = b.displayKey || "";
+        } else if (taxSortField === "origin") {
+          valA = Boolean(a.isLocal || a.is_local) ? "local" : "online";
+          valB = Boolean(b.isLocal || b.is_local) ? "local" : "online";
+        } else if (["matchScore", "displayBpm", "energy", "danceability"].includes(taxSortField)) {
+          valA = Number(valA || (taxSortField === "energy" ? a.energy || a.e : a.danceability || a.dance)) || 0;
+          valB = Number(valB || (taxSortField === "energy" ? b.energy || b.e : b.danceability || b.dance)) || 0;
+        }
+        if (typeof valA === "number" && typeof valB === "number") {
+          return taxSortDir === "asc" ? valA - valB : valB - valA;
+        }
+        return taxSortDir === "asc" ? String(valA || "").localeCompare(String(valB || "")) : String(valB || "").localeCompare(String(valA || ""));
+      });
+      return scored;
+    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxFilterEnergy, taxFilterDance, taxSortField, taxSortDir]);
+    const handleToggleTaxRow = (id) => {
+      setSelectedTaxIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    };
+    const allTaxSelected = searchResults.length > 0 && searchResults.every((t) => selectedTaxIds.has(t.id));
+    const handleToggleSelectAllTax = () => {
+      if (allTaxSelected) {
+        setSelectedTaxIds(/* @__PURE__ */ new Set());
+      } else {
+        setSelectedTaxIds(new Set(searchResults.map((t) => t.id)));
+      }
+    };
+    const handleAnadirADescargas = (trk) => {
+      if (!trk) return;
+      const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
+      if (addFn) {
+        addFn([trk], "taxonomy");
+        setFeedbackMsg(`\u2713 "${trk.displayTitle || trk.title}" a\xF1adido a Descargas (Record Pool). Redirigiendo a descargas...`);
+      } else if (onSendToSpotify) {
+        onSendToSpotify(trk.displayTitle || trk.title);
+      } else if (onNavigateTab) {
+        onNavigateTab("spotify");
+      }
+    };
+    const handleAnadirSeleccionadasADescargas = () => {
+      const seleccionadas = searchResults.filter((t) => selectedTaxIds.has(t.id));
+      if (seleccionadas.length === 0) return;
+      const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
+      if (addFn) {
+        addFn(seleccionadas, "taxonomy");
+        setFeedbackMsg(`\u2713 ${seleccionadas.length} pista(s) seleccionadas a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
+      } else if (onNavigateTab) {
+        onNavigateTab("spotify");
+      }
+    };
+    const handleAnadirTodasADescargas = () => {
+      if (searchResults.length === 0) return;
+      const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
+      if (addFn) {
+        addFn(searchResults, "taxonomy");
+        setFeedbackMsg(`\u2713 ${searchResults.length} pista(s) a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
+      } else if (onNavigateTab) {
+        onNavigateTab("spotify");
+      }
+    };
+    const handleCargarEnDeck = async (trk) => {
+      if (!trk) return;
+      const isCurrent = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path || nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title));
+      if (isCurrent && onTogglePlay) {
+        onTogglePlay();
+        return;
+      }
+      let streamUrl = trk.preview_url || trk.previewUrl || (trk.path && (trk.path.startsWith("http://") || trk.path.startsWith("https://")) ? trk.path : "");
+      let coverHd = trk.displayCover || trk.cover;
+      if (!streamUrl && !trk.path && !trk.f && window.eel && window.eel.resolver_stream_preescucha) {
+        try {
+          setFeedbackMsg(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
+          const res = await window.eel.resolver_stream_preescucha(trk.displayTitle || trk.title, trk.displayArtist || trk.artist)();
+          if (res && res.stream_url) {
+            streamUrl = res.stream_url;
+            if (res.cover) coverHd = res.cover;
+          }
+        } catch (err) {
+          console.warn("Fallo al resolver preescucha en taxonom\xEDa:", err);
+        }
+      }
+      const trackToPlay = {
+        ...trk,
+        id: trk.id || `tax_${Date.now()}`,
+        t: trk.displayTitle || trk.title || trk.t || "Audio Track",
+        title: trk.displayTitle || trk.title || trk.t || "Audio Track",
+        a: trk.displayArtist || trk.artist || trk.a || "Artista",
+        artist: trk.displayArtist || trk.artist || trk.a || "Artista",
+        album: trk.displayAlbum || trk.album || "",
+        b: trk.displayBpm || trk.bpm || trk.b || 128,
+        bpm: trk.displayBpm || trk.bpm || trk.b || 128,
+        k: trk.displayKey || trk.key || trk.k || "8A",
+        key: trk.displayKey || trk.key || trk.k || "8A",
+        cover: coverHd,
+        path: trk.path || trk.f || streamUrl || "",
+        f: trk.path || trk.f || "",
+        preview_url: streamUrl
+      };
+      if (onPlayTrack) {
+        onPlayTrack(trackToPlay, 0, true);
+        setFeedbackMsg(`\u2713 "${trackToPlay.title}" reproduciendo en Deck 1`);
+        setTimeout(() => setFeedbackMsg(""), 3500);
+      }
+    };
+    const handleAbrirEnHotCues = (trk) => {
+      if (!trk) return;
+      if (onSelectTrackForCues) {
+        onSelectTrackForCues(trk);
+      } else if (onNavigateTab) {
+        onNavigateTab("hotcues");
+      }
+    };
+    const handleApuntarEnLibreta = (trk) => {
+      try {
+        const saved = localStorage.getItem("beatwave_shazam_notebook");
+        const list = saved ? JSON.parse(saved) : [];
+        const exists = list.some((item) => item.title === trk.displayTitle && item.artist === trk.displayArtist);
+        if (!exists) {
+          const now = /* @__PURE__ */ new Date();
+          const item = {
+            title: trk.displayTitle,
+            artist: trk.displayArtist,
+            bpm: trk.displayBpm,
+            key: trk.displayKey,
+            genre: trk.displayGenre,
+            cover: trk.displayCover,
+            added_at: now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            notebook_id: Date.now()
+          };
+          list.unshift(item);
+          localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(list));
+          setFeedbackMsg(`\u2713 "${trk.displayTitle}" guardado en tu Libreta Digital.`);
+        } else {
+          setFeedbackMsg(`\u2139 "${trk.displayTitle}" ya estaba en tu libreta.`);
+        }
+        setTimeout(() => setFeedbackMsg(""), 3e3);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    const handleAsignarACrateIndividual = async (trk) => {
+      if (!trk) return;
+      try {
+        if (window.eel && window.eel.organizar_pista_en_crate) {
+          const res = await window.eel.organizar_pista_en_crate(trk, rutaBase, modo)();
+          if (res && res.status === "ok") {
+            setFeedbackMsg(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
+          } else {
+            setFeedbackMsg(`\u26A0 ${(res == null ? void 0 : res.msg) || "Error al enrutar pista"}`);
+          }
+          setTimeout(() => setFeedbackMsg(""), 3500);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    const handleSeleccionarDestino = async () => {
+      try {
+        if (window.eel && window.eel.seleccionar_directorio) {
+          const dir = await window.eel.seleccionar_directorio()();
+          if (dir) {
+            setRutaBase(dir);
+          }
+        }
+      } catch (err) {
+        console.error("Error al seleccionar carpeta destino:", err);
+      }
+    };
+    const handleOrganizarLote = async () => {
+      if (!tracks || tracks.length === 0) return;
+      setIsRouting(true);
+      setRouteProgress(5);
+      setRouteStatusMsg(`Iniciando ruteo de ${tracks.length} pistas a ${rutaBase}...`);
+      setResultSummary(null);
+      try {
+        if (window.eel && window.eel.organizar_lote_en_crates) {
+          const res = await window.eel.organizar_lote_en_crates(tracks, rutaBase, modo)();
+          if (res && res.status === "ok") {
+            setResultSummary(res);
+            setRouteProgress(100);
+            setRouteStatusMsg(`\u2713 Lote completado: ${res.procesados} pistas organizadas.`);
+          } else {
+            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error en el ruteo de lote." });
+            setRouteStatusMsg((res == null ? void 0 : res.msg) || "Error durante la operaci\xF3n.");
+          }
+        }
+      } catch (err) {
+        console.error("Error al organizar lote:", err);
+        setResultSummary({ status: "error", msg: String(err) });
+        setRouteStatusMsg("Fallo inesperado al enrutar lote.");
+      } finally {
+        setIsRouting(false);
+        setTimeout(() => setRouteProgress(0), 4e3);
+      }
+    };
+    const handleExportarSeratoCrates = async () => {
+      if (!tracks || tracks.length === 0) return;
+      setIsRouting(true);
+      setRouteProgress(50);
+      setRouteStatusMsg("Generando archivos binarios .crate para Serato DJ Pro...");
+      try {
+        if (window.eel && window.eel.exportar_serato_crates) {
+          const res = await window.eel.exportar_serato_crates(tracks)();
+          setRouteProgress(100);
+          if (res && res.status === "ok") {
+            setResultSummary({
+              status: "ok",
+              procesados: res.total_pistas,
+              errores: 0,
+              msg: `\u2713 ${res.total_crates} crates generados exitosamente en ${res.destino}`
+            });
+          } else {
+            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar crates Serato." });
+          }
+        }
+      } catch (err) {
+        console.error("Error al exportar crates Serato:", err);
+        setResultSummary({ status: "error", msg: String(err) });
+      } finally {
+        setIsRouting(false);
+        setTimeout(() => setRouteProgress(0), 4e3);
+      }
+    };
+    const handleExportarRekordboxXml = async () => {
+      if (!tracks || tracks.length === 0) return;
+      setIsRouting(true);
+      setRouteProgress(50);
+      setRouteStatusMsg("Generando archivo rekordbox.xml est\xE1ndar Pioneer DJ...");
+      try {
+        if (window.eel && window.eel.exportar_rekordbox_xml) {
+          const res = await window.eel.exportar_rekordbox_xml(tracks, rutaBase, "rekordbox.xml")();
+          setRouteProgress(100);
+          if (res && res.status === "ok") {
+            setResultSummary({
+              status: "ok",
+              procesados: res.total_tracks,
+              errores: 0,
+              msg: `\u2713 Archivo rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists) en ${res.path}`
+            });
+          } else {
+            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar rekordbox.xml." });
+          }
+        }
+      } catch (err) {
+        console.error("Error al exportar rekordbox XML:", err);
+        setResultSummary({ status: "error", msg: String(err) });
+      } finally {
+        setIsRouting(false);
+        setTimeout(() => setRouteProgress(0), 4e3);
+      }
+    };
+    const getGenreStats = (gen) => {
+      return tracks.filter((t) => (t.genre || "Tech House").toLowerCase() === gen.toLowerCase()).length;
+    };
+    const getSubgenreStats = (gen, subg) => {
+      return tracks.filter((t) => {
+        const g = (t.genre || "Tech House").toLowerCase();
+        const sg = (t.subgenre || (TAXONOMY_TREE[t.genre || "Tech House"] ? TAXONOMY_TREE[t.genre || "Tech House"][0] : "")).toLowerCase();
+        return g === gen.toLowerCase() && sg === subg.toLowerCase();
+      });
+    };
+    const genresList = Object.keys(TAXONOMY_TREE);
+    const totalCratesCount = genresList.reduce((acc, g) => acc + (TAXONOMY_TREE[g] ? TAXONOMY_TREE[g].length : 0), 0);
+    const filteredGenres = genresList.filter((g) => {
+      if (!searchTerm) return true;
+      const s = searchTerm.toLowerCase();
+      if (g.toLowerCase().includes(s)) return true;
+      return TAXONOMY_TREE[g] && TAXONOMY_TREE[g].some((sg) => sg.toLowerCase().includes(s));
+    });
+    const resetFilters = () => {
+      setAiQuery("");
+      setOnlineResults([]);
+      setHasExecutedSearch(false);
+      setSelectedGenreFilter("ALL");
+      setSelectedSubgenreFilterUI("ALL");
+      setSelectedVersionFilter("ALL");
+      setSelectedBpmFilter("ALL");
+      setSelectedKeyFilter("ALL");
+      setSelectedMoodFilter("ALL");
+      setTaxFilterSearch("");
+      setTaxFilterGenre("ALL");
+      setTaxFilterOrigin("ALL");
+      setTaxFilterEnergy("ALL");
+      setTaxFilterDance("ALL");
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-taxonomy flex flex-col h-full w-full overflow-y-auto pb-36 md:pb-8 bg-djzinc-950 text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 pt-4 pb-3 border-b border-djzinc-800 bg-[#08080c] shrink-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Routing, title: "Crates", accent: "& Taxonom\xEDa" }), /* @__PURE__ */ React.createElement("p", { className: "text-gray-400 text-xs hidden md:inline" }, "Buscador inteligente en lenguaje natural y ruteo jer\xE1rquico a crates de Serato / Rekordbox.")), /* @__PURE__ */ React.createElement("div", { className: "inline-flex rounded-xl border border-djzinc-700/80 p-1 bg-djzinc-900/90 shadow" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveSubView("search"),
+        className: `px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeSubView === "search" ? "bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow-md" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), " Buscador IA"),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black" }, searchResults.length)
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveSubView("routing"),
+        className: `px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeSubView === "routing" ? "bg-djcyan-500 text-black shadow-md" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Serato Crates & Rekordbox"),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black" }, totalCratesCount)
+    ))), feedbackMsg && /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "animate-pulse" }, "\u25CF"), /* @__PURE__ */ React.createElement("span", null, feedbackMsg)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setFeedbackMsg(""), className: "text-gray-400 hover:text-white cursor-pointer px-1" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })))), activeSubView === "search" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner overflow-x-auto no-scrollbar whitespace-nowrap shrink-0 max-w-full" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider shrink-0" }, "Buscar en:"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSearchScope("all"),
+        className: `px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${searchScope === "all" ? "bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Globe, { size: 14, className: "inline-block align-[-2px]" }), " Todo (H\xEDbrido)")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSearchScope("local"),
+        className: `px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${searchScope === "local" ? "bg-djcyan-500 text-black shadow" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Mi Biblioteca"),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded bg-black/30 text-white font-mono" }, localTracks.length)
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSearchScope("online"),
+        className: `px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${searchScope === "online" ? "bg-purple-500 text-white shadow" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Cloud, { size: 14, className: "inline-block align-[-2px]" }), " Record Pool")
+    )), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowAdvancedFilters(!showAdvancedFilters),
+        className: `text-xs px-2.5 py-1.5 rounded-lg border font-mono transition-all flex items-center gap-1.5 cursor-pointer ${showAdvancedFilters || selectedGenreFilter !== "ALL" || selectedBpmFilter !== "ALL" || selectedKeyFilter !== "ALL" ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " Filtros Manuales"),
+      /* @__PURE__ */ React.createElement("span", null, showAdvancedFilters ? "\u25B2" : "\u25BC")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 flex items-center" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3.5 text-gray-400  pointer-events-none" }), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: aiQuery,
+        onChange: (e) => setAiQuery(e.target.value),
+        onKeyDown: (e) => {
+          if (e.key === "Enter") {
+            handleEjecutarBusqueda();
+          }
+        },
+        placeholder: "Ej: tech house a 128 bpm en 8A, afro house para bailar, reggaeton retro para la previa, extended mix...",
+        className: "ws-search-input w-full pl-10 pr-12 py-3 text-sm"
+      }
+    ), aiQuery && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setAiQuery("");
+          setOnlineResults([]);
+        },
+        className: "absolute right-3.5 text-gray-400 hover:text-white text-xs font-bold cursor-pointer",
+        title: "Borrar texto"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+    )), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleEjecutarBusqueda(),
+        disabled: isSearchingOnline,
+        className: "px-6 py-3 bg-djcyan-500 hover:bg-djcyan-400 active:scale-95 text-black font-black text-xs font-mono uppercase tracking-wider rounded-xl shadow-[0_0_18px_rgba(6,182,212,0.45)] transition-all flex items-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
+      },
+      isSearchingOnline ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icons.Clock, { size: 14, className: "inline-block align-[-2px] animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Buscando...")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Buscar Temas"))
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 pt-1" }, parsedQuery.tokens && parsedQuery.tokens.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 mr-0.5" }, "Filtros Activos:"), parsedQuery.tokens.map((tok, idx) => /* @__PURE__ */ React.createElement(
+      "span",
+      {
+        key: idx,
+        className: "text-[10.5px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-djcyan-950/90 text-djcyan-300 border border-djcyan-600/80 shadow-sm flex items-center gap-1.5 group"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, tok.label),
+      /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleRemoveToken(tok),
+          className: "w-3.5 h-3.5 rounded-full hover:bg-red-500 hover:text-white text-djcyan-400 flex items-center justify-center text-[9px] font-black cursor-pointer transition-colors ml-0.5",
+          title: `Eliminar filtro ${tok.label}`
+        },
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+      )
+    ))), /* @__PURE__ */ React.createElement("div", { className: "relative inline-block" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsAddTagMenuOpen((prev) => !prev),
+        className: "text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg bg-[#12121f] hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djcyan-700/60 shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95",
+        title: "A\xF1adir manualmente filtros de BPM, Tono, G\xE9nero, Versi\xF3n o Mood"
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "font-black text-xs" }, "+"),
+      /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Tag"),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-gray-500" }, isAddTagMenuOpen ? "\u25B2" : "\u25BC")
+    ), isAddTagMenuOpen && /* @__PURE__ */ React.createElement("div", { className: "absolute top-full left-0 mt-1.5 w-84 bg-[#0a0a14] border-2 border-djcyan-500/70 rounded-xl p-3 shadow-2xl z-50 animate-fadeIn text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-black text-white uppercase tracking-wider" }, "A\xF1adir Tag a la B\xFAsqueda"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsAddTagMenuOpen(false),
+        className: "text-gray-400 hover:text-white text-xs font-bold cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 mb-2 border-b border-djzinc-800/80 pb-1" }, [
+      { id: "bpm", label: "BPM" },
+      { id: "key", label: "Key" },
+      { id: "genre", label: "G\xE9nero" },
+      { id: "version", label: "Versi\xF3n" },
+      { id: "mood", label: "Mood" }
+    ].map((cat) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: cat.id,
+        type: "button",
+        onClick: () => setActiveTagTab(cat.id),
+        className: `px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${activeTagTab === cat.id ? "bg-djcyan-500 text-black shadow" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
+      },
+      cat.label
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scrollbar p-0.5" }, activeTagTab === "bpm" && [
+      "120 bpm",
+      "124 bpm",
+      "126 bpm",
+      "128 bpm",
+      "130 bpm",
+      "132 bpm",
+      "138 bpm",
+      "140 bpm",
+      "145 bpm",
+      "150 bpm",
+      "160 bpm",
+      "174 bpm"
+    ].map((tag) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tag,
+        type: "button",
+        onClick: () => handleAddTagToQuery(tag),
+        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+      },
+      "+ ",
+      tag
+    )), activeTagTab === "key" && [
+      "1A",
+      "2A",
+      "3A",
+      "4A",
+      "5A",
+      "6A",
+      "7A",
+      "8A",
+      "9A",
+      "10A",
+      "11A",
+      "12A",
+      "1B",
+      "2B",
+      "3B",
+      "4B",
+      "5B",
+      "6B",
+      "7B",
+      "8B",
+      "9B",
+      "10B",
+      "11B",
+      "12B"
+    ].map((tag) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tag,
+        type: "button",
+        onClick: () => handleAddTagToQuery(tag),
+        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+      },
+      "+ ",
+      tag
+    )), activeTagTab === "genre" && [
+      "Tech House",
+      "Afro House",
+      "Melodic Techno",
+      "Progressive House",
+      "Deep House",
+      "Minimal / Deep Tech",
+      "Hard Techno",
+      "Psy-Trance",
+      "Drum & Bass",
+      "Reggaet\xF3n",
+      "Latin House"
+    ].map((tag) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tag,
+        type: "button",
+        onClick: () => handleAddTagToQuery(tag),
+        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+      },
+      "+ ",
+      tag
+    )), activeTagTab === "version" && [
+      "Extended Mix",
+      "Intro",
+      "Outro",
+      "Remix",
+      "Club Mix",
+      "Acapella",
+      "Transition",
+      "Mashup"
+    ].map((tag) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tag,
+        type: "button",
+        onClick: () => handleAddTagToQuery(tag),
+        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+      },
+      "+ ",
+      tag
+    )), activeTagTab === "mood" && [
+      "Peak Time",
+      "Warm Up",
+      "Chill",
+      "Sunset",
+      "Retro"
+    ].map((tag) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tag,
+        type: "button",
+        onClick: () => handleAddTagToQuery(tag),
+        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
+      },
+      "+ ",
+      tag
+    )))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 pt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 mr-1 shrink-0" }, "Sugerencias R\xE1pidas:"), AI_PROMPT_CHIPS.map((chip, cIdx) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: cIdx,
+        type: "button",
+        onClick: () => {
+          setAiQuery(chip.query);
+          handleEjecutarBusqueda(chip.query);
+        },
+        className: `text-[10.5px] px-2.5 py-1 rounded-lg border font-medium transition-all cursor-pointer ${aiQuery === chip.query ? "bg-djcyan-500 text-black border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)] font-bold" : "bg-djzinc-900/90 text-gray-300 border-djzinc-800 hover:border-djcyan-500/50 hover:text-white"}`
+      },
+      chip.label
+    ))), showAdvancedFilters && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-900/90 border border-djzinc-800 rounded-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 text-xs font-mono animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "G\xE9nero Ra\xEDz:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selectedGenreFilter,
+        onChange: (e) => setSelectedGenreFilter(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos los G\xE9neros"),
+      genresList.map((g) => /* @__PURE__ */ React.createElement("option", { key: g, value: g }, g))
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Versi\xF3n / Edit:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selectedVersionFilter,
+        onChange: (e) => setSelectedVersionFilter(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas las Versiones"),
+      DJ_VERSIONS_LIST.map((v) => /* @__PURE__ */ React.createElement("option", { key: v, value: v }, v))
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Rango BPM:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selectedBpmFilter,
+        onChange: (e) => setSelectedBpmFilter(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Tempo"),
+      /* @__PURE__ */ React.createElement("option", { value: "<120" }, "< 120 BPM (Previa/Downtempo)"),
+      /* @__PURE__ */ React.createElement("option", { value: "120-125" }, "120 - 125 BPM (Afro/Deep)"),
+      /* @__PURE__ */ React.createElement("option", { value: "126-129" }, "126 - 129 BPM (Tech House Clave)"),
+      /* @__PURE__ */ React.createElement("option", { value: "130-135" }, "130 - 135 BPM (Driving / Techno)"),
+      /* @__PURE__ */ React.createElement("option", { value: ">135" }, "> 135 BPM (Peak Time / Trance)")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Tonalidad:"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsCamelotModalOpen(true),
+        className: "text-[9px] text-djcyan-400 hover:underline cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Disc, { size: 14, className: "inline-block align-[-2px]" }),
+      " Rueda"
+    )), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selectedKeyFilter,
+        onChange: (e) => setSelectedKeyFilter(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Tono"),
+      Object.keys(CAMELOT_WHEEL_DATA).map((k) => /* @__PURE__ */ React.createElement("option", { key: k, value: k }, k, " (", CAMELOT_WHEEL_DATA[k].classical, ")"))
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Atm\xF3sfera / Mood:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selectedMoodFilter,
+        onChange: (e) => setSelectedMoodFilter(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Mood"),
+      /* @__PURE__ */ React.createElement("option", { value: "Previa / Warm Up" }, "Previa / Warm Up"),
+      /* @__PURE__ */ React.createElement("option", { value: "Peak Time / Pista" }, "Peak Time / Pista"),
+      /* @__PURE__ */ React.createElement("option", { value: "Chill / Sunset / After" }, "Chill / Sunset / After")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " Energ\xEDa DJ:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: taxFilterEnergy,
+        onChange: (e) => setTaxFilterEnergy(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Nivel"),
+      /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta (Peak Time)"),
+      /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media (Build-Up)"),
+      /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja (Warm Up/Calma)")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, /* @__PURE__ */ React.createElement(Icons.Activity, { size: 14, className: "inline-block align-[-2px]" }), " Danceability:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: taxFilterDance,
+        onChange: (e) => setTaxFilterDance(e.target.value),
+        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Nivel"),
+      /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta (Club/Groove)"),
+      /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
+      /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-end" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: resetFilters,
+        className: "w-full py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white rounded border border-djzinc-700 text-xs font-bold cursor-pointer transition-colors"
+      },
+      "\u21BA Reset Filtros"
+    )))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-5 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between text-xs font-mono text-gray-400 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", null, "Mostrando "), /* @__PURE__ */ React.createElement("strong", { className: "text-white font-bold" }, searchResults.length), /* @__PURE__ */ React.createElement("span", null, " temas para "), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, aiQuery ? `"${aiQuery}"` : "Exploraci\xF3n Taxon\xF3mica"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 ml-2" }, "(", searchScope === "local" ? "Solo Biblioteca Local" : searchScope === "online" ? "Solo Record Pool Online" : "Biblioteca Local + Record Pool", ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        disabled: selectedTaxIds.size === 0,
+        onClick: handleAnadirSeleccionadasADescargas,
+        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${selectedTaxIds.size > 0 ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)] active:scale-95" : "bg-djzinc-850 text-gray-500 border border-djzinc-750 cursor-not-allowed opacity-40"}`,
+        title: "A\xF1adir pistas seleccionadas a la cola de descargas del Record Pool"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Download, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Seleccionadas (", selectedTaxIds.size, ")")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        disabled: searchResults.length === 0,
+        onClick: handleAnadirTodasADescargas,
+        className: "px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white border border-emerald-500 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
+        title: "A\xF1adir todas las pistas de esta b\xFAsqueda a la cola de descargas del Record Pool"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Download, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Todas (", searchResults.length, ")")
+    )), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400" }), /* @__PURE__ */ React.createElement("span", null, "Biblioteca (", localTracks.length + searchLocalResults.length, ")")), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-purple-400" }), /* @__PURE__ */ React.createElement("span", null, "Record Pool Online (", onlineResults.length > 0 ? onlineResults.length : catalogTracks.length, ")")), /* @__PURE__ */ React.createElement("div", { className: "inline-flex rounded-lg border border-djzinc-750 p-0.5 bg-[#050508] ml-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setDisplayMode("table"),
+        className: `px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${displayMode === "table" ? "bg-djcyan-500 text-black" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u{1D11C}"),
+      " Tabla"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setDisplayMode("grid"),
+        className: `px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${displayMode === "grid" ? "bg-djcyan-500 text-black" : "text-gray-400 hover:text-white"}`
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u229E"),
+      " Mosaico"
+    )))), searchResults.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-900/30 text-center space-y-3" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "No se encontraron temas coincidentes"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mx-auto" }, 'No hay pistas que cumplan los criterios de "', aiQuery, '". Puedes pulsar ', /* @__PURE__ */ React.createElement("strong", null, "Buscar Temas"), " para rastrear en el Record Pool Online o descargarlas en SuperFLAC / Record Pool."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2 pt-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: resetFilters,
+        className: "px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-bold cursor-pointer"
+      },
+      "\u21BA Limpiar B\xFAsqueda"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setSearchScope("online");
+          handleEjecutarBusqueda();
+        },
+        className: "px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Cloud, { size: 14, className: "inline-block align-[-2px]" }),
+      " Buscar en Record Pool Online"
+    ), onSendToSpotify && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onSendToSpotify(aiQuery),
+        className: "px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-bold shadow-md cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Globe, { size: 14, className: "inline-block align-[-2px]" }),
+      " Ingestar desde SuperFLAC / Record Pool \u2192"
+    ))) : displayMode === "table" ? (
+      /* VISTA DE TABLA CON ORDENACIÓN Y FILTROS EN CABECERA */
+      /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto rounded-xl border border-djzinc-800 bg-[#07070a] shadow-lg" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "checkbox",
+          checked: allTaxSelected,
+          onChange: handleToggleSelectAllTax,
+          className: "accent-djcyan-500 cursor-pointer",
+          title: "Seleccionar / Deseleccionar todas las pistas"
+        }
+      )), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("title"), className: "py-2.5 px-3 min-w-[240px] cursor-pointer hover:text-white transition-colors" }, "T\xCDTULO / \xC1LBUM ", renderSortArrowTax("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("artist"), className: "py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors" }, "ARTISTA ", renderSortArrowTax("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("genre"), className: "py-2.5 px-2.5 cursor-pointer hover:text-white transition-colors" }, "G\xC9NERO ", renderSortArrowTax("genre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("subgenre"), className: "py-2.5 px-2.5 cursor-pointer hover:text-white transition-colors" }, "SUBG\xC9NERO ", renderSortArrowTax("subgenre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("displayBpm"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowTax("displayBpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("key"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "KEY ", renderSortArrowTax("key")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("version"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "VERSI\xD3N ", renderSortArrowTax("version")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("origin"), className: "py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors" }, "ORIGEN ", renderSortArrowTax("origin")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("matchScore"), className: "py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors" }, "MATCH % ", renderSortArrowTax("matchScore")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("energy"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ENERG\xCDA ", renderSortArrowTax("energy")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("danceability"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, /* @__PURE__ */ React.createElement(Icons.Activity, { size: 14, className: "inline-block align-[-2px]" }), " DANCE ", renderSortArrowTax("danceability")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("arousal"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-emerald-400", title: "Intensidad (Arousal)" }, "\u{1F525} INTENSIDAD ", renderSortArrowTax("arousal")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("valence"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400", title: "Positividad (Valence)" }, "\u2728 POSITIVIDAD ", renderSortArrowTax("valence")), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center" }, "FASE DJ"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2.5 text-left" }, "COMENTARIO PRO"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center min-w-[150px]" }, "ACCIONES DJ")), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#050508] border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, taxFilterSearch || taxFilterGenre !== "ALL" || taxFilterOrigin !== "ALL" || taxFilterEnergy !== "ALL" || taxFilterDance !== "ALL" ? /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          onClick: () => {
+            setTaxFilterSearch("");
+            setTaxFilterGenre("ALL");
+            setTaxFilterOrigin("ALL");
+            setTaxFilterEnergy("ALL");
+            setTaxFilterDance("ALL");
+          },
+          title: "Limpiar filtros",
+          className: "text-amber-400 hover:text-white cursor-pointer"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+      ) : "filtro"), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: taxFilterSearch,
+          onChange: (e) => setTaxFilterSearch(e.target.value),
+          placeholder: "Filtrar por t\xEDtulo, \xE1lbum o artista...",
+          className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
+        }
+      )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: taxFilterGenre,
+          onChange: (e) => setTaxFilterGenre(e.target.value),
+          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
+        /* @__PURE__ */ React.createElement("option", { value: "Hard Techno" }, "Hard Techno"),
+        /* @__PURE__ */ React.createElement("option", { value: "Techno" }, "Techno"),
+        /* @__PURE__ */ React.createElement("option", { value: "House" }, "House"),
+        /* @__PURE__ */ React.createElement("option", { value: "Trance" }, "Trance"),
+        /* @__PURE__ */ React.createElement("option", { value: "Drum & Bass" }, "Drum & Bass"),
+        /* @__PURE__ */ React.createElement("option", { value: "Afro House" }, "Afro House")
+      )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: taxFilterOrigin,
+          onChange: (e) => setTaxFilterOrigin(e.target.value),
+          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
+        /* @__PURE__ */ React.createElement("option", { value: "local" }, "\u{1F4C1} Local"),
+        /* @__PURE__ */ React.createElement("option", { value: "online" }, "\u2601\uFE0F Pool Online")
+      )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: taxFilterEnergy,
+          onChange: (e) => setTaxFilterEnergy(e.target.value),
+          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
+        /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta"),
+        /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
+        /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
+      )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: taxFilterDance,
+          onChange: (e) => setTaxFilterDance(e.target.value),
+          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
+        /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta"),
+        /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
+        /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
+      )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-emerald-400 font-bold", title: "Filtro Intensidad" }, "\u{1F525}"), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-cyan-400 font-bold", title: "Filtro Positividad" }, "\u2728"), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, searchResults.map((trk, idx) => {
+        const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA["8A"];
+        const isLocal = Boolean(trk.isLocal || trk.is_local);
+        const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
+        const isPlayingRow = nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path) && isPlaying;
+        const isSelected = selectedTaxIds.has(trk.id);
+        return /* @__PURE__ */ React.createElement(
+          "tr",
+          {
+            key: trk.id || idx,
+            className: `hover:bg-[#101016] transition-colors cursor-pointer select-none ${isSelected ? "bg-[#0f172a]/50 border-l-2 border-djcyan-400" : ""}`
+          },
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "checkbox",
+              checked: isSelected,
+              onChange: () => handleToggleTaxRow(trk.id),
+              className: "accent-djcyan-500 cursor-pointer"
+            }
+          )),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => {
+            e.stopPropagation();
+            handleCargarEnDeck(trk);
+          } }, /* @__PURE__ */ React.createElement("button", { className: `w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isPlayingRow ? "bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]" : "bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800"}` }, isPlayingRow ? "\u275A\u275A" : "\u25B6")),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(trk.displayCover), alt: "Cover", onError: (e) => {
+            e.target.onerror = null;
+            e.target.src = DEFAULT_VINYL_SVG;
+          }, className: "w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-djcyan-400 text-xs truncate max-w-sm", title: trk.displayTitle }, trk.displayTitle), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-sm", title: trk.displayAlbum }, trk.displayAlbum || "--")))),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-gray-300 text-xs truncate max-w-xs" }, trk.displayArtist),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 font-mono text-[11px] text-gray-300" }, trk.displayGenre),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 font-mono text-[10px] text-djcyan-400 font-semibold" }, trk.displaySubgenre),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center text-xs ws-bpm" }, trk.displayBpm),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              className: "cursor-pointer",
+              onClick: () => setIsCamelotModalOpen(true),
+              title: `Key ${trk.displayKey} (${keyData.classical})`
+            },
+            /* @__PURE__ */ React.createElement(CamelotKeyBadge, { value: trk.displayKey })
+          )),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-400" }, trk.displayVersion || "Original Mix"),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${isLocal ? "bg-djcyan-950 text-djcyan-300 border-djcyan-700/60" : isOnline ? "bg-purple-950 text-purple-300 border-purple-700/60" : "bg-emerald-950 text-emerald-300 border-emerald-700/60"}` }, isLocal ? "\u{1F4C1} Local" : isOnline ? "\u2601\uFE0F Record Pool" : "\u{1F31F} BeatWave Pool")),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center font-mono text-xs font-bold text-emerald-400" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.matchScore, "%"),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${(trk.energy || trk.e || 80) >= 82 ? "text-red-400" : (trk.energy || trk.e || 80) >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, trk.energy || trk.e || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              className: `h-full rounded-full ${(trk.energy || trk.e || 80) >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : (trk.energy || trk.e || 80) >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
+              style: { width: `${Math.min(100, Math.max(10, trk.energy || trk.e || 80))}%` }
+            }
+          )))),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Activity, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, trk.danceability || trk.dance || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              className: "h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500",
+              style: { width: `${Math.min(100, Math.max(10, trk.danceability || trk.dance || 80))}%` }
+            }
+          )))),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u{1F525}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-emerald-400" }, trk.arousal || trk.intensity || Math.round((trk.energy || trk.e || 80) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              className: "h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]",
+              style: { width: `${Math.min(100, Math.max(10, trk.arousal || trk.intensity || Math.round((trk.energy || trk.e || 80) * 0.95)))}%` }
+            }
+          )))),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u2728"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-cyan-300" }, trk.valence != null ? trk.valence : trk.displayKey && trk.displayKey.includes("B") ? 65 : 45, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              className: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]",
+              style: { width: `${Math.min(100, Math.max(10, trk.valence != null ? trk.valence : trk.displayKey && trk.displayKey.includes("B") ? 65 : 45))}%` }
+            }
+          )))),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, (() => {
+            const eVal = trk.energy || trk.e || 80;
+            const bVal = parseFloat(trk.displayBpm || trk.bpm || 128);
+            const badge = trk.fase_badge || (eVal >= 82 || bVal >= 135 ? "CA\xD1A" : eVal >= 68 ? "BUILD-UP" : bVal < 118 ? "CALMA" : "WARM-UP");
+            const colorMap = {
+              "CA\xD1A": "bg-red-950/80 text-red-300 border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.3)]",
+              "BUILD-UP": "bg-amber-950/80 text-amber-300 border-amber-700",
+              "WARM-UP": "bg-cyan-950/80 text-cyan-300 border-cyan-700",
+              "CIERRE": "bg-purple-950/80 text-purple-300 border-purple-700",
+              "CALMA": "bg-teal-950/80 text-teal-300 border-teal-700"
+            };
+            const iconMap = {
+              "CA\xD1A": "\u{1F525}",
+              "BUILD-UP": "\u{1F680}",
+              "WARM-UP": "\u{1F3A7}",
+              "CIERRE": "\u{1F30C}",
+              "CALMA": "\u2615"
+            };
+            return /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9px] font-mono font-bold border inline-flex items-center gap-1 ${colorMap[badge] || "bg-djzinc-800 text-gray-300 border-djzinc-700"}` }, /* @__PURE__ */ React.createElement("span", null, iconMap[badge] || "\u{1F3B5}"), /* @__PURE__ */ React.createElement("span", null, badge));
+          })()),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 14, className: "inline-block align-[-2px] text-emerald-400  shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-200 truncate", title: trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b` }, trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b`))),
+          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleCargarEnDeck(trk), className: "px-2 py-1 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono cursor-pointer", title: "Cargar y Reproducir en Deck 1" }, /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }), " Deck"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAbrirEnHotCues(trk), className: "px-2 py-1 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 text-[10px] font-mono cursor-pointer", title: "Hot Cues Studio" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              onClick: () => handleAnadirADescargas(trk),
+              className: "px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-[10px] cursor-pointer shadow flex items-center gap-1 transition-all active:scale-95",
+              title: "A\xF1adir pista a la cola de descargas del Record Pool"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Download, { size: 14, className: "inline-block align-[-2px]" }),
+            /* @__PURE__ */ React.createElement("span", null, "A\xF1adir a Descargas")
+          ), isOnline ? /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              onClick: () => {
+                if (onSendToSpotify) onSendToSpotify(`${trk.displayArtist} - ${trk.displayTitle}`);
+                else if (onNavigateTab) onNavigateTab("spotify");
+              },
+              className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer",
+              title: "Buscar en el Record Pool"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px]" }),
+            " Pool"
+          ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: () => handleAsignarACrateIndividual(trk), className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer", title: "Rutar a Crate" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Crate"), isLocal && /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              onClick: (e) => {
+                e.stopPropagation();
+                if (onRemoveTrack) {
+                  onRemoveTrack(trk.id);
+                } else if (onTracksUpdated) {
+                  onTracksUpdated((prev) => prev.filter((t) => String(t.id) !== String(trk.id)));
+                }
+              },
+              className: "p-1 rounded bg-red-950/40 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90",
+              title: "Quitar pista del an\xE1lisis global"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" })
+          ))))
+        );
+      }))))
+    ) : (
+      /* VISTA DE MOSAICO / TARJETAS */
+      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5" }, searchResults.map((trk, idx) => {
+        const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA["8A"];
+        const isLocal = Boolean(trk.isLocal || trk.is_local);
+        const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
+        const isSelected = selectedTaxIds.has(trk.id);
+        return /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            key: trk.id || idx,
+            className: `p-3.5 bg-[#0a0a0f] rounded-xl border transition-all shadow-md hover:shadow-cyan-500/10 flex flex-col justify-between gap-3 group ${isSelected ? "border-djcyan-400 bg-djcyan-950/20" : "border-djzinc-850 hover:border-djcyan-500/50"}`
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-djzinc-800 shadow" }, /* @__PURE__ */ React.createElement(
+            "img",
+            {
+              src: getValidCover(trk.displayCover),
+              alt: "Cover",
+              onError: (e) => {
+                e.target.onerror = null;
+                e.target.src = DEFAULT_VINYL_SVG;
+              },
+              className: "w-full h-full object-cover"
+            }
+          ), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleCargarEnDeck(trk),
+              className: "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-base transition-opacity cursor-pointer shadow",
+              title: "Cargar y Reproducir en Deck 1"
+            },
+            isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path || nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title)) ? "\u275A\u275A" : "\u25B6"
+          )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+            "input",
+            {
+              type: "checkbox",
+              checked: isSelected,
+              onChange: () => handleToggleTaxRow(trk.id),
+              className: "accent-djcyan-500 cursor-pointer",
+              title: "Marcar pista"
+            }
+          ), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${isLocal ? "bg-djcyan-950 text-djcyan-300 border-djcyan-700/60" : isOnline ? "bg-purple-950 text-purple-300 border-purple-700/60" : "bg-emerald-950 text-emerald-300 border-emerald-700/60"}` }, isLocal ? "\u{1F4C1} Local" : isOnline ? "\u2601\uFE0F Online Pool" : "\u{1F31F} BeatWave Pool")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.matchScore, "% Match")), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white truncate mt-1", title: trk.displayTitle }, trk.displayTitle), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-djcyan-400 truncate", title: trk.displayArtist }, trk.displayArtist))),
+          /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 font-mono text-[9.5px]" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-gray-300 font-semibold" }, /* @__PURE__ */ React.createElement(Icons.Headphones, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displaySubgenre || trk.displayGenre), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displayBpm, " BPM"), /* @__PURE__ */ React.createElement(
+            "span",
+            {
+              className: "px-2 py-0.5 rounded border font-black flex items-center gap-1 cursor-pointer hover:brightness-125",
+              style: {
+                backgroundColor: `${keyData.color}20`,
+                borderColor: `${keyData.color}80`,
+                color: keyData.color
+              },
+              onClick: () => setIsCamelotModalOpen(true),
+              title: `Key ${trk.displayKey} (${keyData.classical}). Click para ver Rueda Arm\xF3nica`
+            },
+            /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full", style: { backgroundColor: keyData.color } }),
+            /* @__PURE__ */ React.createElement("span", null, trk.displayKey)
+          ), trk.displayVersion && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-600/50 text-amber-300" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displayVersion), trk.displayMood && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-pink-950/40 border border-pink-600/50 text-pink-300" }, /* @__PURE__ */ React.createElement(Icons.Flame, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displayMood)),
+          /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-850 flex items-center justify-between gap-1.5" }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleCargarEnDeck(trk),
+              className: "flex-1 py-1 px-2 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono flex items-center justify-center gap-1 shadow cursor-pointer transition-transform active:scale-95"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
+            /* @__PURE__ */ React.createElement("span", null, "Cargar Deck")
+          ), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleAbrirEnHotCues(trk),
+              className: "py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors",
+              title: "Editar Hot Cues en el Estudio"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
+            /* @__PURE__ */ React.createElement("span", null, "Cues")
+          ), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleAnadirADescargas(trk),
+              className: "py-1 px-2.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-transform active:scale-95 shadow",
+              title: "A\xF1adir a la cola de descargas del Record Pool"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Download, { size: 14, className: "inline-block align-[-2px]" }),
+            /* @__PURE__ */ React.createElement("span", null, "A\xF1adir a Descargas")
+          ), /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleApuntarEnLibreta(trk),
+              className: "py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors",
+              title: "Apuntar en Libreta Digital"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14, className: "inline-block align-[-2px]" })
+          ), isOnline ? /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                if (onSendToSpotify) onSendToSpotify(`${trk.displayArtist} - ${trk.displayTitle}`);
+                else if (onNavigateTab) onNavigateTab("spotify");
+              },
+              className: "py-1 px-2 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-500/70 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors shadow",
+              title: "Descargar versi\xF3n HQ/FLAC en SuperFLAC / Record Pool"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Download, { size: 14, className: "inline-block align-[-2px]" }),
+            /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
+          ) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: () => handleAsignarACrateIndividual(trk),
+              className: "py-1 px-2 rounded bg-purple-950/60 hover:bg-purple-900 border border-purple-500/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors",
+              title: "Rutar f\xEDsicamente a Serato Crate"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" })
+          ), isLocal && /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: (e) => {
+                e.stopPropagation();
+                if (onRemoveTrack) {
+                  onRemoveTrack(trk.id);
+                } else if (onTracksUpdated) {
+                  onTracksUpdated((prev) => prev.filter((t) => String(t.id) !== String(trk.id)));
+                }
+              },
+              className: "py-1 px-1.5 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90",
+              title: "Quitar pista del an\xE1lisis global"
+            },
+            /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" })
+          )))
+        );
+      }))
+    ), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Globe, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white uppercase tracking-wider font-mono" }, "\xBFBuscas canciones que no est\xE1n en tu biblioteca local?"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Explora y descarga temas por taxonom\xEDa en SuperFLAC / Record Pool con car\xE1tula en alta definici\xF3n y tags autom\xE1ticos."))), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          if (onSendToSpotify) onSendToSpotify(aiQuery || "Tech House 2024");
+          else if (onNavigateTab) onNavigateTab("spotify");
+        },
+        className: "px-3.5 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow-md cursor-pointer transition-all active:scale-95 shrink-0"
+      },
+      "Ingestar en Record Pool / SuperFLAC \u2192"
+    )))), activeSubView === "routing" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-800 bg-djzinc-950 shrink-0 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Ruteo F\xEDsico de Biblioteca a Crates Serato / Rekordbox"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 px-2 py-0.5 rounded font-mono font-bold" }, "2-TIER CRATES")), /* @__PURE__ */ React.createElement("p", { className: "text-gray-400 text-xs" }, "Clasificaci\xF3n jer\xE1rquica en dos niveles (G\xE9nero ra\xEDz ", "\u2192", " Subg\xE9nero) con ruteo f\xEDsico a carpetas y crates de Serato DJ Pro y Rekordbox.")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        disabled: isRouting || tracks.length === 0,
+        onClick: handleExportarSeratoCrates,
+        className: `px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${isRouting || tracks.length === 0 ? "bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60" : "bg-purple-950/60 hover:bg-purple-900 border-purple-500/60 text-purple-300 shadow hover:shadow-purple-500/20 active:scale-95"}`,
+        title: "Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importaci\xF3n instant\xE1nea en Serato DJ Pro"
+      },
+      /* @__PURE__ */ React.createElement("img", { src: "/assets/logos/serato.png", alt: "Serato", className: "h-3.5 w-auto object-contain shrink-0", onError: (e) => {
+        e.target.style.display = "none";
+      } }),
+      /* @__PURE__ */ React.createElement("span", null, "Exportar Serato (.crate)")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        disabled: isRouting || tracks.length === 0,
+        onClick: handleExportarRekordboxXml,
+        className: `px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${isRouting || tracks.length === 0 ? "bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60" : "bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-cyan-400 shadow hover:shadow-blue-500/20 active:scale-95"}`,
+        title: "Genera archivo rekordbox.xml est\xE1ndar Pioneer DJ con Hot Cues y playlists"
+      },
+      /* @__PURE__ */ React.createElement("img", { src: "/assets/logos/rekordbox.png", alt: "Rekordbox", className: "h-3.5 w-auto object-contain shrink-0", onError: (e) => {
+        e.target.style.display = "none";
+      } }),
+      /* @__PURE__ */ React.createElement("span", null, "Exportar Rekordbox XML")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        disabled: isRouting || tracks.length === 0,
+        onClick: handleOrganizarLote,
+        className: `px-4 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all ${isRouting || tracks.length === 0 ? "bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed opacity-60" : "bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/25 active:scale-95"}`
+      },
+      /* @__PURE__ */ React.createElement(Icons.Routing, null),
+      isRouting ? "Ruteando a Crates..." : `Enrutar Biblioteca (${tracks.length})`
+    ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-djzinc-900/90 border border-djzinc-800 p-3 rounded-xl" }, /* @__PURE__ */ React.createElement("div", { className: "md:col-span-7 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400 shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Destino Crates:"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: rutaBase,
+        onChange: (e) => setRutaBase(e.target.value),
+        className: "flex-1 bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs font-mono text-gray-200 outline-none focus:border-djcyan-500",
+        placeholder: "/Users/admin/Music/mi musica"
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleSeleccionarDestino,
+        className: "px-2.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded text-xs font-semibold text-gray-300 cursor-pointer"
+      },
+      "Examinar..."
+    )), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-3 flex items-center gap-2 justify-start md:justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Modo:"), /* @__PURE__ */ React.createElement("div", { className: "inline-flex rounded-lg border border-djzinc-700 p-0.5 bg-djzinc-950" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setModo("copy"),
+        className: `px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${modo === "copy" ? "bg-djcyan-500 text-black shadow" : "text-gray-400 hover:text-white"}`,
+        title: "Copia los archivos sin borrar los originales"
+      },
+      "Copiar (Seguro)"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setModo("move"),
+        className: `px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${modo === "move" ? "bg-amber-500 text-black shadow" : "text-gray-400 hover:text-white"}`,
+        title: "Mueve los archivos directamente a las carpetas destino"
+      },
+      "Mover"
+    ))), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-2 flex items-center" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: searchTerm,
+        onChange: (e) => setSearchTerm(e.target.value),
+        placeholder: "Filtrar crate...",
+        className: "w-full bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500"
+      }
+    ))), isRouting && /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900 border border-djcyan-700/60 rounded-xl space-y-1.5 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, routeStatusMsg || "Procesando ruteo de lote..."), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, routeProgress, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800" }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "h-full bg-gradient-to-r from-djcyan-500 to-emerald-400 transition-all duration-200",
+        style: { width: `${routeProgress}%` }
+      }
+    ))), resultSummary && /* @__PURE__ */ React.createElement("div", { className: `p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${resultSummary.status === "ok" ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300" : "bg-red-950/40 border-red-500/50 text-red-300"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, resultSummary.status === "ok" ? "\u2713" : "\u26A0"), /* @__PURE__ */ React.createElement("span", null, resultSummary.status === "ok" ? `Ruteo completado con \xE9xito: ${resultSummary.procesados} pistas procesadas (${resultSummary.errores} errores) hacia ${rutaBase}.` : resultSummary.msg || "Fallo durante el ruteo de lote.")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setResultSummary(null),
+        className: "text-gray-400 hover:text-white cursor-pointer px-2 py-0.5 rounded"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "Pistas en Sesi\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-white font-mono" }, tracks.length)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "G\xE9neros Ra\xEDz"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-djcyan-400 font-mono" }, genresList.length)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "Crates / Subg\xE9neros"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-purple-400 font-mono" }, totalCratesCount)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "Estructura Serato"), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-bold text-emerald-400 font-mono" }, "/[G\xE9nero]/[Subg\xE9nero]/")))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-5 space-y-4" }, tracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "h-64 border-2 border-dashed border-djzinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-djzinc-900/20" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-full bg-djzinc-800 flex items-center justify-center text-djcyan-400 mb-3 shadow-inner" }, /* @__PURE__ */ React.createElement(Icons.Routing, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-gray-200 mb-1" }, "No hay pistas cargadas en la Auditor\xEDa"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mb-4" }, "Carga una carpeta en la pesta\xF1a ", /* @__PURE__ */ React.createElement("strong", null, "Auditor\xEDa & DSP"), " para ver el desglose en tiempo real de pistas asignadas a cada Crate y ejecutar el ruteo f\xEDsico inteligente."), onNavigateTab && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => onNavigateTab("audit"),
+        className: "px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-bold rounded-lg cursor-pointer transition-colors shadow"
+      },
+      "Ir a Auditor\xEDa & DSP"
+    )) : /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, filteredGenres.map((genre) => {
+      const subgenres = TAXONOMY_TREE[genre] || [];
+      const genreTracksCount = getGenreStats(genre);
+      const isExpanded = expandedGenre === genre;
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: genre,
+          className: "bg-djzinc-900/80 border border-djzinc-800 rounded-xl overflow-hidden shadow-md transition-all hover:border-djzinc-700"
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onClick: () => setExpandedGenre(isExpanded ? null : genre),
+            className: "p-3.5 bg-djzinc-900 flex items-center justify-between cursor-pointer hover:bg-djzinc-850 select-none border-b border-djzinc-800/60"
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-500 font-mono" }, isExpanded ? "\u25BC" : "\u25B6"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-white uppercase tracking-wider font-mono" }, genre), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 ml-2 font-mono" }, "(", subgenres.length, " subg\xE9neros)"))),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: `text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${genreTracksCount > 0 ? "bg-djcyan-950 text-djcyan-400 border border-djcyan-700/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]" : "bg-djzinc-800 text-gray-500 border border-djzinc-700"}` }, genreTracksCount, " pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs font-mono" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " /", genre, "/"))
+        ),
+        isExpanded && /* @__PURE__ */ React.createElement("div", { className: "p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-djzinc-950/40" }, subgenres.map((subg) => {
+          const matchingTracks = getSubgenreStats(genre, subg);
+          const isFilterSelected = selectedSubgenreFilter === `${genre}__${subg}`;
+          return /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              key: subg,
+              className: `p-3 rounded-lg border transition-all ${isFilterSelected ? "bg-djcyan-950/30 border-djcyan-500 shadow-[0_0_12px_rgba(6,182,212,0.15)]" : "bg-djzinc-900 border-djzinc-800 hover:border-djzinc-700"}`
+            },
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-xs text-gray-200" }, subg), /* @__PURE__ */ React.createElement("span", { className: `text-[10px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${matchingTracks.length > 0 ? "bg-djcyan-500 text-black" : "bg-djzinc-800 text-gray-500"}` }, matchingTracks.length)),
+            /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-400 truncate mb-2", title: `${rutaBase}/${genre}/${subg}/` }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " /", genre, "/", subg, "/"),
+            matchingTracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 space-y-1" }, /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: () => setSelectedSubgenreFilter(isFilterSelected ? null : `${genre}__${subg}`),
+                className: "text-[10px] text-djcyan-400 hover:text-djcyan-300 font-semibold cursor-pointer underline flex items-center gap-1"
+              },
+              isFilterSelected ? "Ocultar pistas" : `Ver ${matchingTracks.length} pistas`
+            ), isFilterSelected && /* @__PURE__ */ React.createElement("div", { className: "mt-2 max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[9.5px]" }, matchingTracks.map((tr, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "p-1 rounded bg-djzinc-950 border border-djzinc-800/80 truncate text-gray-300" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, tr.t || tr.title), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, " - ", tr.a || tr.artist), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1" }, "(", tr.b || tr.bpm || "--", " BPM)"))))) : /* @__PURE__ */ React.createElement("div", { className: "text-[9.5px] text-gray-400 italic" }, "Sin pistas asignadas")
+          );
+        }))
+      );
+    })))), /* @__PURE__ */ React.createElement(
+      CamelotWheelModal,
+      {
+        isOpen: isCamelotModalOpen,
+        onClose: () => setIsCamelotModalOpen(false),
+        currentKey: selectedKeyFilter !== "ALL" ? selectedKeyFilter : "8A",
+        onSelectKey: (k) => {
+          setSelectedKeyFilter(k);
+          setIsCamelotModalOpen(false);
+        }
+      }
+    ));
+  };
+
+  // web/js/workspaces/ShazamWorkspace.jsx
+  var { useState: useState21, useEffect: useEffect22, useRef: useRef19 } = React;
+  var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
+    var _a, _b;
+    const [isListening, setIsListening] = useState21(false);
+    const [countdown, setCountdown] = useState21(10);
+    const [isAnalyzing, setIsAnalyzing] = useState21(false);
+    const [statusMsg, setStatusMsg] = useState21("");
+    const [identifiedTrack, setIdentifiedTrack] = useState21(null);
+    const [history, setHistory] = useState21([]);
+    const [previewPlaying, setPreviewPlaying] = useState21(false);
+    const [micLevel, setMicLevel] = useState21(0);
+    const audioRef = useRef19(new Audio());
+    const mediaRecorderRef = useRef19(null);
+    const audioStreamRef = useRef19(null);
+    const fileInputRef = useRef19(null);
+    const timerRef = useRef19(null);
+    const animFrameRef = useRef19(null);
+    const audioCtxRef = useRef19(null);
+    const [dragOver, setDragOver] = useState21(false);
+    const [selectedEngine, setSelectedEngine] = useState21(() => {
+      try {
+        return localStorage.getItem("bw_radar_engine") || "radar_edge";
+      } catch (e) {
+        return "radar_edge";
+      }
+    });
+    const [radarEnvironment, setRadarEnvironment] = useState21(() => {
+      try {
+        return localStorage.getItem("bw_radar_env") || "club";
+      } catch (e) {
+        return "club";
+      }
+    });
+    const [radarEvent, setRadarEvent] = useState21(null);
+    const recognizerRef = useRef19(null);
+    const [auddToken, setAuddToken] = useState21(() => {
+      try {
+        return localStorage.getItem("bw_audd_token") || "";
+      } catch (e) {
+        return "";
+      }
+    });
+    const [showConfig, setShowConfig] = useState21(false);
+    const [micCaptureMode, setMicCaptureMode] = useState21("auto");
+    const [micPermissionError, setMicPermissionError] = useState21(null);
+    useEffect22(() => {
+      try {
+        localStorage.setItem("bw_radar_engine", selectedEngine);
+      } catch (e) {
+      }
+    }, [selectedEngine]);
+    useEffect22(() => {
+      try {
+        localStorage.setItem("bw_radar_env", radarEnvironment);
+      } catch (e) {
+      }
+      if (recognizerRef.current) {
+        recognizerRef.current.setEnvironment(radarEnvironment);
+      }
+    }, [radarEnvironment]);
+    useEffect22(() => {
+      recognizerRef.current = new Phase1FastRecognizer({
+        workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
+        environment: radarEnvironment,
+        totalBudgetMs: 1750,
+        minScoreClub: 92,
+        minScoreStudio: 88,
+        probationMinScore: 76,
+        rescueEndpoint: "/v1/rescue",
+        rescueTimeoutMs: 8e3,
+        autoRescuePhase2: true,
+        onStateChange: (ev) => {
+          var _a2, _b2;
+          setRadarEvent(ev);
+          if (ev.state === "MATCH_CONFIRMED" && ev.match) {
+            const sourceLabel = ev.match.source === "local_olaf" ? "Olaf LMDB" : ((_a2 = ev.match.source) == null ? void 0 : _a2.startsWith("gpu_")) ? "GPU Neural Rescue" : "ACRCloud Edge";
+            const matchItem = {
+              title: ev.match.title,
+              artist: ev.match.artist,
+              album: ev.match.album || `${ev.match.title} - Single`,
+              genre: ((_b2 = ev.match.genres) == null ? void 0 : _b2[0]) || "Electronic",
+              subgenre: ev.match.stemIsolated ? `Stem: ${ev.match.stemIsolated}` : "Peak-Time Techno",
+              score: ev.match.score,
+              motor_usado: `BeatWave Radar C++ [${sourceLabel}]`,
+              play_offset_ms: ev.match.playOffsetMs,
+              rho: ev.rho,
+              status: "ok"
+            };
+            setIdentifiedTrack(matchItem);
+            setStatusMsg(`\u2713 ${ev.message}`);
+            setHistory((prev) => [matchItem, ...prev.filter((item) => item.title !== matchItem.title || item.artist !== matchItem.artist)]);
+          } else if (ev.state === "ESCALATE_PHASE2") {
+            setStatusMsg(`\u26A0\uFE0F ${ev.message}`);
+          } else if (ev.state === "RESCUING_PHASE2") {
+            setStatusMsg(`\u{1F680} ${ev.message}`);
+          } else if (ev.state === "UNIDENTIFIED_ID") {
+            setStatusMsg(`\u274C ${ev.message}`);
+          } else if (ev.state === "PROBATION_BUFFER") {
+            setStatusMsg(`\u23F3 ${ev.message}`);
+          } else if (ev.state === "TIMEOUT_FALLBACK") {
+            setStatusMsg(`\u23F1\uFE0F ${ev.message}`);
+          } else if (ev.state === "NO_MATCH") {
+            setStatusMsg(`\u2139 ${ev.message}`);
+          }
+        }
+      });
+    }, []);
+    useEffect22(() => {
+      try {
+        localStorage.setItem("bw_audd_token", auddToken);
+      } catch (e) {
+      }
+    }, [auddToken]);
+    const [notebookTracks, setNotebookTracks] = useState21(() => {
+      try {
+        const saved = localStorage.getItem("beatwave_shazam_notebook");
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        return [];
+      }
+    });
+    const [notebookFeedback, setNotebookFeedback] = useState21("");
+    useEffect22(() => {
+      try {
+        localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
+      } catch (e) {
+      }
+    }, [notebookTracks]);
+    const handleApuntarEnLista = (trk) => {
+      const trackToAdd = trk || identifiedTrack;
+      if (!trackToAdd) return;
+      const exists = notebookTracks.some((t) => t.title === trackToAdd.title && t.artist === trackToAdd.artist);
+      if (!exists) {
+        const now = /* @__PURE__ */ new Date();
+        const dateStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const defaultComm = trackToAdd.comment || trackToAdd.comentario || `[${trackToAdd.genre || "Electronic"}] Mezcla arm\xF3nica \u2022 Entrada progresiva 32b \u2022 Drop potente`;
+        const item = {
+          ...trackToAdd,
+          notebook_id: Date.now(),
+          added_at: dateStr,
+          comment: defaultComm,
+          comentario: defaultComm
+        };
+        setNotebookTracks((prev) => [item, ...prev]);
+        setNotebookFeedback(`\u2713 "${trackToAdd.title}" apuntado en tu libreta digital con nota DJ.`);
+        setTimeout(() => setNotebookFeedback(""), 3500);
+      } else {
+        setNotebookFeedback(`\u2139 "${trackToAdd.title}" ya estaba en la libreta.`);
+        setTimeout(() => setNotebookFeedback(""), 3e3);
+      }
+    };
+    const handleDescartarDeteccion = () => {
+      if (previewPlaying) {
+        audioRef.current.pause();
+        setPreviewPlaying(false);
+      }
+      setIdentifiedTrack(null);
+      setStatusMsg("Detecci\xF3n descartada. Listo para una nueva captura.");
+      setTimeout(() => setStatusMsg(""), 2500);
+    };
+    const handleEliminarDeNotebook = (notebookId) => {
+      setNotebookTracks((prev) => prev.filter((t) => t.notebook_id !== notebookId));
+    };
+    const handleVaciarNotebook = () => {
+      if (window.confirm("\xBFSeguro que deseas vaciar todas las pistas de tu libreta de apuntes?")) {
+        setNotebookTracks([]);
+        setNotebookFeedback("Libreta de apuntes vaciada.");
+        setTimeout(() => setNotebookFeedback(""), 2500);
+      }
+    };
+    const handleExportarNotebookXLS = async () => {
+      if (notebookTracks.length === 0) {
+        alert("No hay pistas en la libreta para exportar.");
+        return;
+      }
+      if (window.eel && window.eel.exportar_apuntes_shazam) {
+        try {
+          const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "xls")();
+          if (res && res.status === "ok") {
+            setNotebookFeedback(`\u2713 Archivo Excel generado: ${res.filename}`);
+            setTimeout(() => setNotebookFeedback(""), 4e3);
+          }
+        } catch (e) {
+          console.error("Fallo exportando a disco:", e);
+        }
+      }
+      const headers = ["#", "Artista", "T\xEDtulo", "\xC1lbum", "G\xE9nero", "A\xF1o", "ISRC", "Comentario / Nota DJ", "Fecha de Apunte"];
+      const rows = notebookTracks.map((t, idx) => [
+        idx + 1,
+        `"${(t.artist || "").replace(/"/g, '""')}"`,
+        `"${(t.title || "").replace(/"/g, '""')}"`,
+        `"${(t.album || "").replace(/"/g, '""')}"`,
+        `"${(t.genre || "").replace(/"/g, '""')}"`,
+        `"${(t.year || "").replace(/"/g, '""')}"`,
+        `"${(t.isrc || "").replace(/"/g, '""')}"`,
+        `"${(t.comment || t.comentario || "").replace(/"/g, '""')}"`,
+        `"${(t.added_at || "").replace(/"/g, '""')}"`
+      ]);
+      const csvContent = "\uFEFF" + [headers.join("	"), ...rows.map((r) => r.join("	"))].join("\n");
+      const blob = new Blob([csvContent], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+    const handleExportarNotebookTXT = async () => {
+      if (notebookTracks.length === 0) {
+        alert("No hay pistas en la libreta para exportar.");
+        return;
+      }
+      if (window.eel && window.eel.exportar_apuntes_shazam) {
+        try {
+          const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "txt")();
+          if (res && res.status === "ok") {
+            setNotebookFeedback(`\u2713 Archivo TXT guardado: ${res.filename}`);
+            setTimeout(() => setNotebookFeedback(""), 4e3);
+          }
+        } catch (e) {
+        }
+      }
+      let txt = "====================================================\n";
+      txt += "BEATWAVE PRO \u2022 LIBRETA DIGITAL DE APUNTES RADAR\n";
+      txt += `Fecha: ${(/* @__PURE__ */ new Date()).toLocaleString()}
+`;
+      txt += `Total pistas: ${notebookTracks.length}
+`;
+      txt += "====================================================\n\n";
+      notebookTracks.forEach((t, i) => {
+        const comm = t.comment || t.comentario;
+        txt += `${String(i + 1).padStart(2, "0")}. ${t.artist} - ${t.title} [${t.album || ""} ${t.year || ""}] \u2022 ${t.genre || "Electronic"}${t.isrc ? ` (ISRC: ${t.isrc})` : ""}
+`;
+        if (comm) {
+          txt += `    \u{1F4AC} Comentario DJ: ${comm}
+`;
+        }
+      });
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+    useEffect22(() => {
+      const audio = audioRef.current;
+      const handleEnded = () => setPreviewPlaying(false);
+      const handlePause = () => setPreviewPlaying(false);
+      audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("pause", handlePause);
+      return () => {
+        audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("pause", handlePause);
+        audio.pause();
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        if (animFrameRef.current) {
+          cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = null;
+        }
+        if (audioCtxRef.current) {
+          try {
+            audioCtxRef.current.close();
+          } catch (e) {
+          }
+          audioCtxRef.current = null;
+        }
+        if (audioStreamRef.current) {
+          try {
+            audioStreamRef.current.getTracks().forEach((t) => t.stop());
+          } catch (e) {
+          }
+          audioStreamRef.current = null;
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+          try {
+            mediaRecorderRef.current.stop();
+          } catch (e) {
+          }
+        }
+      };
+    }, []);
+    const togglePlayPreview = (url) => {
+      if (!url) return;
+      const audio = audioRef.current;
+      if (previewPlaying && audio.src === url) {
+        audio.pause();
+        setPreviewPlaying(false);
+      } else {
+        audio.src = url;
+        audio.play().then(() => setPreviewPlaying(true)).catch((e) => console.error("Error reproduciendo preview:", e));
+      }
+    };
+    const cancelListening = () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      if (audioCtxRef.current) {
+        try {
+          audioCtxRef.current.close();
+        } catch (e) {
+        }
+        audioCtxRef.current = null;
+      }
+      if (audioStreamRef.current) {
+        try {
+          audioStreamRef.current.getTracks().forEach((t) => t.stop());
+        } catch (e) {
+        }
+        audioStreamRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current.onstop = null;
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+        }
+      }
+      setIsListening(false);
+      setIsAnalyzing(false);
+      setMicLevel(0);
+      setStatusMsg("Escucha cancelada. Listo para una nueva consulta.");
+      setTimeout(() => setStatusMsg(""), 3e3);
+    };
+    const stopMicrophoneListeningEarly = () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+    };
+    const executeRecognition = async (base64Data, filename) => {
+      setIsAnalyzing(true);
+      if (selectedEngine === "radar_edge" && recognizerRef.current) {
+        setStatusMsg("Analizando huellas Zero-Copy en motor C++ y Edge Gateway (<1.75s)...");
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          const tempCtx = new AudioCtx();
+          const binaryStr = atob(base64Data.split(",")[1] || base64Data);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+          const decodedBuffer = await tempCtx.decodeAudioData(bytes.buffer);
+          const channelData = decodedBuffer.getChannelData(0);
+          tempCtx.close();
+          await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+          setIsAnalyzing(false);
+          return;
+        } catch (errDec) {
+          console.warn("Fallo decodificaci\xF3n local en WebAudio, recurriendo a API:", errDec);
+        }
+      }
+      const engineLabel = selectedEngine === "radar_edge" ? "Radar Edge C++" : selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
+      setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel}]...`);
+      try {
+        let res = null;
+        try {
+          const response = await fetch("/api/identificar_audio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              audio_b64: base64Data,
+              motor: selectedEngine,
+              audd_token: auddToken,
+              filename
+            })
+          });
+          if (response.ok) {
+            res = await response.json();
+          }
+        } catch (httpErr) {
+          console.warn("HTTP /api/identificar_audio fall\xF3, recurriendo a Eel:", httpErr);
+        }
+        if (!res && window.eel && window.eel.identificar_audio_base64) {
+          try {
+            res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
+          } catch (eelErr) {
+            console.warn("Eel RPC tambi\xE9n fall\xF3:", eelErr);
+          }
+        }
+        handleRecognitionResponse(res);
+      } catch (err) {
+        console.error("Error en reconocimiento ac\xFAstico:", err);
+        setStatusMsg("Error de comunicaci\xF3n con el motor de reconocimiento ac\xFAstico: " + (err.message || String(err)));
+        setIsAnalyzing(false);
+      }
+    };
+    const startMicrophoneListening = async () => {
+      if (isListening || isAnalyzing) return;
+      setMicPermissionError(null);
+      const hasBrowserMic = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices) && typeof navigator.mediaDevices.getUserMedia === "function";
+      if (micCaptureMode === "hardware" || !hasBrowserMic) {
+        console.log("Iniciando captura de micr\xF3fono de hardware...");
+        startHardwareMicrophoneListening();
+        return;
+      }
+      cancelListening();
+      setStatusMsg("Solicitando acceso al micr\xF3fono...");
+      try {
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: false,
+              noiseSuppression: false,
+              autoGainControl: true,
+              channelCount: 2,
+              sampleRate: 44100
+            }
+          });
+        } catch (errStrict) {
+          console.warn("Fallback a getUserMedia b\xE1sico:", errStrict);
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
+        audioStreamRef.current = stream;
+        setIsListening(true);
+        setCountdown(10);
+        setStatusMsg("Escuchando audio ambiental (10s)...");
+        let maxRecordedLevel = 0;
+        let sumRecordedLevel = 0;
+        let samplesRecordedCount = 0;
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          const audioCtx = new AudioContextClass();
+          audioCtxRef.current = audioCtx;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+          source.connect(analyser);
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          const updateMeter = () => {
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+            }
+            const avg = sum / dataArray.length;
+            const curLvl = Math.min(100, Math.round(avg / 128 * 100));
+            setMicLevel(curLvl);
+            if (curLvl > maxRecordedLevel) maxRecordedLevel = curLvl;
+            sumRecordedLevel += curLvl;
+            samplesRecordedCount += 1;
+            animFrameRef.current = requestAnimationFrame(updateMeter);
+          };
+          updateMeter();
+        } catch (e) {
+          console.warn("Web Audio VU meter no disponible:", e);
+        }
+        let recorderOptions = { audioBitsPerSecond: 128e3 };
+        let selectedMime = "audio/webm";
+        if (typeof MediaRecorder.isTypeSupported === "function") {
+          if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+            selectedMime = "audio/webm;codecs=opus";
+          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+            selectedMime = "audio/webm";
+          } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+            selectedMime = "audio/mp4";
+          } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+            selectedMime = "audio/ogg";
+          }
+        }
+        try {
+          recorderOptions.mimeType = selectedMime;
+        } catch (e) {
+          console.warn("No se pudo fijar mimeType estricto:", e);
+        }
+        const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+        mediaRecorderRef.current = mediaRecorder;
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+        mediaRecorder.onstop = async () => {
+          var _a2;
+          if (animFrameRef.current) {
+            cancelAnimationFrame(animFrameRef.current);
+            animFrameRef.current = null;
+          }
+          if (audioCtxRef.current) {
+            try {
+              audioCtxRef.current.close();
+            } catch (e) {
+            }
+            audioCtxRef.current = null;
+          }
+          setMicLevel(0);
+          if (audioStreamRef.current) {
+            try {
+              audioStreamRef.current.getTracks().forEach((t) => t.stop());
+            } catch (e) {
+            }
+            audioStreamRef.current = null;
+          }
+          setIsListening(false);
+          if (chunks.length === 0) {
+            setStatusMsg("\u26A0\uFE0F El micr\xF3fono web no captur\xF3 se\xF1al. Activando captura de hardware...");
+            startHardwareMicrophoneListening();
+            return;
+          }
+          if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
+            console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
+          }
+          const actualMime = ((_a2 = chunks[0]) == null ? void 0 : _a2.type) || selectedMime || "audio/webm";
+          const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
+          const audioBlob = new Blob(chunks, { type: actualMime });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            executeRecognition(reader.result, `mic_sample.${ext}`);
+          };
+          reader.readAsDataURL(audioBlob);
+        };
+        mediaRecorder.start(1e3);
+        let timeLeft = 10;
+        timerRef.current = setInterval(() => {
+          timeLeft -= 1;
+          setCountdown(timeLeft);
+          if (timeLeft <= 0) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            if (mediaRecorder.state !== "inactive") {
+              mediaRecorder.stop();
+            }
+          }
+        }, 1e3);
+      } catch (err) {
+        console.error("Error acceso micr\xF3fono navegador:", err);
+        setMicPermissionError(err.message || "Permiso denegado");
+        setStatusMsg("Micr\xF3fono del navegador bloqueado. Cambiando a captura por hardware de cabina...");
+        setTimeout(() => {
+          startHardwareMicrophoneListening();
+        }, 600);
+      }
+    };
+    const startHardwareMicrophoneListening = async () => {
+      if (isListening || isAnalyzing) return;
+      cancelListening();
+      setIsListening(true);
+      setCountdown(7);
+      setStatusMsg("\u{1F399}\uFE0F Grabando desde el micr\xF3fono del sistema (Hardware 7s)...");
+      let fakeMeterInterval = setInterval(() => {
+        const fakeLvl = Math.floor(Math.random() * 45) + 30;
+        setMicLevel(fakeLvl);
+      }, 150);
+      let timeLeft = 7;
+      timerRef.current = setInterval(() => {
+        timeLeft -= 1;
+        setCountdown(timeLeft);
+        if (timeLeft <= 0) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          clearInterval(fakeMeterInterval);
+          setMicLevel(0);
+          setStatusMsg("Consultando huella ac\xFAstica con los servidores...");
+        }
+      }, 1e3);
+      try {
+        let res = null;
+        if (window.eel && typeof window.eel.grabar_microfono_shazam === "function") {
+          res = await window.eel.grabar_microfono_shazam(7, selectedEngine, auddToken)();
+        } else {
+          const resp = await fetch("/api/shazam/record_mic", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ duration: 7, motor: selectedEngine, audd_token: auddToken })
+          });
+          if (resp.ok) {
+            res = await resp.json();
+          } else {
+            throw new Error(`HTTP ${resp.status}`);
+          }
+        }
+        clearInterval(fakeMeterInterval);
+        setMicLevel(0);
+        setIsListening(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        if (res && res.status === "error") {
+          setMicPermissionError(res.msg);
+          setStatusMsg("\u26A0\uFE0F " + (res.msg || "Error en captura de audio."));
+        } else {
+          setMicPermissionError(null);
+          handleRecognitionResponse(res);
+        }
+      } catch (hwErr) {
+        clearInterval(fakeMeterInterval);
+        setMicLevel(0);
+        setIsListening(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        console.error("Error en captura por hardware:", hwErr);
+        setMicPermissionError("Permiso de micr\xF3fono no disponible");
+        setStatusMsg("\u26A0\uFE0F No se pudo acceder al micr\xF3fono. Revisa Ajustes de macOS > Privacidad > Micr\xF3fono o arrastra un archivo de audio.");
+      }
+    };
+    const handleFileSelect = (file) => {
+      if (!file) return;
+      setIsAnalyzing(true);
+      if (selectedEngine === "radar_edge" && recognizerRef.current) {
+        setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
+        const reader2 = new FileReader();
+        reader2.onload = async (e) => {
+          try {
+            const arrayBuf = e.target.result;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const tempCtx = new AudioCtx();
+            const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf);
+            const channelData = decodedBuffer.getChannelData(0);
+            tempCtx.close();
+            await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+            setIsAnalyzing(false);
+          } catch (fileErr) {
+            console.error("Error decodificando archivo para Radar C++:", fileErr);
+            const r2 = new FileReader();
+            r2.onloadend = () => executeRecognition(r2.result, file.name);
+            r2.readAsDataURL(file);
+          }
+        };
+        reader2.readAsArrayBuffer(file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file);
+        return;
+      }
+      setStatusMsg(`Leyendo "${file.name}"...`);
+      const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        executeRecognition(reader.result, file.name);
+      };
+      reader.readAsDataURL(fileToRead);
+    };
+    const handleRecognitionResponse = (res) => {
+      setIsAnalyzing(false);
+      if (res && res.status === "ok") {
+        const engineTag = res.motor_usado ? ` [v\xEDa ${res.motor_usado}]` : "";
+        const cacheTag = res.de_cache ? " \u26A1(Cach\xE9)" : "";
+        setStatusMsg(`\u2713 Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`);
+        setIdentifiedTrack(res);
+        setHistory((prev) => [res, ...prev.filter((item) => item.title !== res.title || item.artist !== res.artist)]);
+        if (res.preview_url) {
+          togglePlayPreview(res.preview_url);
+        }
+      } else if (res && res.status === "silence") {
+        setStatusMsg(res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micr\xF3fono.");
+      } else {
+        setStatusMsg((res == null ? void 0 : res.msg) || "No se encontraron coincidencias para este fragmento de audio.");
+      }
+    };
+    const handleSendToAuditInternal = (trk) => {
+      if (!trk || !onSendToAudit) return;
+      const newTrackItem = {
+        id: Date.now(),
+        t: trk.title,
+        title: trk.title,
+        a: trk.artist,
+        artist: trk.artist,
+        album: trk.album || `${trk.title} - Single`,
+        genre: trk.genre || "Electronic",
+        subgenre: "Tech House",
+        year: trk.year || "",
+        b: "126.00",
+        bpm: "126.00",
+        k: "8A",
+        key: "8A",
+        duration: "03:30",
+        format: "FLAC",
+        cover: trk.cover || "",
+        status: "Pass 22.05kHz",
+        first_downbeat_ms: 250,
+        trim_start_ms: 25,
+        comment: trk.comment || trk.comentario || `[126 BPM | 8A] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`,
+        comentario: trk.comment || trk.comentario || `[126 BPM | 8A] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`,
+        cues: NV2_COLORS
+      };
+      onSendToAudit(newTrackItem);
+    };
+    const handleSendToSpotifyInternal = (trk) => {
+      if (!trk || !onSendToSpotify) return;
+      onSendToSpotify(trk.spotify_query || `${trk.title} ${trk.artist}`);
+    };
+    const handleCopyToClipboard = (trk) => {
+      const text = `${trk.artist} - ${trk.title} [${trk.album || ""} ${trk.year || ""}]`;
+      navigator.clipboard.writeText(text);
+      alert(`Copiado al portapapeles:
+${text}`);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Radar, title: "Radar Ac\xFAstico", accent: "Drop Scanner" }), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "radar_edge" ? "Radar Edge C++ (<1.75s)" : selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral"), /* @__PURE__ */ React.createElement("p", { className: "hidden md:inline text-xs text-zinc-400 font-sans" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio.")), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedEngine("radar_edge"),
+        className: `ws-seg-btn ${selectedEngine === "radar_edge" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "radar_edge",
+        title: "Motor C++ Nativo (Zero-Copy) + Cloudflare Edge Gateway (<1.75s)"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13, className: "text-pink-400" }),
+      /* @__PURE__ */ React.createElement("span", null, "Radar Edge C++")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedEngine("hybrid"),
+        className: `ws-seg-btn ${selectedEngine === "hybrid" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "hybrid",
+        title: "Combina escaneo espectral de drop con respaldo ac\xFAstico autom\xE1tico para m\xE1xima precisi\xF3n"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "H\xEDbrido Pro")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedEngine("shazamio"),
+        className: `ws-seg-btn ${selectedEngine === "shazamio" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "shazamio",
+        title: "Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Escaneo Espectral")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedEngine("audd"),
+        className: `ws-seg-btn ${selectedEngine === "audd" ? "ws-seg-on" : ""}`,
+        "aria-pressed": selectedEngine === "audd",
+        title: "Red de Identificaci\xF3n Ac\xFAstica Pro (ISRC y Cat\xE1logo Global)"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Identificaci\xF3n Pro (ISRC)")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 px-1" }, "Perfil DSP:"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setRadarEnvironment("club"),
+        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === "club" ? "bg-pink-600 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`,
+        title: "Club: Filtro HPF 120Hz para cortar saturaci\xF3n de subgraves en cabina (Hard Techno)"
+      },
+      "Club (HPF 120Hz)"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setRadarEnvironment("studio"),
+        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === "studio" ? "bg-cyan-600 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`,
+        title: "Studio: Filtro HPF 35Hz para sesiones ac\xFAsticas o estudio limpio"
+      },
+      "Studio (HPF 35Hz)"
+    ))), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setShowConfig(!showConfig),
+        className: `ws-btn ${showConfig || auddToken ? "ws-btn-active" : "ws-btn-outline"}`,
+        title: "Configurar claves de API o token personalizado"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, showConfig ? "Ocultar Opciones" : "Opciones API"),
+      auddToken && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" })
+    )), /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16] border border-djzinc-750 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `absolute inset-0 rounded-full border border-indigo-500/30 ${isListening || isAnalyzing ? "animate-ping" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-1.5 rounded-full border border-indigo-500/20" }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-3 rounded-full border border-indigo-500/40" }), /* @__PURE__ */ React.createElement("div", { className: `w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500 text-black shadow-emerald-500/50" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-600 text-white shadow-pink-600/50 animate-pulse" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500 text-black shadow-amber-500/50" : isListening || isAnalyzing ? "bg-cyan-500 text-black animate-spin" : "bg-djzinc-800 text-zinc-400"}` }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 18 }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase tracking-wider font-black text-indigo-400" }, "Telemetr\xEDa de Cabina Radar"), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-500/20 text-pink-300 border border-pink-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : isListening || isAnalyzing ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-zinc-800 text-zinc-400 border border-zinc-700"}` }, (radarEvent == null ? void 0 : radarEvent.state) || (isListening ? "CAPTURING" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate max-w-sm" }, (radarEvent == null ? void 0 : radarEvent.message) || (isListening ? "Escuchando ventana de 10s (stride 2s)..." : "Listo para capturar en cabina")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto shrink-0 font-mono text-center" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Nivel RMS"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-cyan-400" }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? `${radarEvent.telemetry.rmsDbfs.toFixed(1)} dBFS` : "-16.0 dBFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Pico / Clip"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${((_a = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _a.isClipping) ? "text-rose-500" : "text-emerald-400"}` }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? radarEvent.telemetry.isClipping ? "\u26A0\uFE0F CLIPPING" : `${radarEvent.telemetry.peakDbfs.toFixed(1)} dB` : "\u2264 -1.0 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Coherencia \u03C1"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${(radarEvent == null ? void 0 : radarEvent.pitchShiftSuspected) ? "text-pink-400 animate-pulse" : "text-indigo-300"}` }, (radarEvent == null ? void 0 : radarEvent.rho) ? `${radarEvent.rho.toFixed(3)}x` : "1.000x")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Latencia Edge"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-white" }, ((_b = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _b.latencyMs) ? `${radarEvent.telemetry.latencyMs} ms` : "< 1750 ms")))), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: auddToken,
+        onChange: (e) => setAuddToken(e.target.value),
+        placeholder: "test (predeterminado)",
+        className: "w-full sm:w-64 px-2.5 py-1.5 bg-[var(--bw-surface-1)] border border-[var(--bw-line-strong)] rounded-lg text-xs text-white font-mono focus:border-cyan-400 outline-none"
+      }
+    ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-5 rounded-xl border border-[var(--bw-line)] hover:border-[var(--bw-line-strong)] flex flex-col items-center text-center justify-between relative overflow-hidden shadow-sm transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-cyan-400" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta la red de identificaci\xF3n ac\xFAstica global.")), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Fuente de micr\xF3fono" }, /* @__PURE__ */ React.createElement("span", { className: "ws-seg-label" }, "Entrada"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setMicCaptureMode("auto");
+          setMicPermissionError(null);
+        },
+        className: `ws-seg-btn ${micCaptureMode === "auto" ? "ws-seg-on" : ""}`,
+        "aria-pressed": micCaptureMode === "auto",
+        title: "Auto: prueba primero el micr\xF3fono del navegador y si falla conmuta al hardware de sistema autom\xE1ticamente"
+      },
+      "Auto"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setMicCaptureMode("browser");
+          setMicPermissionError(null);
+        },
+        className: `ws-seg-btn ${micCaptureMode === "browser" ? "ws-seg-on" : ""}`,
+        "aria-pressed": micCaptureMode === "browser",
+        title: "Micr\xF3fono Web (Navegador HTML5)"
+      },
+      "Navegador"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setMicCaptureMode("hardware");
+          setMicPermissionError(null);
+        },
+        className: `ws-seg-btn ${micCaptureMode === "hardware" ? "ws-seg-on" : ""}`,
+        "aria-pressed": micCaptureMode === "hardware",
+        title: "Micr\xF3fono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
+      },
+      "Hardware (macOS)"
+    )), /* @__PURE__ */ React.createElement("div", { className: "my-4 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ws-radar-ring-2 ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: startMicrophoneListening,
+        disabled: isListening || isAnalyzing,
+        className: `ws-radar ${isListening ? "ws-radar-live" : ""}`,
+        "aria-label": isListening ? `Escuchando, ${countdown} segundos` : "Escuchar y reconocer pista"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Mic, null),
+      /* @__PURE__ */ React.createElement("span", { className: "ws-radar-label" }, isListening ? `${countdown}s` : "ESCUCHAR")
+    )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/60 border border-amber-600/40 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En macOS: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes del Sistema > Privacidad > Micr\xF3fono"), "."), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: startHardwareMicrophoneListening,
+        className: "ws-btn ws-btn-primary w-full justify-center mt-1"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
+      " Usar Captura Hardware de Sistema"
+    )), isListening && /* @__PURE__ */ React.createElement("div", { className: "w-60 mt-3.5 flex flex-col gap-1.5 animate-fadeIn", role: "meter", "aria-label": "Se\xF1al de micr\xF3fono", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": micLevel }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "ws-dot ws-dot-live" }), "Input"), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-[11px] font-semibold tabular-nums ${micLevel > 85 ? "text-rose-400" : micLevel > 15 ? "text-[var(--bw-cyan)]" : "text-amber-400"}` }, micLevel, "%")), /* @__PURE__ */ React.createElement("div", { className: "ws-vu", "aria-hidden": "true" }, Array.from({ length: 24 }, (_, i) => {
+      const thr = (i + 1) / 24 * 100;
+      const on = micLevel >= thr - 2;
+      const zone = i >= 21 ? "peak" : i >= 16 ? "hot" : "ok";
+      return /* @__PURE__ */ React.createElement("span", { key: i, className: `ws-vu-seg ws-vu-${zone} ${on ? "is-on" : ""}` });
+    })), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-[var(--bw-text-3)] flex items-center gap-1.5" }, micLevel > 10 ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icons.Check, { size: 12, className: "text-emerald-400" }), "Captando audio ambiental") : "Acerca el altavoz o sube el volumen")), isListening && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-3 z-10" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: (e) => {
+          e.stopPropagation();
+          stopMicrophoneListeningEarly();
+        },
+        className: "ws-btn ws-btn-primary text-xs",
+        title: "Enviar grabaci\xF3n inmediatamente sin esperar al final de los 10 segundos"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Identificar Ya")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: (e) => {
+          e.stopPropagation();
+          cancelListening();
+        },
+        className: "ws-btn ws-btn-ghost text-xs",
+        title: "Cancelar la captura actual"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 }),
+      " Cancelar"
+    ))), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-400" }, isListening ? /* @__PURE__ */ React.createElement("span", { className: "text-rose-400 font-bold animate-pulse" }, "\u25CF Grabando audio del micr\xF3fono...") : isAnalyzing ? /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "\u25CF Analizando huella ac\xFAstica...") : /* @__PURE__ */ React.createElement("span", null, "Haz clic para iniciar la escucha de 10 segundos"))), /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onDragOver: (e) => {
+          e.preventDefault();
+          setDragOver(true);
+        },
+        onDragLeave: () => setDragOver(false),
+        onDrop: (e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileSelect(e.dataTransfer.files[0]);
+          }
+        },
+        className: `bg-[var(--bw-surface-1)] p-5 rounded-xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-sm group ${dragOver ? "border-cyan-400 bg-cyan-950/20 scale-[1.01]" : "border-[var(--bw-line)] hover:border-[var(--bw-line-strong)]"}`,
+        onClick: () => fileInputRef.current && fileInputRef.current.click()
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-4" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-zinc-400" }, "MODO B \u2022 ANALIZADOR DE ARCHIVO"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-white" }, "Subir o Arrastrar Archivo de Audio"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-xs mx-auto" }, "Arrastra cualquier archivo local (.mp3, .flac, .wav, .m4a) para extraer su huella digital y metadatos.")),
+      /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "file",
+          ref: fileInputRef,
+          onChange: (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+              const selected = e.target.files[0];
+              e.target.value = "";
+              handleFileSelect(selected);
+            }
+          },
+          accept: "audio/*",
+          className: "hidden"
+        }
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "my-3 w-32 h-28 rounded-xl border-2 border-dashed border-[var(--bw-line-strong)] group-hover:border-[var(--bw-cyan)] flex flex-col items-center justify-center transition-colors bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 22, className: "text-zinc-400 group-hover:text-[var(--bw-cyan)] mb-1.5 transition-colors" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-zinc-300" }, "ARRASTRAR AQU\xCD")),
+      /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-500" }, /* @__PURE__ */ React.createElement("span", null, "Formatos: MP3, FLAC, WAV, M4A, OGG"))
+    )), identifiedTrack && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-5 rounded-xl border border-cyan-500/40 shadow-xl space-y-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider" }, "PISTA IDENTIFICADA"), identifiedTrack.motor_usado && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 12, className: "inline-block align-[-2px]" }), " ", identifiedTrack.motor_usado)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, identifiedTrack.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 bg-[var(--bw-surface-1)] px-2 py-0.5 rounded border border-[var(--bw-line)]" }, "ISRC: ", identifiedTrack.isrc), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleDescartarDeteccion,
+        className: "ws-icon-btn w-6 h-6",
+        title: "Descartar esta detecci\xF3n"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-center gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement(
+      "img",
+      {
+        src: getValidCover(identifiedTrack.cover),
+        alt: "Track Artwork",
+        className: "w-40 h-40 rounded-xl object-cover border border-[var(--bw-line-strong)] shadow-xl"
+      }
+    ), identifiedTrack.preview_url && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => togglePlayPreview(identifiedTrack.preview_url),
+        className: `absolute inset-0 m-auto w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer font-black text-base ${previewPlaying ? "bg-emerald-400 text-black scale-105" : "bg-[var(--bw-cyan)] text-black hover:scale-105 shadow-[0_0_16px_rgba(34,211,238,0.45)]"}`,
+        title: "Reproducir pre-escucha de audio oficial"
+      },
+      previewPlaying ? /* @__PURE__ */ React.createElement(Icons.Pause, { size: 18 }) : /* @__PURE__ */ React.createElement(Icons.Play, { size: 18 })
+    ), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[9.5px] font-mono text-zinc-300 border border-[var(--bw-line)]" }, "Pre-Escucha 30s")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "text-xl font-bold text-white truncate", title: identifiedTrack.title }, identifiedTrack.title), /* @__PURE__ */ React.createElement("p", { className: "text-base font-semibold text-cyan-400 truncate mt-0.5", title: identifiedTrack.artist }, identifiedTrack.artist)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "\xC1lbum"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate block", title: identifiedTrack.album }, identifiedTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold truncate block" }, identifiedTrack.genre || "Electronic")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "Lanzamiento"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate block" }, identifiedTrack.year || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "Sello / Label"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300 font-semibold truncate block", title: identifiedTrack.label }, identifiedTrack.label || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-3 rounded-xl border border-[var(--bw-line)] space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10.5px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), "Comentario T\xE1ctico DJ & Gu\xEDa de Mezcla"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 text-[10px]" }, "Tag ID3 / Libreta")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 14, className: "text-zinc-400 shrink-0" }), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: identifiedTrack.comment || identifiedTrack.comentario || "",
+        onChange: (e) => {
+          const val = e.target.value;
+          setIdentifiedTrack((prev) => ({ ...prev, comment: val, comentario: val }));
+        },
+        placeholder: "Escribe aqu\xED el comentario estrat\xE9gico para cabina...",
+        className: "flex-1 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] focus:border-cyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-200 outline-none transition-colors"
+      }
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1 pt-0.5" }, [
+      { label: "Peak Time", text: `[${identifiedTrack.genre || "Electronic"}] Peak Time \u2022 Drop Contundente \u2022 Outro R\xE1pido 32b` },
+      { label: "Warm Up", text: `[${identifiedTrack.genre || "Electronic"}] Warm Up Groovy \u2022 Entrada Progresiva 64b \u2022 Mezcla Limpia` },
+      { label: "Breakdown", text: `[${identifiedTrack.genre || "Electronic"}] Breakdown Vocal Intenso \u2022 Mezcla Larga con Graves` },
+      { label: "After", text: `[${identifiedTrack.genre || "Electronic"}] Afterhours \u2022 Dark Hypnotic \u2022 Bombo Pesado Sub-Bass` }
+    ].map((tpl, tIdx) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: tIdx,
+        type: "button",
+        onClick: () => setIdentifiedTrack((prev) => ({ ...prev, comment: tpl.text, comentario: tpl.text })),
+        className: "px-2 py-0.5 text-[9.5px] font-mono bg-[var(--bw-surface-2)] hover:bg-[var(--bw-surface-3)] text-zinc-400 hover:text-white rounded border border-[var(--bw-line)] cursor-pointer transition-colors",
+        title: `Insertar: "${tpl.text}"`
+      },
+      tpl.label
+    )))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 pt-1" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleApuntarEnLista(identifiedTrack),
+        className: "ws-btn ws-btn-primary",
+        title: "A\xF1adir esta pista a tu Libreta Digital de Apuntes DJ"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Notebook, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Apuntar en Lista")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleSendToSpotifyInternal(identifiedTrack),
+        className: "ws-btn ws-btn-outline",
+        title: "Enviar a la cola de descarga en FLAC"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Download, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Record Pool")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleSendToAuditInternal(identifiedTrack),
+        className: "ws-btn ws-btn-outline",
+        title: "A\xF1adir a la tabla de auditor\xEDa para an\xE1lisis DSP"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Auditor\xEDa DJ")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCopyToClipboard(identifiedTrack),
+        className: "ws-btn ws-btn-ghost",
+        title: "Copiar texto al portapapeles"
+      },
+      "Copiar"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleDescartarDeteccion,
+        className: "ws-btn ws-btn-danger ml-auto",
+        title: "Descartar esta detecci\xF3n y dejar el radar listo"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Descartar")
+    ))))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-5 shadow-sm space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] font-bold text-sm shadow" }, /* @__PURE__ */ React.createElement(Icons.Notebook, { size: 15 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs font-bold text-white font-mono uppercase tracking-wider" }, "Libreta Digital de Apuntes DJ"), /* @__PURE__ */ React.createElement("span", { className: "ws-count ws-count-on" }, notebookTracks.length, " apuntes")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-400" }, "Colecci\xF3n de pistas cazadas en vivo en el radar, listas para exportar o enviar a producci\xF3n."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, notebookFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-emerald-400 animate-pulse mr-2" }, notebookFeedback), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleExportarNotebookXLS,
+        disabled: notebookTracks.length === 0,
+        className: "ws-btn ws-btn-outline",
+        title: "Descargar listado en formato Excel (.xls / .xlsx)"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Excel, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Descargar XLS")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleExportarNotebookTXT,
+        disabled: notebookTracks.length === 0,
+        className: "ws-btn ws-btn-outline",
+        title: "Descargar tracklist limpio en formato texto (.txt)"
+      },
+      /* @__PURE__ */ React.createElement(Icons.FileText, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Descargar TXT")
+    ), notebookTracks.length > 0 && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleVaciarNotebook,
+        className: "ws-btn ws-btn-danger",
+        title: "Vaciar todos los apuntes"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14 }),
+      " Vaciar"
+    ))), notebookTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-10 text-center text-zinc-500 font-mono text-xs border border-dashed border-[var(--bw-line-strong)] rounded-xl bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons.FileText, { size: 16, className: "inline-block align-[-2px] block mb-1 text-zinc-400" }), "Tu libreta de apuntes est\xE1 vac\xEDa. Cuando identifiques un track en el Radar, pulsa ", /* @__PURE__ */ React.createElement("strong", { className: "text-cyan-400" }, '"Apuntar en Lista"'), " para guardarlo aqu\xED.") : /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "ws-grid w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "w-8 text-center" }, "#"), /* @__PURE__ */ React.createElement("th", { className: "w-10 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "sr-only" }, "Reproducir")), /* @__PURE__ */ React.createElement("th", { className: "min-w-[220px]" }, "Pista"), /* @__PURE__ */ React.createElement("th", { className: "min-w-[150px]" }, "Artista"), /* @__PURE__ */ React.createElement("th", { className: "w-28" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "w-28" }, "Subg\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "w-14 text-center" }, "A\xF1o"), /* @__PURE__ */ React.createElement("th", { className: "min-w-[220px]" }, "Nota DJ"), /* @__PURE__ */ React.createElement("th", { className: "w-20 text-center" }, "Hora"), /* @__PURE__ */ React.createElement("th", { className: "w-32 text-right" }, "Acciones"))), /* @__PURE__ */ React.createElement("tbody", null, notebookTracks.map((row, idx) => {
+      const isRowPlaying = previewPlaying && audioRef.current.src === row.preview_url;
+      return /* @__PURE__ */ React.createElement("tr", { key: row.notebook_id || idx, className: isRowPlaying ? "is-playing" : "" }, /* @__PURE__ */ React.createElement("td", { className: "text-center ws-num" }, idx + 1), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, row.preview_url ? /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => togglePlayPreview(row.preview_url),
+          className: `ws-play ${isRowPlaying ? "is-on" : ""}`,
+          "aria-label": isRowPlaying ? "Pausar pre-escucha" : "Reproducir pre-escucha"
+        },
+        isRowPlaying ? /* @__PURE__ */ React.createElement(Icons.Pause, { size: 12 }) : /* @__PURE__ */ React.createElement(Icons.Play, { size: 12 })
+      ) : /* @__PURE__ */ React.createElement("span", { className: "ws-num" }, "--")), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: getValidCover(row.cover),
+          alt: "",
+          onError: (e) => {
+            e.target.onerror = null;
+            e.target.src = DEFAULT_VINYL_SVG;
+          },
+          className: "w-8 h-8 rounded-md object-cover border border-[var(--bw-line-strong)] shrink-0"
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-medium text-[var(--bw-white)] text-[13px] truncate max-w-xs", title: row.title }, row.title), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-[var(--bw-text-3)] truncate max-w-xs", title: row.album }, row.album || "--")))), /* @__PURE__ */ React.createElement("td", { className: "text-[var(--bw-text-2)] truncate max-w-xs" }, row.artist), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "ws-tag" }, row.genre || "Tech House")), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "ws-tag ws-tag-muted" }, !row.subgenre || ["Pop", "Electronic", "Dance", "Club", "Other"].includes(row.subgenre) ? row.genre || "Tech House" : row.subgenre)), /* @__PURE__ */ React.createElement("td", { className: "text-center ws-num" }, row.year || "--"), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "text",
+          value: row.comment || row.comentario || "",
+          onChange: (e) => {
+            const val = e.target.value;
+            setNotebookTracks((prev) => prev.map((t, i) => i === idx ? { ...t, comment: val, comentario: val } : t));
+          },
+          placeholder: "A\xF1adir nota DJ...",
+          "aria-label": `Nota DJ para ${row.title}`,
+          className: "ws-inline-input",
+          title: row.comment || row.comentario || "Nota o comentario t\xE1ctico DJ"
+        }
+      ))), /* @__PURE__ */ React.createElement("td", { className: "text-center ws-num" }, row.added_at || "--"), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => handleSendToSpotifyInternal(row), className: "ws-btn ws-btn-ghost h-7 px-2", title: "Enviar a Record Pool" }, /* @__PURE__ */ React.createElement(Icons.Download, { size: 13 }), " Pool"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => handleSendToAuditInternal(row), className: "ws-btn ws-btn-ghost h-7 px-2", title: "A\xF1adir a Auditor\xEDa" }, /* @__PURE__ */ React.createElement(Icons.Copy, { size: 13 }), " Auditar"), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleEliminarDeNotebook(row.notebook_id),
+          className: "ws-btn ws-btn-ghost h-7 w-7 px-0 justify-center hover:!text-rose-400",
+          "aria-label": "Eliminar de la libreta"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+      ))));
+    }))))), history.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Clock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "HISTORIAL DE PISTAS IDENTIFICADAS (", history.length, ")")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setHistory([]),
+        className: "text-[10px] font-mono text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
+      },
+      "Limpiar Historial"
+    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" }, history.map((trk, hIdx) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: hIdx,
+        className: "ws-card p-3 flex items-center gap-3"
+      },
+      /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: getValidCover(trk.cover),
+          alt: "",
+          className: "w-12 h-12 rounded-lg object-cover border border-[var(--bw-line-strong)] shrink-0"
+        }
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("h5", { className: "text-[13px] font-medium text-[var(--bw-white)] truncate", title: trk.title }, trk.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[var(--bw-text-2)] truncate", title: trk.artist }, trk.artist), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-[var(--bw-text-3)]" }, trk.genre || "Electronic", " ", trk.year ? `\xB7 ${trk.year}` : "")),
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, trk.preview_url && /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => togglePlayPreview(trk.preview_url),
+          className: "ws-play",
+          "aria-label": "Pre-escucha"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Play, { size: 12 })
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleSendToAuditInternal(trk),
+          className: "ws-play",
+          "aria-label": "A\xF1adir a Auditor\xEDa"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Plus, { size: 12 })
+      ))
+    )))));
+  };
+
+  // web/js/workspaces/LogsWorkspace.jsx
+  var { useState: useState22 } = React;
+
+  // web/js/workspaces/TrendsWorkspace.jsx
+  var { useState: useState23, useEffect: useEffect23 } = React;
+  var TrendsWorkspace = ({ lang = "es" }) => {
+    const [trendsData, setTrendsData] = useState23({
+      last_crawled_at: "Sincronizando...",
+      next_scheduled_run: "Martes 23:00",
+      items: [],
+      festivals_calendar: [],
+      set_breakdowns: [],
+      interviews: [],
+      controllers: [],
+      gadgets: [],
+      dj_gear: [],
+      trends_radar: []
+    });
+    const [loading, setLoading] = useState23(true);
+    const [isCrawling, setIsCrawling] = useState23(false);
+    const [selectedCategory, setSelectedCategory] = useState23("todas");
+    const [selectedCity, setSelectedCity] = useState23("Madrid");
+    const [searchQuery, setSearchQuery] = useState23("");
+    const [dateFilter, setDateFilter] = useState23("all");
+    const [readingArticle, setReadingArticle] = useState23(null);
+    const [copiedRef, setCopiedRef] = useState23(false);
+    const categories = [
+      { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
+      { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
+      { id: "Entrevistas", label: lang === "en" ? "DJ Interviews" : "Entrevistas DJs", icon: "\u{1F399}\uFE0F" },
+      { id: "Controladoras", label: lang === "en" ? "DJ Controllers" : "Controladoras DJ", icon: "\u{1F39B}\uFE0F" },
+      { id: "Gadgets", label: lang === "en" ? "Booth Gadgets" : "Gadgets de Cabina", icon: "\u{1F50C}" },
+      { id: "Material DJ", label: lang === "en" ? "Pro DJ Gear" : "Material DJ Pro", icon: "\u{1F3A7}" },
+      { id: "Tendencias", label: lang === "en" ? "Trends & News" : "Tendencias Globales", icon: "\u{1F525}" },
+      { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "An\xE1lisis de Sesiones", icon: "\u{1F4CA}" },
+      { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar & DSP", icon: "\u{1F4E1}" },
+      { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Charts & Labels", icon: "\u{1F4C8}" }
+    ];
+    const fetchTrends = async () => {
+      try {
+        setLoading(true);
+        if (window.eel && window.eel.obtener_tendencias_web) {
+          const res = await window.eel.obtener_tendencias_web()();
+          if (res && res.items) setTrendsData(res);
+        } else {
+          const resp = await fetch("/api/trends");
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.items) setTrendsData(data);
+          }
+        }
+      } catch (e) {
+        console.error("Error cargando tendencias:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    useEffect23(() => {
+      fetchTrends();
+    }, []);
+    const handleRunCrawler = async () => {
+      setIsCrawling(true);
+      try {
+        if (window.eel && window.eel.ejecutar_crawler_tendencias) {
+          const res = await window.eel.ejecutar_crawler_tendencias()();
+          if (res && res.items) setTrendsData(res);
+        } else {
+          const resp = await fetch("/api/trends/crawl", { method: "POST" });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && data.items) setTrendsData(data);
+          }
+        }
+      } catch (e) {
+        console.error("Error al ejecutar crawler:", e);
+      } finally {
+        setIsCrawling(false);
+      }
+    };
+    const handleCopyReference = (refText) => {
+      if (!refText) return;
+      try {
+        navigator.clipboard.writeText(refText);
+        setCopiedRef(true);
+        setTimeout(() => setCopiedRef(false), 2500);
+      } catch (_) {
+      }
+    };
+    const filteredItems = useMemo(() => {
+      const items = trendsData.items || [];
+      return items.filter((item) => {
+        const matchCat = selectedCategory === "todas" || item.category === selectedCategory;
+        const q = searchQuery.toLowerCase().trim();
+        const matchSearch = !q || (item.title || "").toLowerCase().includes(q) || (item.summary || "").toLowerCase().includes(q) || (item.source || "").toLowerCase().includes(q) || (item.key_tags || []).some((t) => t.toLowerCase().includes(q));
+        if (!matchCat || !matchSearch) return false;
+        if (dateFilter !== "all" && item.date) {
+          try {
+            const itemDate = new Date(item.date);
+            if (!isNaN(itemDate.getTime())) {
+              const now = /* @__PURE__ */ new Date();
+              const diffDays = (now.getTime() - itemDate.getTime()) / (1e3 * 60 * 60 * 24);
+              if (dateFilter === "7days" && diffDays > 7) return false;
+              if (dateFilter === "30days" && diffDays > 30) return false;
+              if (dateFilter === "90days" && diffDays > 90) return false;
+            }
+          } catch (_) {
+          }
+        }
+        return true;
+      });
+    }, [trendsData, selectedCategory, searchQuery, dateFilter]);
+    const festivals = useMemo(() => {
+      let list = trendsData.festivals_calendar || [];
+      if (selectedCity && selectedCity !== "Todas") {
+        list = list.filter((f) => (f.city || "").toLowerCase() === selectedCity.toLowerCase());
+      }
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (f) => (f.name || "").toLowerCase().includes(q) || (f.city || "").toLowerCase().includes(q) || (f.venue || "").toLowerCase().includes(q) || (f.headliners || []).some((h) => h.toLowerCase().includes(q))
+      );
+    }, [trendsData, selectedCity, searchQuery]);
+    const setBreakdowns = useMemo(() => {
+      const list = trendsData.set_breakdowns || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (s) => (s.artist || "").toLowerCase().includes(q) || (s.event || "").toLowerCase().includes(q) || (s.tactical_breakdown || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const interviews = useMemo(() => {
+      const list = trendsData.interviews || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (it) => (it.artist || "").toLowerCase().includes(q) || (it.headline || "").toLowerCase().includes(q) || (it.quote || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const controllers = useMemo(() => {
+      const list = trendsData.controllers || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (c) => (c.name || "").toLowerCase().includes(q) || (c.brand || "").toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const gadgets = useMemo(() => {
+      const list = trendsData.gadgets || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (g) => (g.name || "").toLowerCase().includes(q) || (g.category || "").toLowerCase().includes(q) || (g.utility || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const djGear = useMemo(() => {
+      const list = trendsData.dj_gear || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (dg) => (dg.name || "").toLowerCase().includes(q) || (dg.brand || "").toLowerCase().includes(q) || (dg.type || "").toLowerCase().includes(q) || (dg.description || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    const radarItems = useMemo(() => {
+      const list = trendsData.trends_radar || [];
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return list;
+      return list.filter(
+        (r) => (r.topic || "").toLowerCase().includes(q) || (r.description || "").toLowerCase().includes(q)
+      );
+    }, [trendsData, searchQuery]);
+    return /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement(
+      SectionTitle,
+      {
+        icon: Icons.Trends,
+        title: "Tendencias",
+        accent: "Studio Lab",
+        badge: "RADAR & FESTIVALES",
+        accentColor: "purple"
+      }
+    ), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Inteligencia musical continua y escaneo de tendencias ac\xFAsticas de cabina."))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-3 bg-[#0d0d15] p-2 rounded-xl border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-right px-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 flex items-center gap-1.5 justify-end" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "Crawler semanal: ", /* @__PURE__ */ React.createElement("strong", null, "Martes noche (23:00)"))), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500" }, "\xDAltima sync: ", trendsData.last_crawled_at || "Reciente")), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleRunCrawler,
+        disabled: isCrawling,
+        className: "px-3.5 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 hover:from-djcyan-400 hover:to-djcyan-300 disabled:opacity-50 text-black font-black text-xs rounded-lg shadow-md shadow-djcyan-500/30 flex items-center gap-2 cursor-pointer transition-transform active:scale-95 shrink-0",
+        title: "Lanza el crawler para buscar noticias y tendencias de m\xFAsica electr\xF3nica en la web ahora mismo"
+      },
+      /* @__PURE__ */ React.createElement("span", { className: isCrawling ? "animate-spin" : "" }, /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" })),
+      /* @__PURE__ */ React.createElement("span", null, isCrawling ? "Rastreando la Web..." : "Sincronizar Crawler")
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none" }, categories.map((cat) => {
+      const isSelected = selectedCategory === cat.id;
+      let count = 0;
+      if (cat.id === "todas") count = (trendsData.items || []).length;
+      else if (cat.id === "Festivales & Eventos") count = (trendsData.festivals_calendar || []).length;
+      else if (cat.id === "SetBreakdowns") count = (trendsData.set_breakdowns || []).length;
+      else if (cat.id === "Entrevistas") count = (trendsData.interviews || []).length;
+      else if (cat.id === "Controladoras") count = (trendsData.controllers || []).length;
+      else if (cat.id === "Gadgets") count = (trendsData.gadgets || []).length;
+      else if (cat.id === "Material DJ") count = (trendsData.dj_gear || []).length;
+      else if (cat.id === "Radar") count = (trendsData.trends_radar || []).length;
+      else count = (trendsData.items || []).filter((i) => i.category === cat.id).length;
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: cat.id,
+          type: "button",
+          onClick: () => setSelectedCategory(cat.id),
+          className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${isSelected ? "bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black shadow-md font-black" : "bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800"}`
+        },
+        /* @__PURE__ */ React.createElement("span", null, cat.icon),
+        /* @__PURE__ */ React.createElement("span", null, cat.label),
+        /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[9px] font-mono ${isSelected ? "bg-black text-djcyan-300 font-bold" : "bg-djzinc-800 text-gray-400"}` }, count)
+      );
+    })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#0d0d15] border border-djzinc-800 rounded-lg px-2.5 py-1 text-xs font-mono" }, /* @__PURE__ */ React.createElement(Icons.Calendar, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: dateFilter,
+        onChange: (e) => setDateFilter(e.target.value),
+        className: "bg-transparent text-gray-300 text-xs font-mono outline-none cursor-pointer",
+        title: "Filtrar tendencias por fecha de publicaci\xF3n"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "all", className: "bg-[#0d0d15] text-gray-200" }, "Todas las fechas"),
+      /* @__PURE__ */ React.createElement("option", { value: "7days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltima semana"),
+      /* @__PURE__ */ React.createElement("option", { value: "30days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltimo mes"),
+      /* @__PURE__ */ React.createElement("option", { value: "90days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltimos 3 meses")
+    )), /* @__PURE__ */ React.createElement("div", { className: "relative min-w-[200px] md:w-64" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: searchQuery,
+        onChange: (e) => setSearchQuery(e.target.value),
+        placeholder: "Buscar noticias, artistas...",
+        className: "w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 transition-colors font-mono"
+      }
+    ), /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-2.5 top-2 text-gray-500" }), searchQuery && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSearchQuery(""),
+        className: "absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+    ))))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b border-djzinc-800 pb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Star, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "Eventos & Clubs Time To House"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/50" }, "timetohouse.com/es")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Agenda de clubs y sesiones electr\xF3nicas por ciudades con line-ups, horarios y entradas oficiales."))), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400 font-bold self-start sm:self-auto" }, festivals.length, " Eventos en ", selectedCity)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0d0e1c] rounded-2xl border border-djzinc-800 flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs font-mono font-bold text-gray-300 mr-1 shrink-0" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Pin, { size: 14, className: "inline-block align-[-2px]" }), " Seleccionar Ciudad:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" }, ["Madrid", "Barcelona", "Ibiza", "Valencia", "Sevilla", "Bilbao", "\xC1msterdam", "Berl\xEDn", "Londres", "Miami", "Todas"].map((city) => {
+      const isCityActive = selectedCity.toLowerCase() === city.toLowerCase();
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: city,
+          type: "button",
+          onClick: () => setSelectedCity(city),
+          className: `px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${isCityActive ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "bg-[#141525] text-gray-400 hover:text-white hover:bg-[#1c1d35] border border-djzinc-800"}`
+        },
+        city === "Madrid" ? "\u{1F1EA}\u{1F1F8} Madrid (Default)" : city === "Barcelona" ? "\u{1F1EA}\u{1F1F8} Barcelona" : city === "Ibiza" ? "\u{1F3DD}\uFE0F Ibiza" : city === "Valencia" ? "\u{1F1EA}\u{1F1F8} Valencia" : city === "Sevilla" ? "\u{1F1EA}\u{1F1F8} Sevilla" : city === "Bilbao" ? "\u{1F1EA}\u{1F1F8} Bilbao" : city === "\xC1msterdam" ? "\u{1F1F3}\u{1F1F1} \xC1msterdam" : city === "Berl\xEDn" ? "\u{1F1E9}\u{1F1EA} Berl\xEDn" : city === "Londres" ? "\u{1F1EC}\u{1F1E7} Londres" : city === "Miami" ? "\u{1F1FA}\u{1F1F8} Miami" : "\u{1F310} Todas"
+      );
+    })), /* @__PURE__ */ React.createElement("div", { className: "ml-auto text-[11px] font-mono text-gray-400 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: `https://timetohouse.com/es/events?city=${selectedCity.toLowerCase() === "todas" ? "madrid" : selectedCity.toLowerCase()}`,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "timetohouse.com/es/events"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    ))), festivals.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 text-center bg-[#0e0f1c] rounded-2xl border border-djzinc-800 text-gray-400 font-mono text-xs" }, "No hay eventos listados para ", selectedCity, " con el t\xE9rmino de b\xFAsqueda actual.") : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: fest.id,
+        className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.18)] flex flex-col group cursor-pointer",
+        onClick: () => setReadingArticle({
+          id: fest.id,
+          title: `${fest.name} @ ${fest.venue} (${fest.city})`,
+          category: "Eventos & Clubs",
+          category_badge: `\u{1F3AA} ${fest.city.toUpperCase()}`,
+          source: "Time To House (timetohouse.com/es)",
+          author: fest.venue,
+          date: fest.dates,
+          read_time: "Gu\xEDa de Sesi\xF3n",
+          image_url: fest.image_url,
+          summary: fest.description,
+          content: `${fest.name} se celebra en ${fest.venue} (${fest.city}, ${fest.country}). Horario: ${fest.dates}. Sistema de sonido certificado: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Precio de entrada: ${fest.price || "Consultar"}.
+
+Recomendaciones para cabina: Tempo recomendado en torno a ${fest.recommended_bpm}.`,
+          takeaways: [
+            `Fecha: ${fest.dates} (${fest.city}, ${fest.country})`,
+            `Club / Sala: ${fest.venue}`,
+            `Sistema Ac\xFAstico: ${fest.sound_system}`,
+            `Line-up: ${fest.headliners.join(" \u2022 ")}`,
+            `Precio: ${fest.price || "Entradas anticipadas disponibles"}`
+          ],
+          reference: fest.reference || "https://timetohouse.com/es/events?city=madrid",
+          url: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
+          key_tags: [fest.city, "Time To House", fest.venue, "Eventos 2026"]
+        })
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: fest.image_url,
+          alt: fest.name,
+          className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/40 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg" }, fest.flag), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50" }, fest.city)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 shadow" }, fest.price || "Entradas")), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 text-[11px] font-mono font-bold text-white bg-black/85 px-2.5 py-1 rounded-lg border border-djzinc-750 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, fest.venue))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[#161729] border border-cyan-500/50 text-center shrink-0 shadow" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-black text-cyan-400 uppercase" }, fest.month_badge || "OCT"), /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-white leading-none" }, fest.day_badge || "31")), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-cyan-300 transition-colors leading-snug" }, fest.name), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 line-clamp-2 mt-0.5" }, fest.description))), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Volume, { size: 14, className: "inline-block align-[-2px]" }), " Sound System:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-bold truncate max-w-[170px]", title: fest.sound_system }, fest.sound_system)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Clock, { size: 14, className: "inline-block align-[-2px]" }), " Fechas / Horario:"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-bold" }, fest.dates))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 uppercase font-bold block" }, "Line-up Confirmado:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (fest.headliners || []).map((hl, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: "text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-[#161729] text-gray-200 border border-djzinc-750 font-bold" }, /* @__PURE__ */ React.createElement(Icons.Star, { size: 14, className: "inline-block align-[-2px]" }), " ", hl))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2.5 border-t border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Fuente:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "Time To House")), /* @__PURE__ */ React.createElement(
+        "a",
+        {
+          href: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
+          target: "_blank",
+          rel: "noopener noreferrer",
+          onClick: (e) => e.stopPropagation(),
+          className: "px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 transition-transform active:scale-95 shadow-md"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Entradas"),
+        /* @__PURE__ */ React.createElement("span", null, "\u2197")
+      )))
+    )))), selectedCategory === "Controladoras" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Controladoras DJ Profesionales & Sistemas Todo-en-Uno (2026)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, controllers.length, " Modelos Analizados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, controllers.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50" }, item.target)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-amber-950/90 text-amber-300 border border-amber-500/60" }, item.price)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 text-xs font-mono font-bold text-white bg-black/85 px-2 py-0.5 rounded border border-djzinc-750" }, item.brand)), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-cyan-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, item.description), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1.5 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 uppercase font-bold" }, "Compatibilidad Software:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (item.software_support || []).map((sw, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "px-2 py-0.5 rounded bg-djzinc-900 text-cyan-300 border border-djzinc-750 text-[10px]" }, sw)))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.key_features || []).map((feat, fIdx) => /* @__PURE__ */ React.createElement("div", { key: fIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px] text-cyan-400 font-bold" }), /* @__PURE__ */ React.createElement("span", null, feat))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Ver An\xE1lisis"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "Gadgets" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Link, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Gadgets Indispensables de Cabina & Accesorios Pro")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, gadgets.length, " Gadgets Esenciales")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, gadgets.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-emerald-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-emerald-300 border border-emerald-500/50" }, item.category)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60" }, item.price))), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-emerald-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121824] rounded-xl border border-emerald-900/50 text-xs font-mono text-emerald-200" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "inline-block align-[-2px]" }), " ", item.utility), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.specs || []).map((sp, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, sp))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Ver Ficha"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "Material DJ" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Headphones, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Material DJ Profesional: Auriculares, Giradiscos & C\xE1psulas")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, djGear.length, " Equipos de Referencia")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, djGear.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-purple-300 border border-purple-500/50" }, item.type)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-purple-950/90 text-purple-300 border border-purple-500/60" }, item.price))), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-purple-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, item.description), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.specs || []).map((sp, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px] text-purple-400 font-bold" }), /* @__PURE__ */ React.createElement("span", null, sp))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Especificaciones"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "SetBreakdowns" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Desglose T\xE9cnico de Sesiones Hist\xF3ricas (Harmonic & Energy Flow)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-400" }, setBreakdowns.length, " Sesiones Auditadas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-5" }, setBreakdowns.map((sb) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: sb.id,
+        className: "bg-[#0e0e16] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-4 transition-all hover:shadow-[0_4px_24px_rgba(168,85,247,0.15)] group cursor-pointer",
+        onClick: () => setReadingArticle({
+          id: sb.id,
+          title: `${sb.artist} \u2022 ${sb.event}`,
+          category: "Set Breakdowns",
+          category_badge: "\u{1F39B}\uFE0F AN\xC1LISIS DE SESI\xD3N",
+          source: "BeatWave Audio Forensics",
+          author: sb.artist,
+          date: sb.duration,
+          read_time: "5 min an\xE1lisis",
+          image_url: sb.image_url,
+          summary: `Desglose arm\xF3nico y de sonoridad del set de ${sb.artist} en ${sb.event}.`,
+          content: `${sb.tactical_breakdown} Transici\xF3n clave: ${sb.key_transition}`,
+          takeaways: [
+            `Flujo de BPM: ${sb.bpm_flow}`,
+            `Viaje Camelot: ${sb.camelot_journey}`,
+            `Sonoridad Integrada: ${sb.lufs_integrated} (Rango din\xE1mico: ${sb.dynamic_range})`,
+            `Balance Tri-Banda: ${sb.acoustic_profile}`
+          ],
+          reference: sb.reference,
+          url: "https://www.bbc.co.uk/programmes/b006wkfp",
+          key_tags: [sb.artist, "Set Analysis", "Camelot", "LUFS"]
+        })
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-djzinc-700 bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: sb.image_url, alt: sb.artist, className: "w-full h-full object-cover group-hover:scale-105 transition-transform" })), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-mono text-purple-400 font-bold mb-1" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Clock, { size: 14, className: "inline-block align-[-2px]" }), " ", sb.duration), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, sb.event)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-white group-hover:text-purple-300 transition-colors" }, sb.artist), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-1 line-clamp-2" }, sb.tactical_breakdown))),
+      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Flujo BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold text-[11px] truncate block", title: sb.bpm_flow }, sb.bpm_flow)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Viaje Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-[11px] truncate block", title: sb.camelot_journey }, sb.camelot_journey)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Sonoridad LUFS"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold text-[11px]" }, sb.lufs_integrated)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Tri-Banda %"), /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold text-[10px] truncate block", title: sb.acoustic_profile }, sb.acoustic_profile.split("(")[0]))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#141420] rounded-xl border border-djzinc-800 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-400 mb-0.5" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }), " Transici\xF3n Maestra:"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-200 italic font-medium" }, '"', sb.key_transition, '"')),
+      /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-xs" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px]" }), " Ref: ", sb.reference), /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold group-hover:translate-x-1 transition-transform" }, "Ver Desglose \u2192"))
+    )))), selectedCategory === "Entrevistas" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Mic, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Entrevistas de Cabina & Filosof\xEDa de Mezcla")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-rose-400" }, interviews.length, " Entrevistas T\xE9cnicas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, interviews.map((it) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: it.id,
+        className: "bg-[#0e0e16] border border-djzinc-800 hover:border-rose-500/50 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group cursor-pointer transition-all hover:shadow-[0_4px_24px_rgba(244,63,94,0.15)]",
+        onClick: () => setReadingArticle({
+          id: it.id,
+          title: `${it.artist}: "${it.headline}"`,
+          category: "Entrevistas",
+          category_badge: "\u{1F399}\uFE0F ENTREVISTA EXCLUSIVA",
+          source: it.role,
+          author: it.artist,
+          date: it.date,
+          read_time: it.read_time,
+          image_url: it.image_url,
+          summary: it.quote,
+          content: (it.q_and_a || []).map((qa) => `Pregunta: ${qa.q}
+
+Respuesta: ${qa.a}`).join("\n\n"),
+          takeaways: [
+            `Artista: ${it.artist} (${it.role})`,
+            `Cita Destacada: ${it.quote}`,
+            `Referencia Editorial: ${it.reference}`
+          ],
+          reference: it.reference,
+          url: "https://djmag.com/features",
+          key_tags: [it.artist, "Interview", "Studio Secrets"]
+        })
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: it.image_url, alt: it.artist, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase bg-black/80 text-rose-300 border border-rose-500/50" }, it.read_time)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 right-3 text-white" }, /* @__PURE__ */ React.createElement("div", { className: "text-base font-black drop-shadow" }, it.artist), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-300 drop-shadow truncate" }, it.role))),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug" }, it.headline), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#13131e] rounded-xl border border-djzinc-800 text-xs italic text-gray-300 line-clamp-3 leading-relaxed" }, it.quote)), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[160px]", title: it.reference }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px]" }), " ", it.reference), /* @__PURE__ */ React.createElement("span", { className: "text-rose-400 font-bold group-hover:translate-x-1 transition-transform" }, "Leer Q&A \u2192")))
+    )))), selectedCategory === "Radar" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Radar Ac\xFAstico & Nuevas Metodolog\xEDas de Cabina")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, radarItems.length, " Puntos Clave")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-5" }, radarItems.map((rad, rIdx) => /* @__PURE__ */ React.createElement("div", { key: rad.id || rIdx, className: "bg-[#0e0e16] border border-djzinc-800 hover:border-djcyan-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 uppercase" }, "METODOLOG\xCDA #", rIdx + 1), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white" }, rad.topic), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, rad.description)), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#12121c] rounded-xl border border-djzinc-800 text-xs font-mono space-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-djcyan-400 font-bold" }, "Emparejamiento:"), /* @__PURE__ */ React.createElement("div", { className: "text-gray-300" }, rad.recommended_pairing), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 pt-1 border-t border-djzinc-850" }, "Benchmark: ", rad.ratio_benchmark)), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-500 pt-1 border-t border-djzinc-850" }, "Fuente: ", rad.reference))))), (selectedCategory === "todas" || selectedCategory === "Tendencias" || selectedCategory === "Tecnolog\xEDa & Hardware" || selectedCategory === "Lanzamientos & Charts") && /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-4 md:p-6" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 border-2 border-djcyan-500 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono" }, "Cargando radar de tendencias...")) : filteredItems.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-500" }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400" }, "No se encontraron noticias con los filtros actuales"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setSelectedCategory("todas");
+          setSearchQuery("");
+        },
+        className: "text-xs text-djcyan-400 underline cursor-pointer"
+      },
+      "Restablecer filtros"
+    )) : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, filteredItems.map((item) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: item.id,
+        className: "bg-[#0e0e16] border border-djzinc-800/90 hover:border-djcyan-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.15)] hover:-translate-y-0.5 flex flex-col group cursor-pointer",
+        onClick: () => setReadingArticle(item)
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: item.image_url,
+          alt: item.title,
+          className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
+          onError: (e) => {
+            e.target.onerror = null;
+            e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80";
+          }
+        }
+      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: `px-2.5 py-1 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider border backdrop-blur-md ${item.badge_color || "bg-djcyan-950/80 text-djcyan-300 border-djcyan-500/50"}` }, item.category_badge || item.category)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur border border-djzinc-800" }, /* @__PURE__ */ React.createElement(Icons.Clock, { size: 14, className: "inline-block align-[-2px]" }), " ", item.read_time || "4 min")),
+      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, item.source), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white group-hover:text-djcyan-300 transition-colors line-clamp-2 leading-snug" }, item.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 line-clamp-3 leading-relaxed" }, item.summary)), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (item.key_tags || []).slice(0, 2).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-900 text-gray-400 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: (e) => {
+            e.stopPropagation();
+            setReadingArticle(item);
+          },
+          className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/60 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Leer En App"),
+        /* @__PURE__ */ React.createElement("span", null, "\u2192")
+      )))
+    )))), readingArticle && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0f1019] border border-djcyan-500/50 rounded-2xl max-w-2xl w-full p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-4 relative text-gray-200 max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setReadingArticle(null),
+        className: "absolute top-3 right-3 z-50 text-white hover:text-white text-sm font-black font-mono cursor-pointer w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 border border-white/30 shadow-2xl flex items-center justify-center transition-all active:scale-90",
+        title: "Cerrar art\xEDculo"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+    ), /* @__PURE__ */ React.createElement("div", { className: "h-56 w-full rounded-xl overflow-hidden relative" }, /* @__PURE__ */ React.createElement(
+      "img",
+      {
+        src: readingArticle.image_url,
+        alt: readingArticle.title,
+        className: "w-full h-full object-cover"
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0f1019] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("span", { className: "absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-black/80 text-djcyan-300 border border-djcyan-500/50" }, readingArticle.category_badge || readingArticle.category)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-xs font-mono text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, readingArticle.source), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.date), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.read_time)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-black text-white" }, readingArticle.title)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900/90 border border-djzinc-800 rounded-xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-djcyan-300 leading-relaxed italic" }, '"', readingArticle.summary, '"')), readingArticle.takeaways && readingArticle.takeaways.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-[#12121e] border border-djcyan-500/30 rounded-xl space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Target, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Puntos Clave & Especificaciones T\xE9cnicas:")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5 text-xs text-gray-300 font-mono" }, readingArticle.takeaways.map((tk, idx) => /* @__PURE__ */ React.createElement("li", { key: idx, className: "flex items-start gap-2" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px] text-emerald-400 font-bold shrink-0" }), /* @__PURE__ */ React.createElement("span", null, tk))))), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 leading-relaxed space-y-3 whitespace-pre-line font-sans" }, readingArticle.content), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5 pt-2 border-t border-djzinc-800" }, (readingArticle.key_tags || []).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[10px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-djcyan-300 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-djzinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-xs font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Redacci\xF3n: ", readingArticle.author || readingArticle.source), readingArticle.reference && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 italic mt-0.5" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 14, className: "inline-block align-[-2px]" }), " Ref: ", readingArticle.reference)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, readingArticle.reference && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCopyReference(readingArticle.reference),
+        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 text-xs font-mono rounded-lg border border-djzinc-700 transition-colors flex items-center gap-1",
+        title: "Copiar cita bibliogr\xE1fica al portapapeles"
+      },
+      /* @__PURE__ */ React.createElement("span", null, copiedRef ? "\u2713 Copiado" : "\u{1F4CB} Citar")
+    ), readingArticle.url && /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        href: readingArticle.url,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "px-4 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black font-black text-xs rounded-lg shadow cursor-pointer flex items-center gap-1.5 transition-transform active:scale-95"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Enlace Web"),
+      /* @__PURE__ */ React.createElement("span", null, "\u2197")
+    ))))));
+  };
+
   // web/js/app.jsx
-  var { useState: useState20, useEffect: useEffect21, useRef: useRef18, useMemo: useMemo7, useCallback: useCallback8, createContext, useContext } = React;
+  var { useState: useState24, useEffect: useEffect24, useRef: useRef20, useMemo: useMemo8, useCallback: useCallback9, createContext, useContext } = React;
   var PlayerContext = createContext({
     playProgressRef: { current: 0 },
     isPlaying: false,
@@ -10007,8 +12505,8 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     return /* @__PURE__ */ React.createElement("div", { className: `flex items-center gap-2.5 min-w-0 shrink-0 ${className}` }, Icon && /* @__PURE__ */ React.createElement("span", { className: `w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}` }, /* @__PURE__ */ React.createElement(Icon, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: `${SECTION_TITLE_CLASS} truncate` }, title, accent && /* @__PURE__ */ React.createElement("span", { className: accentText }, " ", accent)), badge && /* @__PURE__ */ React.createElement("span", { className: `hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}` }, badge));
   };
   var InfoTip = ({ text, title }) => {
-    const [coords, setCoords] = useState20(null);
-    const btnRef = useRef18(null);
+    const [coords, setCoords] = useState24(null);
+    const btnRef = useRef20(null);
     const handleEnter = () => {
       if (!btnRef.current) return;
       const rect = btnRef.current.getBoundingClientRect();
@@ -10143,7 +12641,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       /* @__PURE__ */ React.createElement("div", { className: "w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-1 rounded-full bg-djzinc-500" }))
     ), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-300 font-extrabold" }, value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7.5px] text-gray-500 font-normal" }, "dB")));
   };
-  var CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
+  var CompactHotCuesSummary = ({ track, cues = NV2_COLORS2, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
     const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
       "button",
@@ -10157,7 +12655,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       /* @__PURE__ */ React.createElement("span", { className: "group-hover:translate-x-0.5 transition-transform" }, "\u2192")
     )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-1.5" }, activeCues.slice(0, 8).map((cue, idx) => {
       const padNum = cue.id !== void 0 ? cue.id : idx + 1;
-      const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4");
+      const color = cue.color || (NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#06b6d4");
       const isSelected = selectedCueId === padNum;
       return /* @__PURE__ */ React.createElement(
         "div",
@@ -10210,31 +12708,31 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     onOpenBeatgridStudio
   }) => {
     var _a;
-    const [localRutaOrigen, setLocalRutaOrigen] = useState20("");
+    const [localRutaOrigen, setLocalRutaOrigen] = useState24("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
-    const [selectedLooseFiles, setSelectedLooseFiles] = useState20([]);
-    const [isAuditing, setIsAuditing] = useState20(false);
-    const [isLoadingDir, setIsLoadingDir] = useState20(false);
-    const [isExporting, setIsExporting] = useState20(false);
-    const [isInjecting, setIsInjecting] = useState20(false);
-    const [metrics, setMetrics] = useState20({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
-    const [filtro, setFiltro] = useState20("todos");
-    const [busqueda, setBusqueda] = useState20("");
-    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState20("ALL");
-    const [batchModalOpen, setBatchModalOpen] = useState20(false);
-    const [duplicateModalOpen, setDuplicateModalOpen] = useState20(false);
-    const [batchProgress, setBatchProgress] = useState20(0);
-    const [batchStatusMsg, setBatchStatusMsg] = useState20("");
-    const [saveFeedback, setSaveFeedback] = useState20("");
-    const [sidebarOpen, setSidebarOpen] = useState20(false);
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState24([]);
+    const [isAuditing, setIsAuditing] = useState24(false);
+    const [isLoadingDir, setIsLoadingDir] = useState24(false);
+    const [isExporting, setIsExporting] = useState24(false);
+    const [isInjecting, setIsInjecting] = useState24(false);
+    const [metrics, setMetrics] = useState24({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    const [filtro, setFiltro] = useState24("todos");
+    const [busqueda, setBusqueda] = useState24("");
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState24("ALL");
+    const [batchModalOpen, setBatchModalOpen] = useState24(false);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState24(false);
+    const [batchProgress, setBatchProgress] = useState24(0);
+    const [batchStatusMsg, setBatchStatusMsg] = useState24("");
+    const [saveFeedback, setSaveFeedback] = useState24("");
+    const [sidebarOpen, setSidebarOpen] = useState24(false);
     const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 540);
     const { width: columnsDrawerWidth, onPointerDown: onColumnsResizeDown, resetWidth: onColumnsResetWidth } = useDrawerResize("bw_columns_drawer_width", 540);
-    const [exportDropdownOpen, setExportDropdownOpen] = useState20(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState20("analizar");
-    const [batchConfigured, setBatchConfigured] = useState20(false);
-    const [isAppendMode, setIsAppendMode] = useState20(false);
-    const [batchConfigOpts, setBatchConfigOpts] = useState20({
+    const [exportDropdownOpen, setExportDropdownOpen] = useState24(false);
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState24("analizar");
+    const [batchConfigured, setBatchConfigured] = useState24(false);
+    const [isAppendMode, setIsAppendMode] = useState24(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState24({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -10250,38 +12748,38 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       stripWhitespace: true,
       onlyIncomplete: false
     });
-    const [mixOracleOpen, setMixOracleOpen] = useState20(false);
-    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState20(null);
-    const [selectedAuditIds, setSelectedAuditIds] = useState20(/* @__PURE__ */ new Set());
-    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState20(false);
-    const [deleteModalState, setDeleteModalState] = useState20({ open: false, tracks: [], mode: "trash" });
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState20(() => {
+    const [mixOracleOpen, setMixOracleOpen] = useState24(false);
+    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState24(null);
+    const [selectedAuditIds, setSelectedAuditIds] = useState24(/* @__PURE__ */ new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState24(false);
+    const [deleteModalState, setDeleteModalState] = useState24({ open: false, tracks: [], mode: "trash" });
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState24(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
         return false;
       }
     });
-    const [internalTracks, setInternalTracks] = useState20([]);
+    const [internalTracks, setInternalTracks] = useState24([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
-    const [fftModalOpen, setFftModalOpen] = useState20(false);
-    const [fftAnalysisData, setFftAnalysisData] = useState20(null);
-    const [isAnalyzingFft, setIsAnalyzingFft] = useState20(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState20("");
-    const [fsParentPath, setFsParentPath] = useState20("");
-    const [fsFolders, setFsFolders] = useState20([]);
-    const [fsFiles, setFsFiles] = useState20([]);
-    const [selectedFsFiles, setSelectedFsFiles] = useState20([]);
-    const [stagedFolders, setStagedFolders] = useState20([]);
-    const [stagedFiles, setStagedFiles] = useState20([]);
-    const [fsActiveTab, setFsActiveTab] = useState20("folders");
-    const [fsLoading, setFsLoading] = useState20(false);
-    const [camelotModalOpen, setCamelotModalOpen] = useState20(false);
-    const tapTimesRef = useRef18([]);
-    const tableScrollRef = useRef18(null);
-    const [metricsCollapsed, setMetricsCollapsed] = useState20(() => {
+    const [fftModalOpen, setFftModalOpen] = useState24(false);
+    const [fftAnalysisData, setFftAnalysisData] = useState24(null);
+    const [isAnalyzingFft, setIsAnalyzingFft] = useState24(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState24(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState24("");
+    const [fsParentPath, setFsParentPath] = useState24("");
+    const [fsFolders, setFsFolders] = useState24([]);
+    const [fsFiles, setFsFiles] = useState24([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState24([]);
+    const [stagedFolders, setStagedFolders] = useState24([]);
+    const [stagedFiles, setStagedFiles] = useState24([]);
+    const [fsActiveTab, setFsActiveTab] = useState24("folders");
+    const [fsLoading, setFsLoading] = useState24(false);
+    const [camelotModalOpen, setCamelotModalOpen] = useState24(false);
+    const tapTimesRef = useRef20([]);
+    const tableScrollRef = useRef20(null);
+    const [metricsCollapsed, setMetricsCollapsed] = useState24(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
       } catch (e) {
@@ -10298,20 +12796,20 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         return next;
       });
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const handleToggleEvent = () => toggleMetricsCollapsed();
       window.addEventListener("bw:toggle-metrics", handleToggleEvent);
       return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       if (tracks && tracks.length > 0) {
         setMetricsCollapsed(false);
       }
     }, [tracks && tracks.length > 0]);
-    const [selectedCueId, setSelectedCueId] = useState20(1);
-    const [snapToGrid, setSnapToGrid] = useState20(true);
-    const [showBeatgrid, setShowBeatgrid] = useState20(true);
-    const [cueStudioModalOpen, setCueStudioModalOpen] = useState20(false);
+    const [selectedCueId, setSelectedCueId] = useState24(1);
+    const [snapToGrid, setSnapToGrid] = useState24(true);
+    const [showBeatgrid, setShowBeatgrid] = useState24(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState24(false);
     const currentTrack = tracks.find((t2) => t2.id === selectedTrack) || tracks[0] || {};
     const resetAuditWorkspace = (keepFolder = false) => {
       if (!keepFolder) {
@@ -10351,7 +12849,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const handleAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -10496,7 +12994,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       );
       setTimeout(() => setSaveFeedback(""), 4e3);
     };
-    useEffect21(() => {
+    useEffect24(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
           isAuditing,
@@ -10505,7 +13003,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         });
       }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
-    useEffect21(() => {
+    useEffect24(() => {
       if (!tracks || tracks.length === 0) {
         setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
       } else {
@@ -10691,25 +13189,25 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       }
       return false;
     };
-    const badQualityTracks = useMemo7(() => {
+    const badQualityTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => isBadQualityTrack(t2));
     }, [tracks]);
-    const flacUpgradeTracks = useMemo7(() => {
+    const flacUpgradeTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => isFlacUpgradeCandidate(t2));
     }, [tracks]);
-    const missingMetaTracks = useMemo7(() => {
+    const missingMetaTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido");
     }, [tracks]);
-    const missingCuesTracks = useMemo7(() => {
+    const missingCuesTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues));
     }, [tracks]);
-    const trimmedSilenceTracks = useMemo7(() => {
+    const trimmedSilenceTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim)));
     }, [tracks]);
-    const excellentQualityTracks = useMemo7(() => {
+    const excellentQualityTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320));
     }, [tracks]);
-    const highEnergyTracks = useMemo7(() => {
+    const highEnergyTracks = useMemo8(() => {
       return (tracks || []).filter((t2) => Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75);
     }, [tracks]);
     const handleToggleSelectRow = (id, e) => {
@@ -11832,7 +14330,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
-    const [isAuditPaused, setIsAuditPaused] = useState20(false);
+    const [isAuditPaused, setIsAuditPaused] = useState24(false);
     const handleTogglePausaProceso = async () => {
       const nextState = !isAuditPaused;
       setIsAuditPaused(nextState);
@@ -11875,28 +14373,28 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    const [auditSortField, setAuditSortField] = useState20("id");
-    const [auditSortDir, setAuditSortDir] = useState20("asc");
-    const [filterHeaderSearch, setFilterHeaderSearch] = useState20("");
-    const [filterHeaderArtist, setFilterHeaderArtist] = useState20("");
-    const [filterHeaderFormat, setFilterHeaderFormat] = useState20("ALL");
-    const [filterHeaderKhz, setFilterHeaderKhz] = useState20("ALL");
-    const [filterHeaderKbps, setFilterHeaderKbps] = useState20("ALL");
-    const [filterHeaderQuality, setFilterHeaderQuality] = useState20("ALL");
-    const [filterHeaderLoss, setFilterHeaderLoss] = useState20("ALL");
-    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState20("ALL");
-    const [filterHeaderLufs, setFilterHeaderLufs] = useState20("ALL");
-    const [filterHeaderDuration, setFilterHeaderDuration] = useState20("");
-    const [filterHeaderBpm, setFilterHeaderBpm] = useState20("");
-    const [filterHeaderKey, setFilterHeaderKey] = useState20("");
-    const [filterHeaderCues, setFilterHeaderCues] = useState20("ALL");
-    const [filterHeaderStatus, setFilterHeaderStatus] = useState20("ALL");
-    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState20("ALL");
-    const [filterHeaderDance, setFilterHeaderDance] = useState20("ALL");
-    const [filterHeaderPhase, setFilterHeaderPhase] = useState20("ALL");
-    const [filterHeaderGenre, setFilterHeaderGenre] = useState20("");
-    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState20("");
-    const [filterHeaderComment, setFilterHeaderComment] = useState20("");
+    const [auditSortField, setAuditSortField] = useState24("id");
+    const [auditSortDir, setAuditSortDir] = useState24("asc");
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState24("");
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState24("");
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState24("ALL");
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState24("ALL");
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState24("ALL");
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState24("ALL");
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState24("ALL");
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState24("ALL");
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState24("ALL");
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState24("");
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState24("");
+    const [filterHeaderKey, setFilterHeaderKey] = useState24("");
+    const [filterHeaderCues, setFilterHeaderCues] = useState24("ALL");
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState24("ALL");
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState24("ALL");
+    const [filterHeaderDance, setFilterHeaderDance] = useState24("ALL");
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState24("ALL");
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState24("");
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState24("");
+    const [filterHeaderComment, setFilterHeaderComment] = useState24("");
     const DEFAULT_AUDIT_COLUMNS = {
       id: true,
       waveform: true,
@@ -11989,7 +14487,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         ]
       }
     ];
-    const [visibleColumns, setVisibleColumns] = useState20(() => {
+    const [visibleColumns, setVisibleColumns] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_audit_visible_columns");
         if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
@@ -11997,10 +14495,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       return DEFAULT_AUDIT_COLUMNS;
     });
-    const [columnSelectorOpen, setColumnSelectorOpen] = useState20(false);
-    const [columnSearchText, setColumnSearchText] = useState20("");
-    const [isDragOver, setIsDragOver] = useState20(false);
-    const [libraryFolders, setLibraryFolders] = useState20(() => {
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState24(false);
+    const [columnSearchText, setColumnSearchText] = useState24("");
+    const [isDragOver, setIsDragOver] = useState24(false);
+    const [libraryFolders, setLibraryFolders] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_library_folders_v2");
         if (saved) {
@@ -12016,10 +14514,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         { id: "f_close", name: "04 - Closing & Anthems", color: "cyan", collapsed: false, trackIds: [], subfolders: [] }
       ];
     });
-    const [selectedFolderId, setSelectedFolderId] = useState20("all");
-    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState20(true);
-    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState20(false);
-    const [cloudSyncStatus, setCloudSyncStatus] = useState20({ isSyncing: false, synced: false, lastSyncText: "" });
+    const [selectedFolderId, setSelectedFolderId] = useState24("all");
+    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState24(true);
+    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState24(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState24({ isSyncing: false, synced: false, lastSyncText: "" });
     const handleCloudMetadataSync = async () => {
       setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: "Sincronizando..." });
       try {
@@ -12262,7 +14760,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }, 800);
       }
     };
-    const foldersFlatList = useMemo7(() => {
+    const foldersFlatList = useMemo8(() => {
       const list = [];
       libraryFolders.forEach((f) => {
         list.push({ id: f.id, name: f.name, color: f.color, isSub: false });
@@ -12274,7 +14772,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       });
       return list;
     }, [libraryFolders]);
-    const activeFolderMeta = useMemo7(() => {
+    const activeFolderMeta = useMemo8(() => {
       if (!selectedFolderId || selectedFolderId === "all") return null;
       const target = findFolderOrSub(libraryFolders, selectedFolderId);
       if (!target || !target.folder) return null;
@@ -12369,7 +14867,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       setFilterHeaderPhase("ALL");
       setFilterHeaderComment("");
     };
-    const searchIndex = useMemo7(() => {
+    const searchIndex = useMemo8(() => {
       if (!tracks || tracks.length === 0) return null;
       const tokenMap = /* @__PURE__ */ new Map();
       const tokenize = (str) => {
@@ -12399,8 +14897,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return tokenMap;
     }, [tracks]);
-    const searchBenchmarkRef = useRef18(0.2);
-    const tracksFiltrados = useMemo7(() => {
+    const searchBenchmarkRef = useRef20(0.2);
+    const tracksFiltrados = useMemo8(() => {
       const benchStart = performance.now();
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       let baseTracks = tracks;
@@ -13799,7 +16297,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         RekordboxWaveform2,
         {
           track: currentTrack,
-          cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
+          cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS2,
           duration: currentTrack.duration || "05:00",
           onSeekTrack: onPlayTrack,
           playProgress: isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f === currentTrack.f) ? playProgress : 0,
@@ -13967,7 +16465,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         CompactHotCuesSummary,
         {
           track: currentTrack,
-          cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
+          cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS2,
           selectedCueId,
           onSelectCue: setSelectedCueId,
           onOpenStudio: () => {
@@ -14317,7 +16815,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 15 }),
       /* @__PURE__ */ React.createElement("span", null, "Cargar Toda la Carpeta Actual")
     ))))), camelotModalOpen && /* @__PURE__ */ React.createElement(
-      CamelotWheelModal,
+      CamelotWheelModal2,
       {
         isOpen: camelotModalOpen,
         onClose: () => setCamelotModalOpen(false),
@@ -14330,7 +16828,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         isOpen: cueStudioModalOpen,
         onClose: () => setCueStudioModalOpen(false),
         track: currentTrack,
-        cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
+        cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS2,
         duration: currentTrack.duration || "05:00",
         onUpdateCues: (newCues) => updateCurrentTrackField("cues", newCues),
         selectedCueId,
@@ -14666,11 +17164,11 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     studioMode: propsStudioMode = "cues",
     onSetStudioMode
   }) => {
-    const [studioMode, setStudioMode] = useState20(propsStudioMode || "cues");
-    useEffect21(() => {
+    const [studioMode, setStudioMode] = useState24(propsStudioMode || "cues");
+    useEffect24(() => {
       if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
-    const [tapTimes, setTapTimes] = useState20([]);
+    const [tapTimes, setTapTimes] = useState24([]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
     const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
@@ -14692,33 +17190,33 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
     };
-    const [zoom, setZoom] = useState20(4);
-    const [snapToGrid, setSnapToGrid] = useState20(true);
-    const [showBeatgrid, setShowBeatgrid] = useState20(true);
-    const [followPlayhead, setFollowPlayhead] = useState20(true);
-    const [selectedCueId, setSelectedCueId] = useState20(1);
-    const [isRegeneratingMood, setIsRegeneratingMood] = useState20(false);
-    const [saveStatus, setSaveStatus] = useState20("");
-    const [isSavingBatch, setIsSavingBatch] = useState20(false);
-    const [filterQuery, setFilterQuery] = useState20("");
-    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
-    const [carpetasSistema, setCarpetasSistema] = useState20([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState20(currentFolder || "");
-    const [isLoadingDir, setIsLoadingDir] = useState20(false);
-    const [showTrackListDrawer, setShowTrackListDrawer] = useState20(false);
-    const [pitchPercent, setPitchPercent] = useState20(0);
-    const [pitchRange, setPitchRange] = useState20(8);
-    const [eqBass, setEqBass] = useState20(0);
-    const [eqMid, setEqMid] = useState20(0);
-    const [eqTreble, setEqTreble] = useState20(0);
-    const [mobileDeckMode, setMobileDeckMode] = useState20("pads");
-    const [autoMappingStatus, setAutoMappingStatus] = useState20("");
-    const [cuesVersionMode, setCuesVersionMode] = useState20("estandar");
-    const [cuesEstandar, setCuesEstandar] = useState20(null);
-    const [cuesAcustico, setCuesAcustico] = useState20(null);
-    const [isLoadingComparative, setIsLoadingComparative] = useState20(false);
-    const [showDiferenciasModal, setShowDiferenciasModal] = useState20(false);
-    const [diferenciasData, setDiferenciasData] = useState20(null);
+    const [zoom, setZoom] = useState24(4);
+    const [snapToGrid, setSnapToGrid] = useState24(true);
+    const [showBeatgrid, setShowBeatgrid] = useState24(true);
+    const [followPlayhead, setFollowPlayhead] = useState24(true);
+    const [selectedCueId, setSelectedCueId] = useState24(1);
+    const [isRegeneratingMood, setIsRegeneratingMood] = useState24(false);
+    const [saveStatus, setSaveStatus] = useState24("");
+    const [isSavingBatch, setIsSavingBatch] = useState24(false);
+    const [filterQuery, setFilterQuery] = useState24("");
+    const [fsBrowserOpen, setFsBrowserOpen] = useState24(false);
+    const [carpetasSistema, setCarpetasSistema] = useState24([]);
+    const [rutaNavegacion, setRutaNavegacion] = useState24(currentFolder || "");
+    const [isLoadingDir, setIsLoadingDir] = useState24(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState24(false);
+    const [pitchPercent, setPitchPercent] = useState24(0);
+    const [pitchRange, setPitchRange] = useState24(8);
+    const [eqBass, setEqBass] = useState24(0);
+    const [eqMid, setEqMid] = useState24(0);
+    const [eqTreble, setEqTreble] = useState24(0);
+    const [mobileDeckMode, setMobileDeckMode] = useState24("pads");
+    const [autoMappingStatus, setAutoMappingStatus] = useState24("");
+    const [cuesVersionMode, setCuesVersionMode] = useState24("estandar");
+    const [cuesEstandar, setCuesEstandar] = useState24(null);
+    const [cuesAcustico, setCuesAcustico] = useState24(null);
+    const [isLoadingComparative, setIsLoadingComparative] = useState24(false);
+    const [showDiferenciasModal, setShowDiferenciasModal] = useState24(false);
+    const [diferenciasData, setDiferenciasData] = useState24(null);
     const handleCargarComparativa = async (targetMode = "comparativa") => {
       if (!currentTrack) return;
       setIsLoadingComparative(true);
@@ -14825,7 +17323,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         "Outro Mix Point",
         "Outro End"
       ];
-      const generatedCues = NV2_COLORS.map((cfg, idx) => {
+      const generatedCues = NV2_COLORS2.map((cfg, idx) => {
         const bOffset = barOffsets[idx] !== void 0 ? barOffsets[idx] : idx * 16;
         const compas = bOffset + 1;
         const pMs = Math.min(durClean - 1e3, Math.floor(downbeatClean + bOffset * barMsCalc));
@@ -14996,7 +17494,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const activeCues = Array.from({ length: 8 }, (_, idx) => {
       const padNum = idx + 1;
       const existing = currentTrack && currentTrack.cues && currentTrack.cues[idx] ? currentTrack.cues[idx] : null;
-      const defaultColor = NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4";
+      const defaultColor = NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#06b6d4";
       const defaultName = CLUB_CUE_NAMES[idx] || `Cue ${padNum}`;
       const defaultPosMs = Math.round(durMs * CLUB_CUE_RATIOS[idx]);
       const defaultTime = formatMsToTime(defaultPosMs);
@@ -15045,15 +17543,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
-    const [cueNameInput, setCueNameInput] = useState20(currentCue.name || "");
-    const [cueTimeInput, setCueTimeInput] = useState20(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState20((currentTrack == null ? void 0 : currentTrack.comment) || "");
-    useEffect21(() => {
+    const [cueNameInput, setCueNameInput] = useState24(currentCue.name || "");
+    const [cueTimeInput, setCueTimeInput] = useState24(currentCue.time || "00:00.00");
+    const [tacticalComment, setTacticalComment] = useState24((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    useEffect24(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
     }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
-    useEffect21(() => {
+    useEffect24(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -15186,7 +17684,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
             return {
               id: padNum,
               name: CLUB_CUE_NAMES[idx] || `Cue ${padNum}`,
-              color: NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#06b6d4",
+              color: NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#06b6d4",
               time: formatMsToTime(posMs),
               pos_ms: posMs,
               pct: ratio,
@@ -15713,7 +18211,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       const padNum = cue.id !== void 0 ? cue.id : idx + 1;
       const isSelected = selectedCueId === padNum;
       const isPlayingThisCue = activePlayingCueId === padNum && isCurrentPlayingThis;
-      const color = cue.color || (NV2_COLORS[idx] ? NV2_COLORS[idx].color : "#ef4444");
+      const color = cue.color || (NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#ef4444");
       const cueMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs2(cue.time || "00:00.00");
       const barNum = cue.bar || Math.max(1, Math.floor((cueMs - downbeatMs) / barMs) + 1);
       const staggerDelay = `${idx * 110}ms`;
@@ -16310,7 +18808,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         },
         /* @__PURE__ */ React.createElement(Icons2.Trash, { size: 14, className: "inline-block align-[-2px]" })
       ))
-    )))) : null, /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner mt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" }), "8 Hot Cues Performance \u2022 C\xF3digo de Colores Oficial"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Pads 1-4 (Superior) \u2022 Pads 5-8 (Inferior)")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2.5" }, NV2_COLORS.slice(0, 8).map((cue, idx) => {
+    )))) : null, /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner mt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" }), "8 Hot Cues Performance \u2022 C\xF3digo de Colores Oficial"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Pads 1-4 (Superior) \u2022 Pads 5-8 (Inferior)")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2.5" }, NV2_COLORS2.slice(0, 8).map((cue, idx) => {
       const padNum = idx + 1;
       const isSelected = selectedCueId === padNum;
       const color = cue.color || "#ef4444";
@@ -16506,13 +19004,13 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     t = (k) => k
   }) => {
     var _a, _b;
-    const [internalTracks, setInternalTracks] = useState20([]);
+    const [internalTracks, setInternalTracks] = useState24([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
-    const [spotifyUrl, setSpotifyUrl] = useState20("");
-    const [isAnalyzing, setIsAnalyzing] = useState20(false);
-    const [destDir, setDestDir] = useState20("/Users/admin/Music/mi musica");
-    useEffect21(() => {
+    const [spotifyUrl, setSpotifyUrl] = useState24("");
+    const [isAnalyzing, setIsAnalyzing] = useState24(false);
+    const [destDir, setDestDir] = useState24("/Users/admin/Music/mi musica");
+    useEffect24(() => {
       fetch("/api/directorio_descarga").then((r) => r.json()).then((data) => {
         if (data && data.path && typeof data.path === "string" && data.path.startsWith("/") && !data.path.includes('"') && !data.path.includes(":")) {
           setDestDir(data.path);
@@ -16520,23 +19018,23 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }).catch(() => {
       });
     }, []);
-    const [selectedFormat, setSelectedFormat] = useState20("flac");
-    const [downloadingMsg, setDownloadingMsg] = useState20("");
-    const [downloadProgress, setDownloadProgress] = useState20(0);
-    const [isDownloading, setIsDownloading] = useState20(false);
-    const [isAuditingFft, setIsAuditingFft] = useState20(false);
-    const [fftProgress, setFftProgress] = useState20(0);
-    const [fftMsg, setFftMsg] = useState20("");
-    const [selectedId, setSelectedId] = useState20(null);
-    const [spInspectorOpen, setSpInspectorOpen] = useState20(false);
+    const [selectedFormat, setSelectedFormat] = useState24("flac");
+    const [downloadingMsg, setDownloadingMsg] = useState24("");
+    const [downloadProgress, setDownloadProgress] = useState24(0);
+    const [isDownloading, setIsDownloading] = useState24(false);
+    const [isAuditingFft, setIsAuditingFft] = useState24(false);
+    const [fftProgress, setFftProgress] = useState24(0);
+    const [fftMsg, setFftMsg] = useState24("");
+    const [selectedId, setSelectedId] = useState24(null);
+    const [spInspectorOpen, setSpInspectorOpen] = useState24(false);
     const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 540);
     const { width: poolColumnsDrawerWidth, onPointerDown: onPoolColumnsResizeDown, resetWidth: onPoolColumnsResetWidth } = useDrawerResize("bw_pool_columns_drawer_width", 540);
-    const [downloadSession, setDownloadSession] = useState20({ downloaded: [], failed: [] });
-    const [spSubView, setSpSubView] = useState20("catalog");
-    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState20(/* @__PURE__ */ new Set());
-    const [isExportingXls, setIsExportingXls] = useState20(false);
-    const [xlsToast, setXlsToast] = useState20("");
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState20(() => {
+    const [downloadSession, setDownloadSession] = useState24({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState24("catalog");
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState24(/* @__PURE__ */ new Set());
+    const [isExportingXls, setIsExportingXls] = useState24(false);
+    const [xlsToast, setXlsToast] = useState24("");
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState24(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
@@ -16550,7 +19048,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (e) {
       }
     };
-    const [candidateModal, setCandidateModal] = useState20({
+    const [candidateModal, setCandidateModal] = useState24({
       open: false,
       targetTrack: null,
       candidates: [],
@@ -16641,12 +19139,12 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }));
       setCandidateModal((prev) => ({ ...prev, open: false }));
     };
-    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState20("");
-    const [fsParentPath, setFsParentPath] = useState20("");
-    const [fsFolders, setFsFolders] = useState20([]);
-    const [fsLoading, setFsLoading] = useState20(false);
-    useEffect21(() => {
+    const [fsBrowserOpen, setFsBrowserOpen] = useState24(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState24("");
+    const [fsParentPath, setFsParentPath] = useState24("");
+    const [fsFolders, setFsFolders] = useState24([]);
+    const [fsLoading, setFsLoading] = useState24(false);
+    useEffect24(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
@@ -16957,7 +19455,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (_) {
       }
     };
-    const [poolVisibleColumns, setPoolVisibleColumns] = useState20(() => {
+    const [poolVisibleColumns, setPoolVisibleColumns] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_pool_visible_columns");
         if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
@@ -16965,9 +19463,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
       return DEFAULT_POOL_COLUMNS;
     });
-    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState20(false);
-    const [poolColumnSearchText, setPoolColumnSearchText] = useState20("");
-    useEffect21(() => {
+    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState24(false);
+    const [poolColumnSearchText, setPoolColumnSearchText] = useState24("");
+    useEffect24(() => {
       if (!poolColumnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -17030,27 +19528,27 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         return next;
       });
     };
-    const [spSortField, setSpSortField] = useState20("title");
-    const [spSortDir, setSpSortDir] = useState20("asc");
-    const [spFilterSearch, setSpFilterSearch] = useState20("");
-    const [spFilterArtist, setSpFilterArtist] = useState20("");
-    const [spFilterGenre, setSpFilterGenre] = useState20("ALL");
-    const [spFilterSubgenre, setSpFilterSubgenre] = useState20("");
-    const [spFilterOrigin, setSpFilterOrigin] = useState20("ALL");
-    const [spFilterMatch, setSpFilterMatch] = useState20("ALL");
-    const [spFilterPreQuality, setSpFilterPreQuality] = useState20("ALL");
-    const [spFilterFormat, setSpFilterFormat] = useState20("ALL");
-    const [spFilterKhz, setSpFilterKhz] = useState20("ALL");
-    const [spFilterKbps, setSpFilterKbps] = useState20("ALL");
-    const [spFilterQuality, setSpFilterQuality] = useState20("ALL");
-    const [spFilterCutoff, setSpFilterCutoff] = useState20("ALL");
-    const [spFilterDuration, setSpFilterDuration] = useState20("");
-    const [spFilterBpm, setSpFilterBpm] = useState20("");
-    const [spFilterKey, setSpFilterKey] = useState20("ALL");
-    const [spFilterEnergy, setSpFilterEnergy] = useState20("ALL");
-    const [spFilterDance, setSpFilterDance] = useState20("ALL");
-    const [spFilterStatus, setSpFilterStatus] = useState20("ALL");
-    const poolUniqueGenres = useMemo7(() => {
+    const [spSortField, setSpSortField] = useState24("title");
+    const [spSortDir, setSpSortDir] = useState24("asc");
+    const [spFilterSearch, setSpFilterSearch] = useState24("");
+    const [spFilterArtist, setSpFilterArtist] = useState24("");
+    const [spFilterGenre, setSpFilterGenre] = useState24("ALL");
+    const [spFilterSubgenre, setSpFilterSubgenre] = useState24("");
+    const [spFilterOrigin, setSpFilterOrigin] = useState24("ALL");
+    const [spFilterMatch, setSpFilterMatch] = useState24("ALL");
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState24("ALL");
+    const [spFilterFormat, setSpFilterFormat] = useState24("ALL");
+    const [spFilterKhz, setSpFilterKhz] = useState24("ALL");
+    const [spFilterKbps, setSpFilterKbps] = useState24("ALL");
+    const [spFilterQuality, setSpFilterQuality] = useState24("ALL");
+    const [spFilterCutoff, setSpFilterCutoff] = useState24("ALL");
+    const [spFilterDuration, setSpFilterDuration] = useState24("");
+    const [spFilterBpm, setSpFilterBpm] = useState24("");
+    const [spFilterKey, setSpFilterKey] = useState24("ALL");
+    const [spFilterEnergy, setSpFilterEnergy] = useState24("ALL");
+    const [spFilterDance, setSpFilterDance] = useState24("ALL");
+    const [spFilterStatus, setSpFilterStatus] = useState24("ALL");
+    const poolUniqueGenres = useMemo8(() => {
       const set = /* @__PURE__ */ new Set();
       (tracks || []).forEach((t2) => {
         if (t2.genre && typeof t2.genre === "string") set.add(t2.genre.trim());
@@ -17096,7 +19594,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       if (spSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, spSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const tracksFiltradosSp = useMemo7(() => {
+    const tracksFiltradosSp = useMemo8(() => {
       let result = tracks.filter((t2) => {
         if (spFilterSearch) {
           const term = spFilterSearch.toLowerCase();
@@ -18704,3180 +21202,6 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       document.body
     ));
   };
-  var TaxonomyWorkspace = ({
-    tracks = [],
-    onTracksUpdated,
-    onNavigateTab,
-    onPlayTrack,
-    nowPlayingTrack = null,
-    isPlaying = false,
-    onTogglePlay = () => {
-    },
-    onSelectTrackForCues,
-    onSendToSpotify,
-    onAddTrackToSpotify,
-    onAddTracksToSpotify,
-    onRemoveTrack
-  }) => {
-    const [activeSubView, setActiveSubView] = useState20("search");
-    const [searchScope, setSearchScope] = useState20("all");
-    const [isSearchingOnline, setIsSearchingOnline] = useState20(false);
-    const [onlineResults, setOnlineResults] = useState20([]);
-    const [searchLocalResults, setSearchLocalResults] = useState20([]);
-    const [hasExecutedSearch, setHasExecutedSearch] = useState20(false);
-    const [selectedTaxIds, setSelectedTaxIds] = useState20(/* @__PURE__ */ new Set());
-    const [displayMode, setDisplayMode] = useState20("table");
-    const [taxSortField, setTaxSortField] = useState20("matchScore");
-    const [taxSortDir, setTaxSortDir] = useState20("desc");
-    const [taxFilterSearch, setTaxFilterSearch] = useState20("");
-    const [taxFilterGenre, setTaxFilterGenre] = useState20("ALL");
-    const [taxFilterOrigin, setTaxFilterOrigin] = useState20("ALL");
-    const [taxFilterEnergy, setTaxFilterEnergy] = useState20("ALL");
-    const [taxFilterDance, setTaxFilterDance] = useState20("ALL");
-    const handleSortTax = (field) => {
-      setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
-      setTaxSortField(field);
-    };
-    const renderSortArrowTax = (field) => {
-      if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
-      return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
-    };
-    const [aiQuery, setAiQuery] = useState20("");
-    const [selectedGenreFilter, setSelectedGenreFilter] = useState20("ALL");
-    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState20("ALL");
-    const [selectedVersionFilter, setSelectedVersionFilter] = useState20("ALL");
-    const [selectedBpmFilter, setSelectedBpmFilter] = useState20("ALL");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState20("ALL");
-    const [selectedMoodFilter, setSelectedMoodFilter] = useState20("ALL");
-    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState20(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState20(false);
-    const [feedbackMsg, setFeedbackMsg] = useState20("");
-    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState20(false);
-    const [activeTagTab, setActiveTagTab] = useState20("bpm");
-    const handleRemoveToken = (tok) => {
-      if (!tok) return;
-      let newQuery = aiQuery;
-      const matchStr = tok.rawMatch || tok.label;
-      if (matchStr) {
-        newQuery = newQuery.replace(new RegExp(`\\b${matchStr.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}\\b`, "i"), "");
-        if (newQuery === aiQuery) {
-          newQuery = newQuery.replace(new RegExp(matchStr.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&"), "i"), "");
-        }
-      }
-      newQuery = newQuery.replace(/\s+/g, " ").trim();
-      setAiQuery(newQuery);
-      handleEjecutarBusqueda(newQuery);
-    };
-    const handleAddTagToQuery = (tagStr) => {
-      const newQuery = (aiQuery ? `${aiQuery} ${tagStr}` : tagStr).trim();
-      setAiQuery(newQuery);
-      setIsAddTagMenuOpen(false);
-      handleEjecutarBusqueda(newQuery);
-    };
-    const [rutaBase, setRutaBase] = useState20("/Users/admin/Music/mi musica");
-    const [modo, setModo] = useState20("copy");
-    const [isRouting, setIsRouting] = useState20(false);
-    const [routeProgress, setRouteProgress] = useState20(0);
-    const [routeStatusMsg, setRouteStatusMsg] = useState20("");
-    const [resultSummary, setResultSummary] = useState20(null);
-    const [expandedGenre, setExpandedGenre] = useState20("Techno");
-    const [searchTerm, setSearchTerm] = useState20("");
-    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState20(null);
-    useEffect21(() => {
-      handleEjecutarBusqueda("");
-    }, []);
-    const parsedQuery = useMemo7(() => parseAIDJQuery(aiQuery), [aiQuery]);
-    const localTracks = useMemo7(() => {
-      return (Array.isArray(tracks) ? tracks : []).map((t) => ({
-        ...t,
-        isLocal: true,
-        displayTitle: t.t || t.title || "Pista Local",
-        displayArtist: t.a || t.artist || "Artista",
-        displayAlbum: t.album || "",
-        displayBpm: parseFloat(t.b || t.bpm || 128),
-        displayKey: (t.k || t.key || "8A").toUpperCase(),
-        displayGenre: t.genre || "House",
-        displaySubgenre: t.subgenre || "Tech House",
-        displayVersion: t.version || "Extended Mix",
-        displayMood: t.mood_subtag || t.mood || "Peak Time / Pista",
-        displayCover: t.cover || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null)
-      }));
-    }, [tracks]);
-    const catalogTracks = useMemo7(() => {
-      return DJ_CURATED_CATALOG.map((t) => ({
-        ...t,
-        isCatalog: true,
-        displayTitle: t.title,
-        displayArtist: t.artist,
-        displayAlbum: t.album || "",
-        displayBpm: t.bpm,
-        displayKey: t.key,
-        displayGenre: t.genre,
-        displaySubgenre: t.subgenre,
-        displayVersion: t.version,
-        displayMood: t.mood,
-        displayCover: t.cover
-      }));
-    }, []);
-    const allPoolTracks = useMemo7(() => {
-      const combinedLocals = searchLocalResults.length > 0 ? searchLocalResults : localTracks;
-      const combinedOnline = onlineResults.length > 0 ? onlineResults : catalogTracks;
-      if (searchScope === "local") {
-        return combinedLocals;
-      } else if (searchScope === "online") {
-        return combinedOnline;
-      } else {
-        return [...combinedLocals, ...combinedOnline];
-      }
-    }, [localTracks, searchLocalResults, onlineResults, catalogTracks, searchScope]);
-    const handleEjecutarBusqueda = async (queryOverride) => {
-      const q = (queryOverride !== void 0 ? queryOverride : aiQuery).trim();
-      setIsSearchingOnline(true);
-      setHasExecutedSearch(true);
-      const scopeLabel = searchScope === "local" ? "Biblioteca Local" : searchScope === "online" ? "Record Pool Online" : "Local y Pool Online";
-      setFeedbackMsg(`Buscando ${q ? `"${q}"` : "cat\xE1logo"} en ${scopeLabel}...`);
-      try {
-        if (window.eel && window.eel.buscar_temas_taxonomia) {
-          const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 40)();
-          if (res && res.status === "ok") {
-            const onlineItems = (res.online || []).map((item) => ({
-              ...item,
-              isOnlinePool: true,
-              isFromSearch: true,
-              displayTitle: item.title,
-              displayArtist: item.artist,
-              displayAlbum: item.album || "",
-              displayBpm: parseFloat(item.bpm || 128),
-              displayKey: (item.key || "8A").toUpperCase(),
-              displayGenre: item.genre || "House",
-              displaySubgenre: item.subgenre || "Tech House",
-              displayVersion: item.version || "Original Mix",
-              displayMood: item.mood || "Peak Time / Pista",
-              displayCover: item.cover,
-              matchScore: 98
-            }));
-            const localItems = (res.locales || []).map((item) => ({
-              ...item,
-              isLocal: true,
-              isLocalSearch: true,
-              isFromSearch: true,
-              displayTitle: item.title || item.t || "Pista Local",
-              displayArtist: item.artist || item.a || "Artista Local",
-              displayAlbum: item.album || "",
-              displayBpm: parseFloat(item.bpm || item.b || 128),
-              displayKey: (item.key || item.k || "8A").toUpperCase(),
-              displayGenre: item.genre || "House",
-              displaySubgenre: item.subgenre || "Tech House",
-              displayVersion: item.version || "Extended Mix",
-              displayMood: item.mood || "Peak Time / Pista",
-              displayCover: item.cover || (item.path ? `/cover?path=${encodeURIComponent(item.path)}` : null),
-              matchScore: 98
-            }));
-            setOnlineResults(onlineItems);
-            setSearchLocalResults(localItems);
-            const totalFound = localItems.length + onlineItems.length;
-            setFeedbackMsg(`\u2713 Encontrados ${totalFound} temas (${localItems.length} en disco + ${onlineItems.length} en Record Pool)`);
-          }
-        }
-      } catch (err) {
-        console.error("Error al buscar temas en taxonom\xEDa:", err);
-        setFeedbackMsg(`\u2713 B\xFAsqueda filtrada en pistas de biblioteca.`);
-      } finally {
-        setIsSearchingOnline(false);
-        setTimeout(() => setFeedbackMsg(""), 4500);
-      }
-    };
-    const searchResults = useMemo7(() => {
-      const hasTextQuery = Boolean(aiQuery && aiQuery.trim().length > 0);
-      const qLower = (aiQuery || "").toLowerCase().trim();
-      const queryWords = qLower.split(/\s+/).filter((w) => w.length >= 2 && !["para", "con", "del", "the", "los", "las", "por", "and"].includes(w));
-      let scored = allPoolTracks.map((trk) => {
-        let score = 0;
-        let matchedReasons = [];
-        const trkGenre = (trk.displayGenre || "").toLowerCase();
-        const trkSubgenre = (trk.displaySubgenre || "").toLowerCase();
-        const trkBpm = trk.displayBpm || 128;
-        const trkKey = (trk.displayKey || "").toUpperCase();
-        const trkTitle = (trk.displayTitle || "").toLowerCase();
-        const trkArtist = (trk.displayArtist || "").toLowerCase();
-        const trkAlbum = (trk.displayAlbum || "").toLowerCase();
-        const trkVersion = (trk.displayVersion || "").toLowerCase();
-        const trkMood = (trk.displayMood || "").toLowerCase();
-        if (hasTextQuery) {
-          if (trk.isFromSearch) {
-            score += 80;
-            matchedReasons.push("Resultado directo");
-          }
-          if (trkTitle.includes(qLower) || trkArtist.includes(qLower) || trkAlbum.includes(qLower) || trkGenre.includes(qLower) || trkSubgenre.includes(qLower)) {
-            score += 65;
-            matchedReasons.push("Coincidencia directa");
-          }
-          if (parsedQuery.genre && trkGenre.includes(parsedQuery.genre.toLowerCase())) {
-            score += 35;
-            matchedReasons.push(parsedQuery.genre);
-          }
-          if (parsedQuery.subgenre && (trkSubgenre.includes(parsedQuery.subgenre.toLowerCase()) || trkTitle.includes(parsedQuery.subgenre.toLowerCase()))) {
-            score += 30;
-            matchedReasons.push(parsedQuery.subgenre);
-          }
-          if (parsedQuery.targetBpm && trkBpm > 0) {
-            const diff = Math.abs(trkBpm - parsedQuery.targetBpm);
-            if (diff <= 1.5) {
-              score += 30;
-              matchedReasons.push(`${trkBpm} BPM`);
-            } else if (diff <= 3.5) {
-              score += 20;
-              matchedReasons.push(`\xB1${Math.round(diff)} BPM`);
-            } else if (diff <= 6) {
-              score += 10;
-            }
-          } else if (parsedQuery.minBpm && parsedQuery.maxBpm && trkBpm >= parsedQuery.minBpm && trkBpm <= parsedQuery.maxBpm) {
-            score += 25;
-            matchedReasons.push(`${trkBpm} BPM`);
-          }
-          if (parsedQuery.key) {
-            if (trkKey === parsedQuery.key) {
-              score += 30;
-              matchedReasons.push(`Key ${trkKey}`);
-            } else if (parsedQuery.compatibleKeys.includes(trkKey)) {
-              score += 20;
-              matchedReasons.push(`Harmonic ${trkKey}`);
-            }
-          }
-          if (parsedQuery.version) {
-            const vLower = parsedQuery.version.toLowerCase();
-            if (trkVersion.includes(vLower) || trkTitle.includes(vLower)) {
-              score += 20;
-              matchedReasons.push(parsedQuery.version);
-            }
-          }
-          if (parsedQuery.mood) {
-            const mLower = parsedQuery.mood.toLowerCase();
-            if (trkMood.includes(mLower) || parsedQuery.mood.includes("Previa") && (trkBpm < 118 || trkMood.includes("warm")) || parsedQuery.mood.includes("Pista") && (trkBpm >= 124 || trkMood.includes("peak"))) {
-              score += 15;
-              matchedReasons.push(parsedQuery.mood);
-            }
-          }
-          queryWords.forEach((word) => {
-            if (trkArtist.includes(word)) {
-              score += 35;
-              matchedReasons.push(`Artista: ${word}`);
-            }
-            if (trkTitle.includes(word)) {
-              score += 30;
-              matchedReasons.push(`T\xEDtulo: ${word}`);
-            }
-            if (trkAlbum.includes(word)) {
-              score += 25;
-              matchedReasons.push(`\xC1lbum: ${word}`);
-            }
-            if (trkGenre.includes(word) || trkSubgenre.includes(word)) {
-              score += 25;
-              matchedReasons.push(`Estilo: ${word}`);
-            }
-          });
-        } else {
-          score = 85;
-        }
-        let matchesManual = true;
-        if (selectedGenreFilter !== "ALL" && !trkGenre.includes(selectedGenreFilter.toLowerCase())) {
-          matchesManual = false;
-        }
-        if (selectedSubgenreFilterUI !== "ALL" && !trkSubgenre.includes(selectedSubgenreFilterUI.toLowerCase())) {
-          matchesManual = false;
-        }
-        if (selectedVersionFilter !== "ALL") {
-          const sv = selectedVersionFilter.toLowerCase();
-          if (!trkVersion.includes(sv) && !trkTitle.includes(sv)) matchesManual = false;
-        }
-        if (selectedBpmFilter !== "ALL") {
-          if (selectedBpmFilter === "<120" && trkBpm >= 120) matchesManual = false;
-          if (selectedBpmFilter === "120-125" && (trkBpm < 120 || trkBpm > 125)) matchesManual = false;
-          if (selectedBpmFilter === "126-129" && (trkBpm < 126 || trkBpm > 129)) matchesManual = false;
-          if (selectedBpmFilter === "130-135" && (trkBpm < 130 || trkBpm > 135)) matchesManual = false;
-          if (selectedBpmFilter === ">135" && trkBpm <= 135) matchesManual = false;
-        }
-        if (selectedKeyFilter !== "ALL" && trkKey !== selectedKeyFilter) {
-          matchesManual = false;
-        }
-        if (selectedMoodFilter !== "ALL" && !trkMood.includes(selectedMoodFilter.toLowerCase())) {
-          matchesManual = false;
-        }
-        if (taxFilterSearch) {
-          const hTerm = taxFilterSearch.toLowerCase();
-          const mSearch = trkTitle.includes(hTerm) || trkArtist.includes(hTerm) || trkAlbum.includes(hTerm);
-          if (!mSearch) matchesManual = false;
-        }
-        if (taxFilterGenre !== "ALL") {
-          if (!trkGenre.includes(taxFilterGenre.toLowerCase())) matchesManual = false;
-        }
-        if (taxFilterOrigin !== "ALL") {
-          const isLoc = Boolean(trk.isLocal || trk.is_local);
-          if (taxFilterOrigin === "local" && !isLoc) matchesManual = false;
-          if (taxFilterOrigin === "online" && isLoc) matchesManual = false;
-        }
-        if (taxFilterEnergy !== "ALL") {
-          const eVal = Number(trk.energy || trk.e || 80);
-          if (taxFilterEnergy === "HIGH" && eVal < 80) matchesManual = false;
-          if (taxFilterEnergy === "MED" && (eVal < 65 || eVal >= 80)) matchesManual = false;
-          if (taxFilterEnergy === "LOW" && eVal >= 65) matchesManual = false;
-        }
-        if (taxFilterDance !== "ALL") {
-          const dVal = Number(trk.danceability || trk.dance || 80);
-          if (taxFilterDance === "HIGH" && dVal < 80) matchesManual = false;
-          if (taxFilterDance === "MED" && (dVal < 65 || dVal >= 80)) matchesManual = false;
-          if (taxFilterDance === "LOW" && dVal >= 65) matchesManual = false;
-        }
-        const finalPct = Math.min(100, Math.max(10, score));
-        return {
-          ...trk,
-          matchScore: finalPct,
-          matchedReasons,
-          matchesManual
-        };
-      }).filter((t) => t.matchesManual && (!hasTextQuery || t.matchScore >= 15 || t.isFromSearch));
-      scored.sort((a, b) => {
-        let valA = a[taxSortField];
-        let valB = b[taxSortField];
-        if (taxSortField === "title") {
-          valA = a.displayTitle || "";
-          valB = b.displayTitle || "";
-        } else if (taxSortField === "artist") {
-          valA = a.displayArtist || "";
-          valB = b.displayArtist || "";
-        } else if (taxSortField === "album") {
-          valA = a.displayAlbum || "";
-          valB = b.displayAlbum || "";
-        } else if (taxSortField === "genre") {
-          valA = a.displayGenre || "";
-          valB = b.displayGenre || "";
-        } else if (taxSortField === "subgenre") {
-          valA = a.displaySubgenre || "";
-          valB = b.displaySubgenre || "";
-        } else if (taxSortField === "key") {
-          valA = a.displayKey || "";
-          valB = b.displayKey || "";
-        } else if (taxSortField === "origin") {
-          valA = Boolean(a.isLocal || a.is_local) ? "local" : "online";
-          valB = Boolean(b.isLocal || b.is_local) ? "local" : "online";
-        } else if (["matchScore", "displayBpm", "energy", "danceability"].includes(taxSortField)) {
-          valA = Number(valA || (taxSortField === "energy" ? a.energy || a.e : a.danceability || a.dance)) || 0;
-          valB = Number(valB || (taxSortField === "energy" ? b.energy || b.e : b.danceability || b.dance)) || 0;
-        }
-        if (typeof valA === "number" && typeof valB === "number") {
-          return taxSortDir === "asc" ? valA - valB : valB - valA;
-        }
-        return taxSortDir === "asc" ? String(valA || "").localeCompare(String(valB || "")) : String(valB || "").localeCompare(String(valA || ""));
-      });
-      return scored;
-    }, [allPoolTracks, aiQuery, parsedQuery, selectedGenreFilter, selectedSubgenreFilterUI, selectedVersionFilter, selectedBpmFilter, selectedKeyFilter, selectedMoodFilter, taxFilterSearch, taxFilterGenre, taxFilterOrigin, taxFilterEnergy, taxFilterDance, taxSortField, taxSortDir]);
-    const handleToggleTaxRow = (id) => {
-      setSelectedTaxIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-      });
-    };
-    const allTaxSelected = searchResults.length > 0 && searchResults.every((t) => selectedTaxIds.has(t.id));
-    const handleToggleSelectAllTax = () => {
-      if (allTaxSelected) {
-        setSelectedTaxIds(/* @__PURE__ */ new Set());
-      } else {
-        setSelectedTaxIds(new Set(searchResults.map((t) => t.id)));
-      }
-    };
-    const handleAnadirADescargas = (trk) => {
-      if (!trk) return;
-      const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
-      if (addFn) {
-        addFn([trk], "taxonomy");
-        setFeedbackMsg(`\u2713 "${trk.displayTitle || trk.title}" a\xF1adido a Descargas (Record Pool). Redirigiendo a descargas...`);
-      } else if (onSendToSpotify) {
-        onSendToSpotify(trk.displayTitle || trk.title);
-      } else if (onNavigateTab) {
-        onNavigateTab("spotify");
-      }
-    };
-    const handleAnadirSeleccionadasADescargas = () => {
-      const seleccionadas = searchResults.filter((t) => selectedTaxIds.has(t.id));
-      if (seleccionadas.length === 0) return;
-      const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
-      if (addFn) {
-        addFn(seleccionadas, "taxonomy");
-        setFeedbackMsg(`\u2713 ${seleccionadas.length} pista(s) seleccionadas a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
-      } else if (onNavigateTab) {
-        onNavigateTab("spotify");
-      }
-    };
-    const handleAnadirTodasADescargas = () => {
-      if (searchResults.length === 0) return;
-      const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
-      if (addFn) {
-        addFn(searchResults, "taxonomy");
-        setFeedbackMsg(`\u2713 ${searchResults.length} pista(s) a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
-      } else if (onNavigateTab) {
-        onNavigateTab("spotify");
-      }
-    };
-    const handleCargarEnDeck = async (trk) => {
-      if (!trk) return;
-      const isCurrent = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path || nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title));
-      if (isCurrent && onTogglePlay) {
-        onTogglePlay();
-        return;
-      }
-      let streamUrl = trk.preview_url || trk.previewUrl || (trk.path && (trk.path.startsWith("http://") || trk.path.startsWith("https://")) ? trk.path : "");
-      let coverHd = trk.displayCover || trk.cover;
-      if (!streamUrl && !trk.path && !trk.f && window.eel && window.eel.resolver_stream_preescucha) {
-        try {
-          setFeedbackMsg(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
-          const res = await window.eel.resolver_stream_preescucha(trk.displayTitle || trk.title, trk.displayArtist || trk.artist)();
-          if (res && res.stream_url) {
-            streamUrl = res.stream_url;
-            if (res.cover) coverHd = res.cover;
-          }
-        } catch (err) {
-          console.warn("Fallo al resolver preescucha en taxonom\xEDa:", err);
-        }
-      }
-      const trackToPlay = {
-        ...trk,
-        id: trk.id || `tax_${Date.now()}`,
-        t: trk.displayTitle || trk.title || trk.t || "Audio Track",
-        title: trk.displayTitle || trk.title || trk.t || "Audio Track",
-        a: trk.displayArtist || trk.artist || trk.a || "Artista",
-        artist: trk.displayArtist || trk.artist || trk.a || "Artista",
-        album: trk.displayAlbum || trk.album || "",
-        b: trk.displayBpm || trk.bpm || trk.b || 128,
-        bpm: trk.displayBpm || trk.bpm || trk.b || 128,
-        k: trk.displayKey || trk.key || trk.k || "8A",
-        key: trk.displayKey || trk.key || trk.k || "8A",
-        cover: coverHd,
-        path: trk.path || trk.f || streamUrl || "",
-        f: trk.path || trk.f || "",
-        preview_url: streamUrl
-      };
-      if (onPlayTrack) {
-        onPlayTrack(trackToPlay, 0, true);
-        setFeedbackMsg(`\u2713 "${trackToPlay.title}" reproduciendo en Deck 1`);
-        setTimeout(() => setFeedbackMsg(""), 3500);
-      }
-    };
-    const handleAbrirEnHotCues = (trk) => {
-      if (!trk) return;
-      if (onSelectTrackForCues) {
-        onSelectTrackForCues(trk);
-      } else if (onNavigateTab) {
-        onNavigateTab("hotcues");
-      }
-    };
-    const handleApuntarEnLibreta = (trk) => {
-      try {
-        const saved = localStorage.getItem("beatwave_shazam_notebook");
-        const list = saved ? JSON.parse(saved) : [];
-        const exists = list.some((item) => item.title === trk.displayTitle && item.artist === trk.displayArtist);
-        if (!exists) {
-          const now = /* @__PURE__ */ new Date();
-          const item = {
-            title: trk.displayTitle,
-            artist: trk.displayArtist,
-            bpm: trk.displayBpm,
-            key: trk.displayKey,
-            genre: trk.displayGenre,
-            cover: trk.displayCover,
-            added_at: now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            notebook_id: Date.now()
-          };
-          list.unshift(item);
-          localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(list));
-          setFeedbackMsg(`\u2713 "${trk.displayTitle}" guardado en tu Libreta Digital.`);
-        } else {
-          setFeedbackMsg(`\u2139 "${trk.displayTitle}" ya estaba en tu libreta.`);
-        }
-        setTimeout(() => setFeedbackMsg(""), 3e3);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    const handleAsignarACrateIndividual = async (trk) => {
-      if (!trk) return;
-      try {
-        if (window.eel && window.eel.organizar_pista_en_crate) {
-          const res = await window.eel.organizar_pista_en_crate(trk, rutaBase, modo)();
-          if (res && res.status === "ok") {
-            setFeedbackMsg(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
-          } else {
-            setFeedbackMsg(`\u26A0 ${(res == null ? void 0 : res.msg) || "Error al enrutar pista"}`);
-          }
-          setTimeout(() => setFeedbackMsg(""), 3500);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    const handleSeleccionarDestino = async () => {
-      try {
-        if (window.eel && window.eel.seleccionar_directorio) {
-          const dir = await window.eel.seleccionar_directorio()();
-          if (dir) {
-            setRutaBase(dir);
-          }
-        }
-      } catch (err) {
-        console.error("Error al seleccionar carpeta destino:", err);
-      }
-    };
-    const handleOrganizarLote = async () => {
-      if (!tracks || tracks.length === 0) return;
-      setIsRouting(true);
-      setRouteProgress(5);
-      setRouteStatusMsg(`Iniciando ruteo de ${tracks.length} pistas a ${rutaBase}...`);
-      setResultSummary(null);
-      try {
-        if (window.eel && window.eel.organizar_lote_en_crates) {
-          const res = await window.eel.organizar_lote_en_crates(tracks, rutaBase, modo)();
-          if (res && res.status === "ok") {
-            setResultSummary(res);
-            setRouteProgress(100);
-            setRouteStatusMsg(`\u2713 Lote completado: ${res.procesados} pistas organizadas.`);
-          } else {
-            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error en el ruteo de lote." });
-            setRouteStatusMsg((res == null ? void 0 : res.msg) || "Error durante la operaci\xF3n.");
-          }
-        }
-      } catch (err) {
-        console.error("Error al organizar lote:", err);
-        setResultSummary({ status: "error", msg: String(err) });
-        setRouteStatusMsg("Fallo inesperado al enrutar lote.");
-      } finally {
-        setIsRouting(false);
-        setTimeout(() => setRouteProgress(0), 4e3);
-      }
-    };
-    const handleExportarSeratoCrates = async () => {
-      if (!tracks || tracks.length === 0) return;
-      setIsRouting(true);
-      setRouteProgress(50);
-      setRouteStatusMsg("Generando archivos binarios .crate para Serato DJ Pro...");
-      try {
-        if (window.eel && window.eel.exportar_serato_crates) {
-          const res = await window.eel.exportar_serato_crates(tracks)();
-          setRouteProgress(100);
-          if (res && res.status === "ok") {
-            setResultSummary({
-              status: "ok",
-              procesados: res.total_pistas,
-              errores: 0,
-              msg: `\u2713 ${res.total_crates} crates generados exitosamente en ${res.destino}`
-            });
-          } else {
-            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar crates Serato." });
-          }
-        }
-      } catch (err) {
-        console.error("Error al exportar crates Serato:", err);
-        setResultSummary({ status: "error", msg: String(err) });
-      } finally {
-        setIsRouting(false);
-        setTimeout(() => setRouteProgress(0), 4e3);
-      }
-    };
-    const handleExportarRekordboxXml = async () => {
-      if (!tracks || tracks.length === 0) return;
-      setIsRouting(true);
-      setRouteProgress(50);
-      setRouteStatusMsg("Generando archivo rekordbox.xml est\xE1ndar Pioneer DJ...");
-      try {
-        if (window.eel && window.eel.exportar_rekordbox_xml) {
-          const res = await window.eel.exportar_rekordbox_xml(tracks, rutaBase, "rekordbox.xml")();
-          setRouteProgress(100);
-          if (res && res.status === "ok") {
-            setResultSummary({
-              status: "ok",
-              procesados: res.total_tracks,
-              errores: 0,
-              msg: `\u2713 Archivo rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists) en ${res.path}`
-            });
-          } else {
-            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar rekordbox.xml." });
-          }
-        }
-      } catch (err) {
-        console.error("Error al exportar rekordbox XML:", err);
-        setResultSummary({ status: "error", msg: String(err) });
-      } finally {
-        setIsRouting(false);
-        setTimeout(() => setRouteProgress(0), 4e3);
-      }
-    };
-    const getGenreStats = (gen) => {
-      return tracks.filter((t) => (t.genre || "Tech House").toLowerCase() === gen.toLowerCase()).length;
-    };
-    const getSubgenreStats = (gen, subg) => {
-      return tracks.filter((t) => {
-        const g = (t.genre || "Tech House").toLowerCase();
-        const sg = (t.subgenre || (TAXONOMY_TREE[t.genre || "Tech House"] ? TAXONOMY_TREE[t.genre || "Tech House"][0] : "")).toLowerCase();
-        return g === gen.toLowerCase() && sg === subg.toLowerCase();
-      });
-    };
-    const genresList = Object.keys(TAXONOMY_TREE);
-    const totalCratesCount = genresList.reduce((acc, g) => acc + (TAXONOMY_TREE[g] ? TAXONOMY_TREE[g].length : 0), 0);
-    const filteredGenres = genresList.filter((g) => {
-      if (!searchTerm) return true;
-      const s = searchTerm.toLowerCase();
-      if (g.toLowerCase().includes(s)) return true;
-      return TAXONOMY_TREE[g] && TAXONOMY_TREE[g].some((sg) => sg.toLowerCase().includes(s));
-    });
-    const resetFilters = () => {
-      setAiQuery("");
-      setOnlineResults([]);
-      setHasExecutedSearch(false);
-      setSelectedGenreFilter("ALL");
-      setSelectedSubgenreFilterUI("ALL");
-      setSelectedVersionFilter("ALL");
-      setSelectedBpmFilter("ALL");
-      setSelectedKeyFilter("ALL");
-      setSelectedMoodFilter("ALL");
-      setTaxFilterSearch("");
-      setTaxFilterGenre("ALL");
-      setTaxFilterOrigin("ALL");
-      setTaxFilterEnergy("ALL");
-      setTaxFilterDance("ALL");
-    };
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-taxonomy flex flex-col h-full w-full overflow-y-auto pb-36 md:pb-8 bg-djzinc-950 text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "px-5 pt-4 pb-3 border-b border-djzinc-800 bg-[#08080c] shrink-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle2, { icon: Icons2.Routing, title: "Crates", accent: "& Taxonom\xEDa" }), /* @__PURE__ */ React.createElement("p", { className: "text-gray-400 text-xs hidden md:inline" }, "Buscador inteligente en lenguaje natural y ruteo jer\xE1rquico a crates de Serato / Rekordbox.")), /* @__PURE__ */ React.createElement("div", { className: "inline-flex rounded-xl border border-djzinc-700/80 p-1 bg-djzinc-900/90 shadow" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setActiveSubView("search"),
-        className: `px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeSubView === "search" ? "bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow-md" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Search, { size: 14, className: "inline-block align-[-2px]" }), " Buscador IA"),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black" }, searchResults.length)
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setActiveSubView("routing"),
-        className: `px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${activeSubView === "routing" ? "bg-djcyan-500 text-black shadow-md" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Serato Crates & Rekordbox"),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black" }, totalCratesCount)
-    ))), feedbackMsg && /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "animate-pulse" }, "\u25CF"), /* @__PURE__ */ React.createElement("span", null, feedbackMsg)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setFeedbackMsg(""), className: "text-gray-400 hover:text-white cursor-pointer px-1" }, /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })))), activeSubView === "search" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner overflow-x-auto no-scrollbar whitespace-nowrap shrink-0 max-w-full" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider shrink-0" }, "Buscar en:"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSearchScope("all"),
-        className: `px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${searchScope === "all" ? "bg-gradient-to-r from-djcyan-500 to-blue-500 text-black shadow" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Globe, { size: 14, className: "inline-block align-[-2px]" }), " Todo (H\xEDbrido)")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSearchScope("local"),
-        className: `px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${searchScope === "local" ? "bg-djcyan-500 text-black shadow" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Mi Biblioteca"),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded bg-black/30 text-white font-mono" }, localTracks.length)
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSearchScope("online"),
-        className: `px-3 py-1 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${searchScope === "online" ? "bg-purple-500 text-white shadow" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Cloud, { size: 14, className: "inline-block align-[-2px]" }), " Record Pool")
-    )), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setShowAdvancedFilters(!showAdvancedFilters),
-        className: `text-xs px-2.5 py-1.5 rounded-lg border font-mono transition-all flex items-center gap-1.5 cursor-pointer ${showAdvancedFilters || selectedGenreFilter !== "ALL" || selectedBpmFilter !== "ALL" || selectedKeyFilter !== "ALL" ? "bg-djcyan-950 text-djcyan-300 border-djcyan-600" : "bg-djzinc-900 text-gray-400 border-djzinc-750 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " Filtros Manuales"),
-      /* @__PURE__ */ React.createElement("span", null, showAdvancedFilters ? "\u25B2" : "\u25BC")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 flex items-center" }, /* @__PURE__ */ React.createElement(Icons2.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3.5 text-gray-400  pointer-events-none" }), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: aiQuery,
-        onChange: (e) => setAiQuery(e.target.value),
-        onKeyDown: (e) => {
-          if (e.key === "Enter") {
-            handleEjecutarBusqueda();
-          }
-        },
-        placeholder: "Ej: tech house a 128 bpm en 8A, afro house para bailar, reggaeton retro para la previa, extended mix...",
-        className: "ws-search-input w-full pl-10 pr-12 py-3 text-sm"
-      }
-    ), aiQuery && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setAiQuery("");
-          setOnlineResults([]);
-        },
-        className: "absolute right-3.5 text-gray-400 hover:text-white text-xs font-bold cursor-pointer",
-        title: "Borrar texto"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-    )), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleEjecutarBusqueda(),
-        disabled: isSearchingOnline,
-        className: "px-6 py-3 bg-djcyan-500 hover:bg-djcyan-400 active:scale-95 text-black font-black text-xs font-mono uppercase tracking-wider rounded-xl shadow-[0_0_18px_rgba(6,182,212,0.45)] transition-all flex items-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
-      },
-      isSearchingOnline ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icons2.Clock, { size: 14, className: "inline-block align-[-2px] animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Buscando...")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icons2.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Buscar Temas"))
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 pt-1" }, parsedQuery.tokens && parsedQuery.tokens.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 mr-0.5" }, "Filtros Activos:"), parsedQuery.tokens.map((tok, idx) => /* @__PURE__ */ React.createElement(
-      "span",
-      {
-        key: idx,
-        className: "text-[10.5px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-djcyan-950/90 text-djcyan-300 border border-djcyan-600/80 shadow-sm flex items-center gap-1.5 group"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Check, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, tok.label),
-      /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleRemoveToken(tok),
-          className: "w-3.5 h-3.5 rounded-full hover:bg-red-500 hover:text-white text-djcyan-400 flex items-center justify-center text-[9px] font-black cursor-pointer transition-colors ml-0.5",
-          title: `Eliminar filtro ${tok.label}`
-        },
-        /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-      )
-    ))), /* @__PURE__ */ React.createElement("div", { className: "relative inline-block" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setIsAddTagMenuOpen((prev) => !prev),
-        className: "text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg bg-[#12121f] hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djcyan-700/60 shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95",
-        title: "A\xF1adir manualmente filtros de BPM, Tono, G\xE9nero, Versi\xF3n o Mood"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "font-black text-xs" }, "+"),
-      /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Tag"),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[8px] text-gray-500" }, isAddTagMenuOpen ? "\u25B2" : "\u25BC")
-    ), isAddTagMenuOpen && /* @__PURE__ */ React.createElement("div", { className: "absolute top-full left-0 mt-1.5 w-84 bg-[#0a0a14] border-2 border-djcyan-500/70 rounded-xl p-3 shadow-2xl z-50 animate-fadeIn text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-black text-white uppercase tracking-wider" }, "A\xF1adir Tag a la B\xFAsqueda"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setIsAddTagMenuOpen(false),
-        className: "text-gray-400 hover:text-white text-xs font-bold cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 mb-2 border-b border-djzinc-800/80 pb-1" }, [
-      { id: "bpm", label: "BPM" },
-      { id: "key", label: "Key" },
-      { id: "genre", label: "G\xE9nero" },
-      { id: "version", label: "Versi\xF3n" },
-      { id: "mood", label: "Mood" }
-    ].map((cat) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: cat.id,
-        type: "button",
-        onClick: () => setActiveTagTab(cat.id),
-        className: `px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${activeTagTab === cat.id ? "bg-djcyan-500 text-black shadow" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
-      },
-      cat.label
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scrollbar p-0.5" }, activeTagTab === "bpm" && [
-      "120 bpm",
-      "124 bpm",
-      "126 bpm",
-      "128 bpm",
-      "130 bpm",
-      "132 bpm",
-      "138 bpm",
-      "140 bpm",
-      "145 bpm",
-      "150 bpm",
-      "160 bpm",
-      "174 bpm"
-    ].map((tag) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tag,
-        type: "button",
-        onClick: () => handleAddTagToQuery(tag),
-        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
-      },
-      "+ ",
-      tag
-    )), activeTagTab === "key" && [
-      "1A",
-      "2A",
-      "3A",
-      "4A",
-      "5A",
-      "6A",
-      "7A",
-      "8A",
-      "9A",
-      "10A",
-      "11A",
-      "12A",
-      "1B",
-      "2B",
-      "3B",
-      "4B",
-      "5B",
-      "6B",
-      "7B",
-      "8B",
-      "9B",
-      "10B",
-      "11B",
-      "12B"
-    ].map((tag) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tag,
-        type: "button",
-        onClick: () => handleAddTagToQuery(tag),
-        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
-      },
-      "+ ",
-      tag
-    )), activeTagTab === "genre" && [
-      "Tech House",
-      "Afro House",
-      "Melodic Techno",
-      "Progressive House",
-      "Deep House",
-      "Minimal / Deep Tech",
-      "Hard Techno",
-      "Psy-Trance",
-      "Drum & Bass",
-      "Reggaet\xF3n",
-      "Latin House"
-    ].map((tag) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tag,
-        type: "button",
-        onClick: () => handleAddTagToQuery(tag),
-        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
-      },
-      "+ ",
-      tag
-    )), activeTagTab === "version" && [
-      "Extended Mix",
-      "Intro",
-      "Outro",
-      "Remix",
-      "Club Mix",
-      "Acapella",
-      "Transition",
-      "Mashup"
-    ].map((tag) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tag,
-        type: "button",
-        onClick: () => handleAddTagToQuery(tag),
-        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
-      },
-      "+ ",
-      tag
-    )), activeTagTab === "mood" && [
-      "Peak Time",
-      "Warm Up",
-      "Chill",
-      "Sunset",
-      "Retro"
-    ].map((tag) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tag,
-        type: "button",
-        onClick: () => handleAddTagToQuery(tag),
-        className: "px-2 py-1 rounded bg-[#161622] hover:bg-djcyan-500 hover:text-black border border-djzinc-750 text-gray-200 text-[10px] font-bold cursor-pointer transition-all"
-      },
-      "+ ",
-      tag
-    )))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 pt-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 mr-1 shrink-0" }, "Sugerencias R\xE1pidas:"), AI_PROMPT_CHIPS.map((chip, cIdx) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: cIdx,
-        type: "button",
-        onClick: () => {
-          setAiQuery(chip.query);
-          handleEjecutarBusqueda(chip.query);
-        },
-        className: `text-[10.5px] px-2.5 py-1 rounded-lg border font-medium transition-all cursor-pointer ${aiQuery === chip.query ? "bg-djcyan-500 text-black border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)] font-bold" : "bg-djzinc-900/90 text-gray-300 border-djzinc-800 hover:border-djcyan-500/50 hover:text-white"}`
-      },
-      chip.label
-    ))), showAdvancedFilters && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-900/90 border border-djzinc-800 rounded-xl grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 text-xs font-mono animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "G\xE9nero Ra\xEDz:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: selectedGenreFilter,
-        onChange: (e) => setSelectedGenreFilter(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos los G\xE9neros"),
-      genresList.map((g) => /* @__PURE__ */ React.createElement("option", { key: g, value: g }, g))
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Versi\xF3n / Edit:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: selectedVersionFilter,
-        onChange: (e) => setSelectedVersionFilter(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas las Versiones"),
-      DJ_VERSIONS_LIST.map((v) => /* @__PURE__ */ React.createElement("option", { key: v, value: v }, v))
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Rango BPM:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: selectedBpmFilter,
-        onChange: (e) => setSelectedBpmFilter(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Tempo"),
-      /* @__PURE__ */ React.createElement("option", { value: "<120" }, "< 120 BPM (Previa/Downtempo)"),
-      /* @__PURE__ */ React.createElement("option", { value: "120-125" }, "120 - 125 BPM (Afro/Deep)"),
-      /* @__PURE__ */ React.createElement("option", { value: "126-129" }, "126 - 129 BPM (Tech House Clave)"),
-      /* @__PURE__ */ React.createElement("option", { value: "130-135" }, "130 - 135 BPM (Driving / Techno)"),
-      /* @__PURE__ */ React.createElement("option", { value: ">135" }, "> 135 BPM (Peak Time / Trance)")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Tonalidad:"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setIsCamelotModalOpen(true),
-        className: "text-[9px] text-djcyan-400 hover:underline cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Disc, { size: 14, className: "inline-block align-[-2px]" }),
-      " Rueda"
-    )), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: selectedKeyFilter,
-        onChange: (e) => setSelectedKeyFilter(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Tono"),
-      Object.keys(CAMELOT_WHEEL_DATA).map((k) => /* @__PURE__ */ React.createElement("option", { key: k, value: k }, k, " (", CAMELOT_WHEEL_DATA[k].classical, ")"))
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, "Atm\xF3sfera / Mood:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: selectedMoodFilter,
-        onChange: (e) => setSelectedMoodFilter(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Mood"),
-      /* @__PURE__ */ React.createElement("option", { value: "Previa / Warm Up" }, "Previa / Warm Up"),
-      /* @__PURE__ */ React.createElement("option", { value: "Peak Time / Pista" }, "Peak Time / Pista"),
-      /* @__PURE__ */ React.createElement("option", { value: "Chill / Sunset / After" }, "Chill / Sunset / After")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14, className: "inline-block align-[-2px]" }), " Energ\xEDa DJ:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: taxFilterEnergy,
-        onChange: (e) => setTaxFilterEnergy(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Nivel"),
-      /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta (Peak Time)"),
-      /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media (Build-Up)"),
-      /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja (Warm Up/Calma)")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement("label", { className: "text-gray-400 text-[10px]" }, /* @__PURE__ */ React.createElement(Icons2.Activity, { size: 14, className: "inline-block align-[-2px]" }), " Danceability:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: taxFilterDance,
-        onChange: (e) => setTaxFilterDance(e.target.value),
-        className: "bg-djzinc-950 border border-djzinc-700 rounded px-2 py-1 text-gray-200 outline-none"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Cualquier Nivel"),
-      /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta (Club/Groove)"),
-      /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
-      /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-end" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: resetFilters,
-        className: "w-full py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-300 hover:text-white rounded border border-djzinc-700 text-xs font-bold cursor-pointer transition-colors"
-      },
-      "\u21BA Reset Filtros"
-    )))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-5 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between text-xs font-mono text-gray-400 gap-2" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", null, "Mostrando "), /* @__PURE__ */ React.createElement("strong", { className: "text-white font-bold" }, searchResults.length), /* @__PURE__ */ React.createElement("span", null, " temas para "), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, aiQuery ? `"${aiQuery}"` : "Exploraci\xF3n Taxon\xF3mica"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 ml-2" }, "(", searchScope === "local" ? "Solo Biblioteca Local" : searchScope === "online" ? "Solo Record Pool Online" : "Biblioteca Local + Record Pool", ")")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: selectedTaxIds.size === 0,
-        onClick: handleAnadirSeleccionadasADescargas,
-        className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all ${selectedTaxIds.size > 0 ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)] active:scale-95" : "bg-djzinc-850 text-gray-500 border border-djzinc-750 cursor-not-allowed opacity-40"}`,
-        title: "A\xF1adir pistas seleccionadas a la cola de descargas del Record Pool"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Download, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Seleccionadas (", selectedTaxIds.size, ")")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: searchResults.length === 0,
-        onClick: handleAnadirTodasADescargas,
-        className: "px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white border border-emerald-500 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
-        title: "A\xF1adir todas las pistas de esta b\xFAsqueda a la cola de descargas del Record Pool"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Download, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", null, "A\xF1adir Todas (", searchResults.length, ")")
-    )), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400" }), /* @__PURE__ */ React.createElement("span", null, "Biblioteca (", localTracks.length + searchLocalResults.length, ")")), /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-purple-400" }), /* @__PURE__ */ React.createElement("span", null, "Record Pool Online (", onlineResults.length > 0 ? onlineResults.length : catalogTracks.length, ")")), /* @__PURE__ */ React.createElement("div", { className: "inline-flex rounded-lg border border-djzinc-750 p-0.5 bg-[#050508] ml-2" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setDisplayMode("table"),
-        className: `px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${displayMode === "table" ? "bg-djcyan-500 text-black" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u{1D11C}"),
-      " Tabla"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setDisplayMode("grid"),
-        className: `px-2.5 py-1 rounded text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${displayMode === "grid" ? "bg-djcyan-500 text-black" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u229E"),
-      " Mosaico"
-    )))), searchResults.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 border border-dashed border-djzinc-800 rounded-2xl bg-djzinc-900/30 text-center space-y-3" }, /* @__PURE__ */ React.createElement(Icons2.Search, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-white" }, "No se encontraron temas coincidentes"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mx-auto" }, 'No hay pistas que cumplan los criterios de "', aiQuery, '". Puedes pulsar ', /* @__PURE__ */ React.createElement("strong", null, "Buscar Temas"), " para rastrear en el Record Pool Online o descargarlas en SuperFLAC / Record Pool."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-2 pt-2" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: resetFilters,
-        className: "px-3.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-bold cursor-pointer"
-      },
-      "\u21BA Limpiar B\xFAsqueda"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setSearchScope("online");
-          handleEjecutarBusqueda();
-        },
-        className: "px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Cloud, { size: 14, className: "inline-block align-[-2px]" }),
-      " Buscar en Record Pool Online"
-    ), onSendToSpotify && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => onSendToSpotify(aiQuery),
-        className: "px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-bold shadow-md cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Globe, { size: 14, className: "inline-block align-[-2px]" }),
-      " Ingestar desde SuperFLAC / Record Pool \u2192"
-    ))) : displayMode === "table" ? (
-      /* VISTA DE TABLA CON ORDENACIÓN Y FILTROS EN CABECERA */
-      /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto rounded-xl border border-djzinc-800 bg-[#07070a] shadow-lg" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0d12] border-b border-djzinc-800 text-[10px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-8 text-center" }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "checkbox",
-          checked: allTaxSelected,
-          onChange: handleToggleSelectAllTax,
-          className: "accent-djcyan-500 cursor-pointer",
-          title: "Seleccionar / Deseleccionar todas las pistas"
-        }
-      )), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, "PLAY"), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("title"), className: "py-2.5 px-3 min-w-[240px] cursor-pointer hover:text-white transition-colors" }, "T\xCDTULO / \xC1LBUM ", renderSortArrowTax("title")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("artist"), className: "py-2.5 px-3 min-w-[150px] cursor-pointer hover:text-white transition-colors" }, "ARTISTA ", renderSortArrowTax("artist")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("genre"), className: "py-2.5 px-2.5 cursor-pointer hover:text-white transition-colors" }, "G\xC9NERO ", renderSortArrowTax("genre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("subgenre"), className: "py-2.5 px-2.5 cursor-pointer hover:text-white transition-colors" }, "SUBG\xC9NERO ", renderSortArrowTax("subgenre")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("displayBpm"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "BPM ", renderSortArrowTax("displayBpm")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("key"), className: "py-2.5 px-2 text-center w-16 cursor-pointer hover:text-white transition-colors" }, "KEY ", renderSortArrowTax("key")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("version"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, "VERSI\xD3N ", renderSortArrowTax("version")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("origin"), className: "py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors" }, "ORIGEN ", renderSortArrowTax("origin")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("matchScore"), className: "py-2.5 px-2.5 text-center cursor-pointer hover:text-white transition-colors" }, "MATCH % ", renderSortArrowTax("matchScore")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("energy"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ENERG\xCDA ", renderSortArrowTax("energy")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("danceability"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors" }, /* @__PURE__ */ React.createElement(Icons2.Activity, { size: 14, className: "inline-block align-[-2px]" }), " DANCE ", renderSortArrowTax("danceability")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("arousal"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-emerald-400", title: "Intensidad (Arousal)" }, "\u{1F525} INTENSIDAD ", renderSortArrowTax("arousal")), /* @__PURE__ */ React.createElement("th", { onClick: () => handleSortTax("valence"), className: "py-2.5 px-2 text-center cursor-pointer hover:text-white transition-colors text-djcyan-400", title: "Positividad (Valence)" }, "\u2728 POSITIVIDAD ", renderSortArrowTax("valence")), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center" }, "FASE DJ"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2.5 text-left" }, "COMENTARIO PRO"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center min-w-[150px]" }, "ACCIONES DJ")), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#050508] border-b border-djzinc-800 text-[10px] lowercase font-sans" }, /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-gray-500" }, taxFilterSearch || taxFilterGenre !== "ALL" || taxFilterOrigin !== "ALL" || taxFilterEnergy !== "ALL" || taxFilterDance !== "ALL" ? /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          onClick: () => {
-            setTaxFilterSearch("");
-            setTaxFilterGenre("ALL");
-            setTaxFilterOrigin("ALL");
-            setTaxFilterEnergy("ALL");
-            setTaxFilterDance("ALL");
-          },
-          title: "Limpiar filtros",
-          className: "text-amber-400 hover:text-white cursor-pointer"
-        },
-        /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-      ) : "filtro"), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "text",
-          value: taxFilterSearch,
-          onChange: (e) => setTaxFilterSearch(e.target.value),
-          placeholder: "Filtrar por t\xEDtulo, \xE1lbum o artista...",
-          className: "w-full bg-[#111116] border border-djzinc-750 rounded px-1.5 py-0.5 text-[11px] text-gray-200 outline-none focus:border-djcyan-400 font-sans"
-        }
-      )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }, /* @__PURE__ */ React.createElement(
-        "select",
-        {
-          value: taxFilterGenre,
-          onChange: (e) => setTaxFilterGenre(e.target.value),
-          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-        },
-        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
-        /* @__PURE__ */ React.createElement("option", { value: "Hard Techno" }, "Hard Techno"),
-        /* @__PURE__ */ React.createElement("option", { value: "Techno" }, "Techno"),
-        /* @__PURE__ */ React.createElement("option", { value: "House" }, "House"),
-        /* @__PURE__ */ React.createElement("option", { value: "Trance" }, "Trance"),
-        /* @__PURE__ */ React.createElement("option", { value: "Drum & Bass" }, "Drum & Bass"),
-        /* @__PURE__ */ React.createElement("option", { value: "Afro House" }, "Afro House")
-      )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
-        "select",
-        {
-          value: taxFilterOrigin,
-          onChange: (e) => setTaxFilterOrigin(e.target.value),
-          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-        },
-        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
-        /* @__PURE__ */ React.createElement("option", { value: "local" }, "\u{1F4C1} Local"),
-        /* @__PURE__ */ React.createElement("option", { value: "online" }, "\u2601\uFE0F Pool Online")
-      )), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
-        "select",
-        {
-          value: taxFilterEnergy,
-          onChange: (e) => setTaxFilterEnergy(e.target.value),
-          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-        },
-        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
-        /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta"),
-        /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
-        /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
-      )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center" }, /* @__PURE__ */ React.createElement(
-        "select",
-        {
-          value: taxFilterDance,
-          onChange: (e) => setTaxFilterDance(e.target.value),
-          className: "bg-[#111116] border border-djzinc-750 rounded px-1 py-0.5 text-[10px] text-gray-200 outline-none font-mono"
-        },
-        /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todas"),
-        /* @__PURE__ */ React.createElement("option", { value: "HIGH" }, ">80% Alta"),
-        /* @__PURE__ */ React.createElement("option", { value: "MED" }, "65-80% Media"),
-        /* @__PURE__ */ React.createElement("option", { value: "LOW" }, "<65% Baja")
-      )), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-emerald-400 font-bold", title: "Filtro Intensidad" }, "\u{1F525}"), /* @__PURE__ */ React.createElement("th", { className: "p-1 text-center font-mono text-[9px] text-cyan-400 font-bold", title: "Filtro Positividad" }, "\u2728"), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }), /* @__PURE__ */ React.createElement("th", { className: "p-1" }))), /* @__PURE__ */ React.createElement("tbody", { className: "divide-y divide-djzinc-850/60 font-sans" }, searchResults.map((trk, idx) => {
-        const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA["8A"];
-        const isLocal = Boolean(trk.isLocal || trk.is_local);
-        const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
-        const isPlayingRow = nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path) && isPlaying;
-        const isSelected = selectedTaxIds.has(trk.id);
-        return /* @__PURE__ */ React.createElement(
-          "tr",
-          {
-            key: trk.id || idx,
-            className: `hover:bg-[#101016] transition-colors cursor-pointer select-none ${isSelected ? "bg-[#0f172a]/50 border-l-2 border-djcyan-400" : ""}`
-          },
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
-            "input",
-            {
-              type: "checkbox",
-              checked: isSelected,
-              onChange: () => handleToggleTaxRow(trk.id),
-              className: "accent-djcyan-500 cursor-pointer"
-            }
-          )),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => {
-            e.stopPropagation();
-            handleCargarEnDeck(trk);
-          } }, /* @__PURE__ */ React.createElement("button", { className: `w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isPlayingRow ? "bg-djcyan-500 text-black font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]" : "bg-[#181820] text-gray-400 hover:text-white hover:bg-djzinc-800"}` }, isPlayingRow ? "\u275A\u275A" : "\u25B6")),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover2(trk.displayCover), alt: "Cover", onError: (e) => {
-            e.target.onerror = null;
-            e.target.src = DEFAULT_VINYL_SVG2;
-          }, className: "w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-djcyan-400 text-xs truncate max-w-sm", title: trk.displayTitle }, trk.displayTitle), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-sm", title: trk.displayAlbum }, trk.displayAlbum || "--")))),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-gray-300 text-xs truncate max-w-xs" }, trk.displayArtist),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 font-mono text-[11px] text-gray-300" }, trk.displayGenre),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 font-mono text-[10px] text-djcyan-400 font-semibold" }, trk.displaySubgenre),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center text-xs ws-bpm" }, trk.displayBpm),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              className: "cursor-pointer",
-              onClick: () => setIsCamelotModalOpen(true),
-              title: `Key ${trk.displayKey} (${keyData.classical})`
-            },
-            /* @__PURE__ */ React.createElement(CamelotKeyBadge2, { value: trk.displayKey })
-          )),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-400" }, trk.displayVersion || "Original Mix"),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center" }, /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${isLocal ? "bg-djcyan-950 text-djcyan-300 border-djcyan-700/60" : isOnline ? "bg-purple-950 text-purple-300 border-purple-700/60" : "bg-emerald-950 text-emerald-300 border-emerald-700/60"}` }, isLocal ? "\u{1F4C1} Local" : isOnline ? "\u2601\uFE0F Record Pool" : "\u{1F31F} BeatWave Pool")),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-center font-mono text-xs font-bold text-emerald-400" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.matchScore, "%"),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${(trk.energy || trk.e || 80) >= 82 ? "text-red-400" : (trk.energy || trk.e || 80) >= 68 ? "text-amber-400" : "text-djcyan-400"}` }, trk.energy || trk.e || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              className: `h-full rounded-full ${(trk.energy || trk.e || 80) >= 82 ? "bg-gradient-to-r from-amber-500 to-red-500" : (trk.energy || trk.e || 80) >= 68 ? "bg-gradient-to-r from-yellow-400 to-amber-500" : "bg-gradient-to-r from-cyan-400 to-blue-500"}`,
-              style: { width: `${Math.min(100, Math.max(10, trk.energy || trk.e || 80))}%` }
-            }
-          )))),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons2.Activity, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-purple-300" }, trk.danceability || trk.dance || 80, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              className: "h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500",
-              style: { width: `${Math.min(100, Math.max(10, trk.danceability || trk.dance || 80))}%` }
-            }
-          )))),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u{1F525}"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-emerald-400" }, trk.arousal || trk.intensity || Math.round((trk.energy || trk.e || 80) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              className: "h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]",
-              style: { width: `${Math.min(100, Math.max(10, trk.arousal || trk.intensity || Math.round((trk.energy || trk.e || 80) * 0.95)))}%` }
-            }
-          )))),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px]" }, "\u2728"), /* @__PURE__ */ React.createElement("span", { className: "font-bold text-cyan-300" }, trk.valence != null ? trk.valence : trk.displayKey && trk.displayKey.includes("B") ? 65 : 45, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-djzinc-850 h-1.5 rounded-full overflow-hidden border border-djzinc-750" }, /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              className: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]",
-              style: { width: `${Math.min(100, Math.max(10, trk.valence != null ? trk.valence : trk.displayKey && trk.displayKey.includes("B") ? 65 : 45))}%` }
-            }
-          )))),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, (() => {
-            const eVal = trk.energy || trk.e || 80;
-            const bVal = parseFloat(trk.displayBpm || trk.bpm || 128);
-            const badge = trk.fase_badge || (eVal >= 82 || bVal >= 135 ? "CA\xD1A" : eVal >= 68 ? "BUILD-UP" : bVal < 118 ? "CALMA" : "WARM-UP");
-            const colorMap = {
-              "CA\xD1A": "bg-red-950/80 text-red-300 border-red-700 shadow-[0_0_8px_rgba(239,68,68,0.3)]",
-              "BUILD-UP": "bg-amber-950/80 text-amber-300 border-amber-700",
-              "WARM-UP": "bg-cyan-950/80 text-cyan-300 border-cyan-700",
-              "CIERRE": "bg-purple-950/80 text-purple-300 border-purple-700",
-              "CALMA": "bg-teal-950/80 text-teal-300 border-teal-700"
-            };
-            const iconMap = {
-              "CA\xD1A": "\u{1F525}",
-              "BUILD-UP": "\u{1F680}",
-              "WARM-UP": "\u{1F3A7}",
-              "CIERRE": "\u{1F30C}",
-              "CALMA": "\u2615"
-            };
-            return /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9px] font-mono font-bold border inline-flex items-center gap-1 ${colorMap[badge] || "bg-djzinc-800 text-gray-300 border-djzinc-700"}` }, /* @__PURE__ */ React.createElement("span", null, iconMap[badge] || "\u{1F3B5}"), /* @__PURE__ */ React.createElement("span", null, badge));
-          })()),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2.5 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement(Icons2.MessageSquare, { size: 14, className: "inline-block align-[-2px] text-emerald-400  shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] font-mono text-gray-200 truncate", title: trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b` }, trk.comment || `[${trk.displayBpm} BPM | ${trk.displayKey}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b`))),
-          /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1.5" }, /* @__PURE__ */ React.createElement("button", { onClick: () => handleCargarEnDeck(trk), className: "px-2 py-1 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono cursor-pointer", title: "Cargar y Reproducir en Deck 1" }, /* @__PURE__ */ React.createElement(Icons2.Play, { size: 14, className: "inline-block align-[-2px]" }), " Deck"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleAbrirEnHotCues(trk), className: "px-2 py-1 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 text-[10px] font-mono cursor-pointer", title: "Hot Cues Studio" }, /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              onClick: () => handleAnadirADescargas(trk),
-              className: "px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-[10px] cursor-pointer shadow flex items-center gap-1 transition-all active:scale-95",
-              title: "A\xF1adir pista a la cola de descargas del Record Pool"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Download, { size: 14, className: "inline-block align-[-2px]" }),
-            /* @__PURE__ */ React.createElement("span", null, "A\xF1adir a Descargas")
-          ), isOnline ? /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              onClick: () => {
-                if (onSendToSpotify) onSendToSpotify(`${trk.displayArtist} - ${trk.displayTitle}`);
-                else if (onNavigateTab) onNavigateTab("spotify");
-              },
-              className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer",
-              title: "Buscar en el Record Pool"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Search, { size: 14, className: "inline-block align-[-2px]" }),
-            " Pool"
-          ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { onClick: () => handleAsignarACrateIndividual(trk), className: "px-2 py-1 rounded bg-purple-950 hover:bg-purple-900 border border-purple-600 text-purple-300 text-[10px] font-mono cursor-pointer", title: "Rutar a Crate" }, /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Crate"), isLocal && /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              onClick: (e) => {
-                e.stopPropagation();
-                if (onRemoveTrack) {
-                  onRemoveTrack(trk.id);
-                } else if (onTracksUpdated) {
-                  onTracksUpdated((prev) => prev.filter((t) => String(t.id) !== String(trk.id)));
-                }
-              },
-              className: "p-1 rounded bg-red-950/40 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90",
-              title: "Quitar pista del an\xE1lisis global"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Trash, { size: 14, className: "inline-block align-[-2px]" })
-          ))))
-        );
-      }))))
-    ) : (
-      /* VISTA DE MOSAICO / TARJETAS */
-      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5" }, searchResults.map((trk, idx) => {
-        const keyData = CAMELOT_WHEEL_DATA[trk.displayKey] || CAMELOT_WHEEL_DATA["8A"];
-        const isLocal = Boolean(trk.isLocal || trk.is_local);
-        const isOnline = Boolean(trk.isOnlinePool || trk.is_online);
-        const isSelected = selectedTaxIds.has(trk.id);
-        return /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            key: trk.id || idx,
-            className: `p-3.5 bg-[#0a0a0f] rounded-xl border transition-all shadow-md hover:shadow-cyan-500/10 flex flex-col justify-between gap-3 group ${isSelected ? "border-djcyan-400 bg-djcyan-950/20" : "border-djzinc-850 hover:border-djcyan-500/50"}`
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-djzinc-800 shadow" }, /* @__PURE__ */ React.createElement(
-            "img",
-            {
-              src: getValidCover2(trk.displayCover),
-              alt: "Cover",
-              onError: (e) => {
-                e.target.onerror = null;
-                e.target.src = DEFAULT_VINYL_SVG2;
-              },
-              className: "w-full h-full object-cover"
-            }
-          ), /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleCargarEnDeck(trk),
-              className: "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-base transition-opacity cursor-pointer shadow",
-              title: "Cargar y Reproducir en Deck 1"
-            },
-            isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(trk.id) || nowPlayingTrack.path && nowPlayingTrack.path === trk.path || nowPlayingTrack.title && (nowPlayingTrack.title === trk.displayTitle || nowPlayingTrack.title === trk.title)) ? "\u275A\u275A" : "\u25B6"
-          )), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-            "input",
-            {
-              type: "checkbox",
-              checked: isSelected,
-              onChange: () => handleToggleTaxRow(trk.id),
-              className: "accent-djcyan-500 cursor-pointer",
-              title: "Marcar pista"
-            }
-          ), /* @__PURE__ */ React.createElement("span", { className: `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${isLocal ? "bg-djcyan-950 text-djcyan-300 border-djcyan-700/60" : isOnline ? "bg-purple-950 text-purple-300 border-purple-700/60" : "bg-emerald-950 text-emerald-300 border-emerald-700/60"}` }, isLocal ? "\u{1F4C1} Local" : isOnline ? "\u2601\uFE0F Online Pool" : "\u{1F31F} BeatWave Pool")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-1.5 py-0.2 rounded shadow-sm" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.matchScore, "% Match")), /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white truncate mt-1", title: trk.displayTitle }, trk.displayTitle), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-djcyan-400 truncate", title: trk.displayArtist }, trk.displayArtist))),
-          /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 font-mono text-[9.5px]" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-gray-300 font-semibold" }, /* @__PURE__ */ React.createElement(Icons2.Headphones, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displaySubgenre || trk.displayGenre), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-djcyan-300 font-bold" }, /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displayBpm, " BPM"), /* @__PURE__ */ React.createElement(
-            "span",
-            {
-              className: "px-2 py-0.5 rounded border font-black flex items-center gap-1 cursor-pointer hover:brightness-125",
-              style: {
-                backgroundColor: `${keyData.color}20`,
-                borderColor: `${keyData.color}80`,
-                color: keyData.color
-              },
-              onClick: () => setIsCamelotModalOpen(true),
-              title: `Key ${trk.displayKey} (${keyData.classical}). Click para ver Rueda Arm\xF3nica`
-            },
-            /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full", style: { backgroundColor: keyData.color } }),
-            /* @__PURE__ */ React.createElement("span", null, trk.displayKey)
-          ), trk.displayVersion && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-600/50 text-amber-300" }, /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displayVersion), trk.displayMood && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-pink-950/40 border border-pink-600/50 text-pink-300" }, /* @__PURE__ */ React.createElement(Icons2.Flame, { size: 14, className: "inline-block align-[-2px]" }), " ", trk.displayMood)),
-          /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-850 flex items-center justify-between gap-1.5" }, /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleCargarEnDeck(trk),
-              className: "flex-1 py-1 px-2 rounded bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] font-mono flex items-center justify-center gap-1 shadow cursor-pointer transition-transform active:scale-95"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Play, { size: 14, className: "inline-block align-[-2px]" }),
-            /* @__PURE__ */ React.createElement("span", null, "Cargar Deck")
-          ), /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleAbrirEnHotCues(trk),
-              className: "py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors",
-              title: "Editar Hot Cues en el Estudio"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
-            /* @__PURE__ */ React.createElement("span", null, "Cues")
-          ), /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleAnadirADescargas(trk),
-              className: "py-1 px-2.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-transform active:scale-95 shadow",
-              title: "A\xF1adir a la cola de descargas del Record Pool"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Download, { size: 14, className: "inline-block align-[-2px]" }),
-            /* @__PURE__ */ React.createElement("span", null, "A\xF1adir a Descargas")
-          ), /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleApuntarEnLibreta(trk),
-              className: "py-1 px-2 rounded bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-750 text-gray-200 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors",
-              title: "Apuntar en Libreta Digital"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Copy, { size: 14, className: "inline-block align-[-2px]" })
-          ), isOnline ? /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => {
-                if (onSendToSpotify) onSendToSpotify(`${trk.displayArtist} - ${trk.displayTitle}`);
-                else if (onNavigateTab) onNavigateTab("spotify");
-              },
-              className: "py-1 px-2 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-500/70 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors shadow",
-              title: "Descargar versi\xF3n HQ/FLAC en SuperFLAC / Record Pool"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Download, { size: 14, className: "inline-block align-[-2px]" }),
-            /* @__PURE__ */ React.createElement("span", null, "SuperFLAC")
-          ) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleAsignarACrateIndividual(trk),
-              className: "py-1 px-2 rounded bg-purple-950/60 hover:bg-purple-900 border border-purple-500/60 text-purple-300 text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors",
-              title: "Rutar f\xEDsicamente a Serato Crate"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" })
-          ), isLocal && /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: (e) => {
-                e.stopPropagation();
-                if (onRemoveTrack) {
-                  onRemoveTrack(trk.id);
-                } else if (onTracksUpdated) {
-                  onTracksUpdated((prev) => prev.filter((t) => String(t.id) !== String(trk.id)));
-                }
-              },
-              className: "py-1 px-1.5 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-400 hover:text-white text-[10px] font-mono cursor-pointer transition-colors active:scale-90",
-              title: "Quitar pista del an\xE1lisis global"
-            },
-            /* @__PURE__ */ React.createElement(Icons2.Trash, { size: 14, className: "inline-block align-[-2px]" })
-          )))
-        );
-      }))
-    ), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-djzinc-900 via-djzinc-900 to-djcyan-950/40 border border-djzinc-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons2.Globe, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white uppercase tracking-wider font-mono" }, "\xBFBuscas canciones que no est\xE1n en tu biblioteca local?"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Explora y descarga temas por taxonom\xEDa en SuperFLAC / Record Pool con car\xE1tula en alta definici\xF3n y tags autom\xE1ticos."))), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          if (onSendToSpotify) onSendToSpotify(aiQuery || "Tech House 2024");
-          else if (onNavigateTab) onNavigateTab("spotify");
-        },
-        className: "px-3.5 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-xs rounded-lg shadow-md cursor-pointer transition-all active:scale-95 shrink-0"
-      },
-      "Ingestar en Record Pool / SuperFLAC \u2192"
-    )))), activeSubView === "routing" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-800 bg-djzinc-950 shrink-0 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Ruteo F\xEDsico de Biblioteca a Crates Serato / Rekordbox"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 px-2 py-0.5 rounded font-mono font-bold" }, "2-TIER CRATES")), /* @__PURE__ */ React.createElement("p", { className: "text-gray-400 text-xs" }, "Clasificaci\xF3n jer\xE1rquica en dos niveles (G\xE9nero ra\xEDz ", "\u2192", " Subg\xE9nero) con ruteo f\xEDsico a carpetas y crates de Serato DJ Pro y Rekordbox.")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: isRouting || tracks.length === 0,
-        onClick: handleExportarSeratoCrates,
-        className: `px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${isRouting || tracks.length === 0 ? "bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60" : "bg-purple-950/60 hover:bg-purple-900 border-purple-500/60 text-purple-300 shadow hover:shadow-purple-500/20 active:scale-95"}`,
-        title: "Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importaci\xF3n instant\xE1nea en Serato DJ Pro"
-      },
-      /* @__PURE__ */ React.createElement("img", { src: "/assets/logos/serato.png", alt: "Serato", className: "h-3.5 w-auto object-contain shrink-0", onError: (e) => {
-        e.target.style.display = "none";
-      } }),
-      /* @__PURE__ */ React.createElement("span", null, "Exportar Serato (.crate)")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: isRouting || tracks.length === 0,
-        onClick: handleExportarRekordboxXml,
-        className: `px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${isRouting || tracks.length === 0 ? "bg-djzinc-900 border-djzinc-800 text-gray-500 cursor-not-allowed opacity-60" : "bg-blue-950/60 hover:bg-blue-900 border-blue-500/60 text-cyan-400 shadow hover:shadow-blue-500/20 active:scale-95"}`,
-        title: "Genera archivo rekordbox.xml est\xE1ndar Pioneer DJ con Hot Cues y playlists"
-      },
-      /* @__PURE__ */ React.createElement("img", { src: "/assets/logos/rekordbox.png", alt: "Rekordbox", className: "h-3.5 w-auto object-contain shrink-0", onError: (e) => {
-        e.target.style.display = "none";
-      } }),
-      /* @__PURE__ */ React.createElement("span", null, "Exportar Rekordbox XML")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: isRouting || tracks.length === 0,
-        onClick: handleOrganizarLote,
-        className: `px-4 py-2.5 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all ${isRouting || tracks.length === 0 ? "bg-djzinc-800 text-gray-500 border border-djzinc-700 cursor-not-allowed opacity-60" : "bg-djcyan-500 hover:bg-djcyan-400 text-black shadow-djcyan-500/25 active:scale-95"}`
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Routing, null),
-      isRouting ? "Ruteando a Crates..." : `Enrutar Biblioteca (${tracks.length})`
-    ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-12 gap-3 items-center bg-djzinc-900/90 border border-djzinc-800 p-3 rounded-xl" }, /* @__PURE__ */ React.createElement("div", { className: "md:col-span-7 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400 shrink-0" }, /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Destino Crates:"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: rutaBase,
-        onChange: (e) => setRutaBase(e.target.value),
-        className: "flex-1 bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs font-mono text-gray-200 outline-none focus:border-djcyan-500",
-        placeholder: "/Users/admin/Music/mi musica"
-      }
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleSeleccionarDestino,
-        className: "px-2.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 border border-djzinc-600 rounded text-xs font-semibold text-gray-300 cursor-pointer"
-      },
-      "Examinar..."
-    )), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-3 flex items-center gap-2 justify-start md:justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Modo:"), /* @__PURE__ */ React.createElement("div", { className: "inline-flex rounded-lg border border-djzinc-700 p-0.5 bg-djzinc-950" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setModo("copy"),
-        className: `px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${modo === "copy" ? "bg-djcyan-500 text-black shadow" : "text-gray-400 hover:text-white"}`,
-        title: "Copia los archivos sin borrar los originales"
-      },
-      "Copiar (Seguro)"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setModo("move"),
-        className: `px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer transition-colors ${modo === "move" ? "bg-amber-500 text-black shadow" : "text-gray-400 hover:text-white"}`,
-        title: "Mueve los archivos directamente a las carpetas destino"
-      },
-      "Mover"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "md:col-span-2 flex items-center" }, /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: searchTerm,
-        onChange: (e) => setSearchTerm(e.target.value),
-        placeholder: "Filtrar crate...",
-        className: "w-full bg-djzinc-950 border border-djzinc-700 rounded px-2.5 py-1.5 text-xs text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500"
-      }
-    ))), isRouting && /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900 border border-djcyan-700/60 rounded-xl space-y-1.5 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, routeStatusMsg || "Procesando ruteo de lote..."), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, routeProgress, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full h-2 bg-djzinc-950 rounded-full overflow-hidden border border-djzinc-800" }, /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "h-full bg-gradient-to-r from-djcyan-500 to-emerald-400 transition-all duration-200",
-        style: { width: `${routeProgress}%` }
-      }
-    ))), resultSummary && /* @__PURE__ */ React.createElement("div", { className: `p-3 rounded-xl border flex items-center justify-between text-xs font-mono ${resultSummary.status === "ok" ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300" : "bg-red-950/40 border-red-500/50 text-red-300"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, resultSummary.status === "ok" ? "\u2713" : "\u26A0"), /* @__PURE__ */ React.createElement("span", null, resultSummary.status === "ok" ? `Ruteo completado con \xE9xito: ${resultSummary.procesados} pistas procesadas (${resultSummary.errores} errores) hacia ${rutaBase}.` : resultSummary.msg || "Fallo durante el ruteo de lote.")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setResultSummary(null),
-        className: "text-gray-400 hover:text-white cursor-pointer px-2 py-0.5 rounded"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "Pistas en Sesi\xF3n"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-white font-mono" }, tracks.length)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "G\xE9neros Ra\xEDz"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-djcyan-400 font-mono" }, genresList.length)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "Crates / Subg\xE9neros"), /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-purple-400 font-mono" }, totalCratesCount)), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900/60 border border-djzinc-800 p-2.5 rounded-lg flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-400" }, "Estructura Serato"), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-bold text-emerald-400 font-mono" }, "/[G\xE9nero]/[Subg\xE9nero]/")))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-5 space-y-4" }, tracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "h-64 border-2 border-dashed border-djzinc-800 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-djzinc-900/20" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-full bg-djzinc-800 flex items-center justify-center text-djcyan-400 mb-3 shadow-inner" }, /* @__PURE__ */ React.createElement(Icons2.Routing, null)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-bold text-gray-200 mb-1" }, "No hay pistas cargadas en la Auditor\xEDa"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 max-w-md mb-4" }, "Carga una carpeta en la pesta\xF1a ", /* @__PURE__ */ React.createElement("strong", null, "Auditor\xEDa & DSP"), " para ver el desglose en tiempo real de pistas asignadas a cada Crate y ejecutar el ruteo f\xEDsico inteligente."), onNavigateTab && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => onNavigateTab("audit"),
-        className: "px-3.5 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-bold rounded-lg cursor-pointer transition-colors shadow"
-      },
-      "Ir a Auditor\xEDa & DSP"
-    )) : /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, filteredGenres.map((genre) => {
-      const subgenres = TAXONOMY_TREE[genre] || [];
-      const genreTracksCount = getGenreStats(genre);
-      const isExpanded = expandedGenre === genre;
-      return /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          key: genre,
-          className: "bg-djzinc-900/80 border border-djzinc-800 rounded-xl overflow-hidden shadow-md transition-all hover:border-djzinc-700"
-        },
-        /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            onClick: () => setExpandedGenre(isExpanded ? null : genre),
-            className: "p-3.5 bg-djzinc-900 flex items-center justify-between cursor-pointer hover:bg-djzinc-850 select-none border-b border-djzinc-800/60"
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-500 font-mono" }, isExpanded ? "\u25BC" : "\u25B6"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-sm font-black text-white uppercase tracking-wider font-mono" }, genre), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 ml-2 font-mono" }, "(", subgenres.length, " subg\xE9neros)"))),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("span", { className: `text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${genreTracksCount > 0 ? "bg-djcyan-950 text-djcyan-400 border border-djcyan-700/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]" : "bg-djzinc-800 text-gray-500 border border-djzinc-700"}` }, genreTracksCount, " pistas"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs font-mono" }, /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" }), " /", genre, "/"))
-        ),
-        isExpanded && /* @__PURE__ */ React.createElement("div", { className: "p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 bg-djzinc-950/40" }, subgenres.map((subg) => {
-          const matchingTracks = getSubgenreStats(genre, subg);
-          const isFilterSelected = selectedSubgenreFilter === `${genre}__${subg}`;
-          return /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              key: subg,
-              className: `p-3 rounded-lg border transition-all ${isFilterSelected ? "bg-djcyan-950/30 border-djcyan-500 shadow-[0_0_12px_rgba(6,182,212,0.15)]" : "bg-djzinc-900 border-djzinc-800 hover:border-djzinc-700"}`
-            },
-            /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2 mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold text-xs text-gray-200" }, subg), /* @__PURE__ */ React.createElement("span", { className: `text-[10px] px-2 py-0.5 rounded font-mono font-bold shrink-0 ${matchingTracks.length > 0 ? "bg-djcyan-500 text-black" : "bg-djzinc-800 text-gray-500"}` }, matchingTracks.length)),
-            /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-400 truncate mb-2", title: `${rutaBase}/${genre}/${subg}/` }, /* @__PURE__ */ React.createElement(Icons2.Folder, { size: 14, className: "inline-block align-[-2px]" }), " /", genre, "/", subg, "/"),
-            matchingTracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 space-y-1" }, /* @__PURE__ */ React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: () => setSelectedSubgenreFilter(isFilterSelected ? null : `${genre}__${subg}`),
-                className: "text-[10px] text-djcyan-400 hover:text-djcyan-300 font-semibold cursor-pointer underline flex items-center gap-1"
-              },
-              isFilterSelected ? "Ocultar pistas" : `Ver ${matchingTracks.length} pistas`
-            ), isFilterSelected && /* @__PURE__ */ React.createElement("div", { className: "mt-2 max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[9.5px]" }, matchingTracks.map((tr, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, className: "p-1 rounded bg-djzinc-950 border border-djzinc-800/80 truncate text-gray-300" }, /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, tr.t || tr.title), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, " - ", tr.a || tr.artist), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1" }, "(", tr.b || tr.bpm || "--", " BPM)"))))) : /* @__PURE__ */ React.createElement("div", { className: "text-[9.5px] text-gray-400 italic" }, "Sin pistas asignadas")
-          );
-        }))
-      );
-    })))), /* @__PURE__ */ React.createElement(
-      CamelotWheelModal,
-      {
-        isOpen: isCamelotModalOpen,
-        onClose: () => setIsCamelotModalOpen(false),
-        currentKey: selectedKeyFilter !== "ALL" ? selectedKeyFilter : "8A",
-        onSelectKey: (k) => {
-          setSelectedKeyFilter(k);
-          setIsCamelotModalOpen(false);
-        }
-      }
-    ));
-  };
-  var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
-    var _a, _b;
-    const [isListening, setIsListening] = useState20(false);
-    const [countdown, setCountdown] = useState20(10);
-    const [isAnalyzing, setIsAnalyzing] = useState20(false);
-    const [statusMsg, setStatusMsg] = useState20("");
-    const [identifiedTrack, setIdentifiedTrack] = useState20(null);
-    const [history, setHistory] = useState20([]);
-    const [previewPlaying, setPreviewPlaying] = useState20(false);
-    const [micLevel, setMicLevel] = useState20(0);
-    const audioRef = useRef18(new Audio());
-    const mediaRecorderRef = useRef18(null);
-    const audioStreamRef = useRef18(null);
-    const fileInputRef = useRef18(null);
-    const timerRef = useRef18(null);
-    const animFrameRef = useRef18(null);
-    const audioCtxRef = useRef18(null);
-    const [dragOver, setDragOver] = useState20(false);
-    const [selectedEngine, setSelectedEngine] = useState20(() => {
-      try {
-        return localStorage.getItem("bw_radar_engine") || "radar_edge";
-      } catch (e) {
-        return "radar_edge";
-      }
-    });
-    const [radarEnvironment, setRadarEnvironment] = useState20(() => {
-      try {
-        return localStorage.getItem("bw_radar_env") || "club";
-      } catch (e) {
-        return "club";
-      }
-    });
-    const [radarEvent, setRadarEvent] = useState20(null);
-    const recognizerRef = useRef18(null);
-    const [auddToken, setAuddToken] = useState20(() => {
-      try {
-        return localStorage.getItem("bw_audd_token") || "";
-      } catch (e) {
-        return "";
-      }
-    });
-    const [showConfig, setShowConfig] = useState20(false);
-    const [micCaptureMode, setMicCaptureMode] = useState20("auto");
-    const [micPermissionError, setMicPermissionError] = useState20(null);
-    useEffect21(() => {
-      try {
-        localStorage.setItem("bw_radar_engine", selectedEngine);
-      } catch (e) {
-      }
-    }, [selectedEngine]);
-    useEffect21(() => {
-      try {
-        localStorage.setItem("bw_radar_env", radarEnvironment);
-      } catch (e) {
-      }
-      if (recognizerRef.current) {
-        recognizerRef.current.setEnvironment(radarEnvironment);
-      }
-    }, [radarEnvironment]);
-    useEffect21(() => {
-      recognizerRef.current = new Phase1FastRecognizer({
-        workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
-        environment: radarEnvironment,
-        totalBudgetMs: 1750,
-        minScoreClub: 92,
-        minScoreStudio: 88,
-        probationMinScore: 76,
-        rescueEndpoint: "/v1/rescue",
-        rescueTimeoutMs: 8e3,
-        autoRescuePhase2: true,
-        onStateChange: (ev) => {
-          var _a2, _b2;
-          setRadarEvent(ev);
-          if (ev.state === "MATCH_CONFIRMED" && ev.match) {
-            const sourceLabel = ev.match.source === "local_olaf" ? "Olaf LMDB" : ((_a2 = ev.match.source) == null ? void 0 : _a2.startsWith("gpu_")) ? "GPU Neural Rescue" : "ACRCloud Edge";
-            const matchItem = {
-              title: ev.match.title,
-              artist: ev.match.artist,
-              album: ev.match.album || `${ev.match.title} - Single`,
-              genre: ((_b2 = ev.match.genres) == null ? void 0 : _b2[0]) || "Electronic",
-              subgenre: ev.match.stemIsolated ? `Stem: ${ev.match.stemIsolated}` : "Peak-Time Techno",
-              score: ev.match.score,
-              motor_usado: `BeatWave Radar C++ [${sourceLabel}]`,
-              play_offset_ms: ev.match.playOffsetMs,
-              rho: ev.rho,
-              status: "ok"
-            };
-            setIdentifiedTrack(matchItem);
-            setStatusMsg(`\u2713 ${ev.message}`);
-            setHistory((prev) => [matchItem, ...prev.filter((item) => item.title !== matchItem.title || item.artist !== matchItem.artist)]);
-          } else if (ev.state === "ESCALATE_PHASE2") {
-            setStatusMsg(`\u26A0\uFE0F ${ev.message}`);
-          } else if (ev.state === "RESCUING_PHASE2") {
-            setStatusMsg(`\u{1F680} ${ev.message}`);
-          } else if (ev.state === "UNIDENTIFIED_ID") {
-            setStatusMsg(`\u274C ${ev.message}`);
-          } else if (ev.state === "PROBATION_BUFFER") {
-            setStatusMsg(`\u23F3 ${ev.message}`);
-          } else if (ev.state === "TIMEOUT_FALLBACK") {
-            setStatusMsg(`\u23F1\uFE0F ${ev.message}`);
-          } else if (ev.state === "NO_MATCH") {
-            setStatusMsg(`\u2139 ${ev.message}`);
-          }
-        }
-      });
-    }, []);
-    useEffect21(() => {
-      try {
-        localStorage.setItem("bw_audd_token", auddToken);
-      } catch (e) {
-      }
-    }, [auddToken]);
-    const [notebookTracks, setNotebookTracks] = useState20(() => {
-      try {
-        const saved = localStorage.getItem("beatwave_shazam_notebook");
-        return saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        return [];
-      }
-    });
-    const [notebookFeedback, setNotebookFeedback] = useState20("");
-    useEffect21(() => {
-      try {
-        localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
-      } catch (e) {
-      }
-    }, [notebookTracks]);
-    const handleApuntarEnLista = (trk) => {
-      const trackToAdd = trk || identifiedTrack;
-      if (!trackToAdd) return;
-      const exists = notebookTracks.some((t) => t.title === trackToAdd.title && t.artist === trackToAdd.artist);
-      if (!exists) {
-        const now = /* @__PURE__ */ new Date();
-        const dateStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const defaultComm = trackToAdd.comment || trackToAdd.comentario || `[${trackToAdd.genre || "Electronic"}] Mezcla arm\xF3nica \u2022 Entrada progresiva 32b \u2022 Drop potente`;
-        const item = {
-          ...trackToAdd,
-          notebook_id: Date.now(),
-          added_at: dateStr,
-          comment: defaultComm,
-          comentario: defaultComm
-        };
-        setNotebookTracks((prev) => [item, ...prev]);
-        setNotebookFeedback(`\u2713 "${trackToAdd.title}" apuntado en tu libreta digital con nota DJ.`);
-        setTimeout(() => setNotebookFeedback(""), 3500);
-      } else {
-        setNotebookFeedback(`\u2139 "${trackToAdd.title}" ya estaba en la libreta.`);
-        setTimeout(() => setNotebookFeedback(""), 3e3);
-      }
-    };
-    const handleDescartarDeteccion = () => {
-      if (previewPlaying) {
-        audioRef.current.pause();
-        setPreviewPlaying(false);
-      }
-      setIdentifiedTrack(null);
-      setStatusMsg("Detecci\xF3n descartada. Listo para una nueva captura.");
-      setTimeout(() => setStatusMsg(""), 2500);
-    };
-    const handleEliminarDeNotebook = (notebookId) => {
-      setNotebookTracks((prev) => prev.filter((t) => t.notebook_id !== notebookId));
-    };
-    const handleVaciarNotebook = () => {
-      if (window.confirm("\xBFSeguro que deseas vaciar todas las pistas de tu libreta de apuntes?")) {
-        setNotebookTracks([]);
-        setNotebookFeedback("Libreta de apuntes vaciada.");
-        setTimeout(() => setNotebookFeedback(""), 2500);
-      }
-    };
-    const handleExportarNotebookXLS = async () => {
-      if (notebookTracks.length === 0) {
-        alert("No hay pistas en la libreta para exportar.");
-        return;
-      }
-      if (window.eel && window.eel.exportar_apuntes_shazam) {
-        try {
-          const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "xls")();
-          if (res && res.status === "ok") {
-            setNotebookFeedback(`\u2713 Archivo Excel generado: ${res.filename}`);
-            setTimeout(() => setNotebookFeedback(""), 4e3);
-          }
-        } catch (e) {
-          console.error("Fallo exportando a disco:", e);
-        }
-      }
-      const headers = ["#", "Artista", "T\xEDtulo", "\xC1lbum", "G\xE9nero", "A\xF1o", "ISRC", "Comentario / Nota DJ", "Fecha de Apunte"];
-      const rows = notebookTracks.map((t, idx) => [
-        idx + 1,
-        `"${(t.artist || "").replace(/"/g, '""')}"`,
-        `"${(t.title || "").replace(/"/g, '""')}"`,
-        `"${(t.album || "").replace(/"/g, '""')}"`,
-        `"${(t.genre || "").replace(/"/g, '""')}"`,
-        `"${(t.year || "").replace(/"/g, '""')}"`,
-        `"${(t.isrc || "").replace(/"/g, '""')}"`,
-        `"${(t.comment || t.comentario || "").replace(/"/g, '""')}"`,
-        `"${(t.added_at || "").replace(/"/g, '""')}"`
-      ]);
-      const csvContent = "\uFEFF" + [headers.join("	"), ...rows.map((r) => r.join("	"))].join("\n");
-      const blob = new Blob([csvContent], { type: "application/vnd.ms-excel;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    };
-    const handleExportarNotebookTXT = async () => {
-      if (notebookTracks.length === 0) {
-        alert("No hay pistas en la libreta para exportar.");
-        return;
-      }
-      if (window.eel && window.eel.exportar_apuntes_shazam) {
-        try {
-          const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "txt")();
-          if (res && res.status === "ok") {
-            setNotebookFeedback(`\u2713 Archivo TXT guardado: ${res.filename}`);
-            setTimeout(() => setNotebookFeedback(""), 4e3);
-          }
-        } catch (e) {
-        }
-      }
-      let txt = "====================================================\n";
-      txt += "BEATWAVE PRO \u2022 LIBRETA DIGITAL DE APUNTES RADAR\n";
-      txt += `Fecha: ${(/* @__PURE__ */ new Date()).toLocaleString()}
-`;
-      txt += `Total pistas: ${notebookTracks.length}
-`;
-      txt += "====================================================\n\n";
-      notebookTracks.forEach((t, i) => {
-        const comm = t.comment || t.comentario;
-        txt += `${String(i + 1).padStart(2, "0")}. ${t.artist} - ${t.title} [${t.album || ""} ${t.year || ""}] \u2022 ${t.genre || "Electronic"}${t.isrc ? ` (ISRC: ${t.isrc})` : ""}
-`;
-        if (comm) {
-          txt += `    \u{1F4AC} Comentario DJ: ${comm}
-`;
-        }
-      });
-      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    };
-    useEffect21(() => {
-      const audio = audioRef.current;
-      const handleEnded = () => setPreviewPlaying(false);
-      const handlePause = () => setPreviewPlaying(false);
-      audio.addEventListener("ended", handleEnded);
-      audio.addEventListener("pause", handlePause);
-      return () => {
-        audio.removeEventListener("ended", handleEnded);
-        audio.removeEventListener("pause", handlePause);
-        audio.pause();
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        if (animFrameRef.current) {
-          cancelAnimationFrame(animFrameRef.current);
-          animFrameRef.current = null;
-        }
-        if (audioCtxRef.current) {
-          try {
-            audioCtxRef.current.close();
-          } catch (e) {
-          }
-          audioCtxRef.current = null;
-        }
-        if (audioStreamRef.current) {
-          try {
-            audioStreamRef.current.getTracks().forEach((t) => t.stop());
-          } catch (e) {
-          }
-          audioStreamRef.current = null;
-        }
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-          try {
-            mediaRecorderRef.current.stop();
-          } catch (e) {
-          }
-        }
-      };
-    }, []);
-    const togglePlayPreview = (url) => {
-      if (!url) return;
-      const audio = audioRef.current;
-      if (previewPlaying && audio.src === url) {
-        audio.pause();
-        setPreviewPlaying(false);
-      } else {
-        audio.src = url;
-        audio.play().then(() => setPreviewPlaying(true)).catch((e) => console.error("Error reproduciendo preview:", e));
-      }
-    };
-    const cancelListening = () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      if (audioCtxRef.current) {
-        try {
-          audioCtxRef.current.close();
-        } catch (e) {
-        }
-        audioCtxRef.current = null;
-      }
-      if (audioStreamRef.current) {
-        try {
-          audioStreamRef.current.getTracks().forEach((t) => t.stop());
-        } catch (e) {
-        }
-        audioStreamRef.current = null;
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.ondataavailable = null;
-        mediaRecorderRef.current.onstop = null;
-        try {
-          mediaRecorderRef.current.stop();
-        } catch (e) {
-        }
-      }
-      setIsListening(false);
-      setIsAnalyzing(false);
-      setMicLevel(0);
-      setStatusMsg("Escucha cancelada. Listo para una nueva consulta.");
-      setTimeout(() => setStatusMsg(""), 3e3);
-    };
-    const stopMicrophoneListeningEarly = () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-      }
-    };
-    const executeRecognition = async (base64Data, filename) => {
-      setIsAnalyzing(true);
-      if (selectedEngine === "radar_edge" && recognizerRef.current) {
-        setStatusMsg("Analizando huellas Zero-Copy en motor C++ y Edge Gateway (<1.75s)...");
-        try {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          const tempCtx = new AudioCtx();
-          const binaryStr = atob(base64Data.split(",")[1] || base64Data);
-          const bytes = new Uint8Array(binaryStr.length);
-          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-          const decodedBuffer = await tempCtx.decodeAudioData(bytes.buffer);
-          const channelData = decodedBuffer.getChannelData(0);
-          tempCtx.close();
-          await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
-          setIsAnalyzing(false);
-          return;
-        } catch (errDec) {
-          console.warn("Fallo decodificaci\xF3n local en WebAudio, recurriendo a API:", errDec);
-        }
-      }
-      const engineLabel = selectedEngine === "radar_edge" ? "Radar Edge C++" : selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
-      setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel}]...`);
-      try {
-        let res = null;
-        try {
-          const response = await fetch("/api/identificar_audio", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audio_b64: base64Data,
-              motor: selectedEngine,
-              audd_token: auddToken,
-              filename
-            })
-          });
-          if (response.ok) {
-            res = await response.json();
-          }
-        } catch (httpErr) {
-          console.warn("HTTP /api/identificar_audio fall\xF3, recurriendo a Eel:", httpErr);
-        }
-        if (!res && window.eel && window.eel.identificar_audio_base64) {
-          try {
-            res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
-          } catch (eelErr) {
-            console.warn("Eel RPC tambi\xE9n fall\xF3:", eelErr);
-          }
-        }
-        handleRecognitionResponse(res);
-      } catch (err) {
-        console.error("Error en reconocimiento ac\xFAstico:", err);
-        setStatusMsg("Error de comunicaci\xF3n con el motor de reconocimiento ac\xFAstico: " + (err.message || String(err)));
-        setIsAnalyzing(false);
-      }
-    };
-    const startMicrophoneListening = async () => {
-      if (isListening || isAnalyzing) return;
-      setMicPermissionError(null);
-      const hasBrowserMic = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices) && typeof navigator.mediaDevices.getUserMedia === "function";
-      if (micCaptureMode === "hardware" || !hasBrowserMic) {
-        console.log("Iniciando captura de micr\xF3fono de hardware...");
-        startHardwareMicrophoneListening();
-        return;
-      }
-      cancelListening();
-      setStatusMsg("Solicitando acceso al micr\xF3fono...");
-      try {
-        let stream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: false,
-              noiseSuppression: false,
-              autoGainControl: true,
-              channelCount: 2,
-              sampleRate: 44100
-            }
-          });
-        } catch (errStrict) {
-          console.warn("Fallback a getUserMedia b\xE1sico:", errStrict);
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        }
-        audioStreamRef.current = stream;
-        setIsListening(true);
-        setCountdown(10);
-        setStatusMsg("Escuchando audio ambiental (10s)...");
-        let maxRecordedLevel = 0;
-        let sumRecordedLevel = 0;
-        let samplesRecordedCount = 0;
-        try {
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          const audioCtx = new AudioContextClass();
-          audioCtxRef.current = audioCtx;
-          const source = audioCtx.createMediaStreamSource(stream);
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 64;
-          source.connect(analyser);
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          const updateMeter = () => {
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-              sum += dataArray[i];
-            }
-            const avg = sum / dataArray.length;
-            const curLvl = Math.min(100, Math.round(avg / 128 * 100));
-            setMicLevel(curLvl);
-            if (curLvl > maxRecordedLevel) maxRecordedLevel = curLvl;
-            sumRecordedLevel += curLvl;
-            samplesRecordedCount += 1;
-            animFrameRef.current = requestAnimationFrame(updateMeter);
-          };
-          updateMeter();
-        } catch (e) {
-          console.warn("Web Audio VU meter no disponible:", e);
-        }
-        let recorderOptions = { audioBitsPerSecond: 128e3 };
-        let selectedMime = "audio/webm";
-        if (typeof MediaRecorder.isTypeSupported === "function") {
-          if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-            selectedMime = "audio/webm;codecs=opus";
-          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
-            selectedMime = "audio/webm";
-          } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
-            selectedMime = "audio/mp4";
-          } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
-            selectedMime = "audio/ogg";
-          }
-        }
-        try {
-          recorderOptions.mimeType = selectedMime;
-        } catch (e) {
-          console.warn("No se pudo fijar mimeType estricto:", e);
-        }
-        const mediaRecorder = new MediaRecorder(stream, recorderOptions);
-        mediaRecorderRef.current = mediaRecorder;
-        const chunks = [];
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) chunks.push(e.data);
-        };
-        mediaRecorder.onstop = async () => {
-          var _a2;
-          if (animFrameRef.current) {
-            cancelAnimationFrame(animFrameRef.current);
-            animFrameRef.current = null;
-          }
-          if (audioCtxRef.current) {
-            try {
-              audioCtxRef.current.close();
-            } catch (e) {
-            }
-            audioCtxRef.current = null;
-          }
-          setMicLevel(0);
-          if (audioStreamRef.current) {
-            try {
-              audioStreamRef.current.getTracks().forEach((t) => t.stop());
-            } catch (e) {
-            }
-            audioStreamRef.current = null;
-          }
-          setIsListening(false);
-          if (chunks.length === 0) {
-            setStatusMsg("\u26A0\uFE0F El micr\xF3fono web no captur\xF3 se\xF1al. Activando captura de hardware...");
-            startHardwareMicrophoneListening();
-            return;
-          }
-          if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
-            console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
-          }
-          const actualMime = ((_a2 = chunks[0]) == null ? void 0 : _a2.type) || selectedMime || "audio/webm";
-          const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
-          const audioBlob = new Blob(chunks, { type: actualMime });
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            executeRecognition(reader.result, `mic_sample.${ext}`);
-          };
-          reader.readAsDataURL(audioBlob);
-        };
-        mediaRecorder.start(1e3);
-        let timeLeft = 10;
-        timerRef.current = setInterval(() => {
-          timeLeft -= 1;
-          setCountdown(timeLeft);
-          if (timeLeft <= 0) {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
-            }
-            if (mediaRecorder.state !== "inactive") {
-              mediaRecorder.stop();
-            }
-          }
-        }, 1e3);
-      } catch (err) {
-        console.error("Error acceso micr\xF3fono navegador:", err);
-        setMicPermissionError(err.message || "Permiso denegado");
-        setStatusMsg("Micr\xF3fono del navegador bloqueado. Cambiando a captura por hardware de cabina...");
-        setTimeout(() => {
-          startHardwareMicrophoneListening();
-        }, 600);
-      }
-    };
-    const startHardwareMicrophoneListening = async () => {
-      if (isListening || isAnalyzing) return;
-      cancelListening();
-      setIsListening(true);
-      setCountdown(7);
-      setStatusMsg("\u{1F399}\uFE0F Grabando desde el micr\xF3fono del sistema (Hardware 7s)...");
-      let fakeMeterInterval = setInterval(() => {
-        const fakeLvl = Math.floor(Math.random() * 45) + 30;
-        setMicLevel(fakeLvl);
-      }, 150);
-      let timeLeft = 7;
-      timerRef.current = setInterval(() => {
-        timeLeft -= 1;
-        setCountdown(timeLeft);
-        if (timeLeft <= 0) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          clearInterval(fakeMeterInterval);
-          setMicLevel(0);
-          setStatusMsg("Consultando huella ac\xFAstica con los servidores...");
-        }
-      }, 1e3);
-      try {
-        let res = null;
-        if (window.eel && typeof window.eel.grabar_microfono_shazam === "function") {
-          res = await window.eel.grabar_microfono_shazam(7, selectedEngine, auddToken)();
-        } else {
-          const resp = await fetch("/api/shazam/record_mic", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ duration: 7, motor: selectedEngine, audd_token: auddToken })
-          });
-          if (resp.ok) {
-            res = await resp.json();
-          } else {
-            throw new Error(`HTTP ${resp.status}`);
-          }
-        }
-        clearInterval(fakeMeterInterval);
-        setMicLevel(0);
-        setIsListening(false);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        if (res && res.status === "error") {
-          setMicPermissionError(res.msg);
-          setStatusMsg("\u26A0\uFE0F " + (res.msg || "Error en captura de audio."));
-        } else {
-          setMicPermissionError(null);
-          handleRecognitionResponse(res);
-        }
-      } catch (hwErr) {
-        clearInterval(fakeMeterInterval);
-        setMicLevel(0);
-        setIsListening(false);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        console.error("Error en captura por hardware:", hwErr);
-        setMicPermissionError("Permiso de micr\xF3fono no disponible");
-        setStatusMsg("\u26A0\uFE0F No se pudo acceder al micr\xF3fono. Revisa Ajustes de macOS > Privacidad > Micr\xF3fono o arrastra un archivo de audio.");
-      }
-    };
-    const handleFileSelect = (file) => {
-      if (!file) return;
-      setIsAnalyzing(true);
-      if (selectedEngine === "radar_edge" && recognizerRef.current) {
-        setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
-        const reader2 = new FileReader();
-        reader2.onload = async (e) => {
-          try {
-            const arrayBuf = e.target.result;
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            const tempCtx = new AudioCtx();
-            const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf);
-            const channelData = decodedBuffer.getChannelData(0);
-            tempCtx.close();
-            await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
-            setIsAnalyzing(false);
-          } catch (fileErr) {
-            console.error("Error decodificando archivo para Radar C++:", fileErr);
-            const r2 = new FileReader();
-            r2.onloadend = () => executeRecognition(r2.result, file.name);
-            r2.readAsDataURL(file);
-          }
-        };
-        reader2.readAsArrayBuffer(file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file);
-        return;
-      }
-      setStatusMsg(`Leyendo "${file.name}"...`);
-      const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        executeRecognition(reader.result, file.name);
-      };
-      reader.readAsDataURL(fileToRead);
-    };
-    const handleRecognitionResponse = (res) => {
-      setIsAnalyzing(false);
-      if (res && res.status === "ok") {
-        const engineTag = res.motor_usado ? ` [v\xEDa ${res.motor_usado}]` : "";
-        const cacheTag = res.de_cache ? " \u26A1(Cach\xE9)" : "";
-        setStatusMsg(`\u2713 Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`);
-        setIdentifiedTrack(res);
-        setHistory((prev) => [res, ...prev.filter((item) => item.title !== res.title || item.artist !== res.artist)]);
-        if (res.preview_url) {
-          togglePlayPreview(res.preview_url);
-        }
-      } else if (res && res.status === "silence") {
-        setStatusMsg(res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micr\xF3fono.");
-      } else {
-        setStatusMsg((res == null ? void 0 : res.msg) || "No se encontraron coincidencias para este fragmento de audio.");
-      }
-    };
-    const handleSendToAuditInternal = (trk) => {
-      if (!trk || !onSendToAudit) return;
-      const newTrackItem = {
-        id: Date.now(),
-        t: trk.title,
-        title: trk.title,
-        a: trk.artist,
-        artist: trk.artist,
-        album: trk.album || `${trk.title} - Single`,
-        genre: trk.genre || "Electronic",
-        subgenre: "Tech House",
-        year: trk.year || "",
-        b: "126.00",
-        bpm: "126.00",
-        k: "8A",
-        key: "8A",
-        duration: "03:30",
-        format: "FLAC",
-        cover: trk.cover || "",
-        status: "Pass 22.05kHz",
-        first_downbeat_ms: 250,
-        trim_start_ms: 25,
-        comment: trk.comment || trk.comentario || `[126 BPM | 8A] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`,
-        comentario: trk.comment || trk.comentario || `[126 BPM | 8A] Intro limpia 32b \u2022 Drop contundente \u2022 Outro 64b`,
-        cues: NV2_COLORS
-      };
-      onSendToAudit(newTrackItem);
-    };
-    const handleSendToSpotifyInternal = (trk) => {
-      if (!trk || !onSendToSpotify) return;
-      onSendToSpotify(trk.spotify_query || `${trk.title} ${trk.artist}`);
-    };
-    const handleCopyToClipboard = (trk) => {
-      const text = `${trk.artist} - ${trk.title} [${trk.album || ""} ${trk.year || ""}]`;
-      navigator.clipboard.writeText(text);
-      alert(`Copiado al portapapeles:
-${text}`);
-    };
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle2, { icon: Icons2.Radar, title: "Radar Ac\xFAstico", accent: "Drop Scanner" }), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "radar_edge" ? "Radar Edge C++ (<1.75s)" : selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral"), /* @__PURE__ */ React.createElement("p", { className: "hidden md:inline text-xs text-zinc-400 font-sans" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio.")), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSelectedEngine("radar_edge"),
-        className: `ws-seg-btn ${selectedEngine === "radar_edge" ? "ws-seg-on" : ""}`,
-        "aria-pressed": selectedEngine === "radar_edge",
-        title: "Motor C++ Nativo (Zero-Copy) + Cloudflare Edge Gateway (<1.75s)"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 13, className: "text-pink-400" }),
-      /* @__PURE__ */ React.createElement("span", null, "Radar Edge C++")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSelectedEngine("hybrid"),
-        className: `ws-seg-btn ${selectedEngine === "hybrid" ? "ws-seg-on" : ""}`,
-        "aria-pressed": selectedEngine === "hybrid",
-        title: "Combina escaneo espectral de drop con respaldo ac\xFAstico autom\xE1tico para m\xE1xima precisi\xF3n"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 13 }),
-      /* @__PURE__ */ React.createElement("span", null, "H\xEDbrido Pro")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSelectedEngine("shazamio"),
-        className: `ws-seg-btn ${selectedEngine === "shazamio" ? "ws-seg-on" : ""}`,
-        "aria-pressed": selectedEngine === "shazamio",
-        title: "Escaneo multi-segmento de drops y breakdowns para pistas de DJ"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "Escaneo Espectral")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSelectedEngine("audd"),
-        className: `ws-seg-btn ${selectedEngine === "audd" ? "ws-seg-on" : ""}`,
-        "aria-pressed": selectedEngine === "audd",
-        title: "Red de Identificaci\xF3n Ac\xFAstica Pro (ISRC y Cat\xE1logo Global)"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "Identificaci\xF3n Pro (ISRC)")
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-black/50 p-1 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 px-1" }, "Perfil DSP:"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setRadarEnvironment("club"),
-        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === "club" ? "bg-pink-600 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`,
-        title: "Club: Filtro HPF 120Hz para cortar saturaci\xF3n de subgraves en cabina (Hard Techno)"
-      },
-      "Club (HPF 120Hz)"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setRadarEnvironment("studio"),
-        className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${radarEnvironment === "studio" ? "bg-cyan-600 text-white shadow-sm" : "text-zinc-400 hover:text-white"}`,
-        title: "Studio: Filtro HPF 35Hz para sesiones ac\xFAsticas o estudio limpio"
-      },
-      "Studio (HPF 35Hz)"
-    ))), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setShowConfig(!showConfig),
-        className: `ws-btn ${showConfig || auddToken ? "ws-btn-active" : "ws-btn-outline"}`,
-        title: "Configurar claves de API o token personalizado"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, showConfig ? "Ocultar Opciones" : "Opciones API"),
-      auddToken && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" })
-    )), /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16] border border-djzinc-750 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `absolute inset-0 rounded-full border border-indigo-500/30 ${isListening || isAnalyzing ? "animate-ping" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-1.5 rounded-full border border-indigo-500/20" }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-3 rounded-full border border-indigo-500/40" }), /* @__PURE__ */ React.createElement("div", { className: `w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500 text-black shadow-emerald-500/50" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-600 text-white shadow-pink-600/50 animate-pulse" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500 text-black shadow-amber-500/50" : isListening || isAnalyzing ? "bg-cyan-500 text-black animate-spin" : "bg-djzinc-800 text-zinc-400"}` }, /* @__PURE__ */ React.createElement(Icons2.Radar, { size: 18 }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase tracking-wider font-black text-indigo-400" }, "Telemetr\xEDa de Cabina Radar"), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-500/20 text-pink-300 border border-pink-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : isListening || isAnalyzing ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-zinc-800 text-zinc-400 border border-zinc-700"}` }, (radarEvent == null ? void 0 : radarEvent.state) || (isListening ? "CAPTURING" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate max-w-sm" }, (radarEvent == null ? void 0 : radarEvent.message) || (isListening ? "Escuchando ventana de 10s (stride 2s)..." : "Listo para capturar en cabina")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto shrink-0 font-mono text-center" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Nivel RMS"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-cyan-400" }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? `${radarEvent.telemetry.rmsDbfs.toFixed(1)} dBFS` : "-16.0 dBFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Pico / Clip"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${((_a = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _a.isClipping) ? "text-rose-500" : "text-emerald-400"}` }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? radarEvent.telemetry.isClipping ? "\u26A0\uFE0F CLIPPING" : `${radarEvent.telemetry.peakDbfs.toFixed(1)} dB` : "\u2264 -1.0 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Coherencia \u03C1"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${(radarEvent == null ? void 0 : radarEvent.pitchShiftSuspected) ? "text-pink-400 animate-pulse" : "text-indigo-300"}` }, (radarEvent == null ? void 0 : radarEvent.rho) ? `${radarEvent.rho.toFixed(3)}x` : "1.000x")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Latencia Edge"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-white" }, ((_b = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _b.latencyMs) ? `${radarEvent.telemetry.latencyMs} ms` : "< 1750 ms")))), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: auddToken,
-        onChange: (e) => setAuddToken(e.target.value),
-        placeholder: "test (predeterminado)",
-        className: "w-full sm:w-64 px-2.5 py-1.5 bg-[var(--bw-surface-1)] border border-[var(--bw-line-strong)] rounded-lg text-xs text-white font-mono focus:border-cyan-400 outline-none"
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-5 rounded-xl border border-[var(--bw-line)] hover:border-[var(--bw-line-strong)] flex flex-col items-center text-center justify-between relative overflow-hidden shadow-sm transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-cyan-400" }, "MODO A \u2022 CAPTURA AMBIENTAL"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-white" }, "Escucha en Directo por Micr\xF3fono"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-xs mx-auto" }, "Captura m\xFAsica ambiental en cabina y consulta la red de identificaci\xF3n ac\xFAstica global.")), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Fuente de micr\xF3fono" }, /* @__PURE__ */ React.createElement("span", { className: "ws-seg-label" }, "Entrada"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setMicCaptureMode("auto");
-          setMicPermissionError(null);
-        },
-        className: `ws-seg-btn ${micCaptureMode === "auto" ? "ws-seg-on" : ""}`,
-        "aria-pressed": micCaptureMode === "auto",
-        title: "Auto: prueba primero el micr\xF3fono del navegador y si falla conmuta al hardware de sistema autom\xE1ticamente"
-      },
-      "Auto"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setMicCaptureMode("browser");
-          setMicPermissionError(null);
-        },
-        className: `ws-seg-btn ${micCaptureMode === "browser" ? "ws-seg-on" : ""}`,
-        "aria-pressed": micCaptureMode === "browser",
-        title: "Micr\xF3fono Web (Navegador HTML5)"
-      },
-      "Navegador"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setMicCaptureMode("hardware");
-          setMicPermissionError(null);
-        },
-        className: `ws-seg-btn ${micCaptureMode === "hardware" ? "ws-seg-on" : ""}`,
-        "aria-pressed": micCaptureMode === "hardware",
-        title: "Micr\xF3fono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
-      },
-      "Hardware (macOS)"
-    )), /* @__PURE__ */ React.createElement("div", { className: "my-4 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ws-radar-ring-2 ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: startMicrophoneListening,
-        disabled: isListening || isAnalyzing,
-        className: `ws-radar ${isListening ? "ws-radar-live" : ""}`,
-        "aria-label": isListening ? `Escuchando, ${countdown} segundos` : "Escuchar y reconocer pista"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Mic, null),
-      /* @__PURE__ */ React.createElement("span", { className: "ws-radar-label" }, isListening ? `${countdown}s` : "ESCUCHAR")
-    )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/60 border border-amber-600/40 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement(Icons2.Lock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En macOS: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes del Sistema > Privacidad > Micr\xF3fono"), "."), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: startHardwareMicrophoneListening,
-        className: "ws-btn ws-btn-primary w-full justify-center mt-1"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14 }),
-      " Usar Captura Hardware de Sistema"
-    )), isListening && /* @__PURE__ */ React.createElement("div", { className: "w-60 mt-3.5 flex flex-col gap-1.5 animate-fadeIn", role: "meter", "aria-label": "Se\xF1al de micr\xF3fono", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": micLevel }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "ws-dot ws-dot-live" }), "Input"), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-[11px] font-semibold tabular-nums ${micLevel > 85 ? "text-rose-400" : micLevel > 15 ? "text-[var(--bw-cyan)]" : "text-amber-400"}` }, micLevel, "%")), /* @__PURE__ */ React.createElement("div", { className: "ws-vu", "aria-hidden": "true" }, Array.from({ length: 24 }, (_, i) => {
-      const thr = (i + 1) / 24 * 100;
-      const on = micLevel >= thr - 2;
-      const zone = i >= 21 ? "peak" : i >= 16 ? "hot" : "ok";
-      return /* @__PURE__ */ React.createElement("span", { key: i, className: `ws-vu-seg ws-vu-${zone} ${on ? "is-on" : ""}` });
-    })), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-[var(--bw-text-3)] flex items-center gap-1.5" }, micLevel > 10 ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Icons2.Check, { size: 12, className: "text-emerald-400" }), "Captando audio ambiental") : "Acerca el altavoz o sube el volumen")), isListening && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-3 z-10" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: (e) => {
-          e.stopPropagation();
-          stopMicrophoneListeningEarly();
-        },
-        className: "ws-btn ws-btn-primary text-xs",
-        title: "Enviar grabaci\xF3n inmediatamente sin esperar al final de los 10 segundos"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Identificar Ya")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: (e) => {
-          e.stopPropagation();
-          cancelListening();
-        },
-        className: "ws-btn ws-btn-ghost text-xs",
-        title: "Cancelar la captura actual"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14 }),
-      " Cancelar"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-400" }, isListening ? /* @__PURE__ */ React.createElement("span", { className: "text-rose-400 font-bold animate-pulse" }, "\u25CF Grabando audio del micr\xF3fono...") : isAnalyzing ? /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "\u25CF Analizando huella ac\xFAstica...") : /* @__PURE__ */ React.createElement("span", null, "Haz clic para iniciar la escucha de 10 segundos"))), /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        onDragOver: (e) => {
-          e.preventDefault();
-          setDragOver(true);
-        },
-        onDragLeave: () => setDragOver(false),
-        onDrop: (e) => {
-          e.preventDefault();
-          setDragOver(false);
-          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFileSelect(e.dataTransfer.files[0]);
-          }
-        },
-        className: `bg-[var(--bw-surface-1)] p-5 rounded-xl border flex flex-col items-center text-center justify-between transition-all cursor-pointer shadow-sm group ${dragOver ? "border-cyan-400 bg-cyan-950/20 scale-[1.01]" : "border-[var(--bw-line)] hover:border-[var(--bw-line-strong)]"}`,
-        onClick: () => fileInputRef.current && fileInputRef.current.click()
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "space-y-1 mb-4" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-zinc-400" }, "MODO B \u2022 ANALIZADOR DE ARCHIVO"), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-semibold text-white" }, "Subir o Arrastrar Archivo de Audio"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 max-w-xs mx-auto" }, "Arrastra cualquier archivo local (.mp3, .flac, .wav, .m4a) para extraer su huella digital y metadatos.")),
-      /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "file",
-          ref: fileInputRef,
-          onChange: (e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              const selected = e.target.files[0];
-              e.target.value = "";
-              handleFileSelect(selected);
-            }
-          },
-          accept: "audio/*",
-          className: "hidden"
-        }
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "my-3 w-32 h-28 rounded-xl border-2 border-dashed border-[var(--bw-line-strong)] group-hover:border-[var(--bw-cyan)] flex flex-col items-center justify-center transition-colors bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons2.Upload, { size: 22, className: "text-zinc-400 group-hover:text-[var(--bw-cyan)] mb-1.5 transition-colors" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-zinc-300" }, "ARRASTRAR AQU\xCD")),
-      /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-500" }, /* @__PURE__ */ React.createElement("span", null, "Formatos: MP3, FLAC, WAV, M4A, OGG"))
-    )), identifiedTrack && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-5 rounded-xl border border-cyan-500/40 shadow-xl space-y-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider" }, "PISTA IDENTIFICADA"), identifiedTrack.motor_usado && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 12, className: "inline-block align-[-2px]" }), " ", identifiedTrack.motor_usado)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, identifiedTrack.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 bg-[var(--bw-surface-1)] px-2 py-0.5 rounded border border-[var(--bw-line)]" }, "ISRC: ", identifiedTrack.isrc), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleDescartarDeteccion,
-        className: "ws-icon-btn w-6 h-6",
-        title: "Descartar esta detecci\xF3n"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14 })
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-center gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: getValidCover2(identifiedTrack.cover),
-        alt: "Track Artwork",
-        className: "w-40 h-40 rounded-xl object-cover border border-[var(--bw-line-strong)] shadow-xl"
-      }
-    ), identifiedTrack.preview_url && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => togglePlayPreview(identifiedTrack.preview_url),
-        className: `absolute inset-0 m-auto w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer font-black text-base ${previewPlaying ? "bg-emerald-400 text-black scale-105" : "bg-[var(--bw-cyan)] text-black hover:scale-105 shadow-[0_0_16px_rgba(34,211,238,0.45)]"}`,
-        title: "Reproducir pre-escucha de audio oficial"
-      },
-      previewPlaying ? /* @__PURE__ */ React.createElement(Icons2.Pause, { size: 18 }) : /* @__PURE__ */ React.createElement(Icons2.Play, { size: 18 })
-    ), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[9.5px] font-mono text-zinc-300 border border-[var(--bw-line)]" }, "Pre-Escucha 30s")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { className: "text-xl font-bold text-white truncate", title: identifiedTrack.title }, identifiedTrack.title), /* @__PURE__ */ React.createElement("p", { className: "text-base font-semibold text-cyan-400 truncate mt-0.5", title: identifiedTrack.artist }, identifiedTrack.artist)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "\xC1lbum"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate block", title: identifiedTrack.album }, identifiedTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold truncate block" }, identifiedTrack.genre || "Electronic")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "Lanzamiento"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate block" }, identifiedTrack.year || "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-2.5 rounded-lg border border-[var(--bw-line)]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-zinc-500 block uppercase" }, "Sello / Label"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300 font-semibold truncate block", title: identifiedTrack.label }, identifiedTrack.label || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] p-3 rounded-xl border border-[var(--bw-line)] space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10.5px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-semibold uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), "Comentario T\xE1ctico DJ & Gu\xEDa de Mezcla"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-500 text-[10px]" }, "Tag ID3 / Libreta")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.MessageSquare, { size: 14, className: "text-zinc-400 shrink-0" }), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: identifiedTrack.comment || identifiedTrack.comentario || "",
-        onChange: (e) => {
-          const val = e.target.value;
-          setIdentifiedTrack((prev) => ({ ...prev, comment: val, comentario: val }));
-        },
-        placeholder: "Escribe aqu\xED el comentario estrat\xE9gico para cabina...",
-        className: "flex-1 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] focus:border-cyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-200 outline-none transition-colors"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-1 pt-0.5" }, [
-      { label: "Peak Time", text: `[${identifiedTrack.genre || "Electronic"}] Peak Time \u2022 Drop Contundente \u2022 Outro R\xE1pido 32b` },
-      { label: "Warm Up", text: `[${identifiedTrack.genre || "Electronic"}] Warm Up Groovy \u2022 Entrada Progresiva 64b \u2022 Mezcla Limpia` },
-      { label: "Breakdown", text: `[${identifiedTrack.genre || "Electronic"}] Breakdown Vocal Intenso \u2022 Mezcla Larga con Graves` },
-      { label: "After", text: `[${identifiedTrack.genre || "Electronic"}] Afterhours \u2022 Dark Hypnotic \u2022 Bombo Pesado Sub-Bass` }
-    ].map((tpl, tIdx) => /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        key: tIdx,
-        type: "button",
-        onClick: () => setIdentifiedTrack((prev) => ({ ...prev, comment: tpl.text, comentario: tpl.text })),
-        className: "px-2 py-0.5 text-[9.5px] font-mono bg-[var(--bw-surface-2)] hover:bg-[var(--bw-surface-3)] text-zinc-400 hover:text-white rounded border border-[var(--bw-line)] cursor-pointer transition-colors",
-        title: `Insertar: "${tpl.text}"`
-      },
-      tpl.label
-    )))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 pt-1" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleApuntarEnLista(identifiedTrack),
-        className: "ws-btn ws-btn-primary",
-        title: "A\xF1adir esta pista a tu Libreta Digital de Apuntes DJ"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Notebook, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Apuntar en Lista")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleSendToSpotifyInternal(identifiedTrack),
-        className: "ws-btn ws-btn-outline",
-        title: "Enviar a la cola de descarga en FLAC"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Download, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Record Pool")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleSendToAuditInternal(identifiedTrack),
-        className: "ws-btn ws-btn-outline",
-        title: "A\xF1adir a la tabla de auditor\xEDa para an\xE1lisis DSP"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Copy, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Auditor\xEDa DJ")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleCopyToClipboard(identifiedTrack),
-        className: "ws-btn ws-btn-ghost",
-        title: "Copiar texto al portapapeles"
-      },
-      "Copiar"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleDescartarDeteccion,
-        className: "ws-btn ws-btn-danger ml-auto",
-        title: "Descartar esta detecci\xF3n y dejar el radar listo"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Trash, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Descartar")
-    ))))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-5 shadow-sm space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-[var(--bw-cyan)] font-bold text-sm shadow" }, /* @__PURE__ */ React.createElement(Icons2.Notebook, { size: 15 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs font-bold text-white font-mono uppercase tracking-wider" }, "Libreta Digital de Apuntes DJ"), /* @__PURE__ */ React.createElement("span", { className: "ws-count ws-count-on" }, notebookTracks.length, " apuntes")), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-zinc-400" }, "Colecci\xF3n de pistas cazadas en vivo en el radar, listas para exportar o enviar a producci\xF3n."))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, notebookFeedback && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-emerald-400 animate-pulse mr-2" }, notebookFeedback), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleExportarNotebookXLS,
-        disabled: notebookTracks.length === 0,
-        className: "ws-btn ws-btn-outline",
-        title: "Descargar listado en formato Excel (.xls / .xlsx)"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Excel, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Descargar XLS")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleExportarNotebookTXT,
-        disabled: notebookTracks.length === 0,
-        className: "ws-btn ws-btn-outline",
-        title: "Descargar tracklist limpio en formato texto (.txt)"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.FileText, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Descargar TXT")
-    ), notebookTracks.length > 0 && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleVaciarNotebook,
-        className: "ws-btn ws-btn-danger",
-        title: "Vaciar todos los apuntes"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Trash, { size: 14 }),
-      " Vaciar"
-    ))), notebookTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-10 text-center text-zinc-500 font-mono text-xs border border-dashed border-[var(--bw-line-strong)] rounded-xl bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons2.FileText, { size: 16, className: "inline-block align-[-2px] block mb-1 text-zinc-400" }), "Tu libreta de apuntes est\xE1 vac\xEDa. Cuando identifiques un track en el Radar, pulsa ", /* @__PURE__ */ React.createElement("strong", { className: "text-cyan-400" }, '"Apuntar en Lista"'), " para guardarlo aqu\xED.") : /* @__PURE__ */ React.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ React.createElement("table", { className: "ws-grid w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "w-8 text-center" }, "#"), /* @__PURE__ */ React.createElement("th", { className: "w-10 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "sr-only" }, "Reproducir")), /* @__PURE__ */ React.createElement("th", { className: "min-w-[220px]" }, "Pista"), /* @__PURE__ */ React.createElement("th", { className: "min-w-[150px]" }, "Artista"), /* @__PURE__ */ React.createElement("th", { className: "w-28" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "w-28" }, "Subg\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "w-14 text-center" }, "A\xF1o"), /* @__PURE__ */ React.createElement("th", { className: "min-w-[220px]" }, "Nota DJ"), /* @__PURE__ */ React.createElement("th", { className: "w-20 text-center" }, "Hora"), /* @__PURE__ */ React.createElement("th", { className: "w-32 text-right" }, "Acciones"))), /* @__PURE__ */ React.createElement("tbody", null, notebookTracks.map((row, idx) => {
-      const isRowPlaying = previewPlaying && audioRef.current.src === row.preview_url;
-      return /* @__PURE__ */ React.createElement("tr", { key: row.notebook_id || idx, className: isRowPlaying ? "is-playing" : "" }, /* @__PURE__ */ React.createElement("td", { className: "text-center ws-num" }, idx + 1), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, row.preview_url ? /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => togglePlayPreview(row.preview_url),
-          className: `ws-play ${isRowPlaying ? "is-on" : ""}`,
-          "aria-label": isRowPlaying ? "Pausar pre-escucha" : "Reproducir pre-escucha"
-        },
-        isRowPlaying ? /* @__PURE__ */ React.createElement(Icons2.Pause, { size: 12 }) : /* @__PURE__ */ React.createElement(Icons2.Play, { size: 12 })
-      ) : /* @__PURE__ */ React.createElement("span", { className: "ws-num" }, "--")), /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: getValidCover2(row.cover),
-          alt: "",
-          onError: (e) => {
-            e.target.onerror = null;
-            e.target.src = DEFAULT_VINYL_SVG2;
-          },
-          className: "w-8 h-8 rounded-md object-cover border border-[var(--bw-line-strong)] shrink-0"
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-medium text-[var(--bw-white)] text-[13px] truncate max-w-xs", title: row.title }, row.title), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-[var(--bw-text-3)] truncate max-w-xs", title: row.album }, row.album || "--")))), /* @__PURE__ */ React.createElement("td", { className: "text-[var(--bw-text-2)] truncate max-w-xs" }, row.artist), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "ws-tag" }, row.genre || "Tech House")), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "ws-tag ws-tag-muted" }, !row.subgenre || ["Pop", "Electronic", "Dance", "Club", "Other"].includes(row.subgenre) ? row.genre || "Tech House" : row.subgenre)), /* @__PURE__ */ React.createElement("td", { className: "text-center ws-num" }, row.year || "--"), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 max-w-[260px]" }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "text",
-          value: row.comment || row.comentario || "",
-          onChange: (e) => {
-            const val = e.target.value;
-            setNotebookTracks((prev) => prev.map((t, i) => i === idx ? { ...t, comment: val, comentario: val } : t));
-          },
-          placeholder: "A\xF1adir nota DJ...",
-          "aria-label": `Nota DJ para ${row.title}`,
-          className: "ws-inline-input",
-          title: row.comment || row.comentario || "Nota o comentario t\xE1ctico DJ"
-        }
-      ))), /* @__PURE__ */ React.createElement("td", { className: "text-center ws-num" }, row.added_at || "--"), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => handleSendToSpotifyInternal(row), className: "ws-btn ws-btn-ghost h-7 px-2", title: "Enviar a Record Pool" }, /* @__PURE__ */ React.createElement(Icons2.Download, { size: 13 }), " Pool"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => handleSendToAuditInternal(row), className: "ws-btn ws-btn-ghost h-7 px-2", title: "A\xF1adir a Auditor\xEDa" }, /* @__PURE__ */ React.createElement(Icons2.Copy, { size: 13 }), " Auditar"), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleEliminarDeNotebook(row.notebook_id),
-          className: "ws-btn ws-btn-ghost h-7 w-7 px-0 justify-center hover:!text-rose-400",
-          "aria-label": "Eliminar de la libreta"
-        },
-        /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-      ))));
-    }))))), history.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Clock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "HISTORIAL DE PISTAS IDENTIFICADAS (", history.length, ")")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setHistory([]),
-        className: "text-[10px] font-mono text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
-      },
-      "Limpiar Historial"
-    )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" }, history.map((trk, hIdx) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: hIdx,
-        className: "ws-card p-3 flex items-center gap-3"
-      },
-      /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: getValidCover2(trk.cover),
-          alt: "",
-          className: "w-12 h-12 rounded-lg object-cover border border-[var(--bw-line-strong)] shrink-0"
-        }
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("h5", { className: "text-[13px] font-medium text-[var(--bw-white)] truncate", title: trk.title }, trk.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-[var(--bw-text-2)] truncate", title: trk.artist }, trk.artist), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-[var(--bw-text-3)]" }, trk.genre || "Electronic", " ", trk.year ? `\xB7 ${trk.year}` : "")),
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 shrink-0" }, trk.preview_url && /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => togglePlayPreview(trk.preview_url),
-          className: "ws-play",
-          "aria-label": "Pre-escucha"
-        },
-        /* @__PURE__ */ React.createElement(Icons2.Play, { size: 12 })
-      ), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: () => handleSendToAuditInternal(trk),
-          className: "ws-play",
-          "aria-label": "A\xF1adir a Auditor\xEDa"
-        },
-        /* @__PURE__ */ React.createElement(Icons2.Plus, { size: 12 })
-      ))
-    )))));
-  };
-  var TrendsWorkspace = ({ lang = "es" }) => {
-    const [trendsData, setTrendsData] = useState20({
-      last_crawled_at: "Sincronizando...",
-      next_scheduled_run: "Martes 23:00",
-      items: [],
-      festivals_calendar: [],
-      set_breakdowns: [],
-      interviews: [],
-      controllers: [],
-      gadgets: [],
-      dj_gear: [],
-      trends_radar: []
-    });
-    const [loading, setLoading] = useState20(true);
-    const [isCrawling, setIsCrawling] = useState20(false);
-    const [selectedCategory, setSelectedCategory] = useState20("todas");
-    const [selectedCity, setSelectedCity] = useState20("Madrid");
-    const [searchQuery, setSearchQuery] = useState20("");
-    const [dateFilter, setDateFilter] = useState20("all");
-    const [readingArticle, setReadingArticle] = useState20(null);
-    const [copiedRef, setCopiedRef] = useState20(false);
-    const categories = [
-      { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
-      { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
-      { id: "Entrevistas", label: lang === "en" ? "DJ Interviews" : "Entrevistas DJs", icon: "\u{1F399}\uFE0F" },
-      { id: "Controladoras", label: lang === "en" ? "DJ Controllers" : "Controladoras DJ", icon: "\u{1F39B}\uFE0F" },
-      { id: "Gadgets", label: lang === "en" ? "Booth Gadgets" : "Gadgets de Cabina", icon: "\u{1F50C}" },
-      { id: "Material DJ", label: lang === "en" ? "Pro DJ Gear" : "Material DJ Pro", icon: "\u{1F3A7}" },
-      { id: "Tendencias", label: lang === "en" ? "Trends & News" : "Tendencias Globales", icon: "\u{1F525}" },
-      { id: "SetBreakdowns", label: lang === "en" ? "Set Breakdowns" : "An\xE1lisis de Sesiones", icon: "\u{1F4CA}" },
-      { id: "Radar", label: lang === "en" ? "Tech Radar & DSP" : "Radar & DSP", icon: "\u{1F4E1}" },
-      { id: "Lanzamientos & Charts", label: lang === "en" ? "Charts & Labels" : "Charts & Labels", icon: "\u{1F4C8}" }
-    ];
-    const fetchTrends = async () => {
-      try {
-        setLoading(true);
-        if (window.eel && window.eel.obtener_tendencias_web) {
-          const res = await window.eel.obtener_tendencias_web()();
-          if (res && res.items) setTrendsData(res);
-        } else {
-          const resp = await fetch("/api/trends");
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data && data.items) setTrendsData(data);
-          }
-        }
-      } catch (e) {
-        console.error("Error cargando tendencias:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    useEffect21(() => {
-      fetchTrends();
-    }, []);
-    const handleRunCrawler = async () => {
-      setIsCrawling(true);
-      try {
-        if (window.eel && window.eel.ejecutar_crawler_tendencias) {
-          const res = await window.eel.ejecutar_crawler_tendencias()();
-          if (res && res.items) setTrendsData(res);
-        } else {
-          const resp = await fetch("/api/trends/crawl", { method: "POST" });
-          if (resp.ok) {
-            const data = await resp.json();
-            if (data && data.items) setTrendsData(data);
-          }
-        }
-      } catch (e) {
-        console.error("Error al ejecutar crawler:", e);
-      } finally {
-        setIsCrawling(false);
-      }
-    };
-    const handleCopyReference = (refText) => {
-      if (!refText) return;
-      try {
-        navigator.clipboard.writeText(refText);
-        setCopiedRef(true);
-        setTimeout(() => setCopiedRef(false), 2500);
-      } catch (_) {
-      }
-    };
-    const filteredItems = useMemo7(() => {
-      const items = trendsData.items || [];
-      return items.filter((item) => {
-        const matchCat = selectedCategory === "todas" || item.category === selectedCategory;
-        const q = searchQuery.toLowerCase().trim();
-        const matchSearch = !q || (item.title || "").toLowerCase().includes(q) || (item.summary || "").toLowerCase().includes(q) || (item.source || "").toLowerCase().includes(q) || (item.key_tags || []).some((t) => t.toLowerCase().includes(q));
-        if (!matchCat || !matchSearch) return false;
-        if (dateFilter !== "all" && item.date) {
-          try {
-            const itemDate = new Date(item.date);
-            if (!isNaN(itemDate.getTime())) {
-              const now = /* @__PURE__ */ new Date();
-              const diffDays = (now.getTime() - itemDate.getTime()) / (1e3 * 60 * 60 * 24);
-              if (dateFilter === "7days" && diffDays > 7) return false;
-              if (dateFilter === "30days" && diffDays > 30) return false;
-              if (dateFilter === "90days" && diffDays > 90) return false;
-            }
-          } catch (_) {
-          }
-        }
-        return true;
-      });
-    }, [trendsData, selectedCategory, searchQuery, dateFilter]);
-    const festivals = useMemo7(() => {
-      let list = trendsData.festivals_calendar || [];
-      if (selectedCity && selectedCity !== "Todas") {
-        list = list.filter((f) => (f.city || "").toLowerCase() === selectedCity.toLowerCase());
-      }
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (f) => (f.name || "").toLowerCase().includes(q) || (f.city || "").toLowerCase().includes(q) || (f.venue || "").toLowerCase().includes(q) || (f.headliners || []).some((h) => h.toLowerCase().includes(q))
-      );
-    }, [trendsData, selectedCity, searchQuery]);
-    const setBreakdowns = useMemo7(() => {
-      const list = trendsData.set_breakdowns || [];
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (s) => (s.artist || "").toLowerCase().includes(q) || (s.event || "").toLowerCase().includes(q) || (s.tactical_breakdown || "").toLowerCase().includes(q)
-      );
-    }, [trendsData, searchQuery]);
-    const interviews = useMemo7(() => {
-      const list = trendsData.interviews || [];
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (it) => (it.artist || "").toLowerCase().includes(q) || (it.headline || "").toLowerCase().includes(q) || (it.quote || "").toLowerCase().includes(q)
-      );
-    }, [trendsData, searchQuery]);
-    const controllers = useMemo7(() => {
-      const list = trendsData.controllers || [];
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (c) => (c.name || "").toLowerCase().includes(q) || (c.brand || "").toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q)
-      );
-    }, [trendsData, searchQuery]);
-    const gadgets = useMemo7(() => {
-      const list = trendsData.gadgets || [];
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (g) => (g.name || "").toLowerCase().includes(q) || (g.category || "").toLowerCase().includes(q) || (g.utility || "").toLowerCase().includes(q)
-      );
-    }, [trendsData, searchQuery]);
-    const djGear = useMemo7(() => {
-      const list = trendsData.dj_gear || [];
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (dg) => (dg.name || "").toLowerCase().includes(q) || (dg.brand || "").toLowerCase().includes(q) || (dg.type || "").toLowerCase().includes(q) || (dg.description || "").toLowerCase().includes(q)
-      );
-    }, [trendsData, searchQuery]);
-    const radarItems = useMemo7(() => {
-      const list = trendsData.trends_radar || [];
-      const q = searchQuery.toLowerCase().trim();
-      if (!q) return list;
-      return list.filter(
-        (r) => (r.topic || "").toLowerCase().includes(q) || (r.description || "").toLowerCase().includes(q)
-      );
-    }, [trendsData, searchQuery]);
-    return /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col h-full bg-[#08080c] overflow-y-auto text-gray-200 pb-36 md:pb-8" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 border-b border-djzinc-800/80 bg-gradient-to-b from-[#10101a] to-[#08080c] flex flex-col gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1" }, /* @__PURE__ */ React.createElement(
-      SectionTitle2,
-      {
-        icon: Icons2.Trends,
-        title: "Tendencias",
-        accent: "Studio Lab",
-        badge: "RADAR & FESTIVALES",
-        accentColor: "purple"
-      }
-    ), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-0.5" }, "Inteligencia musical continua y escaneo de tendencias ac\xFAsticas de cabina."))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-3 bg-[#0d0d15] p-2 rounded-xl border border-djzinc-800 shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-right px-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 flex items-center gap-1.5 justify-end" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "Crawler semanal: ", /* @__PURE__ */ React.createElement("strong", null, "Martes noche (23:00)"))), /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500" }, "\xDAltima sync: ", trendsData.last_crawled_at || "Reciente")), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleRunCrawler,
-        disabled: isCrawling,
-        className: "px-3.5 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 hover:from-djcyan-400 hover:to-djcyan-300 disabled:opacity-50 text-black font-black text-xs rounded-lg shadow-md shadow-djcyan-500/30 flex items-center gap-2 cursor-pointer transition-transform active:scale-95 shrink-0",
-        title: "Lanza el crawler para buscar noticias y tendencias de m\xFAsica electr\xF3nica en la web ahora mismo"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: isCrawling ? "animate-spin" : "" }, /* @__PURE__ */ React.createElement(Icons2.Refresh, { size: 14, className: "inline-block align-[-2px]" })),
-      /* @__PURE__ */ React.createElement("span", null, isCrawling ? "Rastreando la Web..." : "Sincronizar Crawler")
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none" }, categories.map((cat) => {
-      const isSelected = selectedCategory === cat.id;
-      let count = 0;
-      if (cat.id === "todas") count = (trendsData.items || []).length;
-      else if (cat.id === "Festivales & Eventos") count = (trendsData.festivals_calendar || []).length;
-      else if (cat.id === "SetBreakdowns") count = (trendsData.set_breakdowns || []).length;
-      else if (cat.id === "Entrevistas") count = (trendsData.interviews || []).length;
-      else if (cat.id === "Controladoras") count = (trendsData.controllers || []).length;
-      else if (cat.id === "Gadgets") count = (trendsData.gadgets || []).length;
-      else if (cat.id === "Material DJ") count = (trendsData.dj_gear || []).length;
-      else if (cat.id === "Radar") count = (trendsData.trends_radar || []).length;
-      else count = (trendsData.items || []).filter((i) => i.category === cat.id).length;
-      return /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: cat.id,
-          type: "button",
-          onClick: () => setSelectedCategory(cat.id),
-          className: `px-3 py-1.5 rounded-lg text-xs font-mono font-bold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${isSelected ? "bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black shadow-md font-black" : "bg-djzinc-900/80 text-gray-400 hover:text-white hover:bg-djzinc-800 border border-djzinc-800"}`
-        },
-        /* @__PURE__ */ React.createElement("span", null, cat.icon),
-        /* @__PURE__ */ React.createElement("span", null, cat.label),
-        /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[9px] font-mono ${isSelected ? "bg-black text-djcyan-300 font-bold" : "bg-djzinc-800 text-gray-400"}` }, count)
-      );
-    })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#0d0d15] border border-djzinc-800 rounded-lg px-2.5 py-1 text-xs font-mono" }, /* @__PURE__ */ React.createElement(Icons2.Calendar, { size: 14, className: "inline-block align-[-2px] text-gray-400" }), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: dateFilter,
-        onChange: (e) => setDateFilter(e.target.value),
-        className: "bg-transparent text-gray-300 text-xs font-mono outline-none cursor-pointer",
-        title: "Filtrar tendencias por fecha de publicaci\xF3n"
-      },
-      /* @__PURE__ */ React.createElement("option", { value: "all", className: "bg-[#0d0d15] text-gray-200" }, "Todas las fechas"),
-      /* @__PURE__ */ React.createElement("option", { value: "7days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltima semana"),
-      /* @__PURE__ */ React.createElement("option", { value: "30days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltimo mes"),
-      /* @__PURE__ */ React.createElement("option", { value: "90days", className: "bg-[#0d0d15] text-gray-200" }, "\xDAltimos 3 meses")
-    )), /* @__PURE__ */ React.createElement("div", { className: "relative min-w-[200px] md:w-64" }, /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: searchQuery,
-        onChange: (e) => setSearchQuery(e.target.value),
-        placeholder: "Buscar noticias, artistas...",
-        className: "w-full bg-[#0d0d15] border border-djzinc-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 outline-none focus:border-djcyan-500 transition-colors font-mono"
-      }
-    ), /* @__PURE__ */ React.createElement(Icons2.Search, { size: 14, className: "inline-block align-[-2px] absolute left-2.5 top-2 text-gray-500" }), searchQuery && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setSearchQuery(""),
-        className: "absolute right-2.5 top-1.5 text-gray-500 hover:text-white text-xs cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-    ))))), selectedCategory === "Festivales & Eventos" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between border-b border-djzinc-800 pb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Star, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "Eventos & Clubs Time To House"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-500/50" }, "timetohouse.com/es")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Agenda de clubs y sesiones electr\xF3nicas por ciudades con line-ups, horarios y entradas oficiales."))), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400 font-bold self-start sm:self-auto" }, festivals.length, " Eventos en ", selectedCity)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#0d0e1c] rounded-2xl border border-djzinc-800 flex flex-wrap items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs font-mono font-bold text-gray-300 mr-1 shrink-0" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Pin, { size: 14, className: "inline-block align-[-2px]" }), " Seleccionar Ciudad:")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" }, ["Madrid", "Barcelona", "Ibiza", "Valencia", "Sevilla", "Bilbao", "\xC1msterdam", "Berl\xEDn", "Londres", "Miami", "Todas"].map((city) => {
-      const isCityActive = selectedCity.toLowerCase() === city.toLowerCase();
-      return /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: city,
-          type: "button",
-          onClick: () => setSelectedCity(city),
-          className: `px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${isCityActive ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-black shadow-[0_0_12px_rgba(6,182,212,0.4)]" : "bg-[#141525] text-gray-400 hover:text-white hover:bg-[#1c1d35] border border-djzinc-800"}`
-        },
-        city === "Madrid" ? "\u{1F1EA}\u{1F1F8} Madrid (Default)" : city === "Barcelona" ? "\u{1F1EA}\u{1F1F8} Barcelona" : city === "Ibiza" ? "\u{1F3DD}\uFE0F Ibiza" : city === "Valencia" ? "\u{1F1EA}\u{1F1F8} Valencia" : city === "Sevilla" ? "\u{1F1EA}\u{1F1F8} Sevilla" : city === "Bilbao" ? "\u{1F1EA}\u{1F1F8} Bilbao" : city === "\xC1msterdam" ? "\u{1F1F3}\u{1F1F1} \xC1msterdam" : city === "Berl\xEDn" ? "\u{1F1E9}\u{1F1EA} Berl\xEDn" : city === "Londres" ? "\u{1F1EC}\u{1F1E7} Londres" : city === "Miami" ? "\u{1F1FA}\u{1F1F8} Miami" : "\u{1F310} Todas"
-      );
-    })), /* @__PURE__ */ React.createElement("div", { className: "ml-auto text-[11px] font-mono text-gray-400 shrink-0" }, /* @__PURE__ */ React.createElement(
-      "a",
-      {
-        href: `https://timetohouse.com/es/events?city=${selectedCity.toLowerCase() === "todas" ? "madrid" : selectedCity.toLowerCase()}`,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "timetohouse.com/es/events"),
-      /* @__PURE__ */ React.createElement("span", null, "\u2197")
-    ))), festivals.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-8 text-center bg-[#0e0f1c] rounded-2xl border border-djzinc-800 text-gray-400 font-mono text-xs" }, "No hay eventos listados para ", selectedCity, " con el t\xE9rmino de b\xFAsqueda actual.") : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, festivals.map((fest) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: fest.id,
-        className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.18)] flex flex-col group cursor-pointer",
-        onClick: () => setReadingArticle({
-          id: fest.id,
-          title: `${fest.name} @ ${fest.venue} (${fest.city})`,
-          category: "Eventos & Clubs",
-          category_badge: `\u{1F3AA} ${fest.city.toUpperCase()}`,
-          source: "Time To House (timetohouse.com/es)",
-          author: fest.venue,
-          date: fest.dates,
-          read_time: "Gu\xEDa de Sesi\xF3n",
-          image_url: fest.image_url,
-          summary: fest.description,
-          content: `${fest.name} se celebra en ${fest.venue} (${fest.city}, ${fest.country}). Horario: ${fest.dates}. Sistema de sonido certificado: ${fest.sound_system}. Line-up confirmado: ${fest.headliners.join(", ")}. Precio de entrada: ${fest.price || "Consultar"}.
-
-Recomendaciones para cabina: Tempo recomendado en torno a ${fest.recommended_bpm}.`,
-          takeaways: [
-            `Fecha: ${fest.dates} (${fest.city}, ${fest.country})`,
-            `Club / Sala: ${fest.venue}`,
-            `Sistema Ac\xFAstico: ${fest.sound_system}`,
-            `Line-up: ${fest.headliners.join(" \u2022 ")}`,
-            `Precio: ${fest.price || "Entradas anticipadas disponibles"}`
-          ],
-          reference: fest.reference || "https://timetohouse.com/es/events?city=madrid",
-          url: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
-          key_tags: [fest.city, "Time To House", fest.venue, "Eventos 2026"]
-        })
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: fest.image_url,
-          alt: fest.name,
-          className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/40 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-lg" }, fest.flag), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50" }, fest.city)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 shadow" }, fest.price || "Entradas")), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 text-[11px] font-mono font-bold text-white bg-black/85 px-2.5 py-1 rounded-lg border border-djzinc-750 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons2.Library, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, fest.venue))),
-      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[#161729] border border-cyan-500/50 text-center shrink-0 shadow" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-black text-cyan-400 uppercase" }, fest.month_badge || "OCT"), /* @__PURE__ */ React.createElement("span", { className: "text-lg font-mono font-black text-white leading-none" }, fest.day_badge || "31")), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-cyan-300 transition-colors leading-snug" }, fest.name), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400 line-clamp-2 mt-0.5" }, fest.description))), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1 text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Volume, { size: 14, className: "inline-block align-[-2px]" }), " Sound System:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-bold truncate max-w-[170px]", title: fest.sound_system }, fest.sound_system)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Clock, { size: 14, className: "inline-block align-[-2px]" }), " Fechas / Horario:"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-bold" }, fest.dates))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 uppercase font-bold block" }, "Line-up Confirmado:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (fest.headliners || []).map((hl, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: "text-[9.5px] font-mono px-2 py-0.5 rounded-md bg-[#161729] text-gray-200 border border-djzinc-750 font-bold" }, /* @__PURE__ */ React.createElement(Icons2.Star, { size: 14, className: "inline-block align-[-2px]" }), " ", hl))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2.5 border-t border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9.5px] font-mono text-gray-500 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Fuente:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, "Time To House")), /* @__PURE__ */ React.createElement(
-        "a",
-        {
-          href: fest.ticket_url || "https://timetohouse.com/es/events?city=madrid",
-          target: "_blank",
-          rel: "noopener noreferrer",
-          onClick: (e) => e.stopPropagation(),
-          className: "px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 transition-transform active:scale-95 shadow-md"
-        },
-        /* @__PURE__ */ React.createElement("span", null, "Entradas"),
-        /* @__PURE__ */ React.createElement("span", null, "\u2197")
-      )))
-    )))), selectedCategory === "Controladoras" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Controladoras DJ Profesionales & Sistemas Todo-en-Uno (2026)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, controllers.length, " Modelos Analizados")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, controllers.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50" }, item.target)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-amber-950/90 text-amber-300 border border-amber-500/60" }, item.price)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 text-xs font-mono font-bold text-white bg-black/85 px-2 py-0.5 rounded border border-djzinc-750" }, item.brand)), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-cyan-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, item.description), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121324] rounded-xl border border-djzinc-800 space-y-1.5 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 uppercase font-bold" }, "Compatibilidad Software:"), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (item.software_support || []).map((sw, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "px-2 py-0.5 rounded bg-djzinc-900 text-cyan-300 border border-djzinc-750 text-[10px]" }, sw)))), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.key_features || []).map((feat, fIdx) => /* @__PURE__ */ React.createElement("div", { key: fIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement(Icons2.Check, { size: 14, className: "inline-block align-[-2px] text-cyan-400 font-bold" }), /* @__PURE__ */ React.createElement("span", null, feat))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Ver An\xE1lisis"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "Gadgets" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Link, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Gadgets Indispensables de Cabina & Accesorios Pro")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, gadgets.length, " Gadgets Esenciales")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, gadgets.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-emerald-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-emerald-300 border border-emerald-500/50" }, item.category)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-emerald-950/90 text-emerald-300 border border-emerald-500/60" }, item.price))), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-emerald-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#121824] rounded-xl border border-emerald-900/50 text-xs font-mono text-emerald-200" }, /* @__PURE__ */ React.createElement(Icons2.Bulb, { size: 14, className: "inline-block align-[-2px]" }), " ", item.utility), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.specs || []).map((sp, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, "\u2022"), /* @__PURE__ */ React.createElement("span", null, sp))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Ver Ficha"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "Material DJ" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Headphones, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Material DJ Profesional: Auriculares, Giradiscos & C\xE1psulas")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-cyan-400" }, djGear.length, " Equipos de Referencia")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, djGear.map((item) => /* @__PURE__ */ React.createElement("div", { key: item.id, className: "bg-[#0e0f1c] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group" }, /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: item.image_url, alt: item.name, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-purple-300 border border-purple-500/50" }, item.type)), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 right-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black bg-purple-950/90 text-purple-300 border border-purple-500/60" }, item.price))), /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold" }, item.brand), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white group-hover:text-purple-300 transition-colors" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, item.description), /* @__PURE__ */ React.createElement("div", { className: "space-y-1 text-xs font-mono" }, (item.specs || []).map((sp, sIdx) => /* @__PURE__ */ React.createElement("div", { key: sIdx, className: "flex items-center gap-1.5 text-gray-300 text-[11px]" }, /* @__PURE__ */ React.createElement(Icons2.Check, { size: 14, className: "inline-block align-[-2px] text-purple-400 font-bold" }), /* @__PURE__ */ React.createElement("span", null, sp))))), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Fuente: ", item.source), /* @__PURE__ */ React.createElement("a", { href: item.url, target: "_blank", rel: "noopener noreferrer", className: "text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Especificaciones"), /* @__PURE__ */ React.createElement("span", null, "\u2197")))))))), selectedCategory === "SetBreakdowns" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Desglose T\xE9cnico de Sesiones Hist\xF3ricas (Harmonic & Energy Flow)")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-400" }, setBreakdowns.length, " Sesiones Auditadas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-5" }, setBreakdowns.map((sb) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: sb.id,
-        className: "bg-[#0e0e16] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-4 transition-all hover:shadow-[0_4px_24px_rgba(168,85,247,0.15)] group cursor-pointer",
-        onClick: () => setReadingArticle({
-          id: sb.id,
-          title: `${sb.artist} \u2022 ${sb.event}`,
-          category: "Set Breakdowns",
-          category_badge: "\u{1F39B}\uFE0F AN\xC1LISIS DE SESI\xD3N",
-          source: "BeatWave Audio Forensics",
-          author: sb.artist,
-          date: sb.duration,
-          read_time: "5 min an\xE1lisis",
-          image_url: sb.image_url,
-          summary: `Desglose arm\xF3nico y de sonoridad del set de ${sb.artist} en ${sb.event}.`,
-          content: `${sb.tactical_breakdown} Transici\xF3n clave: ${sb.key_transition}`,
-          takeaways: [
-            `Flujo de BPM: ${sb.bpm_flow}`,
-            `Viaje Camelot: ${sb.camelot_journey}`,
-            `Sonoridad Integrada: ${sb.lufs_integrated} (Rango din\xE1mico: ${sb.dynamic_range})`,
-            `Balance Tri-Banda: ${sb.acoustic_profile}`
-          ],
-          reference: sb.reference,
-          url: "https://www.bbc.co.uk/programmes/b006wkfp",
-          key_tags: [sb.artist, "Set Analysis", "Camelot", "LUFS"]
-        })
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-djzinc-700 bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: sb.image_url, alt: sb.artist, className: "w-full h-full object-cover group-hover:scale-105 transition-transform" })), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[10px] font-mono text-purple-400 font-bold mb-1" }, /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons2.Clock, { size: 14, className: "inline-block align-[-2px]" }), " ", sb.duration), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, sb.event)), /* @__PURE__ */ React.createElement("h3", { className: "text-base font-black text-white group-hover:text-purple-300 transition-colors" }, sb.artist), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 mt-1 line-clamp-2" }, sb.tactical_breakdown))),
-      /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Flujo BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold text-[11px] truncate block", title: sb.bpm_flow }, sb.bpm_flow)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Viaje Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-[11px] truncate block", title: sb.camelot_journey }, sb.camelot_journey)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Sonoridad LUFS"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold text-[11px]" }, sb.lufs_integrated)), /* @__PURE__ */ React.createElement("div", { className: "bg-[#12121c] p-2 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-500 block uppercase" }, "Tri-Banda %"), /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold text-[10px] truncate block", title: sb.acoustic_profile }, sb.acoustic_profile.split("(")[0]))),
-      /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#141420] rounded-xl border border-djzinc-800 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-400 mb-0.5" }, /* @__PURE__ */ React.createElement(Icons2.Zap, { size: 14, className: "inline-block align-[-2px]" }), " Transici\xF3n Maestra:"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-200 italic font-medium" }, '"', sb.key_transition, '"')),
-      /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-xs" }, /* @__PURE__ */ React.createElement(Icons2.Knowledge, { size: 14, className: "inline-block align-[-2px]" }), " Ref: ", sb.reference), /* @__PURE__ */ React.createElement("span", { className: "text-purple-400 font-bold group-hover:translate-x-1 transition-transform" }, "Ver Desglose \u2192"))
-    )))), selectedCategory === "Entrevistas" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Mic, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Entrevistas de Cabina & Filosof\xEDa de Mezcla")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-rose-400" }, interviews.length, " Entrevistas T\xE9cnicas")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, interviews.map((it) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: it.id,
-        className: "bg-[#0e0e16] border border-djzinc-800 hover:border-rose-500/50 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group cursor-pointer transition-all hover:shadow-[0_4px_24px_rgba(244,63,94,0.15)]",
-        onClick: () => setReadingArticle({
-          id: it.id,
-          title: `${it.artist}: "${it.headline}"`,
-          category: "Entrevistas",
-          category_badge: "\u{1F399}\uFE0F ENTREVISTA EXCLUSIVA",
-          source: it.role,
-          author: it.artist,
-          date: it.date,
-          read_time: it.read_time,
-          image_url: it.image_url,
-          summary: it.quote,
-          content: (it.q_and_a || []).map((qa) => `Pregunta: ${qa.q}
-
-Respuesta: ${qa.a}`).join("\n\n"),
-          takeaways: [
-            `Artista: ${it.artist} (${it.role})`,
-            `Cita Destacada: ${it.quote}`,
-            `Referencia Editorial: ${it.reference}`
-          ],
-          reference: it.reference,
-          url: "https://djmag.com/features",
-          key_tags: [it.artist, "Interview", "Studio Secrets"]
-        })
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement("img", { src: it.image_url, alt: it.artist, className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" }), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase bg-black/80 text-rose-300 border border-rose-500/50" }, it.read_time)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 left-3 right-3 text-white" }, /* @__PURE__ */ React.createElement("div", { className: "text-base font-black drop-shadow" }, it.artist), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-300 drop-shadow truncate" }, it.role))),
-      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-bold text-white group-hover:text-rose-300 transition-colors line-clamp-2 leading-snug" }, it.headline), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-[#13131e] rounded-xl border border-djzinc-800 text-xs italic text-gray-300 line-clamp-3 leading-relaxed" }, it.quote)), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800 flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[160px]", title: it.reference }, /* @__PURE__ */ React.createElement(Icons2.Knowledge, { size: 14, className: "inline-block align-[-2px]" }), " ", it.reference), /* @__PURE__ */ React.createElement("span", { className: "text-rose-400 font-bold group-hover:translate-x-1 transition-transform" }, "Leer Q&A \u2192")))
-    )))), selectedCategory === "Radar" && /* @__PURE__ */ React.createElement("div", { className: "p-4 md:p-6 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Radar, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white uppercase tracking-wider font-mono" }, "Radar Ac\xFAstico & Nuevas Metodolog\xEDas de Cabina")), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400" }, radarItems.length, " Puntos Clave")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-5" }, radarItems.map((rad, rIdx) => /* @__PURE__ */ React.createElement("div", { key: rad.id || rIdx, className: "bg-[#0e0e16] border border-djzinc-800 hover:border-djcyan-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 uppercase" }, "METODOLOG\xCDA #", rIdx + 1), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-black text-white" }, rad.topic), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 leading-relaxed" }, rad.description)), /* @__PURE__ */ React.createElement("div", { className: "p-2.5 bg-[#12121c] rounded-xl border border-djzinc-800 text-xs font-mono space-y-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-djcyan-400 font-bold" }, "Emparejamiento:"), /* @__PURE__ */ React.createElement("div", { className: "text-gray-300" }, rad.recommended_pairing), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 pt-1 border-t border-djzinc-850" }, "Benchmark: ", rad.ratio_benchmark)), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono text-gray-500 pt-1 border-t border-djzinc-850" }, "Fuente: ", rad.reference))))), (selectedCategory === "todas" || selectedCategory === "Tendencias" || selectedCategory === "Tecnolog\xEDa & Hardware" || selectedCategory === "Lanzamientos & Charts") && /* @__PURE__ */ React.createElement("div", { className: "flex-1 p-4 md:p-6" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 border-2 border-djcyan-500 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono" }, "Cargando radar de tendencias...")) : filteredItems.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center h-64 gap-3 text-gray-500" }, /* @__PURE__ */ React.createElement(Icons2.Radar, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-400" }, "No se encontraron noticias con los filtros actuales"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          setSelectedCategory("todas");
-          setSearchQuery("");
-        },
-        className: "text-xs text-djcyan-400 underline cursor-pointer"
-      },
-      "Restablecer filtros"
-    )) : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" }, filteredItems.map((item) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: item.id,
-        className: "bg-[#0e0e16] border border-djzinc-800/90 hover:border-djcyan-500/50 rounded-2xl overflow-hidden shadow-lg transition-all hover:shadow-[0_4px_24px_rgba(6,182,212,0.15)] hover:-translate-y-0.5 flex flex-col group cursor-pointer",
-        onClick: () => setReadingArticle(item)
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "h-44 w-full relative overflow-hidden bg-djzinc-900" }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: item.image_url,
-          alt: item.title,
-          className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
-          onError: (e) => {
-            e.target.onerror = null;
-            e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=80";
-          }
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("div", { className: "absolute top-3 left-3" }, /* @__PURE__ */ React.createElement("span", { className: `px-2.5 py-1 rounded-md text-[9.5px] font-mono font-black uppercase tracking-wider border backdrop-blur-md ${item.badge_color || "bg-djcyan-950/80 text-djcyan-300 border-djcyan-500/50"}` }, item.category_badge || item.category)), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2.5 right-3 text-[10px] font-mono text-gray-300 bg-black/70 px-2 py-0.5 rounded backdrop-blur border border-djzinc-800" }, /* @__PURE__ */ React.createElement(Icons2.Clock, { size: 14, className: "inline-block align-[-2px]" }), " ", item.read_time || "4 min")),
-      /* @__PURE__ */ React.createElement("div", { className: "p-4 flex-1 flex flex-col justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, item.source), /* @__PURE__ */ React.createElement("span", null, item.date)), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white group-hover:text-djcyan-300 transition-colors line-clamp-2 leading-snug" }, item.title), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 line-clamp-3 leading-relaxed" }, item.summary)), /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-djzinc-800/80 flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1" }, (item.key_tags || []).slice(0, 2).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[9px] font-mono px-1.5 py-0.2 rounded bg-djzinc-900 text-gray-400 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: (e) => {
-            e.stopPropagation();
-            setReadingArticle(item);
-          },
-          className: "px-2.5 py-1 bg-djzinc-900 hover:bg-djcyan-950 text-djcyan-400 hover:text-djcyan-300 border border-djzinc-800 hover:border-djcyan-500/60 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 transition-colors"
-        },
-        /* @__PURE__ */ React.createElement("span", null, "Leer En App"),
-        /* @__PURE__ */ React.createElement("span", null, "\u2192")
-      )))
-    )))), readingArticle && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0f1019] border border-djcyan-500/50 rounded-2xl max-w-2xl w-full p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col gap-4 relative text-gray-200 max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setReadingArticle(null),
-        className: "absolute top-3 right-3 z-50 text-white hover:text-white text-sm font-black font-mono cursor-pointer w-9 h-9 rounded-full bg-black/85 hover:bg-red-600 border border-white/30 shadow-2xl flex items-center justify-center transition-all active:scale-90",
-        title: "Cerrar art\xEDculo"
-      },
-      /* @__PURE__ */ React.createElement(Icons2.Close, { size: 14, className: "inline-block align-[-2px]" })
-    ), /* @__PURE__ */ React.createElement("div", { className: "h-56 w-full rounded-xl overflow-hidden relative" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: readingArticle.image_url,
-        alt: readingArticle.title,
-        className: "w-full h-full object-cover"
-      }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0f1019] via-transparent to-black/30" }), /* @__PURE__ */ React.createElement("span", { className: "absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-black/80 text-djcyan-300 border border-djcyan-500/50" }, readingArticle.category_badge || readingArticle.category)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-xs font-mono text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, readingArticle.source), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.date), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, readingArticle.read_time)), /* @__PURE__ */ React.createElement("h2", { className: "text-xl font-black text-white" }, readingArticle.title)), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900/90 border border-djzinc-800 rounded-xl" }, /* @__PURE__ */ React.createElement("p", { className: "text-xs font-medium text-djcyan-300 leading-relaxed italic" }, '"', readingArticle.summary, '"')), readingArticle.takeaways && readingArticle.takeaways.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-[#12121e] border border-djcyan-500/30 rounded-xl space-y-2" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-black text-djcyan-400 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons2.Target, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Puntos Clave & Especificaciones T\xE9cnicas:")), /* @__PURE__ */ React.createElement("ul", { className: "space-y-1.5 text-xs text-gray-300 font-mono" }, readingArticle.takeaways.map((tk, idx) => /* @__PURE__ */ React.createElement("li", { key: idx, className: "flex items-start gap-2" }, /* @__PURE__ */ React.createElement(Icons2.Check, { size: 14, className: "inline-block align-[-2px] text-emerald-400 font-bold shrink-0" }), /* @__PURE__ */ React.createElement("span", null, tk))))), /* @__PURE__ */ React.createElement("div", { className: "text-xs text-gray-300 leading-relaxed space-y-3 whitespace-pre-line font-sans" }, readingArticle.content), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap gap-1.5 pt-2 border-t border-djzinc-800" }, (readingArticle.key_tags || []).map((tg, idx) => /* @__PURE__ */ React.createElement("span", { key: idx, className: "text-[10px] font-mono px-2 py-0.5 rounded bg-djzinc-900 text-djcyan-300 border border-djzinc-800" }, "#", tg))), /* @__PURE__ */ React.createElement("div", { className: "pt-3 border-t border-djzinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col text-xs font-mono text-gray-400" }, /* @__PURE__ */ React.createElement("span", null, "Redacci\xF3n: ", readingArticle.author || readingArticle.source), readingArticle.reference && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 italic mt-0.5" }, /* @__PURE__ */ React.createElement(Icons2.Knowledge, { size: 14, className: "inline-block align-[-2px]" }), " Ref: ", readingArticle.reference)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, readingArticle.reference && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleCopyReference(readingArticle.reference),
-        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 text-xs font-mono rounded-lg border border-djzinc-700 transition-colors flex items-center gap-1",
-        title: "Copiar cita bibliogr\xE1fica al portapapeles"
-      },
-      /* @__PURE__ */ React.createElement("span", null, copiedRef ? "\u2713 Copiado" : "\u{1F4CB} Citar")
-    ), readingArticle.url && /* @__PURE__ */ React.createElement(
-      "a",
-      {
-        href: readingArticle.url,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "px-4 py-1.5 bg-gradient-to-r from-djcyan-500 to-djcyan-400 text-black font-black text-xs rounded-lg shadow cursor-pointer flex items-center gap-1.5 transition-transform active:scale-95"
-      },
-      /* @__PURE__ */ React.createElement("span", null, "Abrir Enlace Web"),
-      /* @__PURE__ */ React.createElement("span", null, "\u2197")
-    ))))));
-  };
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
@@ -22069,23 +21393,23 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onNavigateTab,
     lang = "es"
   }) => {
-    const [setName, setSetName] = useState20("BeatWave_Mainstage_Set");
-    const [selectedTrackIdx, setSelectedTrackIdx] = useState20(null);
-    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState20(false);
-    const [searchAddQuery, setSearchAddQuery] = useState20("");
-    const [exportStatus, setExportStatus] = useState20(null);
-    const [isExporting, setIsExporting] = useState20(false);
-    const [isAuditingSet, setIsAuditingSet] = useState20(false);
-    const [auditSetProgress, setAuditSetProgress] = useState20(0);
-    const [folderLoading, setFolderLoading] = useState20(false);
-    const [folderProgress, setFolderProgress] = useState20({ pct: 0, msg: "" });
-    const [viewMode, setViewMode] = useState20("list");
-    const [graphData, setGraphData] = useState20({ nodes: [], edges: [] });
-    const [isLoadingGraph, setIsLoadingGraph] = useState20(false);
-    const [aiAuditResult, setAiAuditResult] = useState20(null);
-    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState20(false);
-    const [hoveredFlowIdx, setHoveredFlowIdx] = useState20(null);
-    useEffect21(() => {
+    const [setName, setSetName] = useState24("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState24(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState24(false);
+    const [searchAddQuery, setSearchAddQuery] = useState24("");
+    const [exportStatus, setExportStatus] = useState24(null);
+    const [isExporting, setIsExporting] = useState24(false);
+    const [isAuditingSet, setIsAuditingSet] = useState24(false);
+    const [auditSetProgress, setAuditSetProgress] = useState24(0);
+    const [folderLoading, setFolderLoading] = useState24(false);
+    const [folderProgress, setFolderProgress] = useState24({ pct: 0, msg: "" });
+    const [viewMode, setViewMode] = useState24("list");
+    const [graphData, setGraphData] = useState24({ nodes: [], edges: [] });
+    const [isLoadingGraph, setIsLoadingGraph] = useState24(false);
+    const [aiAuditResult, setAiAuditResult] = useState24(null);
+    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState24(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState24(null);
+    useEffect24(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
       const updated = setTracks.map((st) => {
@@ -22118,7 +21442,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setSetTracks(updated);
       }
     }, [auditTracks]);
-    const stats = useMemo7(() => {
+    const stats = useMemo8(() => {
       if (!setTracks || setTracks.length === 0) {
         return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100, pendingAuditCount: 0 };
       }
@@ -22154,7 +21478,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
       return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore, pendingAuditCount: pendingAudit };
     }, [setTracks]);
-    const formattedDuration = useMemo7(() => {
+    const formattedDuration = useMemo8(() => {
       const s = stats.totalDurationSec;
       const hrs = Math.floor(s / 3600);
       const mins = Math.floor(s % 3600 / 60);
@@ -23497,37 +22821,37 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onSelectDirectory,
     lang = "es"
   }) => {
-    const [useDemo, setUseDemo] = useState20(false);
+    const [useDemo, setUseDemo] = useState24(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS : [];
-    const [projectionMode, setProjectionMode] = useState20("energy_dance");
-    const [colorMode, setColorMode] = useState20("genre");
-    const [toolMode, setToolMode] = useState20("pan");
-    const [searchQuery, setSearchQuery] = useState20("");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState20("ALL");
-    const [showHarmonicPaths, setShowHarmonicPaths] = useState20(true);
-    const [selectedTrack, setSelectedTrack] = useState20(null);
-    const [selectedMapTracks, setSelectedMapTracks] = useState20([]);
-    const [hoveredTrack, setHoveredTrack] = useState20(null);
-    const tooltipRef = useRef18(null);
-    const mousePosRef = useRef18({ x: -100, y: -100 });
-    const zoomThrottleRef = useRef18(null);
-    const zoomTrailingRef = useRef18(null);
-    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState20(true);
-    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState20(true);
-    const [zoomDisplay, setZoomDisplay] = useState20(1);
-    const [isPanning, setIsPanning] = useState20(false);
-    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState20(true);
+    const [projectionMode, setProjectionMode] = useState24("energy_dance");
+    const [colorMode, setColorMode] = useState24("genre");
+    const [toolMode, setToolMode] = useState24("pan");
+    const [searchQuery, setSearchQuery] = useState24("");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState24("ALL");
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState24(true);
+    const [selectedTrack, setSelectedTrack] = useState24(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState24([]);
+    const [hoveredTrack, setHoveredTrack] = useState24(null);
+    const tooltipRef = useRef20(null);
+    const mousePosRef = useRef20({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef20(null);
+    const zoomTrailingRef = useRef20(null);
+    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState24(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState24(true);
+    const [zoomDisplay, setZoomDisplay] = useState24(1);
+    const [isPanning, setIsPanning] = useState24(false);
+    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState24(true);
     const {
       width: mapConsoleWidth,
       onPointerDown: onMapConsoleResizeDown,
       resetWidth: onResetMapConsoleWidth
     } = useDrawerResize("bw_map_console_width", 270, 220, 520, true);
-    const [filterMinEnergy, setFilterMinEnergy] = useState20(0);
-    const [filterMinDance, setFilterMinDance] = useState20(0);
-    const [filterMinIntensity, setFilterMinIntensity] = useState20(0);
-    const [filterMinValence, setFilterMinValence] = useState20(0);
-    const [filterQualityMode, setFilterQualityMode] = useState20("ALL");
-    const handleResetAcousticFilters = useCallback8(() => {
+    const [filterMinEnergy, setFilterMinEnergy] = useState24(0);
+    const [filterMinDance, setFilterMinDance] = useState24(0);
+    const [filterMinIntensity, setFilterMinIntensity] = useState24(0);
+    const [filterMinValence, setFilterMinValence] = useState24(0);
+    const [filterQualityMode, setFilterQualityMode] = useState24("ALL");
+    const handleResetAcousticFilters = useCallback9(() => {
       setFilterMinEnergy(0);
       setFilterMinDance(0);
       setFilterMinIntensity(0);
@@ -23535,22 +22859,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setFilterQualityMode("ALL");
       setSelectedKeyFilter("ALL");
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       return () => {
         if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
         if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
       };
     }, []);
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== "ALL" || selectedKeyFilter !== "ALL" || Boolean(searchQuery);
-    const canvasRef = useRef18(null);
-    const containerRef = useRef18(null);
-    const animRef = useRef18(null);
-    const imageCacheRef = useRef18(/* @__PURE__ */ new Map());
-    const panTimerRef = useRef18(null);
-    const spatialGridRef = useRef18(/* @__PURE__ */ new Map());
-    const mouseRafRef = useRef18(null);
-    const activeLoadingCountRef = useRef18(0);
-    const pendingLoadQueueRef = useRef18([]);
+    const canvasRef = useRef20(null);
+    const containerRef = useRef20(null);
+    const animRef = useRef20(null);
+    const imageCacheRef = useRef20(/* @__PURE__ */ new Map());
+    const panTimerRef = useRef20(null);
+    const spatialGridRef = useRef20(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef20(null);
+    const activeLoadingCountRef = useRef20(0);
+    const pendingLoadQueueRef = useRef20([]);
     const processCoverQueue = () => {
       const MAX_CONCURRENT = 8;
       while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
@@ -23596,7 +22920,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       processCoverQueue();
     };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
-    const transformRef = useRef18({
+    const transformRef = useRef20({
       scale: 1,
       panX: 0,
       panY: 0,
@@ -23666,7 +22990,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
-    const handleAutoFrame = useCallback8((targetZoom = null) => {
+    const handleAutoFrame = useCallback9((targetZoom = null) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -23742,13 +23066,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       tr.isContinuousPanning = false;
       setZoomDisplay(finalScale);
     }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
-    const selectionRef = useRef18({
+    const selectionRef = useRef20({
       isSelecting: false,
       points: [],
       boxStart: null
     });
-    const nodesRef = useRef18([]);
-    useEffect21(() => {
+    const nodesRef = useRef20([]);
+    useEffect24(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
       const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
@@ -23842,7 +23166,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
-    useEffect21(() => {
+    useEffect24(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -24418,7 +23742,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         selectionRef.current.boxStart = null;
       }
     };
-    const handleWheel = useCallback8((e) => {
+    const handleWheel = useCallback9((e) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -24449,7 +23773,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }, 80);
       }
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const onWheelNative = (e) => {
@@ -24470,13 +23794,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const handleResetZoom = () => {
       handleAutoFrame(1);
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const timer = setTimeout(() => {
         handleAutoFrame();
       }, 120);
       return () => clearTimeout(timer);
     }, [projectionMode, activeTracks.length, handleAutoFrame]);
-    const mapStats = useMemo7(() => {
+    const mapStats = useMemo8(() => {
       const q = searchQuery.trim().toLowerCase();
       const vis = activeTracks.filter((t) => {
         const k = (t.key || t.k || "8A").toUpperCase();
@@ -25540,17 +24864,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     var _a, _b;
-    const [state, setState] = useState20(DEFAULT_COPILOT_STATE);
-    const [clock, setClock] = useState20("");
-    const [latency, setLatency] = useState20(2);
-    const [visibleCount, setVisibleCount] = useState20(4);
-    const [tracksList, setTracksList] = useState20(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState20(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState20(null);
-    const [lowEqApplied, setLowEqApplied] = useState20(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState20(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState20("");
-    const wsRef = useRef18(null);
+    const [state, setState] = useState24(DEFAULT_COPILOT_STATE);
+    const [clock, setClock] = useState24("");
+    const [latency, setLatency] = useState24(2);
+    const [visibleCount, setVisibleCount] = useState24(4);
+    const [tracksList, setTracksList] = useState24(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState24(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState24(null);
+    const [lowEqApplied, setLowEqApplied] = useState24(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState24(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState24("");
+    const wsRef = useRef20(null);
     const togglePlayDeck = async (targetSide) => {
       const sideStr = targetSide === "2" ? "2" : "1";
       setState((prev) => {
@@ -25663,12 +24987,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState20({
+    const [controllerState, setControllerState] = useState24({
       detected: true,
       name: "NUMARK NV II (USB)",
       status: "CONECTADA"
     });
-    useEffect21(() => {
+    useEffect24(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -25725,14 +25049,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         });
       }
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       let isMounted = true;
       let ws = null;
       let fallbackInterval = null;
@@ -25870,7 +25194,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         };
       });
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const handleKeyDown = (e) => {
         var _a2, _b2;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
@@ -26201,10 +25525,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })))));
   };
   var CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState20({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
-    const [copied, setCopied] = useState20(false);
-    const [qrShown, setQrShown] = useState20(false);
-    useEffect21(() => {
+    const [copilotInfo, setCopilotInfo] = useState24({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
+    const [copied, setCopied] = useState24(false);
+    const [qrShown, setQrShown] = useState24(false);
+    useEffect24(() => {
       if (isOpen) {
         fetch("/api/copilot/info").then((r) => r.json()).then((data) => setCopilotInfo(data)).catch(() => {
         });
@@ -26600,18 +25924,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
   ];
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
-    const [currentIndex, setCurrentIndex] = useState20(0);
-    const [isHovered, setIsHovered] = useState20(false);
-    const slideRef = useRef18(null);
-    const titleRef = useRef18(null);
-    const subtitleRef = useRef18(null);
-    const badgeRef = useRef18(null);
-    const trailRef = useRef18(null);
-    const timersRef = useRef18([]);
-    const intervalsRef = useRef18([]);
-    const isHoveredRef = useRef18(false);
+    const [currentIndex, setCurrentIndex] = useState24(0);
+    const [isHovered, setIsHovered] = useState24(false);
+    const slideRef = useRef20(null);
+    const titleRef = useRef20(null);
+    const subtitleRef = useRef20(null);
+    const badgeRef = useRef20(null);
+    const trailRef = useRef20(null);
+    const timersRef = useRef20([]);
+    const intervalsRef = useRef20([]);
+    const isHoveredRef = useRef20(false);
     isHoveredRef.current = isHovered;
-    const isTransitioningRef = useRef18(false);
+    const isTransitioningRef = useRef20(false);
     const clearAsync = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
@@ -26738,7 +26062,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         transitionToSlide(nextIdx, false);
       }, 4200);
     };
-    useEffect21(() => {
+    useEffect24(() => {
       transitionToSlide(0, true);
       return () => clearAsync();
     }, []);
@@ -26812,21 +26136,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
-    const [phase, setPhase] = useState20("video");
-    const [videoOpacity, setVideoOpacity] = useState20(1);
-    const [isTransitioning, setIsTransitioning] = useState20(false);
-    const [selectedAlpha, setSelectedAlpha] = useState20(0.85);
-    const [isMuted, setIsMuted] = useState20(false);
-    const [isBassShaking, setIsBassShaking] = useState20(false);
-    const videoRef = useRef18(null);
-    const canvasRef = useRef18(null);
-    useEffect21(() => {
+    const [phase, setPhase] = useState24("video");
+    const [videoOpacity, setVideoOpacity] = useState24(1);
+    const [isTransitioning, setIsTransitioning] = useState24(false);
+    const [selectedAlpha, setSelectedAlpha] = useState24(0.85);
+    const [isMuted, setIsMuted] = useState24(false);
+    const [isBassShaking, setIsBassShaking] = useState24(false);
+    const videoRef = useRef20(null);
+    const canvasRef = useRef20(null);
+    useEffect24(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
       }, 50);
       return () => clearTimeout(timer);
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       const vid = videoRef.current;
       if (!vid) return;
       vid.currentTime = 0;
@@ -26908,7 +26232,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClose();
       }
     };
-    useEffect21(() => {
+    useEffect24(() => {
       if (phase !== "portal" && !isTransitioning) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -27063,10 +26387,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return null;
   };
   var App = () => {
-    const [pricingOpen, setPricingOpen] = useState20(false);
-    const [registerModalOpen, setRegisterModalOpen] = useState20(false);
-    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState20("pro");
-    const [cinematicIntroOpen, setCinematicIntroOpen] = useState20(() => {
+    const [pricingOpen, setPricingOpen] = useState24(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState24(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState24("pro");
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState24(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("intro") === "1" || p.get("portal") === "1") return true;
@@ -27076,7 +26400,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return false;
       }
     });
-    const [lang, setLang] = useState20(() => {
+    const [lang, setLang] = useState24(() => {
       try {
         return localStorage.getItem("beatwave_lang") || "es";
       } catch (e) {
@@ -27091,7 +26415,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState20(() => {
+    const [activeTab, setActiveTab] = useState24(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         const q = p.get("tab") || window.location.hash.replace("#", "");
@@ -27129,19 +26453,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "library";
     });
-    const [isSimulationMode, setIsSimulationMode] = useState20(false);
-    const [currentFolder, setCurrentFolder] = useState20("");
-    const [studioMode, setStudioMode] = useState20("cues");
-    const [auditTracks, setAuditTracks] = useState20([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState20([]);
-    const [spotifyTracks, setSpotifyTracks] = useState20([]);
-    const [selectedTrack, setSelectedTrack] = useState20(null);
+    const [isSimulationMode, setIsSimulationMode] = useState24(false);
+    const [currentFolder, setCurrentFolder] = useState24("");
+    const [studioMode, setStudioMode] = useState24("cues");
+    const [auditTracks, setAuditTracks] = useState24([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState24([]);
+    const [spotifyTracks, setSpotifyTracks] = useState24([]);
+    const [selectedTrack, setSelectedTrack] = useState24(null);
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-    const [nowPlayingTrack, setNowPlayingTrack] = useState20(null);
-    const [isPlaying, setIsPlaying] = useState20(false);
-    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState20(false);
-    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState20(false);
-    const localAudioInputRef = useRef18(null);
+    const [nowPlayingTrack, setNowPlayingTrack] = useState24(null);
+    const [isPlaying, setIsPlaying] = useState24(false);
+    const [isFooterDeckExpanded, setIsFooterDeckExpanded] = useState24(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState24(false);
+    const localAudioInputRef = useRef20(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -27163,7 +26487,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         f: file.name,
         path: file.name,
         url: objectUrl,
-        cues: NV2_COLORS
+        cues: NV2_COLORS2
       };
       setSelectedTrack(localTrack.id);
       setNowPlayingTrack(localTrack);
@@ -27181,21 +26505,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setLoadTrackMenuOpen(false);
     };
-    const playProgressRef = useRef18(0);
-    const setPlayProgress = useCallback8((pct) => {
+    const playProgressRef = useRef20(0);
+    const setPlayProgress = useCallback9((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
-    const audioRef = useRef18(null);
-    const [mobileProgress, setMobileProgress] = useState20(0);
-    useEffect21(() => {
+    const audioRef = useRef20(null);
+    const [mobileProgress, setMobileProgress] = useState24(0);
+    useEffect24(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState20(0);
-    useEffect21(() => {
+    const [playProgress, setPlayProgressForWorkspaces] = useState24(0);
+    useEffect24(() => {
       let lastUpdate = 0;
       const THROTTLE_MS = 100;
       const onProgress = (e) => {
@@ -27208,8 +26532,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState20({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
-    useEffect21(() => {
+    const [globalAuditInfo, setGlobalAuditInfo] = useState24({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect24(() => {
       fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
         if (data && data.ready) {
           console.log(`[RAM WARM-UP] Cat\xE1logo precalentado: ${data.total_cached} pistas en memoria RAM.`);
@@ -27217,7 +26541,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }).catch(() => {
       });
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       const handleGlobalAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -27250,14 +26574,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return () => window.removeEventListener("bw:audit_progress", handleGlobalAuditEvt);
     }, []);
-    const [tutorialOpen, setTutorialOpen] = useState20(false);
-    const [tutorialInitialMode, setTutorialInitialMode] = useState20("launcher");
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState20(false);
-    const [railExpanded, setRailExpanded] = useState20(true);
+    const [tutorialOpen, setTutorialOpen] = useState24(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState24("launcher");
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState24(false);
+    const [railExpanded, setRailExpanded] = useState24(true);
     const toggleRailExpanded = () => {
       setRailExpanded((prev) => !prev);
     };
-    useEffect21(() => {
+    useEffect24(() => {
       if (!railExpanded) return;
       const handleAutoCollapse = (e) => {
         const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
@@ -27272,8 +26596,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         window.removeEventListener("pointerdown", handleAutoCollapse, true);
       };
     }, [railExpanded]);
-    const [copilotModalOpen, setCopilotModalOpen] = useState20(false);
-    const [customLibraries, setCustomLibraries] = useState20(() => {
+    const [copilotModalOpen, setCopilotModalOpen] = useState24(false);
+    const [customLibraries, setCustomLibraries] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_user_custom_libraries");
         if (saved) {
@@ -27301,14 +26625,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState20(() => {
+    const [activeCustomLibId, setActiveCustomLibId] = useState24(() => {
       try {
         return localStorage.getItem("bw_user_active_library_id") || "lib_default";
       } catch (_) {
         return "lib_default";
       }
     });
-    useEffect21(() => {
+    useEffect24(() => {
       const loadSavedLibraryFromBackend = async () => {
         try {
           const r = await fetch("/api/biblioteca/cargar");
@@ -27335,8 +26659,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
       loadSavedLibraryFromBackend();
     }, []);
-    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState20(false);
-    const [activeCrateFilter, setActiveCrateFilter] = useState20(null);
+    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState24(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState24(null);
     const handleAuditarCrateDesdeModal = (folder, lib) => {
       if (!folder) return;
       const keys = new Set((folder.tracks || []).map((t2) => t2.id !== void 0 ? t2.id : t2.file_path || t2.filename || t2.path));
@@ -27394,8 +26718,8 @@ ${res.path}`);
         }
       }
     };
-    const [manualModalOpen, setManualModalOpen] = useState20(false);
-    const [manualSection, setManualSection] = useState20("audit");
+    const [manualModalOpen, setManualModalOpen] = useState24(false);
+    const [manualSection, setManualSection] = useState24("audit");
     const handleOpenManual = (section = null) => {
       const secMap = {
         "audit": "audit",
@@ -27421,8 +26745,8 @@ ${res.path}`);
         setManualModalOpen(true);
       }
     };
-    const [userModalOpen, setUserModalOpen] = useState20(false);
-    const [userProfile, setUserProfile] = useState20(() => {
+    const [userModalOpen, setUserModalOpen] = useState24(false);
+    const [userProfile, setUserProfile] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_user_profile");
         if (saved) return JSON.parse(saved);
@@ -27455,7 +26779,7 @@ ${res.path}`);
         activeTab: "audit"
       }
     ];
-    const [savedSessions, setSavedSessions] = useState20(() => {
+    const [savedSessions, setSavedSessions] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
@@ -27557,8 +26881,8 @@ ${res.path}`);
         status: "\u2713 Sincronizado"
       }
     ];
-    const [bitacoraModalOpen, setBitacoraModalOpen] = useState20(false);
-    const [bitacoraEntries, setBitacoraEntries] = useState20(() => {
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState24(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState24(() => {
       try {
         const saved = localStorage.getItem("bw_audit_bitacora");
         if (saved) return JSON.parse(saved);
@@ -27573,7 +26897,7 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const handleBitacoraSync = (e) => {
         if (e && e.detail && Array.isArray(e.detail)) {
           setBitacoraEntries(e.detail);
@@ -27582,7 +26906,7 @@ ${res.path}`);
       window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
       return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
     }, []);
-    useEffect21(() => {
+    useEffect24(() => {
       if (userProfile && userProfile.autoSave !== false) {
         try {
           const autoSession = {
@@ -27596,7 +26920,7 @@ ${res.path}`);
         }
       }
     }, [currentFolder, activeTab, selectedTrack, userProfile]);
-    const [clubMode, setClubMode] = useState20(() => {
+    const [clubMode, setClubMode] = useState24(() => {
       try {
         return localStorage.getItem("bw_club_mode") === "true";
       } catch (e) {
@@ -27613,8 +26937,8 @@ ${res.path}`);
         return next;
       });
     };
-    const [shortcutsModalOpen, setShortcutsModalOpen] = useState20(false);
-    const [speakerLogoMode, setSpeakerLogoMode] = useState20(() => {
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState24(false);
+    const [speakerLogoMode, setSpeakerLogoMode] = useState24(() => {
       try {
         return localStorage.getItem("cleandjmix_speaker_logo_mode") || "neon";
       } catch (e) {
@@ -27628,15 +26952,15 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect21(() => {
+    useEffect24(() => {
       window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
       window.toggleSpeakerLogoMode = () => {
         handleSetSpeakerLogoMode(speakerLogoMode === "neon" ? "original" : "neon");
       };
     }, [speakerLogoMode]);
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState20(false);
-    const logoTechnoTimerRef = useRef18(null);
-    const initialTechnoPlayedRef = useRef18(false);
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState24(false);
+    const logoTechnoTimerRef = useRef20(null);
+    const initialTechnoPlayedRef = useRef20(false);
     const triggerLogoTechno = () => {
       setIsLogoTechnoActive(true);
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
@@ -27644,13 +26968,13 @@ ${res.path}`);
         setIsLogoTechnoActive(false);
       }, 1e4);
     };
-    useEffect21(() => {
+    useEffect24(() => {
       if (tutorialOpen || copilotModalOpen) {
         if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
         setIsLogoTechnoActive(false);
       }
     }, [tutorialOpen, copilotModalOpen]);
-    useEffect21(() => {
+    useEffect24(() => {
       window.abrirIntroCinematica = () => {
         setCinematicIntroOpen(true);
       };
@@ -27720,14 +27044,14 @@ ${res.path}`);
       setActiveTab("spotify");
     };
     const handleAddTrackToSpotify = handleAddTracksToSpotify;
-    const [logs, setLogs] = useState20([
+    const [logs, setLogs] = useState24([
       { type: "info", text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
       { type: "divider", text: "--------------------------------------------------" },
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
-    const synthAudioCtxRef = useRef18(null);
-    const synthIntervalRef = useRef18(null);
+    const synthAudioCtxRef = useRef20(null);
+    const synthIntervalRef = useRef20(null);
     const stopSynthPreview = () => {
       if (synthIntervalRef.current) {
         clearInterval(synthIntervalRef.current);
@@ -27745,7 +27069,7 @@ ${res.path}`);
       stopSynthPreview();
       setIsPlaying(false);
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
@@ -27947,7 +27271,7 @@ ${res.path}`);
         window.eel.cue_audio_mac(trk.path || trk.f || "")();
       }
     };
-    useEffect21(() => {
+    useEffect24(() => {
       const handleKeyDown = (e) => {
         const active = document.activeElement;
         const tag = active ? active.tagName.toLowerCase() : "";
@@ -28047,7 +27371,7 @@ ${res.path}`);
           const cueNum = parseInt(e.key, 10);
           const targetTrack = nowPlayingTrack || currentTrack;
           if (targetTrack) {
-            const cues = targetTrack.cues && targetTrack.cues.length > 0 ? targetTrack.cues : NV2_COLORS;
+            const cues = targetTrack.cues && targetTrack.cues.length > 0 ? targetTrack.cues : NV2_COLORS2;
             const cue = cues[cueNum - 1] || cues.find((c) => c.id === cueNum);
             if (cue && typeof cue.pct === "number") {
               e.preventDefault();
@@ -28680,7 +28004,7 @@ ${res.path}`);
         isPlaying,
         playProgressRef,
         onSeek: handleFooterSeek,
-        cues: nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0 ? nowPlayingTrack.cues : currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS,
+        cues: nowPlayingTrack && nowPlayingTrack.cues && nowPlayingTrack.cues.length > 0 ? nowPlayingTrack.cues : currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS2,
         t
       }
     )), /* @__PURE__ */ React.createElement(
