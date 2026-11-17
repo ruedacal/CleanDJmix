@@ -1658,7 +1658,7 @@ return folderPath'''
                     key=key_clean,
                     energy=e_num,
                     danceability=dance_num,
-                    genre=str(info.get("genre") or "Tech House"),
+                    genre=str(info.get("genre") or "Desconocido"),
                     filepath=full_path
                 )
 

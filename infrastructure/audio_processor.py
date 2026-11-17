@@ -98,111 +98,76 @@ class AudioProcessorService:
         return ext
 
     @staticmethod
+    def calcular_dsp_energia_y_bailabilidad(ruta: str, bpm: float = 126.0) -> tuple:
+        """Calcula de forma acústica real la Energía (⚡) y Bailabilidad (🕺) mediante
+        RMS, Crest Factor y estabilidad del flujo rítmico.
+        Erradica fórmulas sintéticas de BPM. Devuelve (energy_pct, danceability_pct)."""
+        try:
+            mono, sr = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=14.0)
+            if mono is not None and len(mono) >= sr * 2:
+                import numpy as np
+                peak = float(np.max(np.abs(mono)) + 1e-12)
+                rms = float(np.sqrt(np.mean(mono ** 2)) + 1e-12)
+                rms_db = 20.0 * np.log10(rms)
+                peak_db = 20.0 * np.log10(peak)
+                crest_db = max(3.0, peak_db - rms_db)
+
+                # 1. Energía acústica real (sonoridad RMS + Crest Factor)
+                norm_crest = np.clip(1.0 - (crest_db - 4.5) / 16.0, 0.0, 1.0)
+                norm_rms = np.clip((rms_db + 26.0) / 18.0, 0.0, 1.0)
+                calc_energy = int(np.clip(round((norm_crest * 0.55 + norm_rms * 0.45) * 100), 30, 98))
+
+                # 2. Bailabilidad real (flujo rítmico y congruencia de tempo bailable)
+                hop = 512
+                frame_len = 1024
+                num_frames = (len(mono) - frame_len) // hop
+                if num_frames > 10:
+                    energies = np.array([np.sqrt(np.mean(mono[i*hop:i*hop+frame_len]**2)) for i in range(num_frames)])
+                    diffs = np.maximum(0, energies[1:] - energies[:-1])
+                    rhythm_flux = float(np.std(diffs) / (np.mean(energies) + 1e-6))
+                else:
+                    rhythm_flux = 0.35
+
+                # Rango de tempo bailable humano (reggaeton, funk, hip hop, house, techno, dnb)
+                b = float(bpm) if bpm and float(bpm) > 0 else 126.0
+                if 82.0 <= b <= 145.0:
+                    tempo_factor = 1.0
+                elif 65.0 <= b < 82.0 or 145.0 < b <= 165.0:
+                    tempo_factor = 0.90
+                else:
+                    tempo_factor = 0.78
+
+                norm_flux = np.clip(rhythm_flux * 2.5, 0.25, 1.0)
+                calc_dance = int(np.clip(round((norm_flux * 0.65 + norm_rms * 0.35) * tempo_factor * 100), 35, 96))
+                return calc_energy, calc_dance
+        except Exception:
+            pass
+        return 70, 75
+
+    @staticmethod
     def normalizar_genero_canonico(raw_genre: str = "", bpm: float = 126.0, filepath: str = "", title: str = "", artist: str = "", intensity: float = None) -> str:
-        """Normaliza cualquier tag, detección o texto a un ÚNICO género canónico de cabina DJ.
-        Erradica híbridos indeseados como 'POP/Tech House', 'Electronic Tech House' o etiquetas genéricas 'Pop'/'Electronic'.
-        Reglas Duras:
-        1. Si BPM > 133 e Intensidad > 0.65 -> Forzar estrictamente 'Peak-Time Techno'.
-        2. Si Intensidad < 0.40 y BPM < 132 -> Forzar estrictamente 'Tech House'.
-        3. Reconocimiento de artistas icónicos de club (Charlotte de Witte, Amelie Lens, etc. -> Techno).
-        4. Prioridad semántica a géneros específicos de club.
-        5. Detección por BPM y contexto si el tag es genérico ('Pop', 'Electronic', etc.)."""
-        raw = str(raw_genre or "").strip().lower()
-        search_ctx = f"{raw} {str(filepath or '').lower()} {str(title or '').lower()} {str(artist or '').lower()}"
-
+        """Normaliza cualquier tag, metadato o consulta a un ÚNICO género canónico de la taxonomía universal.
+        Preserva géneros macro no electrónicos (Pop, Rock, Flamenco, etc.) y clasifica la electrónica
+        en sus familias canónicas.
+        REGLA DE ORO: Si no se reconoce con certeza, devuelve estrictamente 'Desconocido'."""
+        from domain.music_taxonomy import MusicTaxonomy
         try:
-            bpm_val = float(bpm) if bpm and float(bpm) > 0 else 126.0
+            from services.discogs_service import DiscogsService
+            g, sub = DiscogsService.resolver_genero_disco(
+                artist=artist,
+                title=title,
+                raw_genre=raw_genre,
+                bpm=bpm
+            )
+            return g
         except Exception:
-            bpm_val = 126.0
-
-        # REGLAS DURAS DETERMINISTAS (HARD-RULES) PARA TAGS GENÉRICOS O AMBIGUOS
-        is_generic_or_empty = not raw or any(g == raw or raw.startswith(f"{g}/") or raw.endswith(f"/{g}") for g in ["pop", "electronic", "dance", "club", "other", "unknown"])
-        if intensity is not None and is_generic_or_empty:
-            try:
-                inten_val = float(intensity)
-                if bpm_val > 133.0 and inten_val > 0.65:
-                    return "Peak-Time Techno"
-                if inten_val < 0.40 and bpm_val < 132.0:
-                    return "Tech House"
-            except Exception:
-                pass
-
-        # 0. Reconocimiento de artistas icónicos de Techno / Club para evitar falsos "Pop" / "Electronic"
-        techno_artists = [
-            "charlotte de witte", "amelie lens", "oscar mulero", "klangkuenstler", "adam beyer",
-            "enrico sangiuliano", "yellowheads", "truncate", "marco bailey", "reinier zonneveld",
-            "umek", "i hate models", "kobosil", "dax j", "paula temple", "richie hawtin",
-            "carl cox", "sam paganini", "alan fitzpatrick", "joseph capriati", "pan-pot",
-            "len faki", "chris liebing", "robert hood", "jeff mills", "lucas freire", "dany bpm",
-            "fiestah", "omx", "dany bpm"
-        ]
-        if any(art in search_ctx for art in techno_artists):
-            bpm_val = float(bpm) if bpm and float(bpm) > 0 else 132.0
-            return "Hard Techno" if bpm_val >= 145.0 else "Techno"
-
-        tech_house_artists = [
-            "fisher", "chris lake", "michael bibi", "cloonee", "pawsa", "james hype",
-            "john summit", "wade", "dom dolla", "solardo", "hot since 82", "dennis cruz",
-            "green velvet", "patrick topping", "jamie jones", "gorgon city", "camelphat"
-        ]
-        if any(art in search_ctx for art in tech_house_artists):
-            return "Tech House"
-
-        # 1. Búsqueda de Géneros Específicos por orden de especificidad (prioridad semántica)
-        if "tech house" in search_ctx or "tech-house" in search_ctx or "techhouse" in search_ctx:
-            return "Tech House"
-        if "hard techno" in search_ctx or "schranz" in search_ctx or "hardtechno" in search_ctx:
-            return "Hard Techno"
-        if "industrial techno" in search_ctx or "dark techno" in search_ctx:
-            return "Industrial Techno"
-        if "melodic techno" in search_ctx or "melodic house" in search_ctx:
-            return "Melodic Techno"
-        if "deep house" in search_ctx or "deep-house" in search_ctx:
-            return "Deep House"
-        if "afro house" in search_ctx or "afro-house" in search_ctx or "amapiano" in search_ctx:
-            return "Afro House"
-        if "progressive house" in search_ctx or "prog house" in search_ctx:
-            return "Progressive House"
-        if "minimal" in search_ctx and ("techno" in search_ctx or "tech" in search_ctx):
-            return "Minimal Techno"
-        if "techno" in search_ctx or "peak time" in search_ctx or "acid techno" in search_ctx or "raw techno" in search_ctx:
-            return "Techno"
-        if "drum & bass" in search_ctx or "drum and bass" in search_ctx or "dnb" in search_ctx or "jungle" in search_ctx:
-            return "Drum & Bass"
-        if "psy-trance" in search_ctx or "psytrance" in search_ctx or "psy trance" in search_ctx:
-            return "Psy-Trance"
-        if "trance" in search_ctx:
-            return "Trance"
-        if "bass house" in search_ctx:
-            return "Bass House"
-        if "electro house" in search_ctx or "electro" in search_ctx:
-            return "Electro House"
-        if "house" in search_ctx:
-            return "House"
-
-        # 2. Si el tag es genérico / ambiguo ("pop", "electronic", "dance", "club", "other", vacíos):
-        # Clasificador Acústico por BPM & Contexto de Club
-        try:
-            bpm_val = float(bpm) if bpm and float(bpm) > 0 else 126.0
-        except Exception:
-            bpm_val = 126.0
-
-        if bpm_val >= 165.0:
-            return "Drum & Bass"
-        elif bpm_val >= 145.0:
-            return "Hard Techno"
-        elif bpm_val >= 135.0:
-            return "Trance" if ("trance" in search_ctx or "psy" in search_ctx) else "Techno"
-        elif bpm_val >= 129.0:
-            return "Techno"
-        elif bpm_val >= 124.0:
-            return "Tech House"
-        elif bpm_val >= 121.0:
-            return "Deep House"
-        elif bpm_val >= 115.0:
-            return "Afro House"
-        else:
-            return "Tech House"
+            g, sub = MusicTaxonomy.normalizar_genero_y_subgenero(
+                raw_genre=raw_genre,
+                artist=artist,
+                title=title,
+                bpm=bpm
+            )
+            return g
 
     @staticmethod
     def _cargar_audio_head_resiliente(ruta: str, max_sec: float = 12.0) -> tuple:
@@ -548,7 +513,7 @@ class AudioProcessorService:
         first_downbeat_ms = 0.0
         danceability_val = 0
         mood_val = ""
-        genre_val = "Tech House"
+        genre_val = "Desconocido"
         subgenre_val = ""
 
         real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
@@ -713,7 +678,7 @@ class AudioProcessorService:
                         raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
                         if raw_key:
                             key = AudioProcessorService.normalizar_key(raw_key)
-                    if not genre_val or genre_val == "Tech House":
+                    if not genre_val or genre_val == "Desconocido":
                         m_genre = str(m.get("genre", [""])[0])
                         if m_genre:
                             genre_val = m_genre
@@ -764,10 +729,12 @@ class AudioProcessorService:
         mins = duration_sec // 60
         secs = duration_sec % 60
         dur_str = f"{mins}:{secs:02d}" if duration_sec > 0 else "5:30"
-        energy = min(98, max(45, int(60 + (bpm - 118.0) * 1.5)))
-
+        
+        # Cálculo DSP acústico real de Energía (RMS + Crest Factor) y Bailabilidad
+        dsp_energy, dsp_dance = AudioProcessorService.calcular_dsp_energia_y_bailabilidad(ruta, bpm=bpm)
+        energy = dsp_energy
         if danceability_val <= 0:
-            danceability_val = min(98, max(50, int(92 - abs(bpm - 126.0) * 0.9)))
+            danceability_val = dsp_dance
 
         dur_ms = int(duration_sec * 1000) if duration_sec > 0 else 300000
         # En modo rápido (auditoría de catálogo) calculamos el fraseo 4/4 matemáticamente en <0.05ms
@@ -813,21 +780,27 @@ class AudioProcessorService:
             subtag_val = f"{mood_val} / Driving"
             tactical_comment = f"[{bpm:.1f} BPM | {key}] Intro limpia 32b • Drop contundente • Outro 64b"
 
-        calc_intensity = round((energy / 100.0) * 0.7 + (danceability_val / 100.0) * 0.3, 2)
-        genre_clean = AudioProcessorService.normalizar_genero_canonico(
-            genre_val or subgenre_val or "",
-            bpm=bpm,
-            filepath=ruta,
-            title=title,
-            artist=artist,
-            intensity=calc_intensity
-        )
-        # Si subgenre_val tiene un subestilo real de club (distinto de Pop, Electronic, Dance, etc.), preservarlo
-        if subgenre_val and subgenre_val.lower() not in ["pop", "electronic", "dance", "club", "other", "unknown", genre_clean.lower()]:
-            subgenre_val = subgenre_val.strip()
-        else:
-            subgenre_val = genre_clean
-        genre_val = genre_clean
+        # Resolución y normalización canónica de Género y Subgénero
+        try:
+            from services.discogs_service import DiscogsService
+            resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
+                artist=artist,
+                title=title,
+                raw_genre=genre_val if genre_val and genre_val != "Desconocido" else None,
+                raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
+                bpm=bpm
+            )
+            genre_val = resolved_g
+            subgenre_val = resolved_sub
+        except Exception:
+            from domain.music_taxonomy import MusicTaxonomy
+            genre_val, subgenre_val = MusicTaxonomy.normalizar_genero_y_subgenero(
+                raw_genre=genre_val if genre_val and genre_val != "Desconocido" else None,
+                raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
+                artist=artist,
+                title=title,
+                bpm=bpm
+            )
 
         return {
             "title": title,
@@ -1712,18 +1685,25 @@ class AudioProcessorService:
         key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
         initial_key_val = str(meta_track.get("initialkey") or existing_tags.get("INITIALKEY") or key_camelot).strip()
         comment = str(meta_track.get("comment") or existing_tags.get("COMMENT") or existing_tags.get("COMM") or "")
-        raw_genre = str(meta_track.get("genre") or existing_tags.get("GENRE") or existing_tags.get("TCON") or meta_track.get("mood") or "Tech House").strip()
+        raw_genre = str(meta_track.get("genre") or existing_tags.get("GENRE") or existing_tags.get("TCON") or meta_track.get("mood") or "Desconocido").strip()
         subgenre_val = str(meta_track.get("subgenre") or existing_tags.get("SUBGENRE") or "").strip()
-        if any(x in raw_genre.lower() for x in ["pop/", "pop /", "electronic ", "electronic/", "dance/"]):
-            genre_val = AudioProcessorService.normalizar_genero_canonico(
-                raw_genre=raw_genre,
-                bpm=bpm_float,
-                filepath=ruta,
-                title=title,
-                artist=artist
-            )
-            genre_full = genre_val
-        elif subgenre_val and subgenre_val.lower() not in raw_genre.lower() and "/" not in raw_genre:
+        if not raw_genre or raw_genre == "Desconocido":
+            try:
+                from services.discogs_service import DiscogsService
+                resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
+                    artist=artist,
+                    title=title,
+                    raw_genre=raw_genre,
+                    raw_subgenre=subgenre_val,
+                    bpm=bpm_float
+                )
+                genre_val = resolved_g
+                subgenre_val = resolved_sub
+            except Exception:
+                genre_val = "Desconocido"
+                subgenre_val = "Desconocido"
+            genre_full = f"{genre_val} / {subgenre_val}" if subgenre_val and subgenre_val != "Desconocido" and subgenre_val != genre_val else genre_val
+        elif subgenre_val and subgenre_val != "Desconocido" and subgenre_val.lower() not in raw_genre.lower() and "/" not in raw_genre:
             genre_val = raw_genre
             genre_full = f"{raw_genre} / {subgenre_val}"
         else:

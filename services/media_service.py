@@ -100,48 +100,68 @@ class MediaService:
 
     def calcular_energia_y_danceability(self, t: dict, idx: int = 0) -> dict:
         """
-        Calcula de forma analítica y acústica la Energía y Bailabilidad (Danceability)
-        en función de BPM, estructura armónica, palabras clave y género musical.
-        Evita valores fijos o hardcodeados al 80%.
+        Calcula de forma analítica y acústica la Energía y Bailabilidad (Danceability).
+        Prioriza métricas DSP reales del archivo si están disponibles o analiza el audio.
         """
-        bpm_val = t.get("bpm") or t.get("b") or 128.0
+        # Si ya cuenta con valores acústicos válidos, respetarlos estrictamente
+        existing_e = t.get("energy") or t.get("e")
+        existing_d = t.get("danceability") or t.get("dance")
+        if existing_e is not None and existing_d is not None:
+            try:
+                e_int = int(existing_e)
+                d_int = int(existing_d)
+                if e_int > 0 and d_int > 0:
+                    return {
+                        "energy": e_int,
+                        "e": e_int,
+                        "danceability": d_int,
+                        "dance": d_int
+                    }
+            except Exception:
+                pass
+
+        # Intento de cálculo DSP acústico directo si hay ruta de archivo
+        filepath = t.get("filepath") or t.get("path") or t.get("f") or ""
+        bpm_val = t.get("bpm") or t.get("b") or 126.0
         try:
             b_num = float(bpm_val)
         except Exception:
-            b_num = 128.0
+            b_num = 126.0
 
+        if filepath and os.path.exists(filepath):
+            try:
+                from infrastructure.audio_processor import AudioProcessorService
+                dsp_e, dsp_d = AudioProcessorService.calcular_dsp_energia_y_bailabilidad(filepath, bpm=b_num)
+                return {
+                    "energy": dsp_e,
+                    "e": dsp_e,
+                    "danceability": dsp_d,
+                    "dance": dsp_d
+                }
+            except Exception:
+                pass
+
+        # Balística acústica de reserva balanceada (sin linealidad desbocada de BPM)
         title = str(t.get("title") or t.get("t") or "").lower()
         artist = str(t.get("artist") or t.get("a") or "").lower()
         genre = str(t.get("genre") or "").lower()
 
-        # 1. Balística de Energía por tempo BPM
-        # Pistas de 120 BPM (~65%), 128 BPM (~75%), 135 BPM (~86%), 142 BPM (~94%)
-        e_base = 60.0 + (b_num - 118.0) * 1.5
+        # Base neutral centrada
+        e_base = 70.0
+        d_base = 78.0
 
-        # 2. Balística de Danceability centrada en el groove club (124 - 128 BPM)
-        d_base = 92.0 - abs(b_num - 126.0) * 0.9
-
-        # 3. Modulación por etiquetas de género y título
         if any(w in title or w in genre for w in ["hard", "peak", "driver", "banger", "festival", "drop", "industrial", "raw"]):
-            e_base += 10.0
-            d_base += 3.0
+            e_base += 12.0
+            d_base += 4.0
         if any(w in title or w in genre for w in ["ambient", "chill", "intro", "outro", "acoustic", "slow", "piano", "ballad"]):
-            e_base -= 22.0
-            d_base -= 20.0
-        if any(w in title or w in genre for w in ["tech house", "deep tech", "minimal", "groove", "funk", "disco", "afro"]):
-            d_base += 7.0
+            e_base -= 25.0
+            d_base -= 30.0
+        if any(w in title or w in genre for w in ["tech house", "groove", "funk", "disco", "afro"]):
+            d_base += 8.0
             e_base += 2.0
-        if any(w in title or w in genre for w in ["extended", "club mix", "original mix", "dub", "remix"]):
-            e_base += 4.0
-            d_base += 5.0
 
-        # 4. Variación orgánica determinista basada en el hash de la pista (nunca valor fijo plano)
-        seed = sum(ord(c) for c in (title + artist)) + (idx * 13)
-        var_e = ((seed * 7) % 17) - 8
-        var_d = ((seed * 11) % 15) - 7
-
-        final_energy = int(min(98, max(38, round(e_base + var_e))))
-        final_dance = int(min(98, max(42, round(d_base + var_d))))
+        final_energy = int(min(98, max(30, round(e_base))))
+        final_dance = int(min(98, max(35, round(d_base))))
 
         return {
             "energy": final_energy,

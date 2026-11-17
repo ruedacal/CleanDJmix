@@ -805,7 +805,7 @@ class CopilotService:
             "end_time": r[9] if r[9] is not None else -1,
             "length_ms": length_ms,
             "duration": dur_str,
-            "genre": r[11] or "Tech House",
+            "genre": r[11] or "Desconocido",
             "year": str(r[12] or ""),
             "phase": r[13] or ""
         }
@@ -1500,7 +1500,7 @@ class CopilotService:
                         "role": t.get("acoustic_role") or "Club Master",
                         "lufs": float(t.get("lufs") or -7.0),
                         "low_ratio": float(t.get("low_ratio") or 38.0),
-                        "genre": t.get("genre") or "Tech House",
+                        "genre": t.get("genre") or "Desconocido",
                         "subgenre": t.get("subgenre") or "Club Master",
                         "energy": int(t.get("energy") or t.get("e") or 88),
                         "danceability": int(t.get("danceability") or t.get("dance") or 85),
