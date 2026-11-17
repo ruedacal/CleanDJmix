@@ -448,7 +448,7 @@ class CopilotEngine:
 
             active_session_id = s_row[0]
 
-            # Obtener pistas activas en los decks en esta sesión (end_time = -1)
+            # Obtener pistas activas en los decks en esta sesión (primero end_time = -1, si no hay, últimas cargadas)
             cur.execute("""
                 SELECT id, deck, name, artist, bpm, key, length_ms, portable_id, start_time, end_time, dj_play_count
                 FROM history_entry
@@ -456,6 +456,15 @@ class CopilotEngine:
                 ORDER BY id DESC;
             """, (active_session_id,))
             rows = cur.fetchall()
+
+            if not rows:
+                cur.execute("""
+                    SELECT id, deck, name, artist, bpm, key, length_ms, portable_id, start_time, end_time, dj_play_count
+                    FROM history_entry
+                    WHERE session_id = ?
+                    ORDER BY id DESC;
+                """, (active_session_id,))
+                rows = cur.fetchall()
 
             active_decks = {}
             for r in rows:
@@ -490,6 +499,7 @@ class CopilotEngine:
                         if d1.elapsed_sec == 0.0 or not d1.is_playing:
                             d1.elapsed_sec = 95.0  # 01:35 transcurrido a mitad de la canción en pausa
                         d1.remaining_sec = max(0.0, d1.duration_sec - d1.elapsed_sec)
+                        d1.is_playing = (t1.get("end_time") == -1)
                         d1.is_master = True
                         full_p1 = "/" + t1["portable_id"].lstrip("/")
                         if os.path.exists(full_p1):

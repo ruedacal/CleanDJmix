@@ -1065,9 +1065,9 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     };
 
     const [controllerState, setControllerState] = useState({
-        detected: true,
-        name: 'NUMARK NV II',
-        status: 'CONECTADA'
+        detected: false,
+        name: '',
+        status: 'SIN CONEXIÓN'
     });
     const [testDisconnectSkin, setTestDisconnectSkin] = useState(false);
 
@@ -1078,7 +1078,8 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                 .then(access => {
                     const checkDevices = () => {
                         const inputs = Array.from(access.inputs.values());
-                        const djDev = inputs.find(d => /nv|numark|mkii|ddj|flx|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ''));
+                        const connectedInputs = inputs.filter(d => !d.state || d.state === 'connected');
+                        const djDev = connectedInputs.find(d => /nv|numark|mkii|ddj|flx|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ''));
                         if (djDev) {
                             let cleanName = djDev.name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim();
                             if (/nv|mkii/i.test(cleanName)) {
@@ -1089,11 +1090,17 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 name: cleanName,
                                 status: 'CONECTADA'
                             });
-                        } else if (inputs.length > 0) {
+                        } else if (connectedInputs.length > 0) {
                             setControllerState({
                                 detected: true,
-                                name: inputs[0].name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim(),
+                                name: connectedInputs[0].name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim(),
                                 status: 'MIDI ACTIVO'
+                            });
+                        } else {
+                            setControllerState({
+                                detected: false,
+                                name: '',
+                                status: 'SIN CONEXIÓN'
                             });
                         }
 
@@ -1469,16 +1476,16 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         <div className="flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
             {/* Cabecera de la Pantalla Táctica: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
             <div className="relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 min-h-[114px] px-1 select-none">
-                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES (Z-0) */}
+                {/* IMAGEN DE LA CONTROLADORA DE 930*114px O PROPORCIÓN SIMILAR EN %, SOLO EN DESKTOP WEB Y TABLET >= 10" CON ALPHA AL 40% (Z-0) */}
                 {controllerState.detected && (
-                    <div className="absolute right-0 top-0 bottom-0 w-[930px] max-w-full overflow-hidden pointer-events-none select-none z-0">
+                    <div className="hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0">
                         <img 
                             src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
-                            alt={controllerState.name}
+                            alt={controllerState.name || 'Controladora DJ'}
                             onError={(e) => {
                                 e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
                             }}
-                            className="w-[930px] h-[114px] object-cover object-right ml-auto"
+                            className="w-[930px] max-w-full h-[114px] object-cover object-right ml-auto"
                             style={{ opacity: 0.4 }}
                         />
                     </div>
@@ -1541,8 +1548,8 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 className="flex items-center gap-2 select-none cursor-pointer py-1 px-2.5 rounded-lg hover:bg-white/5 transition-colors"
                                 onClick={() => setControllerState({
                                     detected: false,
-                                    name: 'controladora desconectada',
-                                    status: 'DESCONECTADA'
+                                    name: '',
+                                    status: 'SIN CONEXIÓN'
                                 })}
                                 title="Haz clic para alternar prueba de desconexión"
                             >
@@ -1585,7 +1592,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 title="Haz clic para conectar controladora (Numark NV II)"
                             >
                                 <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
-                                <span>controladora desconectada</span>
+                                <span>SIN CONEXIÓN</span>
                             </div>
                         )}
 
@@ -1700,7 +1707,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     )}
 
                     <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
-                        {isAppOpen && (anti_muddy.controller_knobs || anti_muddy.flx4) && (
+                        {isAppOpen && controllerState.detected && (anti_muddy.controller_knobs || anti_muddy.flx4) && (
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
                                 <span>🎛️ {(state.controller?.name || controllerState.name || 'NUMARK NV II').replace(' (USB)', '')}:</span>
                                 <span className="text-white font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob}</span>
