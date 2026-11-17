@@ -1840,6 +1840,13 @@ return folderPath'''
 
         title = ""
         artist = ""
+        album_str = ""
+        comment_str = ""
+        composer_str = ""
+        label_str = ""
+        remixer_str = ""
+        mood_str = ""
+        grouping_str = ""
         bpm_str = "--"
         key_str = "--"
         dur_str = "00:00"
@@ -1849,6 +1856,7 @@ return folderPath'''
         first_downbeat_ms = 0.0
         has_cover = False
         energy_pct = None
+        dance_pct = None
 
         tech_sr = 44100
         tech_depth = 16
@@ -1905,6 +1913,33 @@ return folderPath'''
                             energy_pct = float(str(raw_energy).replace('%', '').strip())
                         except Exception:
                             pass
+                    raw_dance = f.get("DANCEABILITY", f.get("TXXX:DANCEABILITY", [""]))[0]
+                    if raw_dance:
+                        try:
+                            dance_pct = float(str(raw_dance).replace('%', '').strip())
+                        except Exception:
+                            pass
+                    raw_album = f.get("ALBUM", [""])[0]
+                    if raw_album:
+                        album_str = str(raw_album)
+                    raw_cmt = f.get("COMMENT", f.get("DESCRIPTION", [""]))[0]
+                    if raw_cmt:
+                        comment_str = str(raw_cmt)
+                    raw_comp = f.get("COMPOSER", [""])[0]
+                    if raw_comp:
+                        composer_str = str(raw_comp)
+                    raw_lbl = f.get("LABEL", [""])[0]
+                    if raw_lbl:
+                        label_str = str(raw_lbl)
+                    raw_rem = f.get("REMIXER", [""])[0]
+                    if raw_rem:
+                        remixer_str = str(raw_rem)
+                    raw_md = f.get("MOOD", [""])[0]
+                    if raw_md:
+                        mood_str = str(raw_md)
+                    raw_grp = f.get("GROUPING", [""])[0]
+                    if raw_grp:
+                        grouping_str = str(raw_grp)
                     if getattr(f, "pictures", None):
                         has_cover = True
                 except Exception:
@@ -1978,6 +2013,33 @@ return folderPath'''
                                 energy_pct = float(str(raw_energy).replace('%', '').strip())
                             except Exception:
                                 pass
+                        raw_dance = _get_tag_val(["TXXX:DANCEABILITY", "danceability"])
+                        if raw_dance:
+                            try:
+                                dance_pct = float(str(raw_dance).replace('%', '').strip())
+                            except Exception:
+                                pass
+                        raw_album = _get_tag_val(["TALB", "album", "\xa9alb"])
+                        if raw_album:
+                            album_str = str(raw_album)
+                        raw_cmt = _get_tag_val(["COMM", "comment", "desc"])
+                        if raw_cmt:
+                            comment_str = str(raw_cmt)
+                        raw_comp = _get_tag_val(["TCOM", "composer", "\xa9wrt"])
+                        if raw_comp:
+                            composer_str = str(raw_comp)
+                        raw_lbl = _get_tag_val(["TPUB", "label", "TXXX:LABEL"])
+                        if raw_lbl:
+                            label_str = str(raw_lbl)
+                        raw_rem = _get_tag_val(["TPE4", "remixer", "TXXX:REMIXER"])
+                        if raw_rem:
+                            remixer_str = str(raw_rem)
+                        raw_md = _get_tag_val(["TIT1", "mood", "TXXX:MOOD"])
+                        if raw_md:
+                            mood_str = str(raw_md)
+                        raw_grp = _get_tag_val(["TIT1", "grouping", "\xa9grp"])
+                        if raw_grp:
+                            grouping_str = str(raw_grp)
                         if any(str(k).startswith("APIC") or str(k).lower().startswith("covr") for k in tags.keys()):
                             has_cover = True
                     if m.info and hasattr(m.info, "length"):
@@ -2054,19 +2116,37 @@ return folderPath'''
 
         track_cover = f"/cover?path={urllib.parse.quote(full_path)}" if has_cover else ""
 
-        if bpm_str != "--":
+        if energy_pct is not None:
+            e_initial = int(energy_pct)
+        elif bpm_str != "--":
             try:
                 b_num = float(bpm_str)
                 e_initial = min(98, max(45, int(60 + (b_num - 118.0) * 1.5)))
-                dance_initial = min(98, max(50, int(92 - abs(b_num - 126.0) * 0.9)))
             except Exception:
                 b_num = 126.0
                 e_initial = 80
-                dance_initial = 80
         else:
             b_num = 126.0
             e_initial = 75
+
+        if dance_pct is not None:
+            dance_initial = int(dance_pct)
+        elif bpm_str != "--":
+            try:
+                b_num = float(bpm_str)
+                dance_initial = min(98, max(50, int(92 - abs(b_num - 126.0) * 0.9)))
+            except Exception:
+                dance_initial = 80
+        else:
             dance_initial = 75
+
+        if bpm_str != "--":
+            try:
+                b_num = float(bpm_str)
+            except Exception:
+                b_num = 126.0
+        else:
+            b_num = 126.0
 
         fase_init = MoodIntelligenceService.clasificar_fase_sesion_dj(
             bpm=b_num,
@@ -2080,7 +2160,7 @@ return folderPath'''
         has_title = bool(title and str(title).strip().lower() not in ("untitled", "desconocido", "unknown", "track", "pista"))
         has_artist = bool(artist and str(artist).strip().lower() not in ("desconocido", "unknown", "various artists", "various", "artist"))
 
-        initial_comment = f"[{bpm_str} BPM | {key_str} | {fase_init['fase_badge']}] Intro 32b • Drop contundente • Outro 64b"
+        initial_comment = comment_str if comment_str else f"[{bpm_str} BPM | {key_str} | {fase_init['fase_badge']}] Intro 32b • Drop contundente • Outro 64b"
 
         return {
             "id": 0,
@@ -2095,14 +2175,20 @@ return folderPath'''
             "bpm": bpm_str,
             "k": key_str,
             "key": key_str,
+            "initialkey": str(key_str),
             "e": e_initial,
             "dance": dance_initial,
             "danceability": dance_initial,
-            "mood": fase_init.get("vibe", "Build-Up"),
+            "album": str(album_str),
+            "composer": str(composer_str),
+            "label": str(label_str),
+            "remixer": str(remixer_str),
+            "grouping": str(grouping_str),
+            "mood": mood_str if mood_str else fase_init.get("vibe", "Build-Up"),
             "fase_dj": fase_init.get("fase", "Medio"),
             "fase_badge": fase_init.get("fase_badge", "BUILD-UP"),
             "fase_color": fase_init.get("fase_color", "amber"),
-            "vibe": fase_init.get("vibe", "Agitado"),
+            "vibe": mood_str if mood_str else fase_init.get("vibe", "Agitado"),
             "recomendacion_dj": fase_init.get("recomendacion", ""),
             "missing_title": not has_title,
             "missing_artist": not has_artist,
@@ -2386,7 +2472,10 @@ return folderPath'''
 
             ok = False
             if target_path and os.path.exists(target_path):
-                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t)
+                t_in = dict(t)
+                if "recalcular_grid" not in t_in:
+                    t_in["recalcular_grid"] = True
+                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t_in)
 
             with lock:
                 completados[0] += 1
