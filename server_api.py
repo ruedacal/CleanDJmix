@@ -340,6 +340,16 @@ try:
 except Exception as _e:
     gpu_rescue_processor = None
 
+def get_rescue_processor():
+    global gpu_rescue_processor
+    if gpu_rescue_processor is None:
+        try:
+            from gpu_rescue_service.audio_processor import AudioProcessor as GpuAudioProcessor
+            gpu_rescue_processor = GpuAudioProcessor()
+        except Exception as e:
+            print(f"[server_api] Error inicializando AudioProcessor: {e}")
+    return gpu_rescue_processor
+
 @app.post("/v1/rescue")
 async def rescue_phase2_endpoint(request: Request):
     """
@@ -394,9 +404,10 @@ async def rescue_phase2_endpoint(request: Request):
         except Exception:
             pass
 
-    if gpu_rescue_processor is not None:
+    processor = get_rescue_processor()
+    if processor is not None:
         try:
-            return gpu_rescue_processor.process_rescue_payload(
+            return processor.process_rescue_payload(
                 flac_bytes=flac_bytes,
                 reason=reason,
                 rho=rho,
@@ -427,6 +438,87 @@ async def rescue_phase2_endpoint(request: Request):
         "reason_processed": reason,
         "flac_bytes_received": len(flac_bytes)
     }
+
+@app.get("/v1/catalog")
+async def get_rescue_catalog_endpoint():
+    """Retorna información del catálogo FAISS indexado en memoria GPU / CPU."""
+    processor = get_rescue_processor()
+    if processor is None or not hasattr(processor, "vector_search"):
+        return {"status": "error", "message": "Procesador de rescate GPU no inicializado"}
+    vs = processor.vector_search
+    return {
+        "status": "success",
+        "total_tracks": len(vs.tracks_metadata),
+        "embedding_dim": vs.dim,
+        "metric": vs.metric,
+        "gpu_accelerated": vs.use_gpu,
+        "tracks": [
+            {
+                "track_id": t["track_id"],
+                "title": t["title"],
+                "artist": t["artist"],
+                "bpm": t.get("bpm"),
+                "genres": t.get("genres")
+            }
+            for t in vs.tracks_metadata
+        ]
+    }
+
+@app.post("/v1/search-vector")
+async def search_vector_endpoint(request: Request):
+    """Búsqueda directa de vector embedding 128-D contra el índice FAISS."""
+    processor = get_rescue_processor()
+    if processor is None or not hasattr(processor, "vector_search"):
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Procesador de rescate GPU no inicializado"})
+    body = await request.json()
+    embedding = body.get("embedding")
+    k = body.get("k", 5)
+    min_confidence = body.get("min_confidence", 60.0)
+
+    if not embedding or len(embedding) != 128:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "El campo 'embedding' debe ser un array de 128 flotantes."})
+
+    vs = processor.vector_search
+    matches = vs.search_top_k(embedding, k=k)
+    top1 = matches[0] if matches and matches[0]["score"] >= min_confidence else None
+
+    return {
+        "status": "success",
+        "top1": top1,
+        "matches": matches,
+        "total_candidates": len(matches)
+    }
+
+@app.post("/api/identificar_audio")
+async def identificar_audio_api(request: Request):
+    """Reconocimiento acústico HTTP directo para fallback del Radar."""
+    try:
+        data = await request.json()
+        b64_data = data.get("audio_b64", "")
+        motor = data.get("motor", "hybrid")
+        audd_token = data.get("audd_token", "")
+        filename = data.get("filename", "")
+        
+        from services.shazam_service import ShazamRecognitionService
+        svc = ShazamRecognitionService()
+        res = svc.reconocer_base64(b64_data, motor=motor, audd_token=audd_token, filename=filename)
+        return res
+    except Exception as e:
+        return {"status": "error", "msg": f"Error en reconocimiento acústico: {str(e)}"}
+
+@app.post("/api/shazam/record_mic")
+async def grabar_microfono_api(request: Request):
+    """Captura de micrófono de sistema directo."""
+    try:
+        data = await request.json()
+        duration = data.get("duration", 7)
+        motor = data.get("motor", "hybrid")
+        audd_token = data.get("audd_token", "")
+        from services.shazam_service import ShazamRecognitionService
+        svc = ShazamRecognitionService()
+        return svc.grabar_microfono_sistema(duration_sec=duration, motor=motor, audd_token=audd_token)
+    except Exception as e:
+        return {"status": "error", "msg": f"Error en captura de audio: {str(e)}"}
 
 @app.post("/api/library/scan")
 async def scan_directory(payload: ScanRequest):
