@@ -344,3 +344,198 @@ export const CamelotKeyBadge = ({ value, className = '' }) => {
         </span>
     );
 };
+
+// ─── UI COMÚN DE WORKSPACES (SectionTitle, InfoTip, RotaryKnob, AudioEQ) ───
+export const SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
+
+export const SectionTitle = ({ icon: Icon, title, accent, badge, accentColor = "cyan", className = "" }) => {
+    const isPurple = accentColor === "purple";
+    const iconBg = isPurple ? "bg-purple-500/15 border-purple-500/40 text-purple-300" : "bg-djcyan-500/10 border-djcyan-500/30 text-djcyan-400";
+    const accentText = isPurple ? "text-purple-400" : "text-djcyan-400";
+    const badgeStyle = isPurple ? "bg-purple-950/80 text-purple-300 border-purple-800" : "bg-djcyan-950 text-djcyan-400 border-djcyan-800";
+    return (
+        <div className={`flex items-center gap-2.5 min-w-0 shrink-0 ${className}`}>
+            {Icon && (
+                <span className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon size={16} />
+                </span>
+            )}
+            <h2 className={`${SECTION_TITLE_CLASS} truncate`}>
+                {title}{accent && <span className={accentText}> {accent}</span>}
+            </h2>
+            {badge && (
+                <span className={`hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}`}>
+                    {badge}
+                </span>
+            )}
+        </div>
+    );
+};
+
+// Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
+export const InfoTip = ({ text, title }) => {
+    const [coords, setCoords] = useState(null);
+    const btnRef = useRef(null);
+
+    const handleEnter = () => {
+        if (!btnRef.current) return;
+        const rect = btnRef.current.getBoundingClientRect();
+        setCoords({
+            top: rect.top + rect.height / 2,
+            right: window.innerWidth - rect.left + 12
+        });
+    };
+
+    const handleLeave = () => setCoords(null);
+
+    return (
+        <span className="inline-flex items-center ml-1.5 align-middle">
+            <button 
+                ref={btnRef}
+                type="button"
+                onMouseEnter={handleEnter}
+                onMouseLeave={handleLeave}
+                onClick={(e) => { e.stopPropagation(); coords ? handleLeave() : handleEnter(); }}
+                className="w-3.5 h-3.5 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black border border-djzinc-600 flex items-center justify-center text-[9px] font-mono font-bold text-gray-400 transition-colors cursor-help select-none shrink-0"
+            >
+                i
+            </button>
+
+            {coords && ReactDOM.createPortal(
+                <div 
+                    style={{ 
+                        position: 'fixed', 
+                        top: `${coords.top}px`, 
+                        right: `${coords.right}px`, 
+                        transform: 'translateY(-50%)',
+                        zIndex: 999999
+                    }}
+                    className="w-72 bg-djzinc-900 border border-djzinc-700 rounded-lg p-3 text-xs text-gray-200 shadow-[0_12px_36px_rgba(0,0,0,0.95),0_0_15px_rgba(6,182,212,0.2)] pointer-events-none select-none"
+                >
+                    <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-djzinc-900 border-t border-r border-djzinc-700 rotate-45"></div>
+
+                    {title && (
+                        <div className="text-[11px] font-bold text-djcyan-400 mb-1 uppercase tracking-wider flex items-center gap-1.5 border-b border-djzinc-800 pb-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
+                            {title}
+                        </div>
+                    )}
+                    <div className="text-[11px] leading-relaxed text-gray-300 font-sans break-words whitespace-normal">
+                        {text}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </span>
+    );
+};
+
+// Gestor de Ecualizador Web Audio API de 3 Bandas (BASS 250Hz, MID 1000Hz, HI 3500Hz)
+export function getAudioEQNodes(audioElement) {
+    if (!audioElement) return null;
+    if (window.__bwAudioNodes && window.__bwAudioNodes.audio === audioElement) {
+        if (window.__bwAudioNodes.ctx.state === 'suspended') {
+            window.__bwAudioNodes.ctx.resume().catch(() => {});
+        }
+        return window.__bwAudioNodes;
+    }
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaElementSource(audioElement);
+        
+        const low = ctx.createBiquadFilter();
+        low.type = 'lowshelf';
+        low.frequency.value = 250;
+        low.gain.value = 0;
+
+        const mid = ctx.createBiquadFilter();
+        mid.type = 'peaking';
+        mid.frequency.value = 1000;
+        mid.Q.value = 1.0;
+        mid.gain.value = 0;
+
+        const high = ctx.createBiquadFilter();
+        high.type = 'highshelf';
+        high.frequency.value = 3500;
+        high.gain.value = 0;
+
+        source.connect(low);
+        low.connect(mid);
+        mid.connect(high);
+        high.connect(ctx.destination);
+
+        const nodes = { audio: audioElement, ctx, source, low, mid, high };
+        window.__bwAudioNodes = nodes;
+        return nodes;
+    } catch (e) {
+        console.warn("Web Audio EQ initialization note:", e);
+        return null;
+    }
+}
+
+// Potenciómetro Rotatorio Hardware DJ de Alta Precisión
+export const RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, onChange, color = "#06b6d4" }) => {
+    const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+    const angle = -135 + normalized * 270;
+
+    const handlePointerDown = (e) => {
+        e.preventDefault();
+        const startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        const startVal = value;
+
+        const onPointerMove = (me) => {
+            const currentY = me.clientY || (me.touches && me.touches[0].clientY) || 0;
+            const deltaY = startY - currentY;
+            const range = max - min;
+            const step = deltaY * (range / 120);
+            const newVal = Math.min(max, Math.max(min, Math.round((startVal + step) * 10) / 10));
+            if (onChange) onChange(newVal);
+        };
+
+        const onPointerUp = () => {
+            window.removeEventListener('mousemove', onPointerMove);
+            window.removeEventListener('mouseup', onPointerUp);
+            window.removeEventListener('touchmove', onPointerMove);
+            window.removeEventListener('touchend', onPointerUp);
+        };
+
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('touchmove', onPointerMove);
+        window.addEventListener('touchend', onPointerUp);
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-1 select-none">
+            <span className="text-[9px] font-mono font-bold text-gray-400 tracking-wider uppercase">{label}</span>
+            <div 
+                onMouseDown={handlePointerDown}
+                onTouchStart={handlePointerDown}
+                onDoubleClick={() => onChange && onChange(defaultValue)}
+                className="w-10 h-10 rounded-full bg-gradient-to-b from-[#181826] to-[#0c0c14] border-2 border-djzinc-700 hover:border-gray-400 relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center group active:scale-95 transition-transform"
+                title={`${label}: ${value > 0 ? '+' : ''}${value.toFixed(1)} dB (Doble clic para 0dB)`}
+            >
+                {/* Indicador de posición de rotación */}
+                <div 
+                    className="absolute w-full h-full rounded-full pointer-events-none"
+                    style={{ transform: `rotate(${angle}deg)` }}
+                >
+                    <div 
+                        className="w-1 h-3 rounded-full mx-auto mt-0.5 shadow-sm"
+                        style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+                    ></div>
+                </div>
+                {/* Tapa central estriada */}
+                <div className="w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner">
+                    <div className="w-1 h-1 rounded-full bg-djzinc-500"></div>
+                </div>
+            </div>
+            <span className="text-[9px] font-mono text-gray-300 font-extrabold">
+                {value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">dB</span>
+            </span>
+        </div>
+    );
+};
+
