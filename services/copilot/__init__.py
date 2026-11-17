@@ -8,6 +8,7 @@ from services.copilot.prodjlink import ProDJLinkReceiver
 from services.copilot.os2l import OS2LReceiver
 from services.copilot.library_reader import LibraryReader
 from services.copilot.dsp_cleanroom import DSPCleanRoomEngine
+from services.copilot.controller_image_service import ControllerImageService
 from services.copilot.engine import CopilotEngine, copilot_engine
 
 # Alias retrocompatible para el servidor web y tests
@@ -21,6 +22,7 @@ __all__ = [
     "OS2LReceiver",
     "LibraryReader",
     "DSPCleanRoomEngine",
+    "ControllerImageService",
     "CopilotEngine",
     "copilot_engine",
     "copilot_service"

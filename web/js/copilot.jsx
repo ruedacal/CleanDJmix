@@ -1417,10 +1417,11 @@ function LiveCopilotApp() {
     };
 
     const [controllerState, setControllerState] = useState({
-        detected: true,
-        name: 'NUMARK NV II (USB)',
-        status: 'CONECTADA'
+        detected: false,
+        name: 'controladora desconectada',
+        status: 'DESCONECTADA'
     });
+    const [testDisconnectSkin, setTestDisconnectSkin] = useState(false);
 
     // Detección automática de Controladora DJ (WebMIDI API)
     useEffect(() => {
@@ -1429,11 +1430,11 @@ function LiveCopilotApp() {
                 .then(access => {
                     const checkDevices = () => {
                         const inputs = Array.from(access.inputs.values());
-                        const djDev = inputs.find(d => /nv|numark|mkii|ddj|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ''));
+                        const djDev = inputs.find(d => /nv|numark|mkii|ddj|flx|pioneer|traktor|kontrol|denon|hercules|reloop|dj/i.test(d.name || ''));
                         if (djDev) {
-                            let cleanName = djDev.name.toUpperCase();
+                            let cleanName = djDev.name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim();
                             if (/nv|mkii/i.test(cleanName)) {
-                                cleanName = 'NUMARK NV II (USB)';
+                                cleanName = 'NUMARK NV II';
                             }
                             setControllerState({
                                 detected: true,
@@ -1443,8 +1444,14 @@ function LiveCopilotApp() {
                         } else if (inputs.length > 0) {
                             setControllerState({
                                 detected: true,
-                                name: inputs[0].name.toUpperCase(),
+                                name: inputs[0].name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim(),
                                 status: 'MIDI ACTIVO'
+                            });
+                        } else {
+                            setControllerState({
+                                detected: false,
+                                name: 'controladora desconectada',
+                                status: 'DESCONECTADA'
                             });
                         }
                     };
@@ -1760,6 +1767,10 @@ function LiveCopilotApp() {
     const isLive = state.source && state.source.endsWith('_LIVE');
     const isStandby = state.source && state.source.endsWith('_STANDBY');
 
+    // Detección de software DJ abierto (Serato, Rekordbox, Traktor, VirtualDJ) o modo prueba
+    const isAppRunning = state.is_app_open !== undefined ? state.is_app_open : (state.dj_app ? state.dj_app.is_open : false);
+    const isAppOpen = !testDisconnectSkin && isAppRunning;
+
     return (
         <div className="flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200">
             {/* BARRA SUPERIOR DE CABINA HUD */}
@@ -1791,13 +1802,46 @@ function LiveCopilotApp() {
                         </span>
                     </div>
 
-                    {/* BADGE DETECCIÓN DE CONTROLADORA DJ */}
-                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[11px] text-emerald-300">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                        <span className="text-zinc-400">🎛️ CONTROLADORA:</span>
-                        <strong className="text-white">{controllerState.name}</strong>
-                        <span className="text-emerald-400 font-bold">({controllerState.status})</span>
-                    </div>
+                    {/* WIDGET INTEGRADO DE CONTROLADORA DJ (SIN BORDE VERDE, CON IMAGEN Y TIPOGRAFÍA TÍTULOS PEQUEÑA) */}
+                    {!controllerState.detected ? (
+                        <div 
+                            className="flex items-center gap-1.5 py-1 px-1 font-syne font-bold text-xs sm:text-sm text-zinc-400 select-none cursor-pointer hover:text-zinc-200 transition-colors"
+                            onClick={() => setControllerState({
+                                detected: true,
+                                name: 'NUMARK NV II',
+                                status: 'CONECTADA'
+                            })}
+                            title="Haz clic para alternar prueba de conexión (Numark NV II)"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
+                            <span className="tracking-wide">controladora desconectada</span>
+                        </div>
+                    ) : (
+                        <div 
+                            className="flex items-center gap-2 py-0.5 px-1 select-none cursor-pointer transition-opacity hover:opacity-100"
+                            onClick={() => setControllerState({
+                                detected: false,
+                                name: 'controladora desconectada',
+                                status: 'DESCONECTADA'
+                            })}
+                            title="Haz clic para alternar prueba de desconexión"
+                        >
+                            <img 
+                                src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/[^a-z0-9]+/g, '_')}.png`}
+                                alt={controllerState.name}
+                                onError={(e) => {
+                                    e.currentTarget.src = '/assets/controllers/numark_nv_ii.png';
+                                }}
+                                className="w-auto h-auto max-w-[190px] max-h-[70px] object-contain opacity-40 shrink-0 transition-all drop-shadow-md"
+                                style={{ opacity: 0.4 }}
+                            />
+                            <div className="flex flex-col justify-center">
+                                <span className="font-syne font-bold text-xs sm:text-sm text-zinc-100 tracking-wider uppercase leading-tight">
+                                    {controllerState.name}
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* HUD BADGE LATENCIA CABINA (<25ms) & SELECTOR MASTER */}
                     <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
@@ -1845,6 +1889,19 @@ function LiveCopilotApp() {
                         {clock || state.last_updated}
                     </div>
 
+                    {/* BOTÓN TEST MODO STANDBY SKIN */}
+                    <button
+                        onClick={() => setTestDisconnectSkin(v => !v)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${
+                            testDisconnectSkin
+                            ? 'bg-red-900/80 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] animate-pulse'
+                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700/60'
+                        }`}
+                        title="Alternar prueba de aplicación desconectada (modo skin con bordes rojos)"
+                    >
+                        {testDisconnectSkin ? 'Standby Skin' : 'Probar Standby'}
+                    </button>
+
                     {/* BOTÓN MODO SIMULACIÓN */}
                     <button
                         onClick={toggleSimulation}
@@ -1880,38 +1937,80 @@ function LiveCopilotApp() {
                 </div>
             </header>
 
+            {/* AVISO DE CONEXIÓN REQUERIDA (SOFTWARE DJ O CONTROLADORA) */}
+            {(!isAppOpen || !controllerState.detected) && (
+                <div className="mb-3 p-3 sm:p-3.5 rounded-2xl bg-red-950/80 border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-between gap-3 animate-pulse">
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-xl shrink-0">⚠️</span>
+                        <div>
+                            <h4 className="font-syne font-bold text-xs sm:text-sm text-red-100 uppercase tracking-wide">
+                                Es necesario conectar la aplicación y la controladora
+                            </h4>
+                            <p className="font-syne text-[11px] text-red-200/90 mt-0.5">
+                                Conecta la aplicación de música (Serato, Rekordbox, Traktor o VirtualDJ) y la controladora DJ para activar el análisis en vivo.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-900/60 border border-red-500/50 font-mono text-[9px] text-red-300 uppercase shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
+                        <span>SKIN STANDBY</span>
+                    </div>
+                </div>
+            )}
+
             {/* GUARDIÁN TÁCTICO ANTI-MUDDY & RADAR ARMÓNICO (SOBRE LOS DECKS Y REDUCIDO) */}
             <section className="mb-2.5">
-                <div className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${
-                    anti_muddy.status === 'danger'
+                <div className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${
+                    !isAppOpen
+                    ? 'bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse'
+                    : anti_muddy.status === 'danger'
                     ? 'bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
                     : anti_muddy.status === 'warning'
                     ? 'bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
                     : 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
                 }`}>
-                    <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-base shrink-0">
-                            {anti_muddy.status === 'danger' ? '🛡️' : anti_muddy.status === 'warning' ? '⚡' : '🟢'}
-                        </span>
-                        <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                <h2 className="font-syne font-black text-xs text-white tracking-wide">
-                                    {anti_muddy.title}
-                                </h2>
-                                <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${
-                                    anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
-                                }`}>
-                                    {anti_muddy.tag}
-                                </span>
+                    {!isAppOpen ? (
+                        <div className="flex items-center gap-2 min-w-0 py-0.5">
+                            <span className="text-base shrink-0">🛡️</span>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h2 className="font-syne font-bold text-xs text-zinc-400 tracking-wide">
+                                        ANTI-MUDDY FILTER • STANDBY
+                                    </h2>
+                                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-500 border border-zinc-800">
+                                        SIN SEÑAL
+                                    </span>
+                                </div>
+                                <p className="text-[10.5px] font-syne text-zinc-500 truncate mt-0.5">
+                                    Supervisión de choque de frecuencias inactiva hasta conectar software y hardware DJ.
+                                </p>
                             </div>
-                            <p className="text-[10.5px] text-zinc-300 truncate mt-0.5">
-                                {anti_muddy.message}
-                            </p>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base shrink-0">
+                                {anti_muddy.status === 'danger' ? '🛡️' : anti_muddy.status === 'warning' ? '⚡' : '🟢'}
+                            </span>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h2 className="font-syne font-black text-xs text-white tracking-wide">
+                                        {anti_muddy.title}
+                                    </h2>
+                                    <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${
+                                        anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
+                                    }`}>
+                                        {anti_muddy.tag}
+                                    </span>
+                                </div>
+                                <p className="text-[10.5px] text-zinc-300 truncate mt-0.5">
+                                    {anti_muddy.message}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
-                        {(anti_muddy.controller_knobs || anti_muddy.flx4) && (
+                        {isAppOpen && (anti_muddy.controller_knobs || anti_muddy.flx4) && (
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
                                 <span>🎛️ {(state.controller?.name || controllerState.name || 'NUMARK NV II').replace(' (USB)', '')}:</span>
                                 <span className="text-white font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob}</span>
@@ -1921,11 +2020,11 @@ function LiveCopilotApp() {
                         )}
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/60 border border-zinc-800">
                             <span className="text-djcyan-400 font-bold">ACCIÓN:</span>
-                            <span className="text-zinc-200 font-semibold truncate max-w-[280px]">{anti_muddy.action}</span>
+                            <span className="text-zinc-200 font-semibold truncate max-w-[280px]">{isAppOpen ? anti_muddy.action : 'Esperando Conexión'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-zinc-400 text-[10px]">
-                            <span>CAMELOT: <strong style={{ color: harmonic.color }}>{harmonic.badge}</strong></span>
-                            <span>Δ LUFS: <strong className="text-white">{state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta} dB</strong></span>
+                            <span>CAMELOT: <strong style={{ color: isAppOpen ? harmonic.color : '#71717a' }}>{isAppOpen ? harmonic.badge : '--'}</strong></span>
+                            <span>Δ LUFS: <strong className="text-white">{isAppOpen ? (state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta) : '--'} dB</strong></span>
                         </div>
                     </div>
                 </div>
@@ -1933,138 +2032,175 @@ function LiveCopilotApp() {
 
             {/* CUERPO PRINCIPAL: DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
-                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} onSetMaster={setMasterDeck} />
-                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} onSetMaster={setMasterDeck} />
+                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} onSetMaster={setMasterDeck} isAppOpen={isAppOpen} />
+                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} onSetMaster={setMasterDeck} isAppOpen={isAppOpen} />
             </div>
 
             {/* SECCIÓN DE PRÓXIMAS PISTAS (4 VISIBLES, CARGAR MÁS, DRAG & DROP Y ANÁLISIS DINÁMICO) */}
-            <section className="mt-auto">
+            <section className={`mt-auto transition-all ${
+                !isAppOpen ? 'p-3 rounded-2xl bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse' : ''
+            }`}>
                 <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <span className="text-base">🎯</span>
                         <h3 className="font-syne font-black text-xs sm:text-sm uppercase tracking-wider text-zinc-300">
-                            Próximas Pistas Sugeridas ({displayRecommendations.length})
+                            Próximas Pistas Sugeridas ({isAppOpen ? displayRecommendations.length : 0})
                         </h3>
-                        <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">• Arrastra para reordenar</span>
+                        <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">
+                            {isAppOpen ? '• Arrastra para reordenar' : '• Modo Standby Skin'}
+                        </span>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* CARGAR MÁS DE 4 EN 4 HASTA MÁXIMO 8 */}
-                        <button
-                            type="button"
-                            onClick={() => setVisibleCount(v => v === 4 ? Math.min(8, displayRecommendations.length) : 4)}
-                            className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-xs font-mono font-bold text-djcyan-400 transition-colors cursor-pointer"
-                            title="Alternar entre 4 y 8 pistas visibles"
-                        >
-                            {visibleCount === 4 ? 'Cargar más (+4)' : 'Mostrar 4 (-4)'}
-                        </button>
+                    {isAppOpen && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {/* CARGAR MÁS DE 4 EN 4 HASTA MÁXIMO 8 */}
+                            <button
+                                type="button"
+                                onClick={() => setVisibleCount(v => v === 4 ? Math.min(8, displayRecommendations.length) : 4)}
+                                className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 text-xs font-mono font-bold text-djcyan-400 transition-colors cursor-pointer"
+                                title="Alternar entre 4 y 8 pistas visibles"
+                            >
+                                {visibleCount === 4 ? 'Cargar más (+4)' : 'Mostrar 4 (-4)'}
+                            </button>
 
-                        {/* BOTÓN CARGA ALEATORIA */}
-                        <button
-                            type="button"
-                            onClick={handleRandomLoad}
-                            className="px-2.5 py-1 rounded-lg bg-purple-950/70 hover:bg-purple-900 border border-purple-500/60 text-xs font-mono font-bold text-purple-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                            title="Cargar selección aleatoria de candidatos de la biblioteca"
-                        >
-                            <span>🎲</span>
-                            <span>Carga Aleatoria</span>
-                        </button>
+                            {/* BOTÓN CARGA ALEATORIA */}
+                            <button
+                                type="button"
+                                onClick={handleRandomLoad}
+                                className="px-2.5 py-1 rounded-lg bg-purple-950/70 hover:bg-purple-900 border border-purple-500/60 text-xs font-mono font-bold text-purple-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                title="Cargar selección aleatoria de candidatos de la biblioteca"
+                            >
+                                <span>🎲</span>
+                                <span>Carga Aleatoria</span>
+                            </button>
 
-                        {/* BOTÓN CARGA MANUAL */}
-                        <button
-                            type="button"
-                            onClick={() => setManualPickerOpen(true)}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/60 text-xs font-mono font-bold text-emerald-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                            title="Buscar y añadir manualmente una pista a la cola"
-                        >
-                            <span>➕</span>
-                            <span>Carga Manual</span>
-                        </button>
-                    </div>
+                            {/* BOTÓN CARGA MANUAL */}
+                            <button
+                                type="button"
+                                onClick={() => setManualPickerOpen(true)}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/60 text-xs font-mono font-bold text-emerald-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                title="Buscar y añadir manualmente una pista a la cola"
+                            >
+                                <span>➕</span>
+                                <span>Carga Manual</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* MODAL / BANNER DE ANÁLISIS DE TRANSICIÓN TRAS DRAG & DROP */}
-                {transitionAnalysis && (
-                    <div className="mb-3 p-2.5 rounded-xl bg-zinc-950 border border-djcyan-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono animate-fadeIn">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-base">⚡</span>
-                            <span className="text-zinc-300">Transición con <strong className="text-white">{transitionAnalysis.trackTitle}</strong>:</span>
-                            <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                                transitionAnalysis.isHarmonic ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'
-                            }`}>
-                                {transitionAnalysis.matchType}
-                            </span>
-                            <span className="text-zinc-400">Δ BPM: <strong className="text-white">{transitionAnalysis.bpmDelta}</strong></span>
-                            <span className="text-zinc-400">Sub-Graves: <strong className={transitionAnalysis.safeBass ? 'text-emerald-400' : 'text-amber-400'}>{transitionAnalysis.lowRatio}%</strong></span>
-                        </div>
-                        <div className="text-[11px] text-zinc-300 truncate">
-                            <strong className="text-djcyan-400">Acción:</strong> {transitionAnalysis.advice}
-                        </div>
-                    </div>
-                )}
-
-                {/* GRID DE 4 PISTAS VISIBLES REORDENABLES MEDIANTE DRAG AND DROP */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {displayRecommendations.slice(0, visibleCount).map((rec, idx) => {
-                        const isDragging = draggedIdx === idx;
-                        return (
-                            <div 
-                                key={rec.id || idx}
-                                draggable={true}
-                                onDragStart={(e) => handleDragStart(e, idx)}
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleDrop(e, idx)}
-                                className={`p-2.5 rounded-2xl bg-zinc-950/70 border transition-all flex flex-col justify-between group cursor-grab active:cursor-grabbing ${
-                                    isDragging 
-                                    ? 'opacity-40 border-djcyan-400 scale-95' 
-                                    : 'border-zinc-800 hover:border-djcyan-500/50 hover:bg-zinc-900/60'
-                                }`}
-                                title="Arrastra para reordenar"
-                            >
-                                <div className="flex items-start gap-2.5 mb-1.5">
-                                    <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-700/60 bg-black">
-                                        <img 
-                                            src={getValidCover(rec.cover)} 
-                                            alt="Cover" 
-                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                                            className="w-full h-full object-cover"
-                                        />
-                                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[8px] font-mono font-bold text-zinc-300 flex items-center justify-center">
-                                            #{idx + 1}
+                {!isAppOpen ? (
+                    /* MODO SKIN VACÍO CON BORDES EN STANDBY */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        {[1, 2, 3, 4].map(slot => (
+                            <div key={slot} className="p-3 rounded-2xl bg-[#080811] border border-zinc-800/80 flex flex-col justify-between opacity-50">
+                                <div className="flex items-start gap-2.5 mb-2">
+                                    <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-800 bg-black flex items-center justify-center">
+                                        <img src={DEFAULT_VINYL_SVG} alt="Standby" className="w-6 h-6 opacity-25" />
+                                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[8px] font-mono font-bold text-zinc-600 flex items-center justify-center">
+                                            #{slot}
                                         </span>
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center justify-between gap-1">
-                                            <div className="font-syne font-bold text-xs text-white group-hover:text-djcyan-400 transition-colors truncate">
-                                                {rec.title}
-                                            </div>
-                                            <div 
-                                                className="w-6 h-6 rounded flex items-center justify-center font-orbitron font-bold text-[10px] text-black shrink-0"
-                                                style={{ backgroundColor: rec.camelot_color }}
-                                            >
-                                                {rec.camelot}
-                                            </div>
-                                        </div>
-                                        <div className="font-syne text-[11px] text-zinc-400 truncate">
-                                            {rec.artist}
-                                        </div>
-                                        <div className="flex items-center gap-1.5 mt-0.5 text-[9px] font-mono">
-                                            <span className="text-djcyan-400 font-bold">{rec.bpm} BPM</span>
-                                            {rec.mood && <span className="text-purple-400 truncate">• {rec.mood}</span>}
-                                            {rec.energy && <span className="text-amber-400 font-bold shrink-0">⚡{rec.energy}%</span>}
+                                        <span className="font-syne font-bold text-xs text-zinc-500 truncate block">-- Esperando Pista --</span>
+                                        <span className="text-[10px] text-zinc-600 truncate font-mono block">Standby</span>
+                                        <div className="flex items-center gap-1.5 mt-0.5 text-[9px] font-mono text-zinc-600">
+                                            <span>-- BPM</span>
+                                            <span>• -- Camelot</span>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center justify-between pt-1.5 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-400">
-                                    <span className="text-djcyan-400 font-bold uppercase truncate max-w-[130px]">{rec.strategy}</span>
-                                    <span>Sub: {rec.low_ratio}%</span>
+                                <div className="text-[9.5px] font-mono text-zinc-600 pt-1.5 border-t border-zinc-800/60">
+                                    Conecta software DJ y controladora
                                 </div>
-                                <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{rec.reason}</p>
                             </div>
-                        );
-                    })}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <>
+                        {/* MODAL / BANNER DE ANÁLISIS DE TRANSICIÓN TRAS DRAG & DROP */}
+                        {transitionAnalysis && (
+                            <div className="mb-3 p-2.5 rounded-xl bg-zinc-950 border border-djcyan-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono animate-fadeIn">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-base">⚡</span>
+                                    <span className="text-zinc-300">Transición con <strong className="text-white">{transitionAnalysis.trackTitle}</strong>:</span>
+                                    <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                        transitionAnalysis.isHarmonic ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                                    }`}>
+                                        {transitionAnalysis.matchType}
+                                    </span>
+                                    <span className="text-zinc-400">Δ BPM: <strong className="text-white">{transitionAnalysis.bpmDelta}</strong></span>
+                                    <span className="text-zinc-400">Sub-Graves: <strong className={transitionAnalysis.safeBass ? 'text-emerald-400' : 'text-amber-400'}>{transitionAnalysis.lowRatio}%</strong></span>
+                                </div>
+                                <div className="text-[11px] text-zinc-300 truncate">
+                                    <strong className="text-djcyan-400">Acción:</strong> {transitionAnalysis.advice}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* GRID DE 4 PISTAS VISIBLES REORDENABLES MEDIANTE DRAG AND DROP */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                            {displayRecommendations.slice(0, visibleCount).map((rec, idx) => {
+                                const isDragging = draggedIdx === idx;
+                                return (
+                                    <div 
+                                        key={rec.id || idx}
+                                        draggable={true}
+                                        onDragStart={(e) => handleDragStart(e, idx)}
+                                        onDragOver={handleDragOver}
+                                        onDrop={(e) => handleDrop(e, idx)}
+                                        className={`p-2.5 rounded-2xl bg-zinc-950/70 border transition-all flex flex-col justify-between group cursor-grab active:cursor-grabbing ${
+                                            isDragging 
+                                            ? 'opacity-40 border-djcyan-400 scale-95' 
+                                            : 'border-zinc-800 hover:border-djcyan-500/50 hover:bg-zinc-900/60'
+                                        }`}
+                                        title="Arrastra para reordenar"
+                                    >
+                                        <div className="flex items-start gap-2.5 mb-1.5">
+                                            <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-700/60 bg-black">
+                                                <img 
+                                                    src={getValidCover(rec.cover)} 
+                                                    alt="Cover" 
+                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[8px] font-mono font-bold text-zinc-300 flex items-center justify-center">
+                                                    #{idx + 1}
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <div className="font-syne font-bold text-xs text-white group-hover:text-djcyan-400 transition-colors truncate">
+                                                        {rec.title}
+                                                    </div>
+                                                    <div 
+                                                        className="w-6 h-6 rounded flex items-center justify-center font-orbitron font-bold text-[10px] text-black shrink-0"
+                                                        style={{ backgroundColor: rec.camelot_color }}
+                                                    >
+                                                        {rec.camelot}
+                                                    </div>
+                                                </div>
+                                                <div className="font-syne text-[11px] text-zinc-400 truncate">
+                                                    {rec.artist}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 mt-0.5 text-[9px] font-mono">
+                                                    <span className="text-djcyan-400 font-bold">{rec.bpm} BPM</span>
+                                                    {rec.mood && <span className="text-purple-400 truncate">• {rec.mood}</span>}
+                                                    {rec.energy && <span className="text-amber-400 font-bold shrink-0">⚡{rec.energy}%</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-1.5 border-t border-zinc-800/60 font-mono text-[10px] text-zinc-400">
+                                            <span className="text-djcyan-400 font-bold uppercase truncate max-w-[130px]">{rec.strategy}</span>
+                                            <span>Sub: {rec.low_ratio}%</span>
+                                        </div>
+                                        <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{rec.reason}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
             </section>
 
             {/* MODAL QR PARA CONEXIÓN IPAD */}
@@ -2110,8 +2246,77 @@ function LiveCopilotApp() {
 }
 
 // Subcomponente de Tarjeta de Deck A/B Enriquecido
-function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null }) {
+function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, isAppOpen = true }) {
     if (!deck) return null;
+
+    if (!isAppOpen) {
+        return (
+            <div className="p-4 sm:p-5 lg:p-6 rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all">
+                {/* Cabecera del Deck en Standby */}
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60">
+                    <div className="flex items-center gap-2">
+                        <span className="font-orbitron font-black text-base sm:text-lg text-zinc-500">DECK {side}</span>
+                        <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300">
+                            STANDBY • SIN CONEXIÓN
+                        </span>
+                        <span className="px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed">
+                            ⏸ PAUSA
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 font-mono text-xs text-zinc-600 uppercase">
+                        <span>STANDBY SKIN</span>
+                    </div>
+                </div>
+
+                {/* Sección Pista Vacía (Skin) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/60 items-stretch opacity-60">
+                    <div className="flex items-stretch gap-3 min-w-0">
+                        <div 
+                            className="relative rounded-xl overflow-hidden shrink-0 border border-zinc-800 bg-zinc-950 flex items-center justify-center"
+                            style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
+                        >
+                            <img src={DEFAULT_VINYL_SVG} alt="Sin pista" className="w-10 h-10 opacity-30" />
+                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono text-zinc-500">--:--</span>
+                        </div>
+                        <div className="min-w-0 flex-1 flex flex-col justify-center">
+                            <h2 className="font-syne font-bold text-xs sm:text-sm text-zinc-400 tracking-tight leading-tight truncate">
+                                -- Esperando Pista --
+                            </h2>
+                            <p className="font-syne font-medium text-xs text-zinc-600 mt-0.5 truncate">
+                                Conecta Serato, Rekordbox, Traktor o VirtualDJ
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono text-zinc-600">
+                                    -- GÉNERO --
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/60 pt-2 md:pt-0 md:pl-3">
+                        <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
+                            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/60 text-zinc-600">
+                                <div className="w-5 h-4 rounded text-[9px] font-orbitron font-black bg-zinc-800 text-zinc-500 flex items-center justify-center">--</div>
+                                <span className="text-[7px] font-mono uppercase font-bold">TONO</span>
+                                <span className="font-syne font-bold text-[10px]">--</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/60 text-zinc-600">
+                                <span className="text-[7px] font-mono uppercase font-bold">TEMPO</span>
+                                <span className="font-orbitron font-black text-[10px]">--.--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Waveform en Standby */}
+                <div className="mb-2.5 p-2 rounded-2xl bg-black/50 border border-zinc-800/60">
+                    <div className="h-10 w-full flex items-center justify-center bg-zinc-950/80 rounded-lg">
+                        <span className="font-mono text-[10px] text-zinc-600">STANDBY • FORMA DE ONDA INACTIVA</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const deckNum = side === 'A' ? '1' : side === 'B' ? '2' : side;
 

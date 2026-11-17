@@ -118,6 +118,57 @@ class CopilotEngine:
         except Exception:
             return "127.0.0.1"
 
+    def _check_running_dj_apps(self) -> Dict[str, Any]:
+        """Detecta procesos DJ activos en el sistema operativo y en la red con caché de 2.5s."""
+        now = time.time()
+        if hasattr(self, "_last_proc_check") and (now - self._last_proc_check) < 2.5:
+            return getattr(self, "_cached_proc_result", {"is_open": False, "app_id": None, "app_name": None})
+
+        self._last_proc_check = now
+        active_app_id = None
+        active_app_name = None
+
+        # 1. Chequeo de red (Pro DJ Link o OS2L)
+        if self.prodjlink_receiver and (now - self.prodjlink_receiver.last_packet_time) < 3.0:
+            active_app_id = "prodjlink"
+            active_app_name = "Pioneer Pro DJ Link"
+        elif self.os2l_receiver and (now - self.os2l_receiver.last_event_time) < 3.0:
+            active_app_id = "os2l"
+            active_app_name = "VirtualDJ / OS2L"
+        else:
+            # 2. Chequeo de procesos locales
+            app_signatures = {
+                "serato": ("Serato DJ Pro", ["Serato DJ Pro", "SeratoDJ", "Serato DJ"]),
+                "rekordbox": ("Pioneer Rekordbox", ["rekordbox", "rekordboxAgent"]),
+                "traktor": ("Native Instruments Traktor", ["Traktor"]),
+                "virtualdj": ("VirtualDJ Pro", ["virtualdj", "VirtualDJ"])
+            }
+            try:
+                import sys, subprocess
+                if sys.platform == "win32":
+                    out = subprocess.check_output(["tasklist", "/NH", "/FO", "CSV"], text=True, errors="ignore")
+                else:
+                    out = subprocess.check_output(["ps", "-A", "-o", "comm="], text=True, errors="ignore")
+
+                lines = out.splitlines()
+                for app_id, (app_name, sigs) in app_signatures.items():
+                    for sig in sigs:
+                        if any(sig.lower() in line.lower() for line in lines):
+                            active_app_id = app_id
+                            active_app_name = app_name
+                            break
+                    if active_app_id:
+                        break
+            except Exception:
+                pass
+
+        self._cached_proc_result = {
+            "is_open": active_app_id is not None,
+            "app_id": active_app_id,
+            "app_name": active_app_name
+        }
+        return self._cached_proc_result
+
     def detect_active_platform(self) -> str:
         """Detecta si hay hardware activo en la red o bibliotecas en el host."""
         now = time.time()
@@ -395,6 +446,8 @@ class CopilotEngine:
 
             # Empaquetado completo compatible con v1 y v2
             formatted_decks = {d_id: self._format_deck_ui(d) for d_id, d in self.state.decks.items()}
+            dj_app = self._check_running_dj_apps()
+            is_simulating = self.simulation_mode or self.platform_mode == "simulation"
 
             return {
                 "connected": True,
@@ -404,6 +457,9 @@ class CopilotEngine:
                 "platform_name": self.state.platform_name,
                 "platform_icon": "🎛️" if self.platform_mode == "prodjlink" else "🎧",
                 "platform_color": "#3b82f6",
+                "dj_app": dj_app,
+                "is_app_open": dj_app.get("is_open", False) or is_simulating,
+                "is_simulating": is_simulating,
                 "master_deck": self.state.master_deck,
                 "global_bpm": round(self.state.global_bpm, 2),
                 "deck_1": formatted_decks.get(1, {}),

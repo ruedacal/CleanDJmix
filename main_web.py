@@ -1464,6 +1464,25 @@ def api_copilot_platforms():
         "platforms": copilot_service.get_available_platforms()
     })
 
+@bottle.route('/api/copilot/controller_image', method=['GET', 'OPTIONS'])
+def api_copilot_controller_image():
+    """Sirve la imagen transparente (PNG máx 190x70) de la controladora DJ detectada."""
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    name = bottle.request.params.get('name') or 'numark_nv_ii'
+    from services.copilot.controller_image_service import ControllerImageService
+    img_path = ControllerImageService.get_image_path(name)
+    if img_path and os.path.exists(img_path):
+        bottle.response.content_type = 'image/png'
+        bottle.response.set_header('Cache-Control', 'public, max-age=86400')
+        with open(img_path, 'rb') as f:
+            return f.read()
+    bottle.response.status = 404
+    return ""
+
 @bottle.route('/api/copilot/set_platform', method=['POST', 'OPTIONS'])
 def api_copilot_set_platform():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
