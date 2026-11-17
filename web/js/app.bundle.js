@@ -739,16 +739,69 @@
     })))));
   };
   var FORMATS = ["FLAC", "WAV", "AIFF", "MP3", "M4A", "OGG"];
-  var IngestDropzone = ({ isDragOver, onDragOver, onDragLeave, onDrop, onBrowse }) => /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      onDragOver,
-      onDragLeave,
-      onDrop,
-      className: "flex-1 flex items-center justify-center p-4 sm:p-8 select-none my-auto"
-    },
-    /* @__PURE__ */ React.createElement("div", { className: `ws-dropzone ${isDragOver ? "ws-dropzone-over" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "ws-dropzone-icon", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(ShellIcons.Upload, { size: 26, strokeWidth: 1.5 })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-2 text-center" }, /* @__PURE__ */ React.createElement("h2", { className: "font-sans font-semibold text-lg sm:text-xl text-zinc-50 text-balance" }, isDragOver ? "Suelta para analizar" : "Arrastra tu m\xFAsica aqu\xED"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-zinc-400 leading-relaxed max-w-md text-pretty" }, "Carpetas completas o pistas sueltas. Calculamos BPM, Key Camelot y Hot Cues, y certificamos la calidad real de cada archivo.")), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onBrowse, className: "ws-btn ws-btn-primary ws-btn-lg" }, /* @__PURE__ */ React.createElement(ShellIcons.Folder, { size: 16 }), /* @__PURE__ */ React.createElement("span", null, "Elegir carpeta o pistas")), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[11px] tracking-wider text-zinc-500" }, FORMATS.join("  \xB7  ")))
-  );
+  var IngestDropzone = ({
+    isDragOver = false,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onBrowse,
+    onImportCollection = null,
+    customLibraries = [],
+    activeCustomLibId = null
+  }) => {
+    const [selectedLib, setSelectedLib] = useState2(() => {
+      if (activeCustomLibId) return activeCustomLibId;
+      if (customLibraries && customLibraries.length > 0) return customLibraries[0].id;
+      return "";
+    });
+    useEffect3(() => {
+      if (activeCustomLibId) {
+        setSelectedLib(activeCustomLibId);
+      } else if (customLibraries && customLibraries.length > 0 && !selectedLib) {
+        setSelectedLib(customLibraries[0].id);
+      }
+    }, [activeCustomLibId, customLibraries]);
+    const handleImportClick = () => {
+      if (onImportCollection) {
+        onImportCollection(selectedLib || (customLibraries && customLibraries[0] ? customLibraries[0].id : null));
+      }
+    };
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onDragOver,
+        onDragLeave,
+        onDrop,
+        className: "flex-1 flex items-center justify-center p-4 sm:p-8 select-none my-auto"
+      },
+      /* @__PURE__ */ React.createElement("div", { className: `ws-dropzone ${isDragOver ? "ws-dropzone-over" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "ws-dropzone-icon", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement(ShellIcons.Upload, { size: 26, strokeWidth: 1.5 })), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-2 text-center" }, /* @__PURE__ */ React.createElement("h2", { className: "font-sans font-semibold text-lg sm:text-xl text-zinc-50 text-balance" }, isDragOver ? "Suelta para analizar" : "Arrastra tu m\xFAsica aqu\xED"), /* @__PURE__ */ React.createElement("p", { className: "text-sm text-zinc-400 leading-relaxed max-w-md text-pretty" }, "Carpetas completas o pistas sueltas. Calculamos BPM, Key Camelot y Hot Cues, y certificamos la calidad real de cada archivo.")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-center gap-3 mt-1" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: onBrowse, className: "ws-btn ws-btn-primary ws-btn-lg" }, /* @__PURE__ */ React.createElement(ShellIcons.Folder, { size: 16 }), /* @__PURE__ */ React.createElement("span", null, "Elegir carpeta o pistas")), onImportCollection && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 p-1 bg-zinc-900/90 border border-zinc-700/80 rounded-xl shadow-lg" }, customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          value: selectedLib,
+          onChange: (e) => setSelectedLib(e.target.value),
+          className: "bg-zinc-800 text-cyan-300 font-mono text-xs font-bold rounded-lg px-2.5 py-2 outline-none border border-zinc-700 cursor-pointer",
+          title: "Seleccionar biblioteca a importar"
+        },
+        customLibraries.map((lib) => {
+          var _a;
+          return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+            var _a2;
+            return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+          }, 0)) || 0, " pistas)");
+        })
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleImportClick,
+          className: "ws-btn ws-btn-secondary ws-btn-lg !bg-cyan-950/80 hover:!bg-cyan-900 !border-cyan-500/60 !text-cyan-200 hover:!text-white shadow-md active:scale-95",
+          title: "Importar colecci\xF3n de m\xFAsica guardada"
+        },
+        /* @__PURE__ */ React.createElement(ShellIcons.Layers, { size: 16, className: "text-cyan-400" }),
+        /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+      ))), /* @__PURE__ */ React.createElement("p", { className: "font-mono text-[11px] tracking-wider text-zinc-500" }, FORMATS.join("  \xB7  ")))
+    );
+  };
   function camelotTone(keyStr) {
     const m = String(keyStr || "").trim().toUpperCase().match(/^(\d{1,2})\s*([AB])$/);
     if (!m) return null;
@@ -993,84 +1046,38 @@
     className = ""
   }) => {
     const isHero = variant === "hero";
-    const badgeSize = isHero ? "hero" : "sm";
-    const titleSize = isHero ? 48 : 24;
-    const proSize = isHero ? 19 : 10.5;
-    const proBorder = isHero ? 2.5 : 1.5;
-    const proRadius = isHero ? 12 : 8;
-    const proPx = isHero ? 12 : 7;
-    const proPy = isHero ? 3 : 1.5;
-    const subSize = isHero ? 18.5 : 11;
-    const dotSize = isHero ? 28 : 17;
-    const subGap = isHero ? 7 : 3.5;
-    const mainGap = isHero ? 22 : 12;
     return /* @__PURE__ */ React.createElement(
       "div",
       {
         onClick,
-        className: `inline-flex items-center select-none ${onClick ? "cursor-pointer" : ""} group ${className}`,
-        style: { columnGap: `${mainGap}px` }
+        className: `select-none ${onClick ? "cursor-pointer" : ""} group ${isHero ? "bw-hero-brand-wrap" : "inline-flex items-center gap-3"} ${className}`
       },
-      /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: badgeSize }),
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center text-left shrink-0 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center leading-none", style: { gap: isHero ? "12px" : "7px" } }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(BeatWaveLogoBadge, { size: isHero ? "hero" : "sm" }),
+      /* @__PURE__ */ React.createElement("div", { className: `flex flex-col justify-center text-left shrink-0 select-none ${isHero ? "bw-hero-text-block" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: `flex items-center leading-none ${isHero ? "bw-hero-row1" : "gap-1.5"}` }, /* @__PURE__ */ React.createElement(
         "span",
         {
-          className: `font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${isTechnoActive ? "anim-soundwave" : ""}`,
-          style: {
-            fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
-            fontWeight: 800,
-            fontSize: `${titleSize}px`,
-            lineHeight: 1
-          }
+          className: `font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${isTechnoActive ? "anim-soundwave" : ""} ${isHero ? "bw-hero-title" : "text-2xl font-extrabold"}`,
+          style: { fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif" }
         },
         /* @__PURE__ */ React.createElement("span", { className: "text-white" }, "BEAT"),
         /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400" }, "WAVE")
       ), /* @__PURE__ */ React.createElement(
         "span",
         {
-          className: "font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase",
-          style: {
-            fontFamily: "Inter, -apple-system, sans-serif",
-            fontWeight: 900,
-            fontSize: `${proSize}px`,
-            padding: `${proPy}px ${proPx}px`,
-            borderRadius: `${proRadius}px`,
-            border: `${proBorder}px solid #22d3ee`,
-            lineHeight: 1
-          }
+          className: `font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase ${isHero ? "bw-hero-pro" : "text-[10.5px] px-1.5 py-0.5 rounded-lg border border-cyan-400"}`,
+          style: { fontFamily: "Inter, -apple-system, sans-serif" }
         },
         "PRO"
       )), /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "w-full flex justify-between items-center text-cyan-200 select-none leading-none",
-          style: {
-            fontFamily: "Inter, -apple-system, sans-serif",
-            fontWeight: 800,
-            fontSize: `${subSize}px`,
-            letterSpacing: "0.11em",
-            marginTop: `${subGap}px`,
-            lineHeight: 1
-          }
+          className: `w-full flex justify-between items-center select-none leading-none ${isHero ? "bw-hero-sub" : "text-cyan-200 text-[11px] mt-1 tracking-[0.11em] font-extrabold"}`,
+          style: { fontFamily: "Inter, -apple-system, sans-serif" }
         },
         /* @__PURE__ */ React.createElement("span", null, "PRECISION"),
-        /* @__PURE__ */ React.createElement(
-          "span",
-          {
-            className: "text-cyan-400 font-black inline-flex items-center justify-center select-none",
-            style: { fontSize: `${dotSize}px`, lineHeight: 0, transform: "translateY(-1px)" }
-          },
-          "\u2022"
-        ),
+        /* @__PURE__ */ React.createElement("span", { className: isHero ? "bw-hero-sub-dot" : "text-cyan-400 font-black inline-flex items-center justify-center select-none text-sm" }, "\u2022"),
         /* @__PURE__ */ React.createElement("span", null, "AUDIO"),
-        /* @__PURE__ */ React.createElement(
-          "span",
-          {
-            className: "text-cyan-400 font-black inline-flex items-center justify-center select-none",
-            style: { fontSize: `${dotSize}px`, lineHeight: 0, transform: "translateY(-1px)" }
-          },
-          "\u2022"
-        ),
+        /* @__PURE__ */ React.createElement("span", { className: isHero ? "bw-hero-sub-dot" : "text-cyan-400 font-black inline-flex items-center justify-center select-none text-sm" }, "\u2022"),
         /* @__PURE__ */ React.createElement("span", null, "INTELLIGENCE")
       ))
     );
@@ -10408,8 +10415,304 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   // web/js/modals/MixOracleModal.jsx
   var { useState: useState18, useEffect: useEffect19, useMemo: useMemo5 } = React;
 
+  // web/js/modals/UnifiedLibraryBrowserModal.jsx
+  var { useState: useState19, useEffect: useEffect20 } = React;
+  var UnifiedLibraryBrowserModal = ({
+    isOpen = false,
+    onClose = () => {
+    },
+    title = "Explorador de Biblioteca & Selecci\xF3n de Archivos",
+    initialPath = "",
+    onSelectPath = null,
+    // (path: string, append: boolean) => void
+    onSelectMultiple = null,
+    // (targets: string[], append: boolean) => void
+    customLibraries = [],
+    activeCustomLibId = null,
+    onImportCollection = null,
+    // (libId: string) => void
+    isAppendMode = false
+  }) => {
+    if (!isOpen) return null;
+    const [currentPath, setCurrentPath] = useState19(initialPath || "");
+    const [parentPath, setParentPath] = useState19("");
+    const [folders, setFolders] = useState19([]);
+    const [files, setFiles] = useState19([]);
+    const [loading, setLoading] = useState19(false);
+    const [activeTab, setActiveTab] = useState19("folders");
+    const [stagedFolders, setStagedFolders] = useState19([]);
+    const [stagedFiles, setStagedFiles] = useState19([]);
+    const [selectedLibId, setSelectedLibId] = useState19(() => {
+      if (activeCustomLibId) return activeCustomLibId;
+      if (customLibraries && customLibraries.length > 0) return customLibraries[0].id;
+      return "";
+    });
+    const fetchDirectoryListing = async (targetPath = "") => {
+      var _a, _b;
+      setLoading(true);
+      let res = null;
+      if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        try {
+          res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+        } catch (err) {
+          console.warn("[UNIFIED MODAL] Fallo llamada Eel, recurriendo a HTTP:", err);
+        }
+      }
+      if (!res || !((_a = res.folders) == null ? void 0 : _a.length) && !((_b = res.files) == null ? void 0 : _b.length) && !res.current) {
+        try {
+          const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(targetPath || "")}`);
+          if (resp.ok) res = await resp.json();
+        } catch (e) {
+          console.warn("[UNIFIED MODAL] Fallo HTTP subcarpetas:", e);
+        }
+      }
+      if (res) {
+        setCurrentPath(res.current || targetPath || "/");
+        setParentPath(res.parent || "");
+        setFolders(res.folders || []);
+        setFiles(res.files || []);
+      } else {
+        setCurrentPath(targetPath || "/");
+      }
+      setLoading(false);
+    };
+    useEffect20(() => {
+      fetchDirectoryListing(initialPath);
+    }, [initialPath]);
+    const handleAbrirFinder = async () => {
+      try {
+        let res = null;
+        if (window.eel && window.eel.seleccionar_carpeta_dialogo) {
+          res = await window.eel.seleccionar_carpeta_dialogo()();
+        } else {
+          const resp = await fetch("/api/seleccionar_carpeta_dialogo");
+          if (resp.ok) res = await resp.json();
+        }
+        if (res && res.ruta) {
+          if (onSelectPath) {
+            onSelectPath(res.ruta, isAppendMode);
+            onClose();
+          } else {
+            fetchDirectoryListing(res.ruta);
+          }
+        }
+      } catch (err) {
+        console.error("[UNIFIED MODAL] Error abriendo di\xE1logo nativo:", err);
+      }
+    };
+    const toggleStageFolder = (fPath) => {
+      setStagedFolders(
+        (prev) => prev.includes(fPath) ? prev.filter((x) => x !== fPath) : [...prev, fPath]
+      );
+    };
+    const toggleStageFile = (fileItem) => {
+      const filePath = typeof fileItem === "string" ? fileItem : fileItem.path || fileItem.filepath;
+      if (!filePath) return;
+      setStagedFiles(
+        (prev) => prev.includes(filePath) ? prev.filter((x) => x !== filePath) : [...prev, filePath]
+      );
+    };
+    const handleConfirmSelection = () => {
+      const allTargets = [...stagedFolders, ...stagedFiles];
+      if (allTargets.length > 0) {
+        if (onSelectMultiple) {
+          onSelectMultiple(allTargets, isAppendMode);
+        } else if (onSelectPath) {
+          onSelectPath(allTargets[0], isAppendMode);
+        }
+        onClose();
+      } else if (currentPath) {
+        if (onSelectPath) {
+          onSelectPath(currentPath, isAppendMode);
+        }
+        onClose();
+      }
+    };
+    const handleExecuteImportCollection = () => {
+      if (!onImportCollection) return;
+      const targetId = selectedLibId || customLibraries[0] && customLibraries[0].id;
+      onImportCollection(targetId);
+      onClose();
+    };
+    const totalStaged = stagedFolders.length + stagedFiles.length;
+    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 select-none animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-3.5 sm:p-4 border-b border-djzinc-800 bg-djzinc-950 flex flex-wrap justify-between items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-xs sm:text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 16 }), " ", title)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleAbrirFinder,
+        className: "px-3 py-1.5 min-h-[32px] bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/70 text-emerald-300 hover:text-white rounded-lg text-xs font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95",
+        title: "Abrir ventana nativa del Finder de macOS para seleccionar carpeta"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Abrir Finder")
+    ), onImportCollection && customLibraries && customLibraries.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-purple-950/60 border border-purple-500/50 rounded-lg p-0.5" }, customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: selectedLibId,
+        onChange: (e) => setSelectedLibId(e.target.value),
+        className: "bg-purple-900/80 text-purple-200 text-[11px] font-mono font-bold rounded px-2 py-1 outline-none border-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      customLibraries.map((lib) => {
+        var _a;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+          var _a2;
+          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleExecuteImportCollection,
+        className: "px-2.5 py-1 min-h-[28px] bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow",
+        title: "Importar colecci\xF3n guardada"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Layers, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    )), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "w-7 h-7 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer ml-1"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0 font-bold" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold truncate max-w-md", title: currentPath }, currentPath || "Cargando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, currentPath && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => toggleStageFolder(currentPath),
+        className: `px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1 shadow ${stagedFolders.includes(currentPath) ? "bg-emerald-500 text-black border-emerald-400 font-black" : "bg-djcyan-950/80 hover:bg-djcyan-900 border-djcyan-700/70 text-djcyan-300"}`,
+        title: "A\xF1adir o quitar toda esta carpeta de la cesta de selecci\xF3n conjunta"
+      },
+      /* @__PURE__ */ React.createElement("span", null, stagedFolders.includes(currentPath) ? "\u2713" : "+"),
+      /* @__PURE__ */ React.createElement("span", null, stagedFolders.includes(currentPath) ? "Carpeta A\xF1adida" : "A\xF1adir Toda Esta Carpeta")
+    ), parentPath && parentPath !== currentPath && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => fetchDirectoryListing(parentPath),
+        className: "px-2.5 py-1.5 bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-mono font-bold border border-djzinc-700 cursor-pointer shrink-0 flex items-center gap-1 shadow"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u25B2"),
+      " ",
+      /* @__PURE__ */ React.createElement("span", null, "Subir Nivel")
+    ))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-[#09090f] border-b border-djzinc-800/80 flex items-center justify-between gap-3 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("folders"),
+        className: `px-3 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "folders" ? "bg-djzinc-800 text-white border border-djzinc-600 font-bold" : "text-gray-400 hover:text-gray-200"}`
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 13, className: "text-amber-400" }),
+      /* @__PURE__ */ React.createElement("span", null, "Subcarpetas (", folders.length, ")")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setActiveTab("files"),
+        className: `px-3 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === "files" ? "bg-djzinc-800 text-white border border-djzinc-600 font-bold" : "text-gray-400 hover:text-gray-200"}`
+      },
+      /* @__PURE__ */ React.createElement(Icons.Music, { size: 13, className: "text-djcyan-400" }),
+      /* @__PURE__ */ React.createElement("span", null, "Archivos de Audio (", files.length, ")")
+    )), totalStaged > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-emerald-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F6D2} Cesta:"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-500/60" }, stagedFolders.length, " carp. + ", stagedFiles.length, " pist."))), /* @__PURE__ */ React.createElement("div", { className: "p-3 overflow-y-auto custom-scrollbar flex-1 min-h-[220px] max-h-[380px] bg-[#07070b]" }, loading ? /* @__PURE__ */ React.createElement("div", { className: "py-16 text-center text-xs font-mono text-djcyan-400 animate-pulse flex flex-col items-center justify-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Explorando disco...")) : activeTab === "folders" ? folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subcarpetas en este directorio.") : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-1.5" }, folders.map((f, idx) => {
+      const isStaged = stagedFolders.includes(f.path);
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: idx,
+          className: `flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${isStaged ? "bg-emerald-950/40 border-emerald-500/60" : "bg-[#0f0f18] hover:bg-[#161624] border-djzinc-800/80 hover:border-djzinc-700"}`
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onClick: () => fetchDirectoryListing(f.path),
+            className: "flex items-center gap-2.5 flex-1 min-w-0",
+            title: "Hacer clic para entrar a esta carpeta"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: "text-amber-400 shrink-0" }),
+          /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-200 font-medium truncate" }, f.name)
+        ),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: (e) => {
+              e.stopPropagation();
+              toggleStageFolder(f.path);
+            },
+            className: `px-2 py-1 rounded text-[11px] font-mono font-bold transition-all cursor-pointer ${isStaged ? "bg-emerald-500 text-black" : "bg-djzinc-800 hover:bg-djzinc-700 text-djcyan-400"}`,
+            title: "A\xF1adir esta subcarpeta a la cesta"
+          },
+          isStaged ? "\u2713 A\xF1adida" : "+ Cesta"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => fetchDirectoryListing(f.path),
+            className: "px-2 py-1 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 text-[11px] font-mono rounded cursor-pointer"
+          },
+          "Entrar \u2192"
+        ))
+      );
+    })) : files.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron archivos de audio compatibles (.mp3, .flac, .wav, .aiff, .m4a) en esta carpeta.") : /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 gap-1" }, files.map((file, idx) => {
+      const fPath = typeof file === "string" ? file : file.path || file.filepath;
+      const fName = typeof file === "string" ? file.split("/").pop() : file.name || fPath.split("/").pop();
+      const isStaged = stagedFiles.includes(fPath);
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: idx,
+          onClick: () => toggleStageFile(fPath),
+          className: `flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${isStaged ? "bg-emerald-950/40 border-emerald-500/60" : "bg-[#0f0f18] hover:bg-[#161624] border-djzinc-800/80"}`
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 truncate flex-1 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 13, className: "text-djcyan-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, fName)),
+        /* @__PURE__ */ React.createElement("span", { className: `text-[10px] font-mono px-2 py-0.5 rounded font-bold ${isStaged ? "bg-emerald-500 text-black" : "bg-djzinc-800 text-gray-400"}` }, isStaged ? "\u2713 Seleccionada" : "+ A\xF1adir")
+      );
+    }))), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, totalStaged > 0 ? /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          setStagedFolders([]);
+          setStagedFiles([]);
+        },
+        className: "px-2.5 py-1 text-gray-400 hover:text-red-400 text-xs font-mono cursor-pointer"
+      },
+      "Vaciar Cesta (",
+      totalStaged,
+      ")"
+    ) : /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-[11px]" }, "Selecciona carpetas o pistas para carga m\xFAltiple o pulsa el bot\xF3n directo.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onClose,
+        className: "px-3.5 py-2 bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded-xl font-bold cursor-pointer transition-all"
+      },
+      "Cancelar"
+    ), totalStaged > 0 ? /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleConfirmSelection,
+        className: "px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black rounded-xl font-black shadow-lg shadow-emerald-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+      },
+      /* @__PURE__ */ React.createElement("span", null, "\u2713 Cargar Cesta (", totalStaged, ")")
+    ) : /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleConfirmSelection,
+        className: "px-4 py-2 bg-gradient-to-r from-djcyan-500 to-djcyan-400 hover:from-djcyan-400 hover:to-djcyan-300 text-black rounded-xl font-black shadow-lg shadow-djcyan-500/20 cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14 }),
+      /* @__PURE__ */ React.createElement("span", null, "Cargar Esta Carpeta")
+    )))));
+  };
+
   // web/js/workspaces/AuditWorkspace.jsx
-  var { useState: useState19, useEffect: useEffect20, useRef: useRef17, useCallback: useCallback8, useMemo: useMemo6 } = React;
+  var { useState: useState20, useEffect: useEffect21, useRef: useRef17, useCallback: useCallback8, useMemo: useMemo6 } = React;
   var CompactHotCuesSummary = ({ track, cues = NV2_COLORS2, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
     const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
@@ -10477,31 +10780,31 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     onOpenBeatgridStudio
   }) => {
     var _a;
-    const [localRutaOrigen, setLocalRutaOrigen] = useState19("");
+    const [localRutaOrigen, setLocalRutaOrigen] = useState20("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
-    const [selectedLooseFiles, setSelectedLooseFiles] = useState19([]);
-    const [isAuditing, setIsAuditing] = useState19(false);
-    const [isLoadingDir, setIsLoadingDir] = useState19(false);
-    const [isExporting, setIsExporting] = useState19(false);
-    const [isInjecting, setIsInjecting] = useState19(false);
-    const [metrics, setMetrics] = useState19({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
-    const [filtro, setFiltro] = useState19("todos");
-    const [busqueda, setBusqueda] = useState19("");
-    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState19("ALL");
-    const [batchModalOpen, setBatchModalOpen] = useState19(false);
-    const [duplicateModalOpen, setDuplicateModalOpen] = useState19(false);
-    const [batchProgress, setBatchProgress] = useState19(0);
-    const [batchStatusMsg, setBatchStatusMsg] = useState19("");
-    const [saveFeedback, setSaveFeedback] = useState19("");
-    const [sidebarOpen, setSidebarOpen] = useState19(false);
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState20([]);
+    const [isAuditing, setIsAuditing] = useState20(false);
+    const [isLoadingDir, setIsLoadingDir] = useState20(false);
+    const [isExporting, setIsExporting] = useState20(false);
+    const [isInjecting, setIsInjecting] = useState20(false);
+    const [metrics, setMetrics] = useState20({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    const [filtro, setFiltro] = useState20("todos");
+    const [busqueda, setBusqueda] = useState20("");
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState20("ALL");
+    const [batchModalOpen, setBatchModalOpen] = useState20(false);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState20(false);
+    const [batchProgress, setBatchProgress] = useState20(0);
+    const [batchStatusMsg, setBatchStatusMsg] = useState20("");
+    const [saveFeedback, setSaveFeedback] = useState20("");
+    const [sidebarOpen, setSidebarOpen] = useState20(false);
     const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 540);
     const { width: columnsDrawerWidth, onPointerDown: onColumnsResizeDown, resetWidth: onColumnsResetWidth } = useDrawerResize("bw_columns_drawer_width", 540);
-    const [exportDropdownOpen, setExportDropdownOpen] = useState19(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState19("analizar");
-    const [batchConfigured, setBatchConfigured] = useState19(false);
-    const [isAppendMode, setIsAppendMode] = useState19(false);
-    const [batchConfigOpts, setBatchConfigOpts] = useState19({
+    const [exportDropdownOpen, setExportDropdownOpen] = useState20(false);
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState20("analizar");
+    const [batchConfigured, setBatchConfigured] = useState20(false);
+    const [isAppendMode, setIsAppendMode] = useState20(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState20({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -10517,38 +10820,38 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       stripWhitespace: true,
       onlyIncomplete: false
     });
-    const [mixOracleOpen, setMixOracleOpen] = useState19(false);
-    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState19(null);
-    const [selectedAuditIds, setSelectedAuditIds] = useState19(/* @__PURE__ */ new Set());
-    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState19(false);
-    const [deleteModalState, setDeleteModalState] = useState19({ open: false, tracks: [], mode: "trash" });
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState19(() => {
+    const [mixOracleOpen, setMixOracleOpen] = useState20(false);
+    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState20(null);
+    const [selectedAuditIds, setSelectedAuditIds] = useState20(/* @__PURE__ */ new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState20(false);
+    const [deleteModalState, setDeleteModalState] = useState20({ open: false, tracks: [], mode: "trash" });
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState20(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
         return false;
       }
     });
-    const [internalTracks, setInternalTracks] = useState19([]);
+    const [internalTracks, setInternalTracks] = useState20([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
-    const [fftModalOpen, setFftModalOpen] = useState19(false);
-    const [fftAnalysisData, setFftAnalysisData] = useState19(null);
-    const [isAnalyzingFft, setIsAnalyzingFft] = useState19(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState19(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState19("");
-    const [fsParentPath, setFsParentPath] = useState19("");
-    const [fsFolders, setFsFolders] = useState19([]);
-    const [fsFiles, setFsFiles] = useState19([]);
-    const [selectedFsFiles, setSelectedFsFiles] = useState19([]);
-    const [stagedFolders, setStagedFolders] = useState19([]);
-    const [stagedFiles, setStagedFiles] = useState19([]);
-    const [fsActiveTab, setFsActiveTab] = useState19("folders");
-    const [fsLoading, setFsLoading] = useState19(false);
-    const [camelotModalOpen, setCamelotModalOpen] = useState19(false);
+    const [fftModalOpen, setFftModalOpen] = useState20(false);
+    const [fftAnalysisData, setFftAnalysisData] = useState20(null);
+    const [isAnalyzingFft, setIsAnalyzingFft] = useState20(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState20("");
+    const [fsParentPath, setFsParentPath] = useState20("");
+    const [fsFolders, setFsFolders] = useState20([]);
+    const [fsFiles, setFsFiles] = useState20([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState20([]);
+    const [stagedFolders, setStagedFolders] = useState20([]);
+    const [stagedFiles, setStagedFiles] = useState20([]);
+    const [fsActiveTab, setFsActiveTab] = useState20("folders");
+    const [fsLoading, setFsLoading] = useState20(false);
+    const [camelotModalOpen, setCamelotModalOpen] = useState20(false);
     const tapTimesRef = useRef17([]);
     const tableScrollRef = useRef17(null);
-    const [metricsCollapsed, setMetricsCollapsed] = useState19(() => {
+    const [metricsCollapsed, setMetricsCollapsed] = useState20(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
       } catch (e) {
@@ -10565,20 +10868,20 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         return next;
       });
     };
-    useEffect20(() => {
+    useEffect21(() => {
       const handleToggleEvent = () => toggleMetricsCollapsed();
       window.addEventListener("bw:toggle-metrics", handleToggleEvent);
       return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
     }, []);
-    useEffect20(() => {
+    useEffect21(() => {
       if (tracks && tracks.length > 0) {
         setMetricsCollapsed(false);
       }
     }, [tracks && tracks.length > 0]);
-    const [selectedCueId, setSelectedCueId] = useState19(1);
-    const [snapToGrid, setSnapToGrid] = useState19(true);
-    const [showBeatgrid, setShowBeatgrid] = useState19(true);
-    const [cueStudioModalOpen, setCueStudioModalOpen] = useState19(false);
+    const [selectedCueId, setSelectedCueId] = useState20(1);
+    const [snapToGrid, setSnapToGrid] = useState20(true);
+    const [showBeatgrid, setShowBeatgrid] = useState20(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState20(false);
     const currentTrack = tracks.find((t2) => t2.id === selectedTrack) || tracks[0] || {};
     const resetAuditWorkspace = (keepFolder = false) => {
       if (!keepFolder) {
@@ -10618,7 +10921,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    useEffect20(() => {
+    useEffect21(() => {
       const handleAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -10680,9 +10983,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         window._bw_audit_poll = null;
       }
     };
-    const handleCargarColeccionGuardada = () => {
+    const handleCargarColeccionGuardada = (targetLibId = null) => {
       var _a2;
-      const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
       const colTracks = [];
       const seenKeys = /* @__PURE__ */ new Set();
       if (activeLib && activeLib.folders) {
@@ -10763,7 +11066,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       );
       setTimeout(() => setSaveFeedback(""), 4e3);
     };
-    useEffect20(() => {
+    useEffect21(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
           isAuditing,
@@ -10772,7 +11075,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         });
       }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
-    useEffect20(() => {
+    useEffect21(() => {
       if (!tracks || tracks.length === 0) {
         setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
       } else {
@@ -12099,7 +12402,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
-    const [isAuditPaused, setIsAuditPaused] = useState19(false);
+    const [isAuditPaused, setIsAuditPaused] = useState20(false);
     const handleTogglePausaProceso = async () => {
       const nextState = !isAuditPaused;
       setIsAuditPaused(nextState);
@@ -12142,28 +12445,28 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    const [auditSortField, setAuditSortField] = useState19("id");
-    const [auditSortDir, setAuditSortDir] = useState19("asc");
-    const [filterHeaderSearch, setFilterHeaderSearch] = useState19("");
-    const [filterHeaderArtist, setFilterHeaderArtist] = useState19("");
-    const [filterHeaderFormat, setFilterHeaderFormat] = useState19("ALL");
-    const [filterHeaderKhz, setFilterHeaderKhz] = useState19("ALL");
-    const [filterHeaderKbps, setFilterHeaderKbps] = useState19("ALL");
-    const [filterHeaderQuality, setFilterHeaderQuality] = useState19("ALL");
-    const [filterHeaderLoss, setFilterHeaderLoss] = useState19("ALL");
-    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState19("ALL");
-    const [filterHeaderLufs, setFilterHeaderLufs] = useState19("ALL");
-    const [filterHeaderDuration, setFilterHeaderDuration] = useState19("");
-    const [filterHeaderBpm, setFilterHeaderBpm] = useState19("");
-    const [filterHeaderKey, setFilterHeaderKey] = useState19("");
-    const [filterHeaderCues, setFilterHeaderCues] = useState19("ALL");
-    const [filterHeaderStatus, setFilterHeaderStatus] = useState19("ALL");
-    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState19("ALL");
-    const [filterHeaderDance, setFilterHeaderDance] = useState19("ALL");
-    const [filterHeaderPhase, setFilterHeaderPhase] = useState19("ALL");
-    const [filterHeaderGenre, setFilterHeaderGenre] = useState19("");
-    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState19("");
-    const [filterHeaderComment, setFilterHeaderComment] = useState19("");
+    const [auditSortField, setAuditSortField] = useState20("id");
+    const [auditSortDir, setAuditSortDir] = useState20("asc");
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState20("");
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState20("");
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState20("ALL");
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState20("ALL");
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState20("ALL");
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState20("ALL");
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState20("ALL");
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState20("ALL");
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState20("ALL");
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState20("");
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState20("");
+    const [filterHeaderKey, setFilterHeaderKey] = useState20("");
+    const [filterHeaderCues, setFilterHeaderCues] = useState20("ALL");
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState20("ALL");
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState20("ALL");
+    const [filterHeaderDance, setFilterHeaderDance] = useState20("ALL");
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState20("ALL");
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState20("");
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState20("");
+    const [filterHeaderComment, setFilterHeaderComment] = useState20("");
     const DEFAULT_AUDIT_COLUMNS = {
       id: true,
       waveform: true,
@@ -12256,7 +12559,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         ]
       }
     ];
-    const [visibleColumns, setVisibleColumns] = useState19(() => {
+    const [visibleColumns, setVisibleColumns] = useState20(() => {
       try {
         const saved = localStorage.getItem("bw_audit_visible_columns");
         if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
@@ -12264,10 +12567,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       return DEFAULT_AUDIT_COLUMNS;
     });
-    const [columnSelectorOpen, setColumnSelectorOpen] = useState19(false);
-    const [columnSearchText, setColumnSearchText] = useState19("");
-    const [isDragOver, setIsDragOver] = useState19(false);
-    const [libraryFolders, setLibraryFolders] = useState19(() => {
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState20(false);
+    const [columnSearchText, setColumnSearchText] = useState20("");
+    const [isDragOver, setIsDragOver] = useState20(false);
+    const [libraryFolders, setLibraryFolders] = useState20(() => {
       try {
         const saved = localStorage.getItem("bw_library_folders_v2");
         if (saved) {
@@ -12283,10 +12586,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         { id: "f_close", name: "04 - Closing & Anthems", color: "cyan", collapsed: false, trackIds: [], subfolders: [] }
       ];
     });
-    const [selectedFolderId, setSelectedFolderId] = useState19("all");
-    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState19(true);
-    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState19(false);
-    const [cloudSyncStatus, setCloudSyncStatus] = useState19({ isSyncing: false, synced: false, lastSyncText: "" });
+    const [selectedFolderId, setSelectedFolderId] = useState20("all");
+    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState20(true);
+    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState20(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState20({ isSyncing: false, synced: false, lastSyncText: "" });
     const handleCloudMetadataSync = async () => {
       setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: "Sincronizando..." });
       try {
@@ -13336,7 +13639,10 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           setIsDragOver(false);
           handleExplorar();
         },
-        onBrowse: handleExplorar
+        onBrowse: handleExplorar,
+        onImportCollection: handleCargarColeccionGuardada,
+        customLibraries,
+        activeCustomLibId
       }
     ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap hidden md:table" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-djzinc-900/95 border-b border-djzinc-800 text-[11px] font-mono uppercase text-djzinc-400" }, /* @__PURE__ */ React.createElement("tr", null, visibleColumns.id && /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-12 text-center", title: "ID secuencial de pista y casilla para selecci\xF3n masiva o acciones en lote" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-center gap-1" }, /* @__PURE__ */ React.createElement(
       "input",
@@ -14454,136 +14760,23 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         className: "px-4 py-1.5 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-mono font-bold text-xs cursor-pointer transition-colors shadow"
       },
       "Cerrar"
-    )))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), " Explorador de Biblioteca & Selecci\xF3n de Archivos")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-      "button",
+    )))), /* @__PURE__ */ React.createElement(
+      UnifiedLibraryBrowserModal,
       {
-        type: "button",
-        onClick: handleAbrirDialogoNativo,
-        className: "px-3.5 py-2 min-h-[34px] bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/70 text-emerald-300 hover:text-white rounded-lg text-xs font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95",
-        title: "Abrir ventana nativa del Finder de macOS para seleccionar carpeta"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Abrir Finder (macOS)")
-    ), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "w-8 h-8 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 15, className: "inline-block align-[-2px]" })))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-3 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0 font-bold" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold truncate", title: fsCurrentPath }, fsCurrentPath || "Cargando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, fsCurrentPath && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => toggleStageFolder(fsCurrentPath),
-        className: `px-3 py-2 min-h-[34px] rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow ${stagedFolders.includes(fsCurrentPath) ? "bg-emerald-500 text-black border-emerald-400 font-black" : "bg-djcyan-950/80 hover:bg-djcyan-900 border-djcyan-700/70 text-djcyan-300"}`,
-        title: "A\xF1adir o quitar toda esta carpeta de la cesta de selecci\xF3n conjunta"
-      },
-      /* @__PURE__ */ React.createElement("span", null, stagedFolders.includes(fsCurrentPath) ? "\u2713" : "+"),
-      /* @__PURE__ */ React.createElement("span", null, stagedFolders.includes(fsCurrentPath) ? "Carpeta A\xF1adida" : "A\xF1adir Toda Esta Carpeta")
-    ), fsParentPath && fsParentPath !== fsCurrentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-3 py-2 min-h-[34px] bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-mono font-bold border border-djzinc-700 cursor-pointer shrink-0 flex items-center gap-1.5 shadow" }, /* @__PURE__ */ React.createElement("span", null, "\u25B2"), " ", /* @__PURE__ */ React.createElement("span", null, "Subir Nivel")))), /* @__PURE__ */ React.createElement("div", { className: "flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2.5 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => setFsActiveTab("folders"),
-        className: `px-4 py-2.5 min-h-[38px] rounded-t-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${fsActiveTab === "folders" ? "bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: "inline-block align-[-2px]" }), " Subcarpetas"),
-      /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 bg-djzinc-800 text-[11px] rounded-full text-gray-300 font-mono font-bold leading-none" }, fsFolders.length),
-      stagedFolders.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 bg-emerald-500 text-black text-[11px] font-bold rounded-full font-mono leading-none" }, stagedFolders.length, " en cesta")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        onClick: () => setFsActiveTab("files"),
-        className: `px-4 py-2.5 min-h-[38px] rounded-t-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${fsActiveTab === "files" ? "bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700" : "text-gray-400 hover:text-white"}`
-      },
-      /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Music, { size: 15, className: "inline-block align-[-2px]" }), " Pistas Sueltas"),
-      /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 text-[11px] rounded-full font-bold font-mono leading-none ${stagedFiles.length > 0 ? "bg-djcyan-500 text-black" : "bg-djzinc-800 text-gray-300"}` }, stagedFiles.length > 0 ? `${stagedFiles.length} en cesta` : fsFiles.length)
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 bg-[#07070a]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-14 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Leyendo directorio y pistas de audio...")) : fsActiveTab === "folders" ? fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 text-xs font-mono" }, "No hay subcarpetas en este directorio.") : fsFolders.map((f, idx) => {
-      const isFolderStaged = stagedFolders.includes(f.path);
-      return /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          key: idx,
-          onClick: () => handleNavegarACarpeta(f.path),
-          className: `p-2.5 rounded-lg border flex items-center justify-between cursor-pointer group transition-all ${isFolderStaged ? "bg-emerald-950/20 border-emerald-500/50" : "bg-djzinc-900/60 hover:bg-djcyan-950/40 border-djzinc-800/80 hover:border-djcyan-500/50"}`
+        isOpen: fsBrowserOpen,
+        onClose: () => setFsBrowserOpen(false),
+        title: "Explorador de Biblioteca & Selecci\xF3n de Archivos",
+        initialPath: rutaOrigen,
+        onSelectPath: (selectedPath, append) => handleSeleccionarCarpetaUI(selectedPath),
+        onSelectMultiple: (allTargets, append) => {
+          handleCargarDirectorio(allTargets, append);
         },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px] text-amber-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs text-gray-200 group-hover:text-white font-medium truncate" }, f.name)),
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: (e) => {
-              e.stopPropagation();
-              toggleStageFolder(f.path);
-            },
-            className: `px-2.5 py-1 text-[10px] font-mono font-bold rounded border transition-colors cursor-pointer flex items-center gap-1 ${isFolderStaged ? "bg-emerald-500 text-black border-emerald-400 font-black" : "bg-djzinc-800 hover:bg-djcyan-950 text-djcyan-300 border-djzinc-700 hover:border-djcyan-600"}`,
-            title: "A\xF1adir o quitar esta subcarpeta de la cesta"
-          },
-          /* @__PURE__ */ React.createElement("span", null, isFolderStaged ? "\u2713" : "+"),
-          /* @__PURE__ */ React.createElement("span", null, isFolderStaged ? "A\xF1adida a Cesta" : "A\xF1adir Carpeta")
-        ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500 text-xs group-hover:text-djcyan-400 font-mono" }, "\u2794"))
-      );
-    }) : (
-      /* Pestaña de Archivos de Audio con Selección Incremental */
-      /* @__PURE__ */ React.createElement("div", null, fsFiles.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between p-2 mb-2 bg-djzinc-900/80 rounded border border-djzinc-800 text-xs font-mono" }, /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-2 text-gray-300 cursor-pointer select-none" }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "checkbox",
-          checked: fsFiles.length > 0 && fsFiles.every((f) => stagedFiles.includes(f.path)),
-          onChange: toggleStageAllCurrentFsFiles,
-          className: "rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
-        }
-      ), /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, "Seleccionar todas las de este nivel (", fsFiles.length, ")")), stagedFiles.length > 0 && /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 text-[11px] font-bold" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }), " ", stagedFiles.length, " pista(s) acumuladas en cesta")), fsFiles.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 text-xs font-mono" }, "No se encontraron archivos de audio directos (.flac, .mp3, .wav, etc.) en este nivel.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 mt-1 inline-block" }, "Navega a una subcarpeta para explorar m\xE1s pistas.")) : fsFiles.map((fileItem, idx) => {
-        const isSelected = stagedFiles.includes(fileItem.path);
-        return /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            key: idx,
-            onClick: () => toggleStageFile(fileItem.path),
-            className: `p-2 rounded flex items-center justify-between cursor-pointer border transition-colors ${isSelected ? "bg-djcyan-950/40 border-djcyan-500/60 text-white" : "bg-djzinc-900/40 hover:bg-djzinc-800/60 border-djzinc-800 text-gray-300"}`
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(
-            "input",
-            {
-              type: "checkbox",
-              checked: isSelected,
-              onChange: () => {
-              },
-              className: "rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
-            }
-          ), /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px] text-djcyan-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs truncate font-mono" }, fileItem.name)),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0 text-[10px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-djzinc-800 text-djcyan-300 font-bold border border-djzinc-700" }, fileItem.ext || "AUDIO"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, fileItem.size_mb ? `${fileItem.size_mb} MB` : ""))
-        );
-      }))
-    )), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-gray-300 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "Cesta:"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400" }, stagedFolders.length, " carpeta(s)"), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300" }, stagedFiles.length, " pista(s)")), (stagedFolders.length > 0 || stagedFiles.length > 0) && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: clearStagedSelection,
-        className: "px-2 py-0.5 text-[10px] font-mono text-red-400 hover:text-red-300 hover:underline cursor-pointer",
-        title: "Vaciar la selecci\xF3n acumulada"
-      },
-      "[Vaciar Cesta]"
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setFsBrowserOpen(false),
-        className: "px-5 py-2.5 min-h-[40px] bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 hover:text-white rounded-xl text-xs font-mono font-bold cursor-pointer transition-all flex items-center justify-center shadow active:scale-95 border border-djzinc-700"
-      },
-      "Cancelar"
-    ), stagedFolders.length > 0 || stagedFiles.length > 0 ? /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleConfirmarSeleccionLote,
-        className: "px-5 py-2.5 min-h-[40px] bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-mono font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Download, { size: 15 }),
-      /* @__PURE__ */ React.createElement("span", null, "Cargar Cesta Completa (", stagedFolders.length, " carp., ", stagedFiles.length, " pistas)")
-    ) : /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleSeleccionarCarpetaUI(fsCurrentPath),
-        className: "px-5 py-2.5 min-h-[40px] bg-djcyan-400 hover:bg-djcyan-300 text-black font-mono font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15 }),
-      /* @__PURE__ */ React.createElement("span", null, "Cargar Toda la Carpeta Actual")
-    ))))), camelotModalOpen && /* @__PURE__ */ React.createElement(
+        customLibraries,
+        activeCustomLibId,
+        onImportCollection: handleCargarColeccionGuardada,
+        isAppendMode
+      }
+    ), camelotModalOpen && /* @__PURE__ */ React.createElement(
       CamelotWheelModal,
       {
         isOpen: camelotModalOpen,
@@ -14914,7 +15107,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
   };
 
   // web/js/workspaces/HotCuesWorkspace.jsx
-  var { useState: useState20, useEffect: useEffect21, useRef: useRef18, useCallback: useCallback9, useMemo: useMemo7 } = React;
+  var { useState: useState21, useEffect: useEffect22, useRef: useRef18, useCallback: useCallback9, useMemo: useMemo7 } = React;
   var HotCuesWorkspace = ({
     tracks = [],
     setTracks,
@@ -14934,13 +15127,16 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     setCurrentFolder,
     audioRef,
     studioMode: propsStudioMode = "cues",
-    onSetStudioMode
+    onSetStudioMode,
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
   }) => {
-    const [studioMode, setStudioMode] = useState20(propsStudioMode || "cues");
-    useEffect21(() => {
+    const [studioMode, setStudioMode] = useState21(propsStudioMode || "cues");
+    useEffect22(() => {
       if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
-    const [tapTimes, setTapTimes] = useState20([]);
+    const [tapTimes, setTapTimes] = useState21([]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
     const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
@@ -14962,33 +15158,33 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
     };
-    const [zoom, setZoom] = useState20(4);
-    const [snapToGrid, setSnapToGrid] = useState20(true);
-    const [showBeatgrid, setShowBeatgrid] = useState20(true);
-    const [followPlayhead, setFollowPlayhead] = useState20(true);
-    const [selectedCueId, setSelectedCueId] = useState20(1);
-    const [isRegeneratingMood, setIsRegeneratingMood] = useState20(false);
-    const [saveStatus, setSaveStatus] = useState20("");
-    const [isSavingBatch, setIsSavingBatch] = useState20(false);
-    const [filterQuery, setFilterQuery] = useState20("");
-    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
-    const [carpetasSistema, setCarpetasSistema] = useState20([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState20(currentFolder || "");
-    const [isLoadingDir, setIsLoadingDir] = useState20(false);
-    const [showTrackListDrawer, setShowTrackListDrawer] = useState20(false);
-    const [pitchPercent, setPitchPercent] = useState20(0);
-    const [pitchRange, setPitchRange] = useState20(8);
-    const [eqBass, setEqBass] = useState20(0);
-    const [eqMid, setEqMid] = useState20(0);
-    const [eqTreble, setEqTreble] = useState20(0);
-    const [mobileDeckMode, setMobileDeckMode] = useState20("pads");
-    const [autoMappingStatus, setAutoMappingStatus] = useState20("");
-    const [cuesVersionMode, setCuesVersionMode] = useState20("estandar");
-    const [cuesEstandar, setCuesEstandar] = useState20(null);
-    const [cuesAcustico, setCuesAcustico] = useState20(null);
-    const [isLoadingComparative, setIsLoadingComparative] = useState20(false);
-    const [showDiferenciasModal, setShowDiferenciasModal] = useState20(false);
-    const [diferenciasData, setDiferenciasData] = useState20(null);
+    const [zoom, setZoom] = useState21(4);
+    const [snapToGrid, setSnapToGrid] = useState21(true);
+    const [showBeatgrid, setShowBeatgrid] = useState21(true);
+    const [followPlayhead, setFollowPlayhead] = useState21(true);
+    const [selectedCueId, setSelectedCueId] = useState21(1);
+    const [isRegeneratingMood, setIsRegeneratingMood] = useState21(false);
+    const [saveStatus, setSaveStatus] = useState21("");
+    const [isSavingBatch, setIsSavingBatch] = useState21(false);
+    const [filterQuery, setFilterQuery] = useState21("");
+    const [fsBrowserOpen, setFsBrowserOpen] = useState21(false);
+    const [carpetasSistema, setCarpetasSistema] = useState21([]);
+    const [rutaNavegacion, setRutaNavegacion] = useState21(currentFolder || "");
+    const [isLoadingDir, setIsLoadingDir] = useState21(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState21(false);
+    const [pitchPercent, setPitchPercent] = useState21(0);
+    const [pitchRange, setPitchRange] = useState21(8);
+    const [eqBass, setEqBass] = useState21(0);
+    const [eqMid, setEqMid] = useState21(0);
+    const [eqTreble, setEqTreble] = useState21(0);
+    const [mobileDeckMode, setMobileDeckMode] = useState21("pads");
+    const [autoMappingStatus, setAutoMappingStatus] = useState21("");
+    const [cuesVersionMode, setCuesVersionMode] = useState21("estandar");
+    const [cuesEstandar, setCuesEstandar] = useState21(null);
+    const [cuesAcustico, setCuesAcustico] = useState21(null);
+    const [isLoadingComparative, setIsLoadingComparative] = useState21(false);
+    const [showDiferenciasModal, setShowDiferenciasModal] = useState21(false);
+    const [diferenciasData, setDiferenciasData] = useState21(null);
     const handleCargarComparativa = async (targetMode = "comparativa") => {
       if (!currentTrack) return;
       setIsLoadingComparative(true);
@@ -15315,15 +15511,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
-    const [cueNameInput, setCueNameInput] = useState20(currentCue.name || "");
-    const [cueTimeInput, setCueTimeInput] = useState20(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState20((currentTrack == null ? void 0 : currentTrack.comment) || "");
-    useEffect21(() => {
+    const [cueNameInput, setCueNameInput] = useState21(currentCue.name || "");
+    const [cueTimeInput, setCueTimeInput] = useState21(currentCue.time || "00:00.00");
+    const [tacticalComment, setTacticalComment] = useState21((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    useEffect22(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
     }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
-    useEffect21(() => {
+    useEffect22(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -15594,48 +15790,49 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         setIsRegeneratingMood(false);
       }
     };
-    const handleAbrirNavegador = async (dir) => {
+    const handleCargarColeccionGuardada = (targetLibId = null) => {
+      var _a;
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      const colTracks = [];
+      const seenKeys = /* @__PURE__ */ new Set();
+      if (activeLib && activeLib.folders) {
+        activeLib.folders.forEach((f) => {
+          (f.tracks || []).forEach((tr) => {
+            const key = tr.path || tr.filepath || tr.f || tr.id;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              colTracks.push(tr);
+            }
+          });
+        });
+      }
+      if (colTracks.length > 0) {
+        if (setTracks) setTracks(colTracks);
+        if (setSelectedTrack) setSelectedTrack(((_a = colTracks[0]) == null ? void 0 : _a.id) || null);
+        setSaveStatus(lang === "en" ? `\u2713 Loaded ${colTracks.length} tracks from Colecci\xF3n` : `\u2713 Colecci\xF3n cargada (${colTracks.length} pistas)`);
+      } else {
+        setSaveStatus(lang === "en" ? "Your saved Colecci\xF3n is empty." : "Tu Colecci\xF3n guardada est\xE1 vac\xEDa.");
+      }
+      setTimeout(() => setSaveStatus(""), 3500);
+    };
+    const handleAbrirNavegador = (dir) => {
       const target = dir || currentFolder || "";
       setRutaNavegacion(target);
       setFsBrowserOpen(true);
-      let res = null;
-      try {
-        const r = await fetch("/api/listar_subcarpetas?ruta=" + encodeURIComponent(target || ""));
-        if (r.ok) res = await r.json();
-      } catch (e) {
-      }
-      if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
-        try {
-          res = await window.eel.listar_subcarpetas_sistema(target)();
-        } catch (err) {
-          console.error("Error al listar carpetas Eel:", err);
-        }
-      }
-      if (res) {
-        if (res.current) setRutaNavegacion(res.current);
-        if (Array.isArray(res.folders)) {
-          setCarpetasSistema(res.folders);
-        } else if (Array.isArray(res)) {
-          setCarpetasSistema(res);
-        } else {
-          setCarpetasSistema([]);
-        }
-      } else {
-        setCarpetasSistema([]);
-      }
     };
     const handleCargarDirectorio = async (nuevaRuta) => {
       setFsBrowserOpen(false);
-      if (setCurrentFolder) setCurrentFolder(nuevaRuta);
+      const folderTarget = Array.isArray(nuevaRuta) ? nuevaRuta[0] : nuevaRuta;
+      if (setCurrentFolder && typeof folderTarget === "string") setCurrentFolder(folderTarget);
       setFilterQuery("");
       setSelectedCueId(1);
       setSaveStatus("");
       setAutoMappingStatus("");
       if (setTracks) setTracks([]);
       if (setSelectedTrack) setSelectedTrack(null);
-      if (window.eel && window.eel.cargar_metadatos_directorio) {
-        setIsLoadingDir(true);
-        try {
+      setIsLoadingDir(true);
+      try {
+        if (window.eel && window.eel.cargar_metadatos_directorio) {
           const res = await window.eel.cargar_metadatos_directorio(nuevaRuta)();
           if (res && Array.isArray(res.tracks)) {
             if (setTracks) setTracks(res.tracks);
@@ -15643,11 +15840,26 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
               setSelectedTrack(res.tracks[0].id);
             }
           }
-        } catch (e) {
-          console.error("Error cargando carpeta:", e);
-        } finally {
-          setIsLoadingDir(false);
+        } else {
+          const resp = await fetch("/api/escanear", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ruta: folderTarget })
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data && Array.isArray(data.tracks)) {
+              if (setTracks) setTracks(data.tracks);
+              if (data.tracks.length > 0 && setSelectedTrack) {
+                setSelectedTrack(data.tracks[0].id);
+              }
+            }
+          }
         }
+      } catch (e) {
+        console.error("Error cargando carpeta en HotCues:", e);
+      } finally {
+        setIsLoadingDir(false);
       }
     };
     const filteredTracks = (tracks || []).filter((t2) => {
@@ -15692,6 +15904,16 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, t("btn_change_dir") || "Seleccionar")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccionGuardada(),
+        className: "px-2.5 py-1.5 text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white rounded-lg shadow-sm transition-all flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer",
+        title: "Importar colecci\xF3n guardada"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 13, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Colecci\xF3n")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -16526,7 +16748,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         className: "w-full bg-djzinc-950 border border-djzinc-750 rounded-lg p-2.5 text-xs text-gray-200 outline-none font-mono resize-none focus:border-djcyan-500 transition-colors shadow-inner",
         placeholder: "Escribe aqu\xED el comentario estrat\xE9gico para cabina DJ..."
       }
-    )))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col p-6 overflow-y-auto custom-scrollbar gap-6 items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-4xl w-full bg-gradient-to-b from-[#181828] via-[#10101a] to-[#08080f] border-2 border-djzinc-800 rounded-2xl p-6 shadow-2xl relative flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-djcyan-400 to-pink-500 rounded-t-2xl" }), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-djzinc-800 pb-4 mb-4 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white font-mono tracking-wider flex items-center gap-2" }, "PIONEER DJ \u2022 HOT CUES STUDIO", /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold" }, "LISTO")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono" }, "Mapeo de 8 Hot Cues por frases musicales, beatgrid milim\xE9trico y compatibilidad Rekordbox & Serato"))), /* @__PURE__ */ React.createElement(
+    )))) : /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col p-6 overflow-y-auto custom-scrollbar gap-6 items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "max-w-4xl w-full bg-gradient-to-b from-[#181828] via-[#10101a] to-[#08080f] border-2 border-djzinc-800 rounded-2xl p-6 shadow-2xl relative flex flex-col items-center" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-djcyan-400 to-pink-500 rounded-t-2xl" }), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-djzinc-800 pb-4 mb-4 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-base font-black text-white font-mono tracking-wider flex items-center gap-2" }, "PIONEER DJ \u2022 HOT CUES STUDIO", /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] bg-djcyan-950 text-djcyan-300 border border-djcyan-700/60 font-bold" }, "LISTO")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-mono" }, "Mapeo de 8 Hot Cues por frases musicales, beatgrid milim\xE9trico y compatibilidad Rekordbox & Serato"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap shrink-0" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -16535,7 +16757,33 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Cargar Carpeta de M\xFAsica")
-    )), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "w-full bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner my-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), " Pistas disponibles en la carpeta (", tracks.length, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Haz clic en cualquier pista para cargarla en el Deck")), /* @__PURE__ */ React.createElement("div", { className: "max-h-60 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850" }, tracks.map((trk, idx) => /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccionGuardada(),
+        className: "px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white font-mono font-bold text-xs rounded-lg shadow-lg hover:shadow-purple-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0",
+        title: "Cargar pistas de tu colecci\xF3n guardada"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        onChange: (e) => handleCargarColeccionGuardada(e.target.value),
+        defaultValue: "",
+        className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2.5 py-2 outline-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar biblioteca..."),
+      customLibraries.map((lib) => {
+        var _a;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+          var _a2;
+          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    ))), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "w-full bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner my-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), " Pistas disponibles en la carpeta (", tracks.length, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Haz clic en cualquier pista para cargarla en el Deck")), /* @__PURE__ */ React.createElement("div", { className: "max-h-60 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850" }, tracks.map((trk, idx) => /* @__PURE__ */ React.createElement(
       "div",
       {
         key: trk.id,
@@ -16604,7 +16852,33 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Explorar y Cargar Carpeta")
-    ), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccionGuardada(),
+        className: "px-4 py-2.5 bg-purple-700 hover:bg-purple-600 text-white font-mono font-bold text-xs rounded-lg shadow-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2",
+        title: "Cargar pistas de tus colecciones guardadas"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        onChange: (e) => handleCargarColeccionGuardada(e.target.value),
+        defaultValue: "",
+        className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2.5 py-2.5 outline-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar biblioteca..."),
+      customLibraries.map((lib) => {
+        var _a;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+          var _a2;
+          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    )), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -16613,52 +16887,20 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Ir a Auditor\xEDa de Archivos")
-    )))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0e0e16] border border-djzinc-700 rounded-xl max-w-xl w-full p-4 shadow-2xl flex flex-col max-h-[80vh]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-3 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white font-mono" }, "Seleccionar Carpeta para Hot Cues")), /* @__PURE__ */ React.createElement(
-      "button",
+    )))), /* @__PURE__ */ React.createElement(
+      UnifiedLibraryBrowserModal,
       {
-        onClick: () => setFsBrowserOpen(false),
-        className: "text-gray-400 hover:text-white text-sm cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-    )), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono text-gray-400 mb-2 truncate bg-djzinc-950 p-2 rounded border border-djzinc-800" }, "Ruta: ", rutaNavegacion), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar border border-djzinc-800 rounded-lg p-1 divide-y divide-djzinc-850 max-h-60 bg-djzinc-950" }, (Array.isArray(carpetasSistema) ? carpetasSistema : []).map((folder, idx) => /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: idx,
-        onClick: () => handleAbrirNavegador(folder.path),
-        className: "p-2 hover:bg-djzinc-900 cursor-pointer flex items-center justify-between text-xs font-mono text-gray-300 transition-colors"
-      },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 truncate" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", { className: "truncate" }, folder.name)),
-      /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500" }, "Subir / Entrar \u2192")
-    )), (!carpetasSistema || Array.isArray(carpetasSistema) && carpetasSistema.length === 0) && /* @__PURE__ */ React.createElement("div", { className: "p-4 text-center text-xs text-gray-500 font-mono" }, "No hay subcarpetas en este directorio.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-4 pt-3 border-t border-djzinc-800" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          const parent = rutaNavegacion.substring(0, rutaNavegacion.lastIndexOf("/")) || "/";
-          handleAbrirNavegador(parent);
-        },
-        className: "px-3 py-1.5 bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 text-xs font-mono rounded border border-djzinc-800 cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Upload, { size: 14, className: "inline-block align-[-2px]" }),
-      " Carpeta Superior"
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setFsBrowserOpen(false),
-        className: "px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 text-xs font-mono rounded border border-djzinc-750 cursor-pointer"
-      },
-      "Cancelar"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleCargarDirectorio(rutaNavegacion),
-        className: "px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-mono font-bold rounded shadow cursor-pointer transition-transform active:scale-95"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }),
-      " Cargar Esta Carpeta"
-    ))))), showDiferenciasModal && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0e0e18] border-2 border-djzinc-700 rounded-2xl max-w-3xl w-full p-5 shadow-2xl flex flex-col max-h-[88vh] text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-3 mb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-cyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm sm:text-base font-black text-white uppercase tracking-wider" }, "Comparativa T\xE9cnica: Hot Cues Est\xE1ndar vs Ac\xFAstico")), /* @__PURE__ */ React.createElement(
+        isOpen: fsBrowserOpen,
+        onClose: () => setFsBrowserOpen(false),
+        title: "Hot Cues \u2022 Explorador de Biblioteca & Archivos",
+        initialPath: rutaNavegacion || currentFolder,
+        onSelectPath: (selectedPath) => handleCargarDirectorio(selectedPath),
+        onSelectMultiple: (allTargets) => handleCargarDirectorio(allTargets),
+        customLibraries,
+        activeCustomLibId,
+        onImportCollection: handleCargarColeccionGuardada
+      }
+    ), showDiferenciasModal && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0e0e18] border-2 border-djzinc-700 rounded-2xl max-w-3xl w-full p-5 shadow-2xl flex flex-col max-h-[88vh] text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-3 mb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-cyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm sm:text-base font-black text-white uppercase tracking-wider" }, "Comparativa T\xE9cnica: Hot Cues Est\xE1ndar vs Ac\xFAstico")), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -16687,7 +16929,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
   };
 
   // web/js/workspaces/SpotifyWorkspace.jsx
-  var { useState: useState21, useEffect: useEffect22, useRef: useRef19, useCallback: useCallback10, useMemo: useMemo8 } = React;
+  var { useState: useState22, useEffect: useEffect23, useRef: useRef19, useCallback: useCallback10, useMemo: useMemo8 } = React;
   var SpotifyWorkspace = ({
     tracks: externalTracks,
     setTracks: externalSetTracks,
@@ -16696,16 +16938,46 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     isPlaying,
     onTogglePlay,
     lang = "es",
-    t = (k) => k
+    t = (k) => k,
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
   }) => {
     var _a, _b;
-    const [internalTracks, setInternalTracks] = useState21([]);
+    const [internalTracks, setInternalTracks] = useState22([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
-    const [spotifyUrl, setSpotifyUrl] = useState21("");
-    const [isAnalyzing, setIsAnalyzing] = useState21(false);
-    const [destDir, setDestDir] = useState21("/Users/admin/Music/mi musica");
-    useEffect22(() => {
+    const handleCargarColeccion = (targetLibId = null) => {
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      const colTracks = [];
+      const seenKeys = /* @__PURE__ */ new Set();
+      if (activeLib && activeLib.folders) {
+        activeLib.folders.forEach((f) => {
+          (f.tracks || []).forEach((tr) => {
+            const key = tr.path || tr.filepath || tr.f || tr.id;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              colTracks.push({
+                ...tr,
+                id: tr.id || `pool_col_${Date.now()}_${colTracks.length}`,
+                title: tr.title || tr.t || tr.filename || "Pista Colecci\xF3n",
+                artist: tr.artist || tr.a || "Artista",
+                bpm: tr.bpm || tr.b,
+                key: tr.key || tr.k,
+                status: "listo"
+              });
+            }
+          });
+        });
+      }
+      if (colTracks.length > 0) {
+        setTracks(colTracks);
+      }
+    };
+    const [spotifyUrl, setSpotifyUrl] = useState22("");
+    const [isAnalyzing, setIsAnalyzing] = useState22(false);
+    const [destDir, setDestDir] = useState22("/Users/admin/Music/mi musica");
+    useEffect23(() => {
       fetch("/api/directorio_descarga").then((r) => r.json()).then((data) => {
         if (data && data.path && typeof data.path === "string" && data.path.startsWith("/") && !data.path.includes('"') && !data.path.includes(":")) {
           setDestDir(data.path);
@@ -16713,23 +16985,23 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }).catch(() => {
       });
     }, []);
-    const [selectedFormat, setSelectedFormat] = useState21("flac");
-    const [downloadingMsg, setDownloadingMsg] = useState21("");
-    const [downloadProgress, setDownloadProgress] = useState21(0);
-    const [isDownloading, setIsDownloading] = useState21(false);
-    const [isAuditingFft, setIsAuditingFft] = useState21(false);
-    const [fftProgress, setFftProgress] = useState21(0);
-    const [fftMsg, setFftMsg] = useState21("");
-    const [selectedId, setSelectedId] = useState21(null);
-    const [spInspectorOpen, setSpInspectorOpen] = useState21(false);
+    const [selectedFormat, setSelectedFormat] = useState22("flac");
+    const [downloadingMsg, setDownloadingMsg] = useState22("");
+    const [downloadProgress, setDownloadProgress] = useState22(0);
+    const [isDownloading, setIsDownloading] = useState22(false);
+    const [isAuditingFft, setIsAuditingFft] = useState22(false);
+    const [fftProgress, setFftProgress] = useState22(0);
+    const [fftMsg, setFftMsg] = useState22("");
+    const [selectedId, setSelectedId] = useState22(null);
+    const [spInspectorOpen, setSpInspectorOpen] = useState22(false);
     const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 540);
     const { width: poolColumnsDrawerWidth, onPointerDown: onPoolColumnsResizeDown, resetWidth: onPoolColumnsResetWidth } = useDrawerResize("bw_pool_columns_drawer_width", 540);
-    const [downloadSession, setDownloadSession] = useState21({ downloaded: [], failed: [] });
-    const [spSubView, setSpSubView] = useState21("catalog");
-    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState21(/* @__PURE__ */ new Set());
-    const [isExportingXls, setIsExportingXls] = useState21(false);
-    const [xlsToast, setXlsToast] = useState21("");
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState21(() => {
+    const [downloadSession, setDownloadSession] = useState22({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState22("catalog");
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState22(/* @__PURE__ */ new Set());
+    const [isExportingXls, setIsExportingXls] = useState22(false);
+    const [xlsToast, setXlsToast] = useState22("");
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState22(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
@@ -16743,7 +17015,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (e) {
       }
     };
-    const [candidateModal, setCandidateModal] = useState21({
+    const [candidateModal, setCandidateModal] = useState22({
       open: false,
       targetTrack: null,
       candidates: [],
@@ -16834,12 +17106,12 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }));
       setCandidateModal((prev) => ({ ...prev, open: false }));
     };
-    const [fsBrowserOpen, setFsBrowserOpen] = useState21(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState21("");
-    const [fsParentPath, setFsParentPath] = useState21("");
-    const [fsFolders, setFsFolders] = useState21([]);
-    const [fsLoading, setFsLoading] = useState21(false);
-    useEffect22(() => {
+    const [fsBrowserOpen, setFsBrowserOpen] = useState22(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState22("");
+    const [fsParentPath, setFsParentPath] = useState22("");
+    const [fsFolders, setFsFolders] = useState22([]);
+    const [fsLoading, setFsLoading] = useState22(false);
+    useEffect23(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
@@ -17150,7 +17422,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (_) {
       }
     };
-    const [poolVisibleColumns, setPoolVisibleColumns] = useState21(() => {
+    const [poolVisibleColumns, setPoolVisibleColumns] = useState22(() => {
       try {
         const saved = localStorage.getItem("bw_pool_visible_columns");
         if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
@@ -17158,9 +17430,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
       return DEFAULT_POOL_COLUMNS;
     });
-    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState21(false);
-    const [poolColumnSearchText, setPoolColumnSearchText] = useState21("");
-    useEffect22(() => {
+    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState22(false);
+    const [poolColumnSearchText, setPoolColumnSearchText] = useState22("");
+    useEffect23(() => {
       if (!poolColumnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -17223,26 +17495,26 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         return next;
       });
     };
-    const [spSortField, setSpSortField] = useState21("title");
-    const [spSortDir, setSpSortDir] = useState21("asc");
-    const [spFilterSearch, setSpFilterSearch] = useState21("");
-    const [spFilterArtist, setSpFilterArtist] = useState21("");
-    const [spFilterGenre, setSpFilterGenre] = useState21("ALL");
-    const [spFilterSubgenre, setSpFilterSubgenre] = useState21("");
-    const [spFilterOrigin, setSpFilterOrigin] = useState21("ALL");
-    const [spFilterMatch, setSpFilterMatch] = useState21("ALL");
-    const [spFilterPreQuality, setSpFilterPreQuality] = useState21("ALL");
-    const [spFilterFormat, setSpFilterFormat] = useState21("ALL");
-    const [spFilterKhz, setSpFilterKhz] = useState21("ALL");
-    const [spFilterKbps, setSpFilterKbps] = useState21("ALL");
-    const [spFilterQuality, setSpFilterQuality] = useState21("ALL");
-    const [spFilterCutoff, setSpFilterCutoff] = useState21("ALL");
-    const [spFilterDuration, setSpFilterDuration] = useState21("");
-    const [spFilterBpm, setSpFilterBpm] = useState21("");
-    const [spFilterKey, setSpFilterKey] = useState21("ALL");
-    const [spFilterEnergy, setSpFilterEnergy] = useState21("ALL");
-    const [spFilterDance, setSpFilterDance] = useState21("ALL");
-    const [spFilterStatus, setSpFilterStatus] = useState21("ALL");
+    const [spSortField, setSpSortField] = useState22("title");
+    const [spSortDir, setSpSortDir] = useState22("asc");
+    const [spFilterSearch, setSpFilterSearch] = useState22("");
+    const [spFilterArtist, setSpFilterArtist] = useState22("");
+    const [spFilterGenre, setSpFilterGenre] = useState22("ALL");
+    const [spFilterSubgenre, setSpFilterSubgenre] = useState22("");
+    const [spFilterOrigin, setSpFilterOrigin] = useState22("ALL");
+    const [spFilterMatch, setSpFilterMatch] = useState22("ALL");
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState22("ALL");
+    const [spFilterFormat, setSpFilterFormat] = useState22("ALL");
+    const [spFilterKhz, setSpFilterKhz] = useState22("ALL");
+    const [spFilterKbps, setSpFilterKbps] = useState22("ALL");
+    const [spFilterQuality, setSpFilterQuality] = useState22("ALL");
+    const [spFilterCutoff, setSpFilterCutoff] = useState22("ALL");
+    const [spFilterDuration, setSpFilterDuration] = useState22("");
+    const [spFilterBpm, setSpFilterBpm] = useState22("");
+    const [spFilterKey, setSpFilterKey] = useState22("ALL");
+    const [spFilterEnergy, setSpFilterEnergy] = useState22("ALL");
+    const [spFilterDance, setSpFilterDance] = useState22("ALL");
+    const [spFilterStatus, setSpFilterStatus] = useState22("ALL");
     const poolUniqueGenres = useMemo8(() => {
       const set = /* @__PURE__ */ new Set();
       (tracks || []).forEach((t2) => {
@@ -17968,7 +18240,33 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       },
       "+ ",
       sug
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs font-mono text-gray-400 bg-[#060609] border border-djzinc-800 px-2.5 py-1 rounded-lg" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "Destino:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[120px] font-semibold", title: !destDir || !destDir.startsWith("/") || destDir.includes('"') ? "/Users/admin/Music/mi musica" : destDir }, !destDir || !destDir.startsWith("/") || destDir.includes('"') || destDir.includes(":") ? "mi musica" : destDir.split("/").filter(Boolean).pop() || "mi musica"), /* @__PURE__ */ React.createElement("button", { onClick: handleCambiarCarpeta, className: "text-djcyan-400 hover:text-djcyan-300 px-1.5 py-0.5 hover:bg-djzinc-800 rounded text-[10px] font-mono cursor-pointer transition-colors" }, "Cambiar")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#060609] border border-djzinc-750 rounded-lg p-0.5" }, [
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccion(),
+        className: "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white shadow-sm transition-all cursor-pointer active:scale-95",
+        title: "Importar pistas de la colecci\xF3n para an\xE1lisis y descarga"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 13, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        onChange: (e) => handleCargarColeccion(e.target.value),
+        defaultValue: "",
+        className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2 py-1 outline-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Biblioteca..."),
+      customLibraries.map((lib) => {
+        var _a2;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.reduce((acc, f) => {
+          var _a3;
+          return acc + (((_a3 = f.tracks) == null ? void 0 : _a3.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 text-xs font-mono text-gray-400 bg-[#060609] border border-djzinc-800 px-2.5 py-1 rounded-lg" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "Destino:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[120px] font-semibold", title: !destDir || !destDir.startsWith("/") || destDir.includes('"') ? "/Users/admin/Music/mi musica" : destDir }, !destDir || !destDir.startsWith("/") || destDir.includes('"') || destDir.includes(":") ? "mi musica" : destDir.split("/").filter(Boolean).pop() || "mi musica"), /* @__PURE__ */ React.createElement("button", { onClick: handleCambiarCarpeta, className: "text-djcyan-400 hover:text-djcyan-300 px-1.5 py-0.5 hover:bg-djzinc-800 rounded text-[10px] font-mono cursor-pointer transition-colors" }, "Cambiar")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#060609] border border-djzinc-750 rounded-lg p-0.5" }, [
       { id: "flac", label: "FLAC Hi-Res", badge: "24b" },
       { id: "wav", label: "WAV", badge: "24b" },
       { id: "aiff", label: "AIFF", badge: "Club" },
@@ -18582,7 +18880,19 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         },
         "Cerrar"
       ), /* @__PURE__ */ React.createElement("button", { onClick: () => lanzarDescargaReal(selectedCount > 0 ? tracks.filter((t2) => t2.selected) : [currentTrack]), className: "flex-1 py-2 bg-djcyan-600 hover:bg-djcyan-500 text-black rounded font-bold text-xs shadow-md cursor-pointer transition-colors" }, "Descargar ", selectedCount > 1 ? `(${selectedCount})` : "Pista Actual", " .", selectedFormat.toUpperCase()))
-    )), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, null), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white uppercase tracking-wider font-mono" }, "Seleccionar Carpeta de Destino")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }), " Cerrar")), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 truncate flex-1" }, fsCurrentPath || "/"), fsParentPath && /* @__PURE__ */ React.createElement("button", { onClick: () => handleNavegarACarpeta(fsParentPath), className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 14, className: "inline-block align-[-2px]" }), " Subir nivel")), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]" }, fsLoading ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse" }, "Explorando directorios...") : fsFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-xs font-mono text-gray-500" }, "No se encontraron subdirectorios") : fsFolders.map((f, idx) => /* @__PURE__ */ React.createElement("div", { key: idx, onDoubleClick: () => handleNavegarACarpeta(f.path), className: "flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors" }, /* @__PURE__ */ React.createElement("div", { onClick: () => handleNavegarACarpeta(f.path), className: "flex items-center gap-2.5 flex-1 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px] text-amber-400" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-300 truncate" }, f.name)), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(f.path), className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0" }, "Seleccionar")))), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center gap-2.5" }, /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-800 text-gray-300 hover:text-white cursor-pointer transition-all shadow active:scale-95" }, "Cancelar"), /* @__PURE__ */ React.createElement("button", { onClick: () => handleSeleccionarCarpetaDestino(fsCurrentPath), className: "px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-mono font-bold bg-djcyan-400 hover:bg-djcyan-300 text-black cursor-pointer shadow-md transition-all active:scale-95" }, "Usar esta Carpeta")))), candidateModal.open && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border border-djzinc-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-djzinc-950/80 border-b border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl bg-gradient-to-br from-djcyan-500/20 to-emerald-500/20 border border-djcyan-500/40 flex items-center justify-center text-xl shadow-inner" }, /* @__PURE__ */ React.createElement(Icons.Target, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, "Verificador de Fidelidad y Selector de Versi\xF3n DJ", /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-djcyan-950 text-djcyan-400 border border-djcyan-800" }, "100% Precisi\xF3n")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Compara el track de tu biblioteca con las versiones disponibles en streaming para evitar descargar Radio Edits o temas incorrectos."))), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(
+      UnifiedLibraryBrowserModal,
+      {
+        isOpen: fsBrowserOpen,
+        onClose: () => setFsBrowserOpen(false),
+        title: "Record Pool \u2022 Carpeta de Destino & Biblioteca",
+        initialPath: destDir,
+        onSelectPath: (selectedPath) => handleSeleccionarCarpetaDestino(selectedPath),
+        customLibraries,
+        activeCustomLibId,
+        onImportCollection: handleCargarColeccion
+      }
+    ), candidateModal.open && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-900 border border-djzinc-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-djzinc-950/80 border-b border-djzinc-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl bg-gradient-to-br from-djcyan-500/20 to-emerald-500/20 border border-djcyan-500/40 flex items-center justify-center text-xl shadow-inner" }, /* @__PURE__ */ React.createElement(Icons.Target, { size: 14, className: "inline-block align-[-2px]" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, "Verificador de Fidelidad y Selector de Versi\xF3n DJ", /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-djcyan-950 text-djcyan-400 border border-djcyan-800" }, "100% Precisi\xF3n")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400" }, "Compara el track de tu biblioteca con las versiones disponibles en streaming para evitar descargar Radio Edits o temas incorrectos."))), /* @__PURE__ */ React.createElement(
       "button",
       {
         onClick: () => setCandidateModal((prev) => ({ ...prev, open: false })),
@@ -18899,7 +19209,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/TaxonomyWorkspace.jsx
-  var { useState: useState22, useEffect: useEffect23, useRef: useRef20, useMemo: useMemo9, useCallback: useCallback11 } = React;
+  var { useState: useState23, useEffect: useEffect24, useRef: useRef20, useMemo: useMemo9, useCallback: useCallback11 } = React;
   var TaxonomyWorkspace = ({
     tracks = [],
     onTracksUpdated,
@@ -18915,21 +19225,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onAddTracksToSpotify,
     onRemoveTrack
   }) => {
-    const [activeSubView, setActiveSubView] = useState22("search");
-    const [searchScope, setSearchScope] = useState22("all");
-    const [isSearchingOnline, setIsSearchingOnline] = useState22(false);
-    const [onlineResults, setOnlineResults] = useState22([]);
-    const [searchLocalResults, setSearchLocalResults] = useState22([]);
-    const [hasExecutedSearch, setHasExecutedSearch] = useState22(false);
-    const [selectedTaxIds, setSelectedTaxIds] = useState22(/* @__PURE__ */ new Set());
-    const [displayMode, setDisplayMode] = useState22("table");
-    const [taxSortField, setTaxSortField] = useState22("matchScore");
-    const [taxSortDir, setTaxSortDir] = useState22("desc");
-    const [taxFilterSearch, setTaxFilterSearch] = useState22("");
-    const [taxFilterGenre, setTaxFilterGenre] = useState22("ALL");
-    const [taxFilterOrigin, setTaxFilterOrigin] = useState22("ALL");
-    const [taxFilterEnergy, setTaxFilterEnergy] = useState22("ALL");
-    const [taxFilterDance, setTaxFilterDance] = useState22("ALL");
+    const [activeSubView, setActiveSubView] = useState23("search");
+    const [searchScope, setSearchScope] = useState23("all");
+    const [isSearchingOnline, setIsSearchingOnline] = useState23(false);
+    const [onlineResults, setOnlineResults] = useState23([]);
+    const [searchLocalResults, setSearchLocalResults] = useState23([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState23(false);
+    const [selectedTaxIds, setSelectedTaxIds] = useState23(/* @__PURE__ */ new Set());
+    const [displayMode, setDisplayMode] = useState23("table");
+    const [taxSortField, setTaxSortField] = useState23("matchScore");
+    const [taxSortDir, setTaxSortDir] = useState23("desc");
+    const [taxFilterSearch, setTaxFilterSearch] = useState23("");
+    const [taxFilterGenre, setTaxFilterGenre] = useState23("ALL");
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState23("ALL");
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState23("ALL");
+    const [taxFilterDance, setTaxFilterDance] = useState23("ALL");
     const handleSortTax = (field) => {
       setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
       setTaxSortField(field);
@@ -18938,18 +19248,18 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const [aiQuery, setAiQuery] = useState22("");
-    const [selectedGenreFilter, setSelectedGenreFilter] = useState22("ALL");
-    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState22("ALL");
-    const [selectedVersionFilter, setSelectedVersionFilter] = useState22("ALL");
-    const [selectedBpmFilter, setSelectedBpmFilter] = useState22("ALL");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState22("ALL");
-    const [selectedMoodFilter, setSelectedMoodFilter] = useState22("ALL");
-    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState22(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState22(false);
-    const [feedbackMsg, setFeedbackMsg] = useState22("");
-    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState22(false);
-    const [activeTagTab, setActiveTagTab] = useState22("bpm");
+    const [aiQuery, setAiQuery] = useState23("");
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState23("ALL");
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState23("ALL");
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState23("ALL");
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState23("ALL");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState23("ALL");
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState23("ALL");
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState23(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState23(false);
+    const [feedbackMsg, setFeedbackMsg] = useState23("");
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState23(false);
+    const [activeTagTab, setActiveTagTab] = useState23("bpm");
     const handleRemoveToken = (tok) => {
       if (!tok) return;
       let newQuery = aiQuery;
@@ -18970,16 +19280,16 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setIsAddTagMenuOpen(false);
       handleEjecutarBusqueda(newQuery);
     };
-    const [rutaBase, setRutaBase] = useState22("/Users/admin/Music/mi musica");
-    const [modo, setModo] = useState22("copy");
-    const [isRouting, setIsRouting] = useState22(false);
-    const [routeProgress, setRouteProgress] = useState22(0);
-    const [routeStatusMsg, setRouteStatusMsg] = useState22("");
-    const [resultSummary, setResultSummary] = useState22(null);
-    const [expandedGenre, setExpandedGenre] = useState22("Techno");
-    const [searchTerm, setSearchTerm] = useState22("");
-    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState22(null);
-    useEffect23(() => {
+    const [rutaBase, setRutaBase] = useState23("/Users/admin/Music/mi musica");
+    const [modo, setModo] = useState23("copy");
+    const [isRouting, setIsRouting] = useState23(false);
+    const [routeProgress, setRouteProgress] = useState23(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState23("");
+    const [resultSummary, setResultSummary] = useState23(null);
+    const [expandedGenre, setExpandedGenre] = useState23("Techno");
+    const [searchTerm, setSearchTerm] = useState23("");
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState23(null);
+    useEffect24(() => {
       handleEjecutarBusqueda("");
     }, []);
     const parsedQuery = useMemo9(() => parseAIDJQuery(aiQuery), [aiQuery]);
@@ -20487,58 +20797,111 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/ShazamWorkspace.jsx
-  var { useState: useState23, useEffect: useEffect24, useRef: useRef21 } = React;
-  var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
+  var { useState: useState24, useEffect: useEffect25, useRef: useRef21 } = React;
+  var ShazamWorkspace = ({
+    onSendToSpotify,
+    onSendToAudit,
+    onNavigateTab,
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
+  }) => {
     var _a, _b;
-    const [isListening, setIsListening] = useState23(false);
-    const [countdown, setCountdown] = useState23(10);
-    const [isAnalyzing, setIsAnalyzing] = useState23(false);
-    const [statusMsg, setStatusMsg] = useState23("");
-    const [identifiedTrack, setIdentifiedTrack] = useState23(null);
-    const [history, setHistory] = useState23([]);
-    const [previewPlaying, setPreviewPlaying] = useState23(false);
-    const [micLevel, setMicLevel] = useState23(0);
+    const [isListening, setIsListening] = useState24(false);
+    const [countdown, setCountdown] = useState24(10);
+    const [isAnalyzing, setIsAnalyzing] = useState24(false);
+    const [statusMsg, setStatusMsg] = useState24("");
+    const [identifiedTrack, setIdentifiedTrack] = useState24(null);
+    const [history, setHistory] = useState24([]);
+    const [previewPlaying, setPreviewPlaying] = useState24(false);
+    const [micLevel, setMicLevel] = useState24(0);
     const audioRef = useRef21(new Audio());
     const mediaRecorderRef = useRef21(null);
     const audioStreamRef = useRef21(null);
     const fileInputRef = useRef21(null);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState24(false);
     const timerRef = useRef21(null);
     const animFrameRef = useRef21(null);
     const audioCtxRef = useRef21(null);
-    const [dragOver, setDragOver] = useState23(false);
-    const [selectedEngine, setSelectedEngine] = useState23(() => {
+    const [dragOver, setDragOver] = useState24(false);
+    const handleSelectFileFromModal = async (filePath) => {
+      setFsBrowserOpen(false);
+      if (!filePath) return;
+      try {
+        setStatusMsg(`Cargando audio desde ${filePath.split("/").pop()}...`);
+        setIsAnalyzing(true);
+        const resp = await fetch(`/api/stream_audio?path=${encodeURIComponent(filePath)}`);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const fileName = filePath.split("/").pop() || "audio_file.mp3";
+          const file = new File([blob], fileName, { type: blob.type || "audio/mpeg" });
+          handleFileSelect(file);
+        } else {
+          setStatusMsg("Error accediendo al archivo seleccionado.");
+          setIsAnalyzing(false);
+        }
+      } catch (e) {
+        console.error("Error al cargar archivo en Radar:", e);
+        setStatusMsg("Error al leer archivo de audio.");
+        setIsAnalyzing(false);
+      }
+    };
+    const handleImportarColeccionRadar = async (targetLibId = null) => {
+      setFsBrowserOpen(false);
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      let foundTrack = null;
+      if (activeLib && activeLib.folders) {
+        for (const f of activeLib.folders) {
+          if (f.tracks && f.tracks.length > 0) {
+            foundTrack = f.tracks[0];
+            break;
+          }
+        }
+      }
+      if (foundTrack) {
+        const trackPath = foundTrack.path || foundTrack.filepath || foundTrack.f;
+        if (trackPath) {
+          handleSelectFileFromModal(trackPath);
+        } else {
+          setStatusMsg(`Pista "${foundTrack.title || "Track"}" seleccionada sin ruta en disco.`);
+        }
+      } else {
+        setStatusMsg("La colecci\xF3n seleccionada no tiene pistas.");
+      }
+    };
+    const [selectedEngine, setSelectedEngine] = useState24(() => {
       try {
         return localStorage.getItem("bw_radar_engine") || "radar_edge";
       } catch (e) {
         return "radar_edge";
       }
     });
-    const [radarEnvironment, setRadarEnvironment] = useState23(() => {
+    const [radarEnvironment, setRadarEnvironment] = useState24(() => {
       try {
         return localStorage.getItem("bw_radar_env") || "club";
       } catch (e) {
         return "club";
       }
     });
-    const [radarEvent, setRadarEvent] = useState23(null);
+    const [radarEvent, setRadarEvent] = useState24(null);
     const recognizerRef = useRef21(null);
-    const [auddToken, setAuddToken] = useState23(() => {
+    const [auddToken, setAuddToken] = useState24(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
       } catch (e) {
         return "";
       }
     });
-    const [showConfig, setShowConfig] = useState23(false);
-    const [micCaptureMode, setMicCaptureMode] = useState23("auto");
-    const [micPermissionError, setMicPermissionError] = useState23(null);
-    useEffect24(() => {
+    const [showConfig, setShowConfig] = useState24(false);
+    const [micCaptureMode, setMicCaptureMode] = useState24("auto");
+    const [micPermissionError, setMicPermissionError] = useState24(null);
+    useEffect25(() => {
       try {
         localStorage.setItem("bw_radar_engine", selectedEngine);
       } catch (e) {
       }
     }, [selectedEngine]);
-    useEffect24(() => {
+    useEffect25(() => {
       try {
         localStorage.setItem("bw_radar_env", radarEnvironment);
       } catch (e) {
@@ -20547,7 +20910,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         recognizerRef.current.setEnvironment(radarEnvironment);
       }
     }, [radarEnvironment]);
-    useEffect24(() => {
+    useEffect25(() => {
       recognizerRef.current = new Phase1FastRecognizer({
         workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
         environment: radarEnvironment,
@@ -20594,13 +20957,13 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       });
     }, []);
-    useEffect24(() => {
+    useEffect25(() => {
       try {
         localStorage.setItem("bw_audd_token", auddToken);
       } catch (e) {
       }
     }, [auddToken]);
-    const [notebookTracks, setNotebookTracks] = useState23(() => {
+    const [notebookTracks, setNotebookTracks] = useState24(() => {
       try {
         const saved = localStorage.getItem("beatwave_shazam_notebook");
         return saved ? JSON.parse(saved) : [];
@@ -20608,8 +20971,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         return [];
       }
     });
-    const [notebookFeedback, setNotebookFeedback] = useState23("");
-    useEffect24(() => {
+    const [notebookFeedback, setNotebookFeedback] = useState24("");
+    useEffect25(() => {
       try {
         localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
       } catch (e) {
@@ -20737,7 +21100,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     };
-    useEffect24(() => {
+    useEffect25(() => {
       const audio = audioRef.current;
       const handleEnded = () => setPreviewPlaying(false);
       const handlePause = () => setPreviewPlaying(false);
@@ -21399,6 +21762,36 @@ ${text}`);
         }
       ),
       /* @__PURE__ */ React.createElement("div", { className: "my-3 w-32 h-28 rounded-xl border-2 border-dashed border-[var(--bw-line-strong)] group-hover:border-[var(--bw-cyan)] flex flex-col items-center justify-center transition-colors bg-[var(--bw-surface-2)]" }, /* @__PURE__ */ React.createElement(Icons.Upload, { size: 22, className: "text-zinc-400 group-hover:text-[var(--bw-cyan)] mb-1.5 transition-colors" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-zinc-300" }, "ARRASTRAR AQU\xCD")),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-2 w-full justify-center flex-wrap", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => setFsBrowserOpen(true),
+          className: "px-3 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Folder, { size: 13 }),
+        /* @__PURE__ */ React.createElement("span", null, "Elegir Carpeta o Archivo")
+      ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleImportarColeccionRadar(),
+          className: "px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95",
+          title: "Analizar pista de colecci\xF3n guardada"
+        },
+        /* @__PURE__ */ React.createElement(Icons.Library, { size: 13 }),
+        /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+      ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+        "select",
+        {
+          onChange: (e) => handleImportarColeccionRadar(e.target.value),
+          defaultValue: "",
+          className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2 py-1 outline-none cursor-pointer",
+          title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+        },
+        /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Biblioteca..."),
+        customLibraries.map((lib) => /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name))
+      ))),
       /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono text-zinc-500" }, /* @__PURE__ */ React.createElement("span", null, "Formatos: MP3, FLAC, WAV, M4A, OGG"))
     )), identifiedTrack && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-5 rounded-xl border border-cyan-500/40 shadow-xl space-y-4 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-[var(--bw-line)] pb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider" }, "PISTA IDENTIFICADA"), identifiedTrack.motor_usado && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 12, className: "inline-block align-[-2px]" }), " ", identifiedTrack.motor_usado)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, identifiedTrack.isrc && /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 bg-[var(--bw-surface-1)] px-2 py-0.5 rounded border border-[var(--bw-line)]" }, "ISRC: ", identifiedTrack.isrc), /* @__PURE__ */ React.createElement(
       "button",
@@ -21621,16 +22014,28 @@ ${text}`);
         },
         /* @__PURE__ */ React.createElement(Icons.Plus, { size: 12 })
       ))
-    )))));
+    )))), /* @__PURE__ */ React.createElement(
+      UnifiedLibraryBrowserModal,
+      {
+        isOpen: fsBrowserOpen,
+        onClose: () => setFsBrowserOpen(false),
+        title: "Radar \u2022 Explorador de Biblioteca & Archivos",
+        onSelectPath: (selectedPath) => handleSelectFileFromModal(selectedPath),
+        onSelectMultiple: (allTargets) => handleSelectFileFromModal(allTargets[0]),
+        customLibraries,
+        activeCustomLibId,
+        onImportCollection: handleImportarColeccionRadar
+      }
+    ));
   };
 
   // web/js/workspaces/LogsWorkspace.jsx
-  var { useState: useState24 } = React;
+  var { useState: useState25 } = React;
 
   // web/js/workspaces/TrendsWorkspace.jsx
-  var { useState: useState25, useEffect: useEffect25, useMemo: useMemo10 } = React;
+  var { useState: useState26, useEffect: useEffect26, useMemo: useMemo10 } = React;
   var TrendsWorkspace = ({ lang = "es" }) => {
-    const [trendsData, setTrendsData] = useState25({
+    const [trendsData, setTrendsData] = useState26({
       last_crawled_at: "Sincronizando...",
       next_scheduled_run: "Martes 23:00",
       items: [],
@@ -21642,14 +22047,14 @@ ${text}`);
       dj_gear: [],
       trends_radar: []
     });
-    const [loading, setLoading] = useState25(true);
-    const [isCrawling, setIsCrawling] = useState25(false);
-    const [selectedCategory, setSelectedCategory] = useState25("todas");
-    const [selectedCity, setSelectedCity] = useState25("Madrid");
-    const [searchQuery, setSearchQuery] = useState25("");
-    const [dateFilter, setDateFilter] = useState25("all");
-    const [readingArticle, setReadingArticle] = useState25(null);
-    const [copiedRef, setCopiedRef] = useState25(false);
+    const [loading, setLoading] = useState26(true);
+    const [isCrawling, setIsCrawling] = useState26(false);
+    const [selectedCategory, setSelectedCategory] = useState26("todas");
+    const [selectedCity, setSelectedCity] = useState26("Madrid");
+    const [searchQuery, setSearchQuery] = useState26("");
+    const [dateFilter, setDateFilter] = useState26("all");
+    const [readingArticle, setReadingArticle] = useState26(null);
+    const [copiedRef, setCopiedRef] = useState26(false);
     const categories = [
       { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
       { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
@@ -21681,7 +22086,7 @@ ${text}`);
         setLoading(false);
       }
     };
-    useEffect25(() => {
+    useEffect26(() => {
       fetchTrends();
     }, []);
     const handleRunCrawler = async () => {
@@ -22085,7 +22490,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/SetBuilderWorkspace.jsx
-  var { useState: useState26, useEffect: useEffect26, useRef: useRef22, useMemo: useMemo11, useCallback: useCallback12 } = React;
+  var { useState: useState27, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo11, useCallback: useCallback12 } = React;
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
@@ -22275,25 +22680,29 @@ Respuesta: ${qa.a}`).join("\n\n"),
     isPlaying,
     onTogglePlay,
     onNavigateTab,
-    lang = "es"
+    lang = "es",
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
   }) => {
-    const [setName, setSetName] = useState26("BeatWave_Mainstage_Set");
-    const [selectedTrackIdx, setSelectedTrackIdx] = useState26(null);
-    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState26(false);
-    const [searchAddQuery, setSearchAddQuery] = useState26("");
-    const [exportStatus, setExportStatus] = useState26(null);
-    const [isExporting, setIsExporting] = useState26(false);
-    const [isAuditingSet, setIsAuditingSet] = useState26(false);
-    const [auditSetProgress, setAuditSetProgress] = useState26(0);
-    const [folderLoading, setFolderLoading] = useState26(false);
-    const [folderProgress, setFolderProgress] = useState26({ pct: 0, msg: "" });
-    const [viewMode, setViewMode] = useState26("list");
-    const [graphData, setGraphData] = useState26({ nodes: [], edges: [] });
-    const [isLoadingGraph, setIsLoadingGraph] = useState26(false);
-    const [aiAuditResult, setAiAuditResult] = useState26(null);
-    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState26(false);
-    const [hoveredFlowIdx, setHoveredFlowIdx] = useState26(null);
-    useEffect26(() => {
+    const [setName, setSetName] = useState27("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState27(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState27(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState27(false);
+    const [searchAddQuery, setSearchAddQuery] = useState27("");
+    const [exportStatus, setExportStatus] = useState27(null);
+    const [isExporting, setIsExporting] = useState27(false);
+    const [isAuditingSet, setIsAuditingSet] = useState27(false);
+    const [auditSetProgress, setAuditSetProgress] = useState27(0);
+    const [folderLoading, setFolderLoading] = useState27(false);
+    const [folderProgress, setFolderProgress] = useState27({ pct: 0, msg: "" });
+    const [viewMode, setViewMode] = useState27("list");
+    const [graphData, setGraphData] = useState27({ nodes: [], edges: [] });
+    const [isLoadingGraph, setIsLoadingGraph] = useState27(false);
+    const [aiAuditResult, setAiAuditResult] = useState27(null);
+    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState27(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState27(null);
+    useEffect27(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
       const updated = setTracks.map((st) => {
@@ -22468,35 +22877,86 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setExportStatus({ type: "success", msg: `\u2713 ${formatted.length} pistas aleatorias seleccionadas de tu biblioteca y a\xF1adidas al Set.` });
       setTimeout(() => setExportStatus(null), 4e3);
     };
-    const handleAddFolderToSet = async () => {
-      var _a;
+    const handleCargarColeccion = (targetLibId = null) => {
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      const colTracks = [];
+      const seenKeys = /* @__PURE__ */ new Set();
+      if (activeLib && activeLib.folders) {
+        activeLib.folders.forEach((f) => {
+          (f.tracks || []).forEach((tr) => {
+            const key = tr.path || tr.filepath || tr.f || tr.id;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              colTracks.push(tr);
+            }
+          });
+        });
+      }
+      if (colTracks.length > 0) {
+        const formattedTracks = colTracks.map((t, idx) => ({
+          ...t,
+          id: t.id || `set_col_${Date.now()}_${idx}`,
+          path: t.path || t.filepath || t.f || "",
+          f: t.f || t.path || t.filepath || "",
+          title: t.title || t.t || t.filename || `Track ${idx + 1}`,
+          t: t.title || t.t || t.filename || `Track ${idx + 1}`,
+          artist: t.artist || t.a || "Artista",
+          a: t.artist || t.a || "Artista",
+          bpm: getTrackBpm(t) || t.bpm || t.b,
+          key: getTrackKey(t) || t.key || t.k,
+          lufs: getTrackLufs(t),
+          acoustic_role: t.acoustic_role || "Balanced Full-Range",
+          low_ratio: t.low_ratio || 33.3,
+          mid_ratio: t.mid_ratio || 33.3,
+          high_ratio: t.high_ratio || 33.4,
+          duration_sec: parseDurationSec(t.duration_sec || t.duration) || 240
+        }));
+        setSetTracks((prev) => [...prev, ...formattedTracks]);
+        if (setAuditTracks) {
+          setAuditTracks((prev) => {
+            const merged = [...prev];
+            formattedTracks.forEach((nt) => {
+              if (!merged.some((x) => x.path === nt.path)) merged.push(nt);
+            });
+            return merged;
+          });
+        }
+        setExportStatus({ type: "success", msg: `\u2713 Se han a\xF1adido ${formattedTracks.length} pistas al Set desde la Colecci\xF3n "${activeLib.name || "Colecci\xF3n"}"` });
+      } else {
+        setExportStatus({ type: "error", msg: "La colecci\xF3n seleccionada est\xE1 vac\xEDa." });
+      }
+      setTimeout(() => setExportStatus(null), 4e3);
+    };
+    const handleAddFolderToSet = () => {
+      setFsBrowserOpen(true);
+    };
+    const handleCargarRutaAlSet = async (targets) => {
+      setFsBrowserOpen(false);
       try {
         setFolderLoading(true);
-        setFolderProgress({ pct: 5, msg: "Examinando carpeta de m\xFAsica en disco..." });
-        const prevHandler = window.actualizar_progreso_batch;
-        window.actualizar_progreso_batch = (pct, msg) => {
-          setFolderProgress({ pct: Math.min(100, Math.max(5, pct)), msg: msg || "" });
-          window.dispatchEvent(new CustomEvent("bw:audit_progress", { detail: { pct, msg } }));
-        };
-        let res = null;
+        setFolderProgress({ pct: 10, msg: "Examinando y cargando archivos..." });
+        const targetPath = Array.isArray(targets) ? targets[0] : targets;
+        let rawTracks = [];
         try {
-          const resp = await fetch("/api/setbuilder/load_folder", {
+          const resp = await fetch("/api/escanear", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({})
+            body: JSON.stringify({ ruta: targetPath })
           });
           if (resp.ok) {
-            res = await resp.json();
+            const data = await resp.json();
+            if (data && Array.isArray(data.tracks)) rawTracks = data.tracks;
           }
-        } catch (fetchErr) {
-          console.warn("Fallo REST fetch, probando eel:", fetchErr);
+        } catch (e) {
         }
-        if (!res && window.eel && window.eel.seleccionar_carpeta_para_set) {
-          res = await window.eel.seleccionar_carpeta_para_set()();
+        if ((!rawTracks || rawTracks.length === 0) && window.eel && window.eel.cargar_metadatos_directorio) {
+          try {
+            const resEel = await window.eel.cargar_metadatos_directorio(targets)();
+            if (resEel && Array.isArray(resEel.tracks)) rawTracks = resEel.tracks;
+          } catch (e) {
+          }
         }
-        const rawTracks = Array.isArray(res == null ? void 0 : res.tracks) ? res.tracks : ((_a = res == null ? void 0 : res.tracks) == null ? void 0 : _a.tracks) || [];
-        if (res && rawTracks && rawTracks.length > 0) {
-          setFolderProgress({ pct: 100, msg: `\u2713 ${rawTracks.length} pistas le\xEDdas correctamente.` });
+        if (rawTracks && rawTracks.length > 0) {
           const formattedTracks = rawTracks.map((t, idx) => ({
             ...t,
             id: t.id || `set_${Date.now()}_${idx}`,
@@ -22525,21 +22985,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
               return merged;
             });
           }
-          const folderName = res.path ? res.path.split("/").pop() : "la carpeta";
+          const folderName = typeof targetPath === "string" ? targetPath.split("/").pop() || targetPath : "archivos seleccionados";
           setExportStatus({ type: "success", msg: `\u2713 Se han a\xF1adido ${formattedTracks.length} pistas al Set desde "${folderName}"` });
-        } else if (!res || res.status === "cancelado") {
-          setExportStatus(null);
         } else {
-          setExportStatus({ type: "error", msg: "No se encontraron pistas de audio compatibles en la carpeta seleccionada." });
+          setExportStatus({ type: "error", msg: "No se encontraron pistas de audio compatibles en la ruta seleccionada." });
         }
       } catch (err) {
         console.error("Error al a\xF1adir carpeta al set:", err);
         setExportStatus({ type: "error", msg: `Error: ${err.message || err}` });
       } finally {
-        setTimeout(() => {
-          setFolderLoading(false);
-        }, 600);
-        setTimeout(() => setExportStatus((prev) => prev && prev.type === "loading" ? null : prev), 3500);
+        setFolderLoading(false);
+        setTimeout(() => setExportStatus(null), 4e3);
       }
     };
     const handleCargarGrafo = async () => {
@@ -23248,7 +23704,34 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Cargar Carpeta")
-    ), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccion(),
+        disabled: folderLoading,
+        className: "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white shadow-sm transition-all cursor-pointer active:scale-95",
+        title: "Importar colecci\xF3n de m\xFAsica guardada"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        onChange: (e) => handleCargarColeccion(e.target.value),
+        defaultValue: "",
+        className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-xl px-2.5 py-2 outline-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar biblioteca..."),
+      customLibraries.map((lib) => {
+        var _a;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+          var _a2;
+          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    )), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -23363,7 +23846,34 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }),
       " Cargar Carpeta de M\xFAsica"
-    ), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccion(),
+        disabled: folderLoading,
+        className: "px-4 py-2.5 rounded-xl text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-2",
+        title: "Importar colecci\xF3n de m\xFAsica guardada"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        onChange: (e) => handleCargarColeccion(e.target.value),
+        defaultValue: "",
+        className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-xl px-2.5 py-2.5 outline-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar biblioteca..."),
+      customLibraries.map((lib) => {
+        var _a;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+          var _a2;
+          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    )), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -23578,11 +24088,23 @@ Respuesta: ${qa.a}`).join("\n\n"),
         className: "px-4 py-1.5 rounded-xl text-xs font-mono font-bold bg-djzinc-800 text-gray-200 hover:bg-djzinc-700 cursor-pointer"
       },
       "Cerrar"
-    )))));
+    )))), /* @__PURE__ */ React.createElement(
+      UnifiedLibraryBrowserModal,
+      {
+        isOpen: fsBrowserOpen,
+        onClose: () => setFsBrowserOpen(false),
+        title: "Set Builder \u2022 Explorador de Biblioteca & Archivos",
+        onSelectPath: (selectedPath) => handleCargarRutaAlSet(selectedPath),
+        onSelectMultiple: (allTargets) => handleCargarRutaAlSet(allTargets),
+        customLibraries,
+        activeCustomLibId,
+        onImportCollection: handleCargarColeccion
+      }
+    ));
   };
 
   // web/js/workspaces/MapWorkspace.jsx
-  var { useState: useState27, useEffect: useEffect27, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback13 } = React;
+  var { useState: useState28, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback13 } = React;
   var MAP_CAMELOT_COLORS2 = {
     "1A": "#00e5ff",
     "1B": "#00b4d8",
@@ -23699,6 +24221,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var MapWorkspace = ({
     tracks: rawTracks = [],
+    setTracks = null,
     onPlayTrack,
     nowPlayingTrack,
     isPlaying,
@@ -23706,38 +24229,85 @@ Respuesta: ${qa.a}`).join("\n\n"),
     onNavigateTab,
     onAddTracksToSet,
     onSelectDirectory,
-    lang = "es"
+    lang = "es",
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
   }) => {
-    const [useDemo, setUseDemo] = useState27(false);
+    const [useDemo, setUseDemo] = useState28(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS2 : [];
-    const [projectionMode, setProjectionMode] = useState27("energy_dance");
-    const [colorMode, setColorMode] = useState27("genre");
-    const [toolMode, setToolMode] = useState27("pan");
-    const [searchQuery, setSearchQuery] = useState27("");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState27("ALL");
-    const [showHarmonicPaths, setShowHarmonicPaths] = useState27(true);
-    const [selectedTrack, setSelectedTrack] = useState27(null);
-    const [selectedMapTracks, setSelectedMapTracks] = useState27([]);
-    const [hoveredTrack, setHoveredTrack] = useState27(null);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState28(false);
+    const handleCargarColeccion = (targetLibId = null) => {
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      const colTracks = [];
+      const seenKeys = /* @__PURE__ */ new Set();
+      if (activeLib && activeLib.folders) {
+        activeLib.folders.forEach((f) => {
+          (f.tracks || []).forEach((tr) => {
+            const key = tr.path || tr.filepath || tr.f || tr.id;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              colTracks.push(tr);
+            }
+          });
+        });
+      }
+      if (colTracks.length > 0) {
+        if (setTracks) setTracks(colTracks);
+        setUseDemo(false);
+      }
+    };
+    const handleCargarDirectorio = async (targets) => {
+      setFsBrowserOpen(false);
+      const targetPath = Array.isArray(targets) ? targets[0] : targets;
+      try {
+        const resp = await fetch("/api/escanear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ruta: targetPath })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
+            if (setTracks) setTracks(data.tracks);
+            setUseDemo(false);
+            return;
+          }
+        }
+      } catch (e) {
+      }
+      if (onSelectDirectory) {
+        onSelectDirectory(targetPath);
+      }
+    };
+    const [projectionMode, setProjectionMode] = useState28("energy_dance");
+    const [colorMode, setColorMode] = useState28("genre");
+    const [toolMode, setToolMode] = useState28("pan");
+    const [searchQuery, setSearchQuery] = useState28("");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState28("ALL");
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState28(true);
+    const [selectedTrack, setSelectedTrack] = useState28(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState28([]);
+    const [hoveredTrack, setHoveredTrack] = useState28(null);
     const tooltipRef = useRef23(null);
     const mousePosRef = useRef23({ x: -100, y: -100 });
     const zoomThrottleRef = useRef23(null);
     const zoomTrailingRef = useRef23(null);
-    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState27(true);
-    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState27(true);
-    const [zoomDisplay, setZoomDisplay] = useState27(1);
-    const [isPanning, setIsPanning] = useState27(false);
-    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState27(true);
+    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState28(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState28(true);
+    const [zoomDisplay, setZoomDisplay] = useState28(1);
+    const [isPanning, setIsPanning] = useState28(false);
+    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState28(true);
     const {
       width: mapConsoleWidth,
       onPointerDown: onMapConsoleResizeDown,
       resetWidth: onResetMapConsoleWidth
     } = useDrawerResize("bw_map_console_width", 270, 220, 520, true);
-    const [filterMinEnergy, setFilterMinEnergy] = useState27(0);
-    const [filterMinDance, setFilterMinDance] = useState27(0);
-    const [filterMinIntensity, setFilterMinIntensity] = useState27(0);
-    const [filterMinValence, setFilterMinValence] = useState27(0);
-    const [filterQualityMode, setFilterQualityMode] = useState27("ALL");
+    const [filterMinEnergy, setFilterMinEnergy] = useState28(0);
+    const [filterMinDance, setFilterMinDance] = useState28(0);
+    const [filterMinIntensity, setFilterMinIntensity] = useState28(0);
+    const [filterMinValence, setFilterMinValence] = useState28(0);
+    const [filterQualityMode, setFilterQualityMode] = useState28("ALL");
     const handleResetAcousticFilters = useCallback13(() => {
       setFilterMinEnergy(0);
       setFilterMinDance(0);
@@ -23746,7 +24316,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setFilterQualityMode("ALL");
       setSelectedKeyFilter("ALL");
     }, []);
-    useEffect27(() => {
+    useEffect28(() => {
       return () => {
         if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
         if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
@@ -23959,7 +24529,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       boxStart: null
     });
     const nodesRef = useRef23([]);
-    useEffect27(() => {
+    useEffect28(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
       const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
@@ -24053,7 +24623,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
-    useEffect27(() => {
+    useEffect28(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -24660,7 +25230,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }, 80);
       }
     }, []);
-    useEffect27(() => {
+    useEffect28(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const onWheelNative = (e) => {
@@ -24681,7 +25251,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const handleResetZoom = () => {
       handleAutoFrame(1);
     };
-    useEffect27(() => {
+    useEffect28(() => {
       const timer = setTimeout(() => {
         handleAutoFrame();
       }, 120);
@@ -24831,6 +25401,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
       "button",
       {
         type: "button",
+        onClick: () => setFsBrowserOpen(true),
+        className: "ws-btn ws-btn-outline px-2 text-cyan-400 hover:text-white flex items-center gap-1 cursor-pointer",
+        title: "Explorar carpetas o importar colecci\xF3n al mapa"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Folder, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden lg:inline text-[11px] font-mono font-bold" }, "Cargar")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
         onClick: () => handleAutoFrame(),
         className: "ws-btn ws-btn-outline px-2.5 text-cyan-400 hover:text-white flex items-center gap-1.5 cursor-pointer",
         title: "Recentrar y enmarcar todos los tracks activos en pantalla"
@@ -24904,16 +25484,42 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Cargar Demo Electr\xF3nica (16 Tracks)")
-    ), onSelectDirectory && /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
-        onClick: onSelectDirectory,
+        onClick: () => setFsBrowserOpen(true),
         className: "ws-btn ws-btn-outline w-full justify-center h-9 text-xs"
       },
       /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Abrir Carpeta de M\xFAsica Local")
-    )))), hoveredTrack && /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("span", null, "Elegir Carpeta o Pistas")
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 w-full" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleCargarColeccion(),
+        className: "px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-mono font-bold flex-1 flex items-center justify-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer",
+        title: "Importar colecci\xF3n de m\xFAsica guardada"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Library, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement("span", null, "Importar Colecci\xF3n")
+    ), customLibraries && customLibraries.length > 1 && /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        onChange: (e) => handleCargarColeccion(e.target.value),
+        defaultValue: "",
+        className: "bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-xl px-2.5 py-2 outline-none cursor-pointer",
+        title: "Seleccionar qu\xE9 colecci\xF3n cargar"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Biblioteca..."),
+      customLibraries.map((lib) => {
+        var _a;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
+          var _a2;
+          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        }, 0)) || 0, " pistas)");
+      })
+    ))))), hoveredTrack && /* @__PURE__ */ React.createElement(
       "div",
       {
         ref: tooltipRef,
@@ -25079,24 +25685,36 @@ Respuesta: ${qa.a}`).join("\n\n"),
           setSelectedMapTracks([]);
         }
       }
+    ), /* @__PURE__ */ React.createElement(
+      UnifiedLibraryBrowserModal,
+      {
+        isOpen: fsBrowserOpen,
+        onClose: () => setFsBrowserOpen(false),
+        title: "Scatter Map \u2022 Explorador de Biblioteca & Archivos",
+        onSelectPath: (selectedPath) => handleCargarDirectorio(selectedPath),
+        onSelectMultiple: (allTargets) => handleCargarDirectorio(allTargets),
+        customLibraries,
+        activeCustomLibId,
+        onImportCollection: handleCargarColeccion
+      }
     )));
   };
 
   // web/js/workspaces/KnowledgeWorkspace.jsx
-  var { useState: useState28, useEffect: useEffect28, useRef: useRef24, useMemo: useMemo13 } = React;
+  var { useState: useState29, useEffect: useEffect29, useRef: useRef24, useMemo: useMemo13 } = React;
   var KnowledgeWorkspace = ({ lang = "es" }) => {
-    const [activeSection, setActiveSection] = useState28("courses");
-    const [knowledgeData, setKnowledgeData] = useState28({
+    const [activeSection, setActiveSection] = useState29("courses");
+    const [knowledgeData, setKnowledgeData] = useState29({
       courses: [],
       videos: [],
       manuals: [],
       tricks: [],
       glossary: []
     });
-    const [loading, setLoading] = useState28(true);
-    const [expandedCourseId, setExpandedCourseId] = useState28("course_01");
-    const [glossarySearch, setGlossarySearch] = useState28("");
-    const [glossaryCategory, setGlossaryCategory] = useState28("all");
+    const [loading, setLoading] = useState29(true);
+    const [expandedCourseId, setExpandedCourseId] = useState29("course_01");
+    const [glossarySearch, setGlossarySearch] = useState29("");
+    const [glossaryCategory, setGlossaryCategory] = useState29("all");
     const fetchKnowledge = async () => {
       try {
         setLoading(true);
@@ -25116,7 +25734,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setLoading(false);
       }
     };
-    useEffect28(() => {
+    useEffect29(() => {
       fetchKnowledge();
     }, []);
     const filteredGlossary = useMemo13(() => {
@@ -25362,7 +25980,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/CopilotWorkspace.jsx
-  var { useState: useState29, useEffect: useEffect29, useRef: useRef25, useMemo: useMemo14, useCallback: useCallback14 } = React;
+  var { useState: useState30, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo14, useCallback: useCallback14 } = React;
   var MASTER_TRACKS_POOL = [
     {
       id: "rec_1",
@@ -25937,16 +26555,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     var _a;
-    const [state, setState] = useState29(DEFAULT_COPILOT_STATE);
-    const [clock, setClock] = useState29("");
-    const [latency, setLatency] = useState29(2);
-    const [visibleCount, setVisibleCount] = useState29(4);
-    const [tracksList, setTracksList] = useState29(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState29(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState29(null);
-    const [lowEqApplied, setLowEqApplied] = useState29(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState29(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState29("");
+    const [state, setState] = useState30(DEFAULT_COPILOT_STATE);
+    const [clock, setClock] = useState30("");
+    const [latency, setLatency] = useState30(2);
+    const [visibleCount, setVisibleCount] = useState30(4);
+    const [tracksList, setTracksList] = useState30(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState30(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState30(null);
+    const [lowEqApplied, setLowEqApplied] = useState30(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState30(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState30("");
     const wsRef = useRef25(null);
     const togglePlayDeck = async (targetSide) => {
       const sideStr = targetSide === "2" ? "2" : "1";
@@ -26060,13 +26678,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState29({
+    const [controllerState, setControllerState] = useState30({
       detected: false,
       name: "",
       status: "SIN CONEXI\xD3N"
     });
-    const [testDisconnectSkin, setTestDisconnectSkin] = useState29(false);
-    useEffect29(() => {
+    const [testDisconnectSkin, setTestDisconnectSkin] = useState30(false);
+    useEffect30(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -26130,14 +26748,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         });
       }
     }, []);
-    useEffect29(() => {
+    useEffect30(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect29(() => {
+    useEffect30(() => {
       let isMounted = true;
       let ws = null;
       let fallbackInterval = null;
@@ -26275,7 +26893,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         };
       });
     };
-    useEffect29(() => {
+    useEffect30(() => {
       const handleKeyDown = (e) => {
         var _a2, _b;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
@@ -26428,10 +27046,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 min-h-[114px] px-1 select-none" }, controllerState.detected && /* @__PURE__ */ React.createElement("div", { className: "hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0" }, /* @__PURE__ */ React.createElement(
       "img",
       {
-        src: `/assets/controllers/${(controllerState.name || "numark_nv_ii").toLowerCase().replace(/\s*\(usb\)\s*/gi, "").replace(/[^a-z0-9]+/g, "_")}.png`,
+        src: `/api/copilot/controller_image?name=${encodeURIComponent((controllerState.name || "numark_nv_ii").toLowerCase().replace(/\s*\(usb\)\s*/gi, "").replace(/[^a-z0-9]+/g, "_"))}`,
         alt: controllerState.name || "Controladora DJ",
         onError: (e) => {
-          e.currentTarget.src = "/assets/controllers/hardware_console_slice.png";
+          e.currentTarget.src = `/assets/controllers/${(controllerState.name || "numark_nv_ii").toLowerCase().replace(/\s*\(usb\)\s*/gi, "").replace(/[^a-z0-9]+/g, "_")}.png`;
         },
         className: "w-[930px] max-w-full h-[114px] object-cover object-right ml-auto",
         style: { opacity: 0.4 }
@@ -26653,10 +27271,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })))));
   };
   var CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState29({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
-    const [copied, setCopied] = useState29(false);
-    const [qrShown, setQrShown] = useState29(false);
-    useEffect29(() => {
+    const [copilotInfo, setCopilotInfo] = useState30({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
+    const [copied, setCopied] = useState30(false);
+    const [qrShown, setQrShown] = useState30(false);
+    useEffect30(() => {
       if (isOpen) {
         fetch("/api/copilot/info").then((r) => r.json()).then((data) => setCopilotInfo(data)).catch(() => {
         });
@@ -26883,8 +27501,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
   ];
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
-    const [currentIndex, setCurrentIndex] = useState29(0);
-    const [isHovered, setIsHovered] = useState29(false);
+    const [currentIndex, setCurrentIndex] = useState30(0);
+    const [isHovered, setIsHovered] = useState30(false);
     const slideRef = useRef25(null);
     const titleRef = useRef25(null);
     const subtitleRef = useRef25(null);
@@ -27021,7 +27639,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         transitionToSlide(nextIdx, false);
       }, 4200);
     };
-    useEffect29(() => {
+    useEffect30(() => {
       transitionToSlide(0, true);
       return () => clearAsync();
     }, []);
@@ -27034,21 +27652,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onMouseLeave: () => setIsHovered(false)
       },
       /* @__PURE__ */ React.createElement("style", { dangerouslySetInnerHTML: { __html: `
-                .hero-stage { perspective: 1200px; perspective-origin: 50% 50%; width: 100%; }
-                .hero-slide { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; text-align: center; will-change: transform, opacity, filter; margin: 0 auto; }
-                .hero-title { font-family: 'Inter', -apple-system, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; color: #ffffff !important; white-space: nowrap !important; will-change: transform, opacity, filter; }
-                @media (max-width: 768px) { .hero-title { white-space: normal !important; } }
+                .hero-stage { perspective: 1200px; perspective-origin: 50% 50%; width: 100% !important; max-width: 100% !important; overflow: hidden; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
+                .hero-slide { width: 100% !important; max-width: 840px !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; will-change: transform, opacity, filter; margin: 0 auto !important; padding: 0 16px !important; }
+                .hero-title { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; line-height: 1.3 !important; color: #ffffff !important; width: 100% !important; max-width: 100% !important; text-align: center !important; display: block !important; margin: 0 auto 12px auto !important; padding: 0 !important; will-change: transform, opacity, filter; }
+                @media (min-width: 1024px) { .hero-title { font-size: 20px !important; } }
+                @media (max-width: 1023px) and (min-width: 768px) { .hero-title { font-size: 17px !important; } }
+                @media (max-width: 767px) { .hero-title { font-size: 14px !important; white-space: normal !important; } }
                 .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #22d3ee !important; text-shadow: 0 0 16px rgba(34, 211, 238, 0.95), 0 0 32px rgba(6, 182, 212, 0.7) !important; font-weight: 700 !important; }
                 .glyph-locked { color: #ffffff !important; text-shadow: 0 0 24px rgba(56, 189, 248, 0.16) !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; }
-                .title-fly-in { animation: titleStreakFromRight 560ms cubic-bezier(0.08, 0.96, 0.18, 1.14) forwards; }
+                .title-fly-in { animation: titleStreakFromRight 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 @keyframes titleStreakFromRight {
-                  0% { opacity: 0; transform: translateX(105vw) scaleX(2.1) skewX(-14deg); filter: blur(20px); }
-                  48% { opacity: 1; transform: translateX(-18px) scaleX(1.05) skewX(3deg); filter: blur(3px); }
-                  78% { transform: translateX(6px) scaleX(0.99) skewX(-1deg); filter: blur(0px); }
-                  100% { opacity: 1; transform: translateX(0px) scaleX(1) skewX(0deg); filter: blur(0px); }
+                  0% { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(8px); }
+                  100% { opacity: 1; transform: translateY(0px) scale(1); filter: blur(0px); }
                 }
-                .hero-subtitle { max-width: 760px; color: #cbd5e1 !important; font-weight: 400 !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
-                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
+                .hero-subtitle { width: 100% !important; max-width: 640px !important; margin: 0 auto !important; text-align: center !important; color: #cbd5e1 !important; font-weight: 400 !important; font-size: 13.5px !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+                @media (max-width: 767px) { .hero-subtitle { font-size: 12px !important; } }
+                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 5px 16px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
                 .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.45) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
                 .badge-sweep-run .badge-shimmer-bar { animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
                 @keyframes badgeLightPass { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
@@ -27067,14 +27686,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         "h1",
         {
           ref: titleRef,
-          className: "hero-title text-2xl sm:text-4xl md:text-[42px] lg:text-[46px] mb-4 text-center"
+          className: "hero-title mb-3 text-center w-full"
         },
         currentSlide.title
       ), /* @__PURE__ */ React.createElement(
         "p",
         {
           ref: subtitleRef,
-          className: "hero-subtitle text-sm sm:text-base md:text-[18px] mb-6 px-2 text-center"
+          className: "hero-subtitle mb-4 text-center w-full"
         },
         currentSlide.subtitle
       ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6" }, /* @__PURE__ */ React.createElement("div", { ref: badgeRef, className: "tech-pill-badge" }, /* @__PURE__ */ React.createElement("div", { className: "badge-shimmer-bar" }), /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4 text-emerald-400 shrink-0", viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: "2.4", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ React.createElement("polyline", { points: "4 10.5 8 14.5 16 6" })), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-xs sm:text-[13px] font-semibold tracking-wide text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" }, currentSlide.badge)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center space-x-2.5" }, HERO_SHOWCASE_SLIDES.map((_, dotIdx) => /* @__PURE__ */ React.createElement(
@@ -27095,21 +27714,28 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
-    const [phase, setPhase] = useState29("video");
-    const [videoOpacity, setVideoOpacity] = useState29(1);
-    const [isTransitioning, setIsTransitioning] = useState29(false);
-    const [selectedAlpha, setSelectedAlpha] = useState29(0.85);
-    const [isMuted, setIsMuted] = useState29(false);
-    const [isBassShaking, setIsBassShaking] = useState29(false);
+    const [phase, setPhase] = useState30(() => {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get("portal") === "1" || p.get("phase") === "portal") return "portal";
+      } catch (e) {
+      }
+      return "video";
+    });
+    const [videoOpacity, setVideoOpacity] = useState30(1);
+    const [isTransitioning, setIsTransitioning] = useState30(false);
+    const [selectedAlpha, setSelectedAlpha] = useState30(0.85);
+    const [isMuted, setIsMuted] = useState30(false);
+    const [isBassShaking, setIsBassShaking] = useState30(false);
     const videoRef = useRef25(null);
     const canvasRef = useRef25(null);
-    useEffect29(() => {
+    useEffect30(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
       }, 50);
       return () => clearTimeout(timer);
     }, []);
-    useEffect29(() => {
+    useEffect30(() => {
       const vid = videoRef.current;
       if (!vid) return;
       vid.currentTime = 0;
@@ -27191,7 +27817,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClose();
       }
     };
-    useEffect29(() => {
+    useEffect30(() => {
       if (phase !== "portal" && !isTransitioning) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -27270,11 +27896,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
         /* @__PURE__ */ React.createElement("main", { className: "relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto" }, /* @__PURE__ */ React.createElement(
           "div",
           {
-            className: "flex items-center justify-center select-none group",
-            style: { marginTop: "16px", marginBottom: "84px" }
+            className: "flex items-center justify-center select-none group mt-2 sm:mt-4 mb-4 sm:mb-6 md:mb-8 max-w-full px-2"
           },
           /* @__PURE__ */ React.createElement(BeatWaveBrandIdentity, { variant: "hero" })
-        ), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none", style: { marginBottom: "84px" } }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2" }, /* @__PURE__ */ React.createElement(
+        ), /* @__PURE__ */ React.createElement("div", { className: "w-full flex flex-col items-center justify-center select-none mb-4 sm:mb-6 md:mb-8" }, /* @__PURE__ */ React.createElement(CleanLineKineticStudioStage, null)), /* @__PURE__ */ React.createElement("div", { className: "w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2" }, /* @__PURE__ */ React.createElement(
           "button",
           {
             type: "button",
@@ -27344,7 +27969,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/app.jsx
-  var { useState: useState30, useEffect: useEffect30, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback15, createContext, useContext } = React;
+  var { useState: useState31, useEffect: useEffect31, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback15, createContext, useContext } = React;
   var PlayerContext = createContext({
     playProgressRef: { current: 0 },
     isPlaying: false,
@@ -27358,10 +27983,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return null;
   };
   var App = () => {
-    const [pricingOpen, setPricingOpen] = useState30(false);
-    const [registerModalOpen, setRegisterModalOpen] = useState30(false);
-    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState30("pro");
-    const [cinematicIntroOpen, setCinematicIntroOpen] = useState30(() => {
+    const [pricingOpen, setPricingOpen] = useState31(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState31(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState31("pro");
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState31(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("intro") === "1" || p.get("portal") === "1") return true;
@@ -27371,7 +27996,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return false;
       }
     });
-    const [lang, setLang] = useState30(() => {
+    const [lang, setLang] = useState31(() => {
       try {
         return localStorage.getItem("beatwave_lang") || "es";
       } catch (e) {
@@ -27386,7 +28011,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState30(() => {
+    const [activeTab, setActiveTab] = useState31(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         const q = p.get("tab") || window.location.hash.replace("#", "");
@@ -27424,17 +28049,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "library";
     });
-    const [isSimulationMode, setIsSimulationMode] = useState30(false);
-    const [currentFolder, setCurrentFolder] = useState30("");
-    const [studioMode, setStudioMode] = useState30("cues");
-    const [auditTracks, setAuditTracks] = useState30([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState30([]);
-    const [spotifyTracks, setSpotifyTracks] = useState30([]);
-    const [selectedTrack, setSelectedTrack] = useState30(null);
+    const [isSimulationMode, setIsSimulationMode] = useState31(false);
+    const [currentFolder, setCurrentFolder] = useState31("");
+    const [studioMode, setStudioMode] = useState31("cues");
+    const [auditTracks, setAuditTracks] = useState31([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState31([]);
+    const [spotifyTracks, setSpotifyTracks] = useState31([]);
+    const [selectedTrack, setSelectedTrack] = useState31(null);
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-    const [nowPlayingTrack, setNowPlayingTrack] = useState30(null);
-    const [isPlaying, setIsPlaying] = useState30(false);
-    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState30(false);
+    const [nowPlayingTrack, setNowPlayingTrack] = useState31(null);
+    const [isPlaying, setIsPlaying] = useState31(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState31(false);
     const localAudioInputRef = useRef26(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
@@ -27482,14 +28107,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
     const audioRef = useRef26(null);
-    const [mobileProgress, setMobileProgress] = useState30(0);
-    useEffect30(() => {
+    const [mobileProgress, setMobileProgress] = useState31(0);
+    useEffect31(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState30(0);
-    useEffect30(() => {
+    const [playProgress, setPlayProgressForWorkspaces] = useState31(0);
+    useEffect31(() => {
       let lastUpdate = 0;
       const THROTTLE_MS = 100;
       const onProgress = (e) => {
@@ -27502,8 +28127,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState30({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
-    useEffect30(() => {
+    const [globalAuditInfo, setGlobalAuditInfo] = useState31({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect31(() => {
       fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
         if (data && data.ready) {
           console.log(`[RAM WARM-UP] Cat\xE1logo precalentado: ${data.total_cached} pistas en memoria RAM.`);
@@ -27511,7 +28136,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }).catch(() => {
       });
     }, []);
-    useEffect30(() => {
+    useEffect31(() => {
       const handleGlobalAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -27544,14 +28169,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return () => window.removeEventListener("bw:audit_progress", handleGlobalAuditEvt);
     }, []);
-    const [tutorialOpen, setTutorialOpen] = useState30(false);
-    const [tutorialInitialMode, setTutorialInitialMode] = useState30("launcher");
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState30(false);
-    const [railExpanded, setRailExpanded] = useState30(true);
+    const [tutorialOpen, setTutorialOpen] = useState31(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState31("launcher");
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState31(false);
+    const [railExpanded, setRailExpanded] = useState31(true);
     const toggleRailExpanded = () => {
       setRailExpanded((prev) => !prev);
     };
-    useEffect30(() => {
+    useEffect31(() => {
       if (!railExpanded) return;
       const handleAutoCollapse = (e) => {
         const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
@@ -27566,8 +28191,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         window.removeEventListener("pointerdown", handleAutoCollapse, true);
       };
     }, [railExpanded]);
-    const [copilotModalOpen, setCopilotModalOpen] = useState30(false);
-    const [customLibraries, setCustomLibraries] = useState30(() => {
+    const [copilotModalOpen, setCopilotModalOpen] = useState31(false);
+    const [customLibraries, setCustomLibraries] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_user_custom_libraries");
         if (saved) {
@@ -27595,14 +28220,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState30(() => {
+    const [activeCustomLibId, setActiveCustomLibId] = useState31(() => {
       try {
         return localStorage.getItem("bw_user_active_library_id") || "lib_default";
       } catch (_) {
         return "lib_default";
       }
     });
-    useEffect30(() => {
+    useEffect31(() => {
       const loadSavedLibraryFromBackend = async () => {
         try {
           const r = await fetch("/api/biblioteca/cargar");
@@ -27629,8 +28254,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
       loadSavedLibraryFromBackend();
     }, []);
-    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState30(false);
-    const [activeCrateFilter, setActiveCrateFilter] = useState30(null);
+    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState31(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState31(null);
     const handleAuditarCrateDesdeModal = (folder, lib) => {
       if (!folder) return;
       const keys = new Set((folder.tracks || []).map((t2) => t2.id !== void 0 ? t2.id : t2.file_path || t2.filename || t2.path));
@@ -27688,8 +28313,8 @@ ${res.path}`);
         }
       }
     };
-    const [manualModalOpen, setManualModalOpen] = useState30(false);
-    const [manualSection, setManualSection] = useState30("audit");
+    const [manualModalOpen, setManualModalOpen] = useState31(false);
+    const [manualSection, setManualSection] = useState31("audit");
     const handleOpenManual = (section = null) => {
       const secMap = {
         "audit": "audit",
@@ -27715,8 +28340,8 @@ ${res.path}`);
         setManualModalOpen(true);
       }
     };
-    const [userModalOpen, setUserModalOpen] = useState30(false);
-    const [userProfile, setUserProfile] = useState30(() => {
+    const [userModalOpen, setUserModalOpen] = useState31(false);
+    const [userProfile, setUserProfile] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_user_profile");
         if (saved) return JSON.parse(saved);
@@ -27749,7 +28374,7 @@ ${res.path}`);
         activeTab: "audit"
       }
     ];
-    const [savedSessions, setSavedSessions] = useState30(() => {
+    const [savedSessions, setSavedSessions] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
@@ -27851,8 +28476,8 @@ ${res.path}`);
         status: "\u2713 Sincronizado"
       }
     ];
-    const [bitacoraModalOpen, setBitacoraModalOpen] = useState30(false);
-    const [bitacoraEntries, setBitacoraEntries] = useState30(() => {
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState31(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_audit_bitacora");
         if (saved) return JSON.parse(saved);
@@ -27867,7 +28492,7 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect30(() => {
+    useEffect31(() => {
       const handleBitacoraSync = (e) => {
         if (e && e.detail && Array.isArray(e.detail)) {
           setBitacoraEntries(e.detail);
@@ -27876,7 +28501,7 @@ ${res.path}`);
       window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
       return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
     }, []);
-    useEffect30(() => {
+    useEffect31(() => {
       if (userProfile && userProfile.autoSave !== false) {
         try {
           const autoSession = {
@@ -27890,7 +28515,7 @@ ${res.path}`);
         }
       }
     }, [currentFolder, activeTab, selectedTrack, userProfile]);
-    const [clubMode, setClubMode] = useState30(() => {
+    const [clubMode, setClubMode] = useState31(() => {
       try {
         return localStorage.getItem("bw_club_mode") === "true";
       } catch (e) {
@@ -27907,8 +28532,8 @@ ${res.path}`);
         return next;
       });
     };
-    const [shortcutsModalOpen, setShortcutsModalOpen] = useState30(false);
-    const [speakerLogoMode, setSpeakerLogoMode] = useState30(() => {
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState31(false);
+    const [speakerLogoMode, setSpeakerLogoMode] = useState31(() => {
       try {
         return localStorage.getItem("cleandjmix_speaker_logo_mode") || "neon";
       } catch (e) {
@@ -27922,13 +28547,13 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect30(() => {
+    useEffect31(() => {
       window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
       window.toggleSpeakerLogoMode = () => {
         handleSetSpeakerLogoMode(speakerLogoMode === "neon" ? "original" : "neon");
       };
     }, [speakerLogoMode]);
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState30(false);
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState31(false);
     const logoTechnoTimerRef = useRef26(null);
     const initialTechnoPlayedRef = useRef26(false);
     const triggerLogoTechno = () => {
@@ -27938,13 +28563,13 @@ ${res.path}`);
         setIsLogoTechnoActive(false);
       }, 1e4);
     };
-    useEffect30(() => {
+    useEffect31(() => {
       if (tutorialOpen || copilotModalOpen) {
         if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
         setIsLogoTechnoActive(false);
       }
     }, [tutorialOpen, copilotModalOpen]);
-    useEffect30(() => {
+    useEffect31(() => {
       window.abrirIntroCinematica = () => {
         setCinematicIntroOpen(true);
       };
@@ -28014,7 +28639,7 @@ ${res.path}`);
       setActiveTab("spotify");
     };
     const handleAddTrackToSpotify = handleAddTracksToSpotify;
-    const [logs, setLogs] = useState30([
+    const [logs, setLogs] = useState31([
       { type: "info", text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
       { type: "divider", text: "--------------------------------------------------" },
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
@@ -28039,7 +28664,7 @@ ${res.path}`);
       stopSynthPreview();
       setIsPlaying(false);
     };
-    useEffect30(() => {
+    useEffect31(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
@@ -28241,7 +28866,7 @@ ${res.path}`);
         window.eel.cue_audio_mac(trk.path || trk.f || "")();
       }
     };
-    useEffect30(() => {
+    useEffect31(() => {
       const handleKeyDown = (e) => {
         const active = document.activeElement;
         const tag = active ? active.tagName.toLowerCase() : "";
@@ -28780,6 +29405,9 @@ ${res.path}`);
       {
         tracks: auditTracks,
         setTracks: setAuditTracks,
+        customLibraries,
+        onSaveCustomLibraries: saveCustomLibraries,
+        activeCustomLibId,
         selectedTrack,
         setSelectedTrack,
         onPlayTrack: handlePlayTrack,
@@ -28804,6 +29432,9 @@ ${res.path}`);
       {
         tracks: spotifyTracks,
         setTracks: setSpotifyTracks,
+        customLibraries,
+        onSaveCustomLibraries: saveCustomLibraries,
+        activeCustomLibId,
         onPlayTrack: handlePlayTrack,
         nowPlayingTrack,
         isPlaying,
@@ -28814,6 +29445,9 @@ ${res.path}`);
     )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "shazam" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       ShazamWorkspace,
       {
+        customLibraries,
+        onSaveCustomLibraries: saveCustomLibraries,
+        activeCustomLibId,
         onSendToSpotify: (query) => {
           if (typeof query === "object" && query !== null) {
             handleAddTrackToSpotify(query, "shazam");
@@ -28872,6 +29506,9 @@ ${res.path}`);
         setSetTracks: setSetBuilderTracks,
         auditTracks,
         setAuditTracks,
+        customLibraries,
+        onSaveCustomLibraries: saveCustomLibraries,
+        activeCustomLibId,
         onPlayTrack: handlePlayTrack,
         nowPlayingTrack,
         isPlaying,
@@ -28883,6 +29520,10 @@ ${res.path}`);
       MapWorkspace,
       {
         tracks: auditTracks,
+        setTracks: setAuditTracks,
+        customLibraries,
+        onSaveCustomLibraries: saveCustomLibraries,
+        activeCustomLibId,
         onPlayTrack: handlePlayTrack,
         nowPlayingTrack,
         isPlaying,

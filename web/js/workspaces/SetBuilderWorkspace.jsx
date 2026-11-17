@@ -3,6 +3,7 @@ import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
+import { UnifiedLibraryBrowserModal } from '../modals/index.js';
 
 // =========================================================================
 // ESPACIO DE TRABAJO: SET-BUILDER & ENERGY FLOW CANVAS (MOTOR ROBUSTO)
@@ -221,11 +222,15 @@ export const SetBuilderWorkspace = ({
     isPlaying,
     onTogglePlay,
     onNavigateTab,
-    lang = "es"
+    lang = "es",
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
 }) => {
     const [setName, setSetName] = useState("BeatWave_Mainstage_Set");
     const [selectedTrackIdx, setSelectedTrackIdx] = useState(null);
     const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
     const [searchAddQuery, setSearchAddQuery] = useState("");
     const [exportStatus, setExportStatus] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
@@ -447,41 +452,93 @@ export const SetBuilderWorkspace = ({
         setTimeout(() => setExportStatus(null), 4000);
     };
 
-    // Añadir una Carpeta Completa de Música directamente al Set con Barra de Progreso y REST Fallback
-    const handleAddFolderToSet = async () => {
+    // Cargar colección guardada completa en el Set
+    const handleCargarColeccion = (targetLibId = null) => {
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
+            || (customLibraries && customLibraries[0]);
+        const colTracks = [];
+        const seenKeys = new Set();
+        if (activeLib && activeLib.folders) {
+            activeLib.folders.forEach(f => {
+                (f.tracks || []).forEach(tr => {
+                    const key = tr.path || tr.filepath || tr.f || tr.id;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        colTracks.push(tr);
+                    }
+                });
+            });
+        }
+        if (colTracks.length > 0) {
+            const formattedTracks = colTracks.map((t, idx) => ({
+                ...t,
+                id: t.id || `set_col_${Date.now()}_${idx}`,
+                path: t.path || t.filepath || t.f || '',
+                f: t.f || t.path || t.filepath || '',
+                title: t.title || t.t || t.filename || `Track ${idx + 1}`,
+                t: t.title || t.t || t.filename || `Track ${idx + 1}`,
+                artist: t.artist || t.a || 'Artista',
+                a: t.artist || t.a || 'Artista',
+                bpm: getTrackBpm(t) || t.bpm || t.b,
+                key: getTrackKey(t) || t.key || t.k,
+                lufs: getTrackLufs(t),
+                acoustic_role: t.acoustic_role || 'Balanced Full-Range',
+                low_ratio: t.low_ratio || 33.3,
+                mid_ratio: t.mid_ratio || 33.3,
+                high_ratio: t.high_ratio || 33.4,
+                duration_sec: parseDurationSec(t.duration_sec || t.duration) || 240
+            }));
+            setSetTracks(prev => [...prev, ...formattedTracks]);
+            if (setAuditTracks) {
+                setAuditTracks(prev => {
+                    const merged = [...prev];
+                    formattedTracks.forEach(nt => {
+                        if (!merged.some(x => x.path === nt.path)) merged.push(nt);
+                    });
+                    return merged;
+                });
+            }
+            setExportStatus({ type: 'success', msg: `✓ Se han añadido ${formattedTracks.length} pistas al Set desde la Colección "${activeLib.name || 'Colección'}"` });
+        } else {
+            setExportStatus({ type: 'error', msg: 'La colección seleccionada está vacía.' });
+        }
+        setTimeout(() => setExportStatus(null), 4000);
+    };
+
+    // Abre la modal unificada de selección de biblioteca y carpetas
+    const handleAddFolderToSet = () => {
+        setFsBrowserOpen(true);
+    };
+
+    // Procesa las pistas seleccionadas desde la modal unificada
+    const handleCargarRutaAlSet = async (targets) => {
+        setFsBrowserOpen(false);
         try {
             setFolderLoading(true);
-            setFolderProgress({ pct: 5, msg: 'Examinando carpeta de música en disco...' });
-
-            const prevHandler = window.actualizar_progreso_batch;
-            window.actualizar_progreso_batch = (pct, msg) => {
-                setFolderProgress({ pct: Math.min(100, Math.max(5, pct)), msg: msg || '' });
-                window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
-            };
-
-            let res = null;
-            // Priorizar REST API fetch para evitar fallos de socket
+            setFolderProgress({ pct: 10, msg: 'Examinando y cargando archivos...' });
+            const targetPath = Array.isArray(targets) ? targets[0] : targets;
+            let rawTracks = [];
             try {
-                const resp = await fetch('/api/setbuilder/load_folder', {
+                const resp = await fetch('/api/escanear', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    body: JSON.stringify({ ruta: targetPath })
                 });
                 if (resp.ok) {
-                    res = await resp.json();
+                    const data = await resp.json();
+                    if (data && Array.isArray(data.tracks)) rawTracks = data.tracks;
                 }
-            } catch (fetchErr) {
-                console.warn("Fallo REST fetch, probando eel:", fetchErr);
+            } catch (e) {}
+
+            if ((!rawTracks || rawTracks.length === 0) && window.eel && window.eel.cargar_metadatos_directorio) {
+                try {
+                    const resEel = await window.eel.cargar_metadatos_directorio(targets)();
+                    if (resEel && Array.isArray(resEel.tracks)) rawTracks = resEel.tracks;
+                } catch (e) {}
             }
 
-            if (!res && window.eel && window.eel.seleccionar_carpeta_para_set) {
-                res = await window.eel.seleccionar_carpeta_para_set()();
-            }
-
-            const rawTracks = Array.isArray(res?.tracks) ? res.tracks : (res?.tracks?.tracks || []);
-
-            if (res && rawTracks && rawTracks.length > 0) {
-                setFolderProgress({ pct: 100, msg: `✓ ${rawTracks.length} pistas leídas correctamente.` });
+            if (rawTracks && rawTracks.length > 0) {
                 const formattedTracks = rawTracks.map((t, idx) => ({
                     ...t,
                     id: t.id || `set_${Date.now()}_${idx}`,
@@ -510,21 +567,17 @@ export const SetBuilderWorkspace = ({
                         return merged;
                     });
                 }
-                const folderName = res.path ? res.path.split('/').pop() : 'la carpeta';
+                const folderName = typeof targetPath === 'string' ? (targetPath.split('/').pop() || targetPath) : 'archivos seleccionados';
                 setExportStatus({ type: 'success', msg: `✓ Se han añadido ${formattedTracks.length} pistas al Set desde "${folderName}"` });
-            } else if (!res || res.status === 'cancelado') {
-                setExportStatus(null);
             } else {
-                setExportStatus({ type: 'error', msg: 'No se encontraron pistas de audio compatibles en la carpeta seleccionada.' });
+                setExportStatus({ type: 'error', msg: 'No se encontraron pistas de audio compatibles en la ruta seleccionada.' });
             }
         } catch (err) {
             console.error("Error al añadir carpeta al set:", err);
             setExportStatus({ type: 'error', msg: `Error: ${err.message || err}` });
         } finally {
-            setTimeout(() => {
-                setFolderLoading(false);
-            }, 600);
-            setTimeout(() => setExportStatus(prev => (prev && prev.type === 'loading' ? null : prev)), 3500);
+            setFolderLoading(false);
+            setTimeout(() => setExportStatus(null), 4000);
         }
     };
 
@@ -1656,6 +1709,35 @@ export const SetBuilderWorkspace = ({
                             <span>Cargar Carpeta</span>
                         </button>
 
+                        {/* Botón Importar Colección */}
+                        <div className="flex items-center gap-1 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => handleCargarColeccion()}
+                                disabled={folderLoading}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white shadow-sm transition-all cursor-pointer active:scale-95"
+                                title="Importar colección de música guardada"
+                            >
+                                <Icons.Library size={14} className="inline-block align-[-2px]" />
+                                <span>Importar Colección</span>
+                            </button>
+                            {customLibraries && customLibraries.length > 1 && (
+                                <select
+                                    onChange={(e) => handleCargarColeccion(e.target.value)}
+                                    defaultValue=""
+                                    className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-xl px-2.5 py-2 outline-none cursor-pointer"
+                                    title="Seleccionar qué colección cargar"
+                                >
+                                    <option value="" disabled>Seleccionar biblioteca...</option>
+                                    {customLibraries.map(lib => (
+                                        <option key={lib.id} value={lib.id}>
+                                            {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+
                         <button
                             type="button"
                             onClick={() => setIsAddDrawerOpen(true)}
@@ -1870,6 +1952,34 @@ export const SetBuilderWorkspace = ({
                                     >
                                         <Icons.Folder size={14} className="inline-block align-[-2px]" /> Cargar Carpeta de Música
                                     </button>
+
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCargarColeccion()}
+                                            disabled={folderLoading}
+                                            className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                                            title="Importar colección de música guardada"
+                                        >
+                                            <Icons.Library size={14} className="inline-block align-[-2px]" />
+                                            <span>Importar Colección</span>
+                                        </button>
+                                        {customLibraries && customLibraries.length > 1 && (
+                                            <select
+                                                onChange={(e) => handleCargarColeccion(e.target.value)}
+                                                defaultValue=""
+                                                className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-xl px-2.5 py-2.5 outline-none cursor-pointer"
+                                                title="Seleccionar qué colección cargar"
+                                            >
+                                                <option value="" disabled>Seleccionar biblioteca...</option>
+                                                {customLibraries.map(lib => (
+                                                    <option key={lib.id} value={lib.id}>
+                                                        {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
 
                                     <button
                                         type="button"
@@ -2273,6 +2383,17 @@ export const SetBuilderWorkspace = ({
                     </div>
                 </div>
             )}
+            {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+            <UnifiedLibraryBrowserModal
+                isOpen={fsBrowserOpen}
+                onClose={() => setFsBrowserOpen(false)}
+                title="Set Builder • Explorador de Biblioteca & Archivos"
+                onSelectPath={(selectedPath) => handleCargarRutaAlSet(selectedPath)}
+                onSelectMultiple={(allTargets) => handleCargarRutaAlSet(allTargets)}
+                customLibraries={customLibraries}
+                activeCustomLibId={activeCustomLibId}
+                onImportCollection={handleCargarColeccion}
+            />
         </div>
     );
 };

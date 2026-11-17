@@ -1,11 +1,19 @@
 const { useState, useEffect, useRef } = React;
 import { Icons } from '../shell/icons.jsx';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
+import { UnifiedLibraryBrowserModal } from '../modals/index.js';
 import { getValidCover } from '../data/constants.js';
 import { Phase1FastRecognizer } from '../modules/Phase1FastRecognizer.ts';
 
 // Espacio de Trabajo: Shazam Audio Intelligence (Reconocimiento por Micrófono y Subida de Archivos)
-export const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
+export const ShazamWorkspace = ({ 
+    onSendToSpotify, 
+    onSendToAudit, 
+    onNavigateTab,
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
+}) => {
     const [isListening, setIsListening] = useState(false);
     const [countdown, setCountdown] = useState(10);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -18,10 +26,60 @@ export const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab 
     const mediaRecorderRef = useRef(null);
     const audioStreamRef = useRef(null);
     const fileInputRef = useRef(null);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
     const timerRef = useRef(null);
     const animFrameRef = useRef(null);
     const audioCtxRef = useRef(null);
     const [dragOver, setDragOver] = useState(false);
+
+    const handleSelectFileFromModal = async (filePath) => {
+        setFsBrowserOpen(false);
+        if (!filePath) return;
+        try {
+            setStatusMsg(`Cargando audio desde ${filePath.split('/').pop()}...`);
+            setIsAnalyzing(true);
+            const resp = await fetch(`/api/stream_audio?path=${encodeURIComponent(filePath)}`);
+            if (resp.ok) {
+                const blob = await resp.blob();
+                const fileName = filePath.split('/').pop() || 'audio_file.mp3';
+                const file = new File([blob], fileName, { type: blob.type || 'audio/mpeg' });
+                handleFileSelect(file);
+            } else {
+                setStatusMsg("Error accediendo al archivo seleccionado.");
+                setIsAnalyzing(false);
+            }
+        } catch (e) {
+            console.error("Error al cargar archivo en Radar:", e);
+            setStatusMsg("Error al leer archivo de audio.");
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleImportarColeccionRadar = async (targetLibId = null) => {
+        setFsBrowserOpen(false);
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
+            || (customLibraries && customLibraries[0]);
+        let foundTrack = null;
+        if (activeLib && activeLib.folders) {
+            for (const f of activeLib.folders) {
+                if (f.tracks && f.tracks.length > 0) {
+                    foundTrack = f.tracks[0];
+                    break;
+                }
+            }
+        }
+        if (foundTrack) {
+            const trackPath = foundTrack.path || foundTrack.filepath || foundTrack.f;
+            if (trackPath) {
+                handleSelectFileFromModal(trackPath);
+            } else {
+                setStatusMsg(`Pista "${foundTrack.title || 'Track'}" seleccionada sin ruta en disco.`);
+            }
+        } else {
+            setStatusMsg("La colección seleccionada no tiene pistas.");
+        }
+    };
 
     // Selector de motor acústico: 'radar_edge' (C++ Nativo / Edge), 'hybrid', 'shazamio', 'audd'
     const [selectedEngine, setSelectedEngine] = useState(() => {
@@ -1085,6 +1143,43 @@ export const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab 
                         <span className="text-[10px] font-mono font-bold text-zinc-300">ARRASTRAR AQUÍ</span>
                     </div>
 
+                    <div className="flex items-center gap-2 mb-2 w-full justify-center flex-wrap" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            type="button"
+                            onClick={() => setFsBrowserOpen(true)}
+                            className="px-3 py-1.5 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 border border-djzinc-700 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                        >
+                            <Icons.Folder size={13} />
+                            <span>Elegir Carpeta o Archivo</span>
+                        </button>
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={() => handleImportarColeccionRadar()}
+                                className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                                title="Analizar pista de colección guardada"
+                            >
+                                <Icons.Library size={13} />
+                                <span>Importar Colección</span>
+                            </button>
+                            {customLibraries && customLibraries.length > 1 && (
+                                <select
+                                    onChange={(e) => handleImportarColeccionRadar(e.target.value)}
+                                    defaultValue=""
+                                    className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2 py-1 outline-none cursor-pointer"
+                                    title="Seleccionar qué colección cargar"
+                                >
+                                    <option value="" disabled>Biblioteca...</option>
+                                    {customLibraries.map(lib => (
+                                        <option key={lib.id} value={lib.id}>
+                                            {lib.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="text-[11px] font-mono text-zinc-500">
                         <span>Formatos: MP3, FLAC, WAV, M4A, OGG</span>
                     </div>
@@ -1526,6 +1621,17 @@ export const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab 
                     </div>
                 </div>
             )}
+            {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+            <UnifiedLibraryBrowserModal
+                isOpen={fsBrowserOpen}
+                onClose={() => setFsBrowserOpen(false)}
+                title="Radar • Explorador de Biblioteca & Archivos"
+                onSelectPath={(selectedPath) => handleSelectFileFromModal(selectedPath)}
+                onSelectMultiple={(allTargets) => handleSelectFileFromModal(allTargets[0])}
+                customLibraries={customLibraries}
+                activeCustomLibId={activeCustomLibId}
+                onImportCollection={handleImportarColeccionRadar}
+            />
         </div>
     );
 };

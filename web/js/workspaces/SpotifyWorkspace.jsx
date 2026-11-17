@@ -4,6 +4,7 @@ import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../wavef
 import { DEFAULT_VINYL_SVG, getValidCover, DEFAULT_POOL_COLUMNS, POOL_COLUMN_CATEGORIES } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
+import { UnifiedLibraryBrowserModal } from '../modals/index.js';
 
 // Espacio de Trabajo: Record Pool Ingest
 export const SpotifyWorkspace = ({ 
@@ -14,11 +15,44 @@ export const SpotifyWorkspace = ({
     isPlaying, 
     onTogglePlay, 
     lang = "es", 
-    t = (k) => k 
+    t = (k) => k,
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
 }) => {
     const [internalTracks, setInternalTracks] = useState([]);
     const tracks = externalTracks !== undefined ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== undefined ? externalSetTracks : setInternalTracks;
+
+    const handleCargarColeccion = (targetLibId = null) => {
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
+            || (customLibraries && customLibraries[0]);
+        const colTracks = [];
+        const seenKeys = new Set();
+        if (activeLib && activeLib.folders) {
+            activeLib.folders.forEach(f => {
+                (f.tracks || []).forEach(tr => {
+                    const key = tr.path || tr.filepath || tr.f || tr.id;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        colTracks.push({
+                            ...tr,
+                            id: tr.id || `pool_col_${Date.now()}_${colTracks.length}`,
+                            title: tr.title || tr.t || tr.filename || 'Pista Colección',
+                            artist: tr.artist || tr.a || 'Artista',
+                            bpm: tr.bpm || tr.b,
+                            key: tr.key || tr.k,
+                            status: 'listo'
+                        });
+                    }
+                });
+            });
+        }
+        if (colTracks.length > 0) {
+            setTracks(colTracks);
+        }
+    };
 
     const [spotifyUrl, setSpotifyUrl] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -1425,6 +1459,34 @@ export const SpotifyWorkspace = ({
 
                         {/* Controles de Destino, Formato de Audio e Inspector */}
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            {/* Botón Importar Colección */}
+                            <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => handleCargarColeccion()}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white shadow-sm transition-all cursor-pointer active:scale-95"
+                                    title="Importar pistas de la colección para análisis y descarga"
+                                >
+                                    <Icons.Library size={13} className="inline-block align-[-2px]" />
+                                    <span>Importar Colección</span>
+                                </button>
+                                {customLibraries && customLibraries.length > 1 && (
+                                    <select
+                                        onChange={(e) => handleCargarColeccion(e.target.value)}
+                                        defaultValue=""
+                                        className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2 py-1 outline-none cursor-pointer"
+                                        title="Seleccionar qué colección cargar"
+                                    >
+                                        <option value="" disabled>Biblioteca...</option>
+                                        {customLibraries.map(lib => (
+                                            <option key={lib.id} value={lib.id}>
+                                                {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+
                             <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400 bg-[#060609] border border-djzinc-800 px-2.5 py-1 rounded-lg">
                                 <span className="text-gray-500">Destino:</span>
                                 <span className="text-gray-200 truncate max-w-[120px] font-semibold" title={(!destDir || !destDir.startsWith('/') || destDir.includes('"')) ? '/Users/admin/Music/mi musica' : destDir}>
@@ -2789,54 +2851,17 @@ export const SpotifyWorkspace = ({
                 </>
             )}
 
-            {/* Modal Navegador de Carpetas Web Integrado para Destino */}
-            {fsBrowserOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#0b0b10] border border-djzinc-800 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-                        <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <Icons.Library />
-                                <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Seleccionar Carpeta de Destino</h3>
-                            </div>
-                            <button onClick={() => setFsBrowserOpen(false)} className="text-gray-400 hover:text-white text-xs px-2 py-1 rounded bg-djzinc-900 border border-djzinc-800 cursor-pointer"><Icons.Close size={14} className="inline-block align-[-2px]" /> Cerrar</button>
-                        </div>
-                        <div className="px-4 py-2.5 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2 text-xs font-mono">
-                            <span className="text-gray-400 shrink-0">Ruta:</span>
-                            <span className="text-djcyan-400 truncate flex-1">{fsCurrentPath || "/"}</span>
-                            {fsParentPath && (
-                                <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-gray-200 rounded border border-djzinc-700 cursor-pointer text-xs">
-                                    <Icons.Upload size={14} className="inline-block align-[-2px]" /> Subir nivel
-                                </button>
-                            )}
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-3 space-y-1 min-h-[250px] max-h-[400px]">
-                            {fsLoading ? (
-                                <div className="py-12 text-center text-xs font-mono text-djcyan-400 animate-pulse">Explorando directorios...</div>
-                            ) : fsFolders.length === 0 ? (
-                                <div className="py-12 text-center text-xs font-mono text-gray-500">No se encontraron subdirectorios</div>
-                            ) : (
-                                fsFolders.map((f, idx) => (
-                                    <div key={idx} onDoubleClick={() => handleNavegarACarpeta(f.path)} className="flex items-center justify-between p-2 rounded hover:bg-djzinc-900 cursor-pointer border border-transparent hover:border-djzinc-800 transition-colors">
-                                        <div onClick={() => handleNavegarACarpeta(f.path)} className="flex items-center gap-2.5 flex-1 min-w-0">
-                                            <Icons.Folder size={14} className="inline-block align-[-2px] text-amber-400" />
-                                            <span className="text-xs font-mono text-gray-300 truncate">{f.name}</span>
-                                        </div>
-                                        <button onClick={() => handleSeleccionarCarpetaDestino(f.path)} className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-bold text-[10px] rounded cursor-pointer shrink-0">
-                                            Seleccionar
-                                        </button>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                        <div className="p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex justify-between items-center gap-2.5">
-                            <button onClick={() => setFsBrowserOpen(false)} className="px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-mono font-bold bg-djzinc-900 hover:bg-djzinc-800 border border-djzinc-800 text-gray-300 hover:text-white cursor-pointer transition-all shadow active:scale-95">Cancelar</button>
-                            <button onClick={() => handleSeleccionarCarpetaDestino(fsCurrentPath)} className="px-5 py-2.5 min-h-[40px] rounded-xl text-xs font-mono font-bold bg-djcyan-400 hover:bg-djcyan-300 text-black cursor-pointer shadow-md transition-all active:scale-95">
-                                Usar esta Carpeta
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+            <UnifiedLibraryBrowserModal
+                isOpen={fsBrowserOpen}
+                onClose={() => setFsBrowserOpen(false)}
+                title="Record Pool • Carpeta de Destino & Biblioteca"
+                initialPath={destDir}
+                onSelectPath={(selectedPath) => handleSeleccionarCarpetaDestino(selectedPath)}
+                customLibraries={customLibraries}
+                activeCustomLibId={activeCustomLibId}
+                onImportCollection={handleCargarColeccion}
+            />
 
             {/* Modal de Verificación de Fidelidad y Selección de Versiones / Búsqueda Manual */}
             {candidateModal.open && (

@@ -1480,10 +1480,10 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                 {controllerState.detected && (
                     <div className="hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0">
                         <img 
-                            src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
+                            src={`/api/copilot/controller_image?name=${encodeURIComponent((controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_'))}`}
                             alt={controllerState.name || 'Controladora DJ'}
                             onError={(e) => {
-                                e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
+                                e.currentTarget.src = `/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`;
                             }}
                             className="w-[930px] max-w-full h-[114px] object-cover object-right ml-auto"
                             style={{ opacity: 0.4 }}
@@ -2515,21 +2515,22 @@ const CleanLineKineticStudioStage = () => {
             onMouseLeave={() => setIsHovered(false)}
         >
             <style dangerouslySetInnerHTML={{ __html: `
-                .hero-stage { perspective: 1200px; perspective-origin: 50% 50%; width: 100%; }
-                .hero-slide { width: 100%; max-width: 960px; display: flex; flex-direction: column; align-items: center; text-align: center; will-change: transform, opacity, filter; margin: 0 auto; }
-                .hero-title { font-family: 'Inter', -apple-system, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.02em !important; line-height: 1.15 !important; color: #ffffff !important; white-space: nowrap !important; will-change: transform, opacity, filter; }
-                @media (max-width: 768px) { .hero-title { white-space: normal !important; } }
+                .hero-stage { perspective: 1200px; perspective-origin: 50% 50%; width: 100% !important; max-width: 100% !important; overflow: hidden; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
+                .hero-slide { width: 100% !important; max-width: 840px !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; will-change: transform, opacity, filter; margin: 0 auto !important; padding: 0 16px !important; }
+                .hero-title { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; line-height: 1.3 !important; color: #ffffff !important; width: 100% !important; max-width: 100% !important; text-align: center !important; display: block !important; margin: 0 auto 12px auto !important; padding: 0 !important; will-change: transform, opacity, filter; }
+                @media (min-width: 1024px) { .hero-title { font-size: 20px !important; } }
+                @media (max-width: 1023px) and (min-width: 768px) { .hero-title { font-size: 17px !important; } }
+                @media (max-width: 767px) { .hero-title { font-size: 14px !important; white-space: normal !important; } }
                 .glyph-scramble { font-family: 'JetBrains Mono', monospace !important; color: #22d3ee !important; text-shadow: 0 0 16px rgba(34, 211, 238, 0.95), 0 0 32px rgba(6, 182, 212, 0.7) !important; font-weight: 700 !important; }
                 .glyph-locked { color: #ffffff !important; text-shadow: 0 0 24px rgba(56, 189, 248, 0.16) !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; }
-                .title-fly-in { animation: titleStreakFromRight 560ms cubic-bezier(0.08, 0.96, 0.18, 1.14) forwards; }
+                .title-fly-in { animation: titleStreakFromRight 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 @keyframes titleStreakFromRight {
-                  0% { opacity: 0; transform: translateX(105vw) scaleX(2.1) skewX(-14deg); filter: blur(20px); }
-                  48% { opacity: 1; transform: translateX(-18px) scaleX(1.05) skewX(3deg); filter: blur(3px); }
-                  78% { transform: translateX(6px) scaleX(0.99) skewX(-1deg); filter: blur(0px); }
-                  100% { opacity: 1; transform: translateX(0px) scaleX(1) skewX(0deg); filter: blur(0px); }
+                  0% { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(8px); }
+                  100% { opacity: 1; transform: translateY(0px) scale(1); filter: blur(0px); }
                 }
-                .hero-subtitle { max-width: 760px; color: #cbd5e1 !important; font-weight: 400 !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
-                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 10px !important; padding: 8px 22px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
+                .hero-subtitle { width: 100% !important; max-width: 640px !important; margin: 0 auto !important; text-align: center !important; color: #cbd5e1 !important; font-weight: 400 !important; font-size: 13.5px !important; line-height: 1.55 !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1), transform 480ms cubic-bezier(0.16, 1, 0.3, 1), filter 480ms cubic-bezier(0.16, 1, 0.3, 1); }
+                @media (max-width: 767px) { .hero-subtitle { font-size: 12px !important; } }
+                .tech-pill-badge { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; padding: 5px 16px !important; border-radius: 9999px !important; background: rgba(5, 11, 18, 0.92) !important; border: 1px solid rgba(255, 255, 255, 0.78) !important; box-shadow: 0 0 24px rgba(34, 211, 238, 0.22), inset 0 0 12px rgba(34, 211, 238, 0.12) !important; overflow: hidden !important; will-change: transform, opacity, filter; transition: opacity 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, transform 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, filter 480ms cubic-bezier(0.16, 1, 0.3, 1) 80ms, border-color 300ms ease, box-shadow 300ms ease; }
                 .badge-shimmer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.45) 50%, transparent 100%); transform: translateX(-100%); pointer-events: none; }
                 .badge-sweep-run .badge-shimmer-bar { animation: badgeLightPass 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
                 @keyframes badgeLightPass { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
@@ -2551,10 +2552,10 @@ const CleanLineKineticStudioStage = () => {
 
             {/* BLOQUE HERO DE DIAPOSITIVA (SIN TELEMETRÍA LOCKED READABLE) */}
             <section ref={slideRef} className="hero-slide px-4">
-                {/* 1. TÍTULO SIN MARCO EN TIPOGRAFÍA INTER */}
+                {/* 1. TÍTULO SIN MARCO EN TIPOGRAFÍA INTER REDIMENSIONADO Y RIGUROSAMENTE CENTRADO */}
                 <h1 
                     ref={titleRef} 
-                    className="hero-title text-2xl sm:text-4xl md:text-[42px] lg:text-[46px] mb-4 text-center"
+                    className="hero-title mb-3 text-center w-full"
                 >
                     {currentSlide.title}
                 </h1>
@@ -2562,7 +2563,7 @@ const CleanLineKineticStudioStage = () => {
                 {/* 2. SUBTÍTULO DESCRIPTIVO DE 2 LÍNEAS */}
                 <p 
                     ref={subtitleRef} 
-                    className="hero-subtitle text-sm sm:text-base md:text-[18px] mb-6 px-2 text-center"
+                    className="hero-subtitle mb-4 text-center w-full"
                 >
                     {currentSlide.subtitle}
                 </p>
@@ -2605,7 +2606,13 @@ const CleanLineKineticStudioStage = () => {
 export const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
 
-    const [phase, setPhase] = useState('video'); // 'video' | 'portal'
+    const [phase, setPhase] = useState(() => {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            if (p.get('portal') === '1' || p.get('phase') === 'portal') return 'portal';
+        } catch (e) {}
+        return 'video';
+    }); // 'video' | 'portal'
     const [videoOpacity, setVideoOpacity] = useState(1.0); // Opacidad visible directa
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [selectedAlpha, setSelectedAlpha] = useState(0.85); // Alpha 85% exacto solicitado por el usuario
@@ -2814,16 +2821,15 @@ export const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister
 
                 {/* Contenido Principal con Logo y Rotador de Hooks Persuasivos */}
                 <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6 text-center max-w-5xl mx-auto w-full my-auto">
-                    {/* Logo Oficial + Tipografía Idéntica al Header (Misma Tipografía Syne, Diseño y Proporción 1:1) Separado del Carrusel */}
+                    {/* Logo Oficial + Tipografía Idéntica al Header con Escalado Proporcional en Tablet y Móvil */}
                     <div 
-                        className="flex items-center justify-center select-none group"
-                        style={{ marginTop: '16px', marginBottom: '84px' }}
+                        className="flex items-center justify-center select-none group mt-2 sm:mt-4 mb-4 sm:mb-6 md:mb-8 max-w-full px-2"
                     >
                         <BeatWaveBrandIdentity variant="hero" />
                     </div>
 
-                    {/* ESCENARIO LIBRE SIN MARCOS NI TARJETAS: CLEAN-LINE KINETIC SCRAMBLE STUDIO (MISMO ESPACIO INFERIOR DE 84PX) */}
-                    <div className="w-full flex flex-col items-center justify-center select-none" style={{ marginBottom: '84px' }}>
+                    {/* ESCENARIO LIBRE SIN MARCOS NI TARJETAS: CLEAN-LINE KINETIC SCRAMBLE STUDIO (TÍTULO 75% Y PROTAGONISMO BALANCEADO) */}
+                    <div className="w-full flex flex-col items-center justify-center select-none mb-4 sm:mb-6 md:mb-8">
                         <CleanLineKineticStudioStage />
                     </div>
 

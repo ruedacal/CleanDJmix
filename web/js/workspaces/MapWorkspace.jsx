@@ -4,6 +4,7 @@ import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
+import { UnifiedLibraryBrowserModal } from '../modals/index.js';
 
 // =========================================================================
 // ESPACIO DE TRABAJO: SCATTER MAP (PAISAJE ESPACIAL 2D DE COMPATIBILIDAD MUSICAL)
@@ -123,6 +124,7 @@ const mapHashInt = (str) => {
 
 export const MapWorkspace = ({
     tracks: rawTracks = [],
+    setTracks = null,
     onPlayTrack,
     nowPlayingTrack,
     isPlaying,
@@ -130,11 +132,61 @@ export const MapWorkspace = ({
     onNavigateTab,
     onAddTracksToSet,
     onSelectDirectory,
-    lang = "es"
+    lang = "es",
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
 }) => {
     // Si no hay pistas cargadas en audit, ofrecer catálogo demo interactivo
     const [useDemo, setUseDemo] = useState(false);
     const activeTracks = (rawTracks && rawTracks.length > 0) ? rawTracks : (useDemo ? DEMO_MAP_TRACKS : []);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
+
+    const handleCargarColeccion = (targetLibId = null) => {
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
+            || (customLibraries && customLibraries[0]);
+        const colTracks = [];
+        const seenKeys = new Set();
+        if (activeLib && activeLib.folders) {
+            activeLib.folders.forEach(f => {
+                (f.tracks || []).forEach(tr => {
+                    const key = tr.path || tr.filepath || tr.f || tr.id;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        colTracks.push(tr);
+                    }
+                });
+            });
+        }
+        if (colTracks.length > 0) {
+            if (setTracks) setTracks(colTracks);
+            setUseDemo(false);
+        }
+    };
+
+    const handleCargarDirectorio = async (targets) => {
+        setFsBrowserOpen(false);
+        const targetPath = Array.isArray(targets) ? targets[0] : targets;
+        try {
+            const resp = await fetch('/api/escanear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ruta: targetPath })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data && Array.isArray(data.tracks) && data.tracks.length > 0) {
+                    if (setTracks) setTracks(data.tracks);
+                    setUseDemo(false);
+                    return;
+                }
+            }
+        } catch (e) {}
+        if (onSelectDirectory) {
+            onSelectDirectory(targetPath);
+        }
+    };
 
     const [projectionMode, setProjectionMode] = useState('energy_dance'); // 'energy_dance' | 'bpm_energy' | 'camelot_wheel' | 'acoustic_clusters'
     const [colorMode, setColorMode] = useState('genre'); // 'genre' | 'camelot' | 'energy' | 'quality'
@@ -1495,6 +1547,17 @@ export const MapWorkspace = ({
                         <Icons.Zap size={13} />
                     </button>
 
+                    {/* CARGAR CARPETAS / COLECCIÓN EN MAPA */}
+                    <button
+                        type="button"
+                        onClick={() => setFsBrowserOpen(true)}
+                        className="ws-btn ws-btn-outline px-2 text-cyan-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                        title="Explorar carpetas o importar colección al mapa"
+                    >
+                        <Icons.Folder size={13} />
+                        <span className="hidden lg:inline text-[11px] font-mono font-bold">Cargar</span>
+                    </button>
+
                     {/* RECENTRAR Y ENMARCAR TRACKS */}
                     <button
                         type="button"
@@ -1602,16 +1665,40 @@ export const MapWorkspace = ({
                                     <Icons.Zap size={14} />
                                     <span>Cargar Demo Electrónica (16 Tracks)</span>
                                 </button>
-                                {onSelectDirectory && (
+                                <button
+                                    type="button"
+                                    onClick={() => setFsBrowserOpen(true)}
+                                    className="ws-btn ws-btn-outline w-full justify-center h-9 text-xs"
+                                >
+                                    <Icons.Folder size={14} />
+                                    <span>Elegir Carpeta o Pistas</span>
+                                </button>
+                                <div className="flex items-center gap-1.5 w-full">
                                     <button
                                         type="button"
-                                        onClick={onSelectDirectory}
-                                        className="ws-btn ws-btn-outline w-full justify-center h-9 text-xs"
+                                        onClick={() => handleCargarColeccion()}
+                                        className="px-3 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-mono font-bold flex-1 flex items-center justify-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer"
+                                        title="Importar colección de música guardada"
                                     >
-                                        <Icons.Folder size={14} />
-                                        <span>Abrir Carpeta de Música Local</span>
+                                        <Icons.Library size={14} className="inline-block align-[-2px]" />
+                                        <span>Importar Colección</span>
                                     </button>
-                                )}
+                                    {customLibraries && customLibraries.length > 1 && (
+                                        <select
+                                            onChange={(e) => handleCargarColeccion(e.target.value)}
+                                            defaultValue=""
+                                            className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-xl px-2.5 py-2 outline-none cursor-pointer"
+                                            title="Seleccionar qué colección cargar"
+                                        >
+                                            <option value="" disabled>Biblioteca...</option>
+                                            {customLibraries.map(lib => (
+                                                <option key={lib.id} value={lib.id}>
+                                                    {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1878,6 +1965,17 @@ export const MapWorkspace = ({
                 isPlaying={isPlaying}
                 onTogglePlay={onTogglePlay}
                 onClearSelection={() => { setSelectedTrack(null); setSelectedMapTracks([]); }}
+            />
+            {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+            <UnifiedLibraryBrowserModal
+                isOpen={fsBrowserOpen}
+                onClose={() => setFsBrowserOpen(false)}
+                title="Scatter Map • Explorador de Biblioteca & Archivos"
+                onSelectPath={(selectedPath) => handleCargarDirectorio(selectedPath)}
+                onSelectMultiple={(allTargets) => handleCargarDirectorio(allTargets)}
+                customLibraries={customLibraries}
+                activeCustomLibId={activeCustomLibId}
+                onImportCollection={handleCargarColeccion}
             />
         </div>
     </div>

@@ -1610,6 +1610,9 @@ const App = () => {
                     <HotCuesWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
+                        customLibraries={customLibraries}
+                        onSaveCustomLibraries={saveCustomLibraries}
+                        activeCustomLibId={activeCustomLibId}
                         selectedTrack={selectedTrack} 
                         setSelectedTrack={setSelectedTrack} 
                         onPlayTrack={handlePlayTrack} 
@@ -1634,6 +1637,9 @@ const App = () => {
                     <SpotifyWorkspace 
                         tracks={spotifyTracks}
                         setTracks={setSpotifyTracks}
+                        customLibraries={customLibraries}
+                        onSaveCustomLibraries={saveCustomLibraries}
+                        activeCustomLibId={activeCustomLibId}
                         onPlayTrack={handlePlayTrack} 
                         nowPlayingTrack={nowPlayingTrack} 
                         isPlaying={isPlaying} 
@@ -1644,6 +1650,9 @@ const App = () => {
                 </div>
                 <div style={{ display: activeTab === 'shazam' ? 'flex' : 'none' }} className="w-full h-full">
                     <ShazamWorkspace 
+                        customLibraries={customLibraries}
+                        onSaveCustomLibraries={saveCustomLibraries}
+                        activeCustomLibId={activeCustomLibId}
                         onSendToSpotify={(query) => {
                             if (typeof query === 'object' && query !== null) {
                                 handleAddTrackToSpotify(query, 'shazam');
@@ -1705,6 +1714,9 @@ const App = () => {
                         setSetTracks={setSetBuilderTracks}
                         auditTracks={auditTracks}
                         setAuditTracks={setAuditTracks}
+                        customLibraries={customLibraries}
+                        onSaveCustomLibraries={saveCustomLibraries}
+                        activeCustomLibId={activeCustomLibId}
                         onPlayTrack={handlePlayTrack}
                         nowPlayingTrack={nowPlayingTrack}
                         isPlaying={isPlaying}
@@ -1716,6 +1728,10 @@ const App = () => {
                 <div style={{ display: activeTab === 'map' ? 'flex' : 'none' }} className="w-full h-full">
                     <MapWorkspace 
                         tracks={auditTracks}
+                        setTracks={setAuditTracks}
+                        customLibraries={customLibraries}
+                        onSaveCustomLibraries={saveCustomLibraries}
+                        activeCustomLibId={activeCustomLibId}
                         onPlayTrack={handlePlayTrack}
                         nowPlayingTrack={nowPlayingTrack}
                         isPlaying={isPlaying}

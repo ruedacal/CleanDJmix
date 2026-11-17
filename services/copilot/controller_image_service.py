@@ -20,14 +20,14 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Mapeo curado de controladoras con fuentes de imágenes oficiales / transparentes
 CURATED_SOURCES = {
-    "numark_nv_ii": "https://m.cdn.sera.to/v3/hardware/numark/vii/gallery/top-down-flat/numark-v2-top-down-flat-sm.webp",
-    "numark_nv": "https://m.cdn.sera.to/v3/hardware/numark/vii/gallery/top-down-flat/numark-v2-top-down-flat-sm.webp",
-    "pioneer_ddj_flx4": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-flx4/gallery/top-down-flat/pioneer-ddj-flx4-top-down-flat-sm.webp",
-    "pioneer_ddj_rev7": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-rev7/gallery/top-down-flat/pioneer-ddj-rev7-top-down-flat-sm.webp",
-    "pioneer_ddj_1000srt": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-1000srt/gallery/top-down-flat/pioneer-ddj-1000srt-top-down-flat-sm.webp",
-    "pioneer_ddj_sb3": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-sb3/gallery/top-down-flat/pioneer-ddj-sb3-top-down-flat-sm.webp",
-    "denon_prime_4": "https://m.cdn.sera.to/v3/hardware/denon-dj/prime-4/gallery/top-down-flat/denon-dj-prime-4-top-down-flat-sm.webp",
-    "hercules_inpulse_500": "https://m.cdn.sera.to/v3/hardware/hercules/djcontrol-inpulse-500/gallery/top-down-flat/hercules-djcontrol-inpulse-500-top-down-flat-sm.webp",
+    "numark_nv_ii": "https://m.cdn.sera.to/v3/hardware/numark/vii/gallery/top-down-flat/numark-v2-top-down-flat-xl.webp",
+    "numark_nv": "https://m.cdn.sera.to/v3/hardware/numark/vii/gallery/top-down-flat/numark-v2-top-down-flat-xl.webp",
+    "pioneer_ddj_flx4": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-flx4/gallery/top-down-flat/pioneer-ddj-flx4-top-down-flat-lg.webp",
+    "pioneer_ddj_rev7": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-rev7/gallery/top-down-flat/pioneer-ddj-rev7-top-down-flat-lg.webp",
+    "pioneer_ddj_1000srt": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-1000srt/gallery/top-down-flat/pioneer-ddj-1000srt-top-down-flat-lg.webp",
+    "pioneer_ddj_sb3": "https://m.cdn.sera.to/v3/hardware/pioneer/ddj-sb3/gallery/top-down-flat/pioneer-ddj-sb3-top-down-flat-lg.webp",
+    "denon_prime_4": "https://m.cdn.sera.to/v3/hardware/denon-dj/prime-4/gallery/top-down-flat/denon-dj-prime-4-top-down-flat-lg.webp",
+    "hercules_inpulse_500": "https://m.cdn.sera.to/v3/hardware/hercules/djcontrol-inpulse-500/gallery/top-down-flat/hercules-djcontrol-inpulse-500-top-down-flat-lg.webp",
     "traktor_kontrol_s4": "https://www.native-instruments.com/typo3temp/pics/img-welcome-s4-mk3-top-transparent-a05e5dfec1d7e2beee2679cf90176fd3-m@2x.png",
     "traktor_kontrol_s2": "https://www.native-instruments.com/typo3temp/pics/img-welcome-s2-mk3-top-transparent-a05e5dfec1d7e2beee2679cf90176fd3-m@2x.png"
 }
@@ -65,33 +65,49 @@ class ControllerImageService:
         return clean
 
     @classmethod
-    def get_image_path(cls, model_name: str) -> Optional[str]:
+    def get_image_path(cls, model_name: str, wait_timeout: float = 5.0) -> Optional[str]:
         """Obtiene la ruta local de la imagen procesada con fondo transparente."""
         slug = cls.slugify(model_name)
         
-        # 1. Verificar si existe en assets estáticos
+        # 1. Verificar si existe en caché
+        cache_path = os.path.join(CACHE_DIR, f"{slug}.png")
+        if os.path.exists(cache_path):
+            return cache_path
+
+        # 2. Verificar si existe en assets estáticos
         asset_path = os.path.join(CONTROLLERS_DIR, f"{slug}.png")
         if os.path.exists(asset_path):
             return asset_path
             
-        # 2. Verificar en caché
-        cache_path = os.path.join(CACHE_DIR, f"{slug}.png")
-        if os.path.exists(cache_path):
-            return cache_path
-            
         # 3. Lanzar daemon en segundo plano si no se está descargando ya
+        fetch_thread = None
         with cls._lock:
             if slug not in cls._fetching:
                 cls._fetching.add(slug)
-                thread = threading.Thread(
+                fetch_thread = threading.Thread(
                     target=cls._fetch_and_process_daemon,
                     args=(slug, model_name),
                     name=f"Controller-Fetch-{slug}",
                     daemon=True
                 )
-                thread.start()
+                fetch_thread.start()
                 
-        # Si aún no está disponible, retornar el de Numark NV II o None
+        if fetch_thread and wait_timeout > 0:
+            fetch_thread.join(timeout=wait_timeout)
+            if os.path.exists(cache_path):
+                return cache_path
+            if os.path.exists(asset_path):
+                return asset_path
+        elif wait_timeout > 0:
+            import time
+            start = time.time()
+            while time.time() - start < wait_timeout:
+                if os.path.exists(cache_path):
+                    return cache_path
+                if os.path.exists(asset_path):
+                    return asset_path
+                time.sleep(0.1)
+                
         fallback = os.path.join(CONTROLLERS_DIR, "numark_nv_ii.png")
         return fallback if os.path.exists(fallback) else None
 
@@ -151,18 +167,9 @@ class ControllerImageService:
                 if bbox:
                     im = im.crop(bbox)
 
-                # Extraer "este trozo" característico (relación horizontal 190:70 / 2.71)
-                # Enfoca los displays, controles de deck y ruedas de transporte
-                target_ratio = 190.0 / 70.0
-                crop_h = int(im.width / target_ratio)
-                if crop_h <= im.height:
-                    trozo = im.crop((0, 0, im.width, crop_h))
-                else:
-                    trozo = im
-
-                trozo.thumbnail((190, 70), Image.Resampling.LANCZOS)
-                trozo.save(target_path, "PNG")
-                trozo.save(os.path.join(CACHE_DIR, f"{slug}.png"), "PNG")
+                # Guardar en alta definición transparente en el caché del daemon para renderizado nítido a 930x114px en cabina
+                cache_file = os.path.join(CACHE_DIR, f"{slug}.png")
+                im.save(cache_file, "PNG")
         except Exception:
             pass
         finally:

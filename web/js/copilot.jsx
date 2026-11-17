@@ -1569,10 +1569,10 @@ function LiveCopilotApp() {
                 {controllerState.detected && (
                     <div className="hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0">
                         <img 
-                            src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
+                            src={`/api/copilot/controller_image?name=${encodeURIComponent((controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_'))}`}
                             alt={controllerState.name || 'Controladora DJ'}
                             onError={(e) => {
-                                e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
+                                e.currentTarget.src = `/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`;
                             }}
                             className="w-[930px] max-w-full h-[114px] object-cover object-right ml-auto"
                             style={{ opacity: 0.4 }}

@@ -3,6 +3,7 @@ import { Icons } from '../shell/icons.jsx';
 import { ZoomableRekordboxWaveform, parseDurationMs, formatMsToTime, parseTimeToMs } from '../waveforms/index.js';
 import { NV2_COLORS, getValidCover } from '../data/constants.js';
 import { SectionTitle, InfoTip, RotaryKnob, getAudioEQNodes } from '../shell/workspace-ui.jsx';
+import { UnifiedLibraryBrowserModal } from '../modals/index.js';
 
 
 // =========================================================================
@@ -27,7 +28,10 @@ export const HotCuesWorkspace = ({
     setCurrentFolder,
     audioRef,
     studioMode: propsStudioMode = 'cues',
-    onSetStudioMode
+    onSetStudioMode,
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null
 }) => {
     const [studioMode, setStudioMode] = useState(propsStudioMode || 'cues');
     useEffect(() => {
@@ -759,49 +763,54 @@ export const HotCuesWorkspace = ({
         }
     };
 
+    // Cargar pistas desde una colección guardada de BeatWave
+    const handleCargarColeccionGuardada = (targetLibId = null) => {
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
+            || (customLibraries && customLibraries[0]);
+        const colTracks = [];
+        const seenKeys = new Set();
+        if (activeLib && activeLib.folders) {
+            activeLib.folders.forEach(f => {
+                (f.tracks || []).forEach(tr => {
+                    const key = tr.path || tr.filepath || tr.f || tr.id;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        colTracks.push(tr);
+                    }
+                });
+            });
+        }
+        if (colTracks.length > 0) {
+            if (setTracks) setTracks(colTracks);
+            if (setSelectedTrack) setSelectedTrack(colTracks[0]?.id || null);
+            setSaveStatus(lang === 'en' ? `✓ Loaded ${colTracks.length} tracks from Colección` : `✓ Colección cargada (${colTracks.length} pistas)`);
+        } else {
+            setSaveStatus(lang === 'en' ? "Your saved Colección is empty." : "Tu Colección guardada está vacía.");
+        }
+        setTimeout(() => setSaveStatus(''), 3500);
+    };
+
     // Navegador de Carpetas del Sistema
-    const handleAbrirNavegador = async (dir) => {
+    const handleAbrirNavegador = (dir) => {
         const target = dir || currentFolder || "";
         setRutaNavegacion(target);
         setFsBrowserOpen(true);
-        let res = null;
-        try {
-            const r = await fetch('/api/listar_subcarpetas?ruta=' + encodeURIComponent(target || ''));
-            if (r.ok) res = await r.json();
-        } catch (e) {}
-        if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
-            try {
-                res = await window.eel.listar_subcarpetas_sistema(target)();
-            } catch (err) {
-                console.error("Error al listar carpetas Eel:", err);
-            }
-        }
-        if (res) {
-            if (res.current) setRutaNavegacion(res.current);
-            if (Array.isArray(res.folders)) {
-                setCarpetasSistema(res.folders);
-            } else if (Array.isArray(res)) {
-                setCarpetasSistema(res);
-            } else {
-                setCarpetasSistema([]);
-            }
-        } else {
-            setCarpetasSistema([]);
-        }
     };
 
     const handleCargarDirectorio = async (nuevaRuta) => {
         setFsBrowserOpen(false);
-        if (setCurrentFolder) setCurrentFolder(nuevaRuta);
+        const folderTarget = Array.isArray(nuevaRuta) ? nuevaRuta[0] : nuevaRuta;
+        if (setCurrentFolder && typeof folderTarget === 'string') setCurrentFolder(folderTarget);
         setFilterQuery('');
         setSelectedCueId(1);
         setSaveStatus('');
         setAutoMappingStatus('');
         if (setTracks) setTracks([]);
         if (setSelectedTrack) setSelectedTrack(null);
-        if (window.eel && window.eel.cargar_metadatos_directorio) {
-            setIsLoadingDir(true);
-            try {
+        setIsLoadingDir(true);
+        try {
+            if (window.eel && window.eel.cargar_metadatos_directorio) {
                 const res = await window.eel.cargar_metadatos_directorio(nuevaRuta)();
                 if (res && Array.isArray(res.tracks)) {
                     if (setTracks) setTracks(res.tracks);
@@ -809,11 +818,26 @@ export const HotCuesWorkspace = ({
                         setSelectedTrack(res.tracks[0].id);
                     }
                 }
-            } catch (e) {
-                console.error("Error cargando carpeta:", e);
-            } finally {
-                setIsLoadingDir(false);
+            } else {
+                const resp = await fetch('/api/escanear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ruta: folderTarget })
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && Array.isArray(data.tracks)) {
+                        if (setTracks) setTracks(data.tracks);
+                        if (data.tracks.length > 0 && setSelectedTrack) {
+                            setSelectedTrack(data.tracks[0].id);
+                        }
+                    }
+                }
             }
+        } catch (e) {
+            console.error("Error cargando carpeta en HotCues:", e);
+        } finally {
+            setIsLoadingDir(false);
         }
     };
 
@@ -886,6 +910,15 @@ export const HotCuesWorkspace = ({
                     >
                         <Icons.Folder size={14} className="inline-block align-[-2px]" />
                         <span>{t('btn_change_dir') || 'Seleccionar'}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleCargarColeccionGuardada()}
+                        className="px-2.5 py-1.5 text-xs font-mono font-bold bg-purple-700 hover:bg-purple-600 text-white rounded-lg shadow-sm transition-all flex items-center gap-1 shrink-0 active:scale-95 cursor-pointer"
+                        title="Importar colección guardada"
+                    >
+                        <Icons.Library size={13} className="inline-block align-[-2px]" />
+                        <span>Colección</span>
                     </button>
                     <button
                         type="button"
@@ -2203,14 +2236,40 @@ export const HotCuesWorkspace = ({
                                     </p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => handleAbrirNavegador(currentFolder)}
-                                className="px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-lg hover:shadow-djcyan-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
-                            >
-                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
-                                <span>Cargar Carpeta de Música</span>
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => handleAbrirNavegador(currentFolder)}
+                                    className="px-4 py-2 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-xs rounded-lg shadow-lg hover:shadow-djcyan-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                                >
+                                    <Icons.Folder size={14} className="inline-block align-[-2px]" />
+                                    <span>Cargar Carpeta de Música</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCargarColeccionGuardada()}
+                                    className="px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white font-mono font-bold text-xs rounded-lg shadow-lg hover:shadow-purple-500/30 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
+                                    title="Cargar pistas de tu colección guardada"
+                                >
+                                    <Icons.Library size={14} className="inline-block align-[-2px]" />
+                                    <span>Importar Colección</span>
+                                </button>
+                                {customLibraries && customLibraries.length > 1 && (
+                                    <select
+                                        onChange={(e) => handleCargarColeccionGuardada(e.target.value)}
+                                        defaultValue=""
+                                        className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2.5 py-2 outline-none cursor-pointer"
+                                        title="Seleccionar qué colección cargar"
+                                    >
+                                        <option value="" disabled>Seleccionar biblioteca...</option>
+                                        {customLibraries.map(lib => (
+                                            <option key={lib.id} value={lib.id}>
+                                                {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                         </div>
 
                         {/* Si hay pistas en la carpeta pero ninguna seleccionada, muestra la tabla para seleccionar */}
@@ -2328,6 +2387,32 @@ export const HotCuesWorkspace = ({
                                 <Icons.Folder size={14} className="inline-block align-[-2px]" />
                                 <span>Explorar y Cargar Carpeta</span>
                             </button>
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => handleCargarColeccionGuardada()}
+                                    className="px-4 py-2.5 bg-purple-700 hover:bg-purple-600 text-white font-mono font-bold text-xs rounded-lg shadow-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2"
+                                    title="Cargar pistas de tus colecciones guardadas"
+                                >
+                                    <Icons.Library size={14} className="inline-block align-[-2px]" />
+                                    <span>Importar Colección</span>
+                                </button>
+                                {customLibraries && customLibraries.length > 1 && (
+                                    <select
+                                        onChange={(e) => handleCargarColeccionGuardada(e.target.value)}
+                                        defaultValue=""
+                                        className="bg-purple-950/80 border border-purple-600/70 text-purple-200 text-xs font-mono font-bold rounded-lg px-2.5 py-2.5 outline-none cursor-pointer"
+                                        title="Seleccionar qué colección cargar"
+                                    >
+                                        <option value="" disabled>Seleccionar biblioteca...</option>
+                                        {customLibraries.map(lib => (
+                                            <option key={lib.id} value={lib.id}>
+                                                {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => onNavigateTab && onNavigateTab('auditoria')}
@@ -2341,79 +2426,18 @@ export const HotCuesWorkspace = ({
                 </div>
             )}
 
-            {/* MODAL DEL NAVEGADOR DE CARPETAS DEL SISTEMA */}
-            {fsBrowserOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-[#0e0e16] border border-djzinc-700 rounded-xl max-w-xl w-full p-4 shadow-2xl flex flex-col max-h-[80vh]">
-                        <div className="flex items-center justify-between border-b border-djzinc-800 pb-3 mb-3">
-                            <div className="flex items-center gap-2">
-                                <Icons.Folder size={14} className="inline-block align-[-2px]" />
-                                <h3 className="text-sm font-bold text-white font-mono">Seleccionar Carpeta para Hot Cues</h3>
-                            </div>
-                            <button
-                                onClick={() => setFsBrowserOpen(false)}
-                                className="text-gray-400 hover:text-white text-sm cursor-pointer"
-                            >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" />
-                            </button>
-                        </div>
-
-                        <div className="text-xs font-mono text-gray-400 mb-2 truncate bg-djzinc-950 p-2 rounded border border-djzinc-800">
-                            Ruta: {rutaNavegacion}
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto custom-scrollbar border border-djzinc-800 rounded-lg p-1 divide-y divide-djzinc-850 max-h-60 bg-djzinc-950">
-                            {(Array.isArray(carpetasSistema) ? carpetasSistema : []).map((folder, idx) => (
-                                <div
-                                    key={idx}
-                                    onClick={() => handleAbrirNavegador(folder.path)}
-                                    className="p-2 hover:bg-djzinc-900 cursor-pointer flex items-center justify-between text-xs font-mono text-gray-300 transition-colors"
-                                >
-                                    <div className="flex items-center gap-2 truncate">
-                                        <Icons.Folder size={14} className="inline-block align-[-2px]" />
-                                        <span className="truncate">{folder.name}</span>
-                                    </div>
-                                    <span className="text-[10px] text-gray-500">Subir / Entrar →</span>
-                                </div>
-                            ))}
-                            {(!carpetasSistema || (Array.isArray(carpetasSistema) && carpetasSistema.length === 0)) && (
-                                <div className="p-4 text-center text-xs text-gray-500 font-mono">
-                                    No hay subcarpetas en este directorio.
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-djzinc-800">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const parent = rutaNavegacion.substring(0, rutaNavegacion.lastIndexOf('/')) || '/';
-                                    handleAbrirNavegador(parent);
-                                }}
-                                className="px-3 py-1.5 bg-djzinc-900 hover:bg-djzinc-850 text-gray-300 text-xs font-mono rounded border border-djzinc-800 cursor-pointer"
-                            >
-                                <Icons.Upload size={14} className="inline-block align-[-2px]" /> Carpeta Superior
-                            </button>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setFsBrowserOpen(false)}
-                                    className="px-3 py-1.5 bg-djzinc-850 hover:bg-djzinc-800 text-gray-300 text-xs font-mono rounded border border-djzinc-750 cursor-pointer"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleCargarDirectorio(rutaNavegacion)}
-                                    className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-mono font-bold rounded shadow cursor-pointer transition-transform active:scale-95"
-                                >
-                                    <Icons.Check size={14} className="inline-block align-[-2px]" /> Cargar Esta Carpeta
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+            <UnifiedLibraryBrowserModal
+                isOpen={fsBrowserOpen}
+                onClose={() => setFsBrowserOpen(false)}
+                title="Hot Cues • Explorador de Biblioteca & Archivos"
+                initialPath={rutaNavegacion || currentFolder}
+                onSelectPath={(selectedPath) => handleCargarDirectorio(selectedPath)}
+                onSelectMultiple={(allTargets) => handleCargarDirectorio(allTargets)}
+                customLibraries={customLibraries}
+                activeCustomLibId={activeCustomLibId}
+                onImportCollection={handleCargarColeccionGuardada}
+            />
 
             {/* MODAL EXPLICATIVO: DIFERENCIAS TÉCNICAS ESTÁNDAR VS ACÚSTICO */}
             {showDiferenciasModal && (

@@ -31,7 +31,8 @@ import {
     CamelotWheelModal, 
     BatchAuditorModal, 
     DuplicateComparisonModal, 
-    HotCueStudioModal 
+    HotCueStudioModal,
+    UnifiedLibraryBrowserModal
 } from '../modals/index.js';
 import { 
     SectionTitle, 
@@ -831,8 +832,10 @@ export const AuditWorkspace = ({
     };
 
     // Cargar la colección guardada de la app en la tabla de auditoría
-    const handleCargarColeccionGuardada = () => {
-        const activeLib = (customLibraries || []).find(l => l.id === activeCustomLibId) || (customLibraries && customLibraries[0]);
+    const handleCargarColeccionGuardada = (targetLibId = null) => {
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
+            || (customLibraries && customLibraries[0]);
         const colTracks = [];
         const seenKeys = new Set();
         if (activeLib && activeLib.folders) {
@@ -3948,6 +3951,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                             onDragLeave={() => setIsDragOver(false)}
                             onDrop={(e) => { e.preventDefault(); setIsDragOver(false); handleExplorar(); }}
                             onBrowse={handleExplorar}
+                            onImportCollection={handleCargarColeccionGuardada}
+                            customLibraries={customLibraries}
+                            activeCustomLibId={activeCustomLibId}
                         />
                     ) : (
                         <>
@@ -6004,260 +6010,21 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                 </div>
             )}
 
-            {/* Modal Navegador de Carpetas y Selección de Archivos Web Integrado */}
-            {fsBrowserOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn">
-                    <div className="bg-[#0c0c12] border border-djzinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-                        <div className="p-4 border-b border-djzinc-800 bg-djzinc-950 flex justify-between items-center">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-djcyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2">
-                                    <Icons.Library /> Explorador de Biblioteca & Selección de Archivos
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleAbrirDialogoNativo}
-                                    className="px-3.5 py-2 min-h-[34px] bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/70 text-emerald-300 hover:text-white rounded-lg text-xs font-mono font-bold transition-all cursor-pointer shadow flex items-center gap-1.5 active:scale-95"
-                                    title="Abrir ventana nativa del Finder de macOS para seleccionar carpeta"
-                                >
-                                    <Icons.Folder size={14} />
-                                    <span>Abrir Finder (macOS)</span>
-                                </button>
-                                <button onClick={() => setFsBrowserOpen(false)} className="w-8 h-8 rounded-full bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer"><Icons.Close size={15} className="inline-block align-[-2px]" /></button>
-                            </div>
-                        </div>
-
-                        <div className="px-4 py-3 bg-djzinc-900/90 border-b border-djzinc-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span className="text-gray-400 shrink-0 font-bold">Ruta:</span>
-                                <span className="text-djcyan-400 font-bold truncate" title={fsCurrentPath}>{fsCurrentPath || "Cargando..."}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                                {fsCurrentPath && (
-                                    <button 
-                                        type="button"
-                                        onClick={() => toggleStageFolder(fsCurrentPath)}
-                                        className={`px-3 py-2 min-h-[34px] rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow ${
-                                            stagedFolders.includes(fsCurrentPath)
-                                                ? 'bg-emerald-500 text-black border-emerald-400 font-black'
-                                                : 'bg-djcyan-950/80 hover:bg-djcyan-900 border-djcyan-700/70 text-djcyan-300'
-                                        }`}
-                                        title="Añadir o quitar toda esta carpeta de la cesta de selección conjunta"
-                                    >
-                                        <span>{stagedFolders.includes(fsCurrentPath) ? '✓' : '+'}</span>
-                                        <span>{stagedFolders.includes(fsCurrentPath) ? 'Carpeta Añadida' : 'Añadir Toda Esta Carpeta'}</span>
-                                    </button>
-                                )}
-                                {fsParentPath && fsParentPath !== fsCurrentPath && (
-                                    <button onClick={() => handleNavegarACarpeta(fsParentPath)} className="px-3 py-2 min-h-[34px] bg-djzinc-800 hover:bg-djzinc-700 text-white rounded-lg text-xs font-mono font-bold border border-djzinc-700 cursor-pointer shrink-0 flex items-center gap-1.5 shadow">
-                                        <span>▲</span> <span>Subir Nivel</span>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Pestañas de Vista: Subcarpetas / Archivos de Audio */}
-                        <div className="flex border-b border-djzinc-800 bg-[#07070a] px-4 pt-2.5 gap-2 text-xs font-mono">
-                            <button
-                                onClick={() => setFsActiveTab('folders')}
-                                className={`px-4 py-2.5 min-h-[38px] rounded-t-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                                    fsActiveTab === 'folders'
-                                        ? 'bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700'
-                                        : 'text-gray-400 hover:text-white'
-                                }`}
-                            >
-                                <span><Icons.Folder size={15} className="inline-block align-[-2px]" /> Subcarpetas</span>
-                                <span className="px-2 py-0.5 bg-djzinc-800 text-[11px] rounded-full text-gray-300 font-mono font-bold leading-none">{fsFolders.length}</span>
-                                {stagedFolders.length > 0 && (
-                                    <span className="px-2 py-0.5 bg-emerald-500 text-black text-[11px] font-bold rounded-full font-mono leading-none">
-                                        {stagedFolders.length} en cesta
-                                    </span>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setFsActiveTab('files')}
-                                className={`px-4 py-2.5 min-h-[38px] rounded-t-lg font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                                    fsActiveTab === 'files'
-                                        ? 'bg-djzinc-900 text-djcyan-400 border-t border-x border-djzinc-700'
-                                        : 'text-gray-400 hover:text-white'
-                                }`}
-                            >
-                                <span><Icons.Music size={15} className="inline-block align-[-2px]" /> Pistas Sueltas</span>
-                                <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold font-mono leading-none ${
-                                    stagedFiles.length > 0 ? 'bg-djcyan-500 text-black' : 'bg-djzinc-800 text-gray-300'
-                                }`}>
-                                    {stagedFiles.length > 0 ? `${stagedFiles.length} en cesta` : fsFiles.length}
-                                </span>
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-3 space-y-1 bg-[#07070a]">
-                            {fsLoading ? (
-                                <div className="py-14 text-center text-gray-400 text-xs font-mono flex flex-col items-center gap-2">
-                                    <div className="w-6 h-6 border-2 border-djcyan-400 border-t-transparent rounded-full animate-spin"></div>
-                                    <span>Leyendo directorio y pistas de audio...</span>
-                                </div>
-                            ) : fsActiveTab === 'folders' ? (
-                                fsFolders.length === 0 ? (
-                                    <div className="py-12 text-center text-gray-500 text-xs font-mono">
-                                        No hay subcarpetas en este directorio.
-                                    </div>
-                                ) : (
-                                    fsFolders.map((f, idx) => {
-                                        const isFolderStaged = stagedFolders.includes(f.path);
-                                        return (
-                                            <div 
-                                                key={idx} 
-                                                onClick={() => handleNavegarACarpeta(f.path)}
-                                                className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer group transition-all ${
-                                                    isFolderStaged 
-                                                        ? 'bg-emerald-950/20 border-emerald-500/50' 
-                                                        : 'bg-djzinc-900/60 hover:bg-djcyan-950/40 border-djzinc-800/80 hover:border-djcyan-500/50'
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                    <Icons.Folder size={14} className="inline-block align-[-2px] text-amber-400" />
-                                                    <span className="text-xs text-gray-200 group-hover:text-white font-medium truncate">{f.name}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <button 
-                                                        type="button"
-                                                        onClick={(e) => { e.stopPropagation(); toggleStageFolder(f.path); }}
-                                                        className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded border transition-colors cursor-pointer flex items-center gap-1 ${
-                                                            isFolderStaged
-                                                                ? 'bg-emerald-500 text-black border-emerald-400 font-black'
-                                                                : 'bg-djzinc-800 hover:bg-djcyan-950 text-djcyan-300 border-djzinc-700 hover:border-djcyan-600'
-                                                        }`}
-                                                        title="Añadir o quitar esta subcarpeta de la cesta"
-                                                    >
-                                                        <span>{isFolderStaged ? '✓' : '+'}</span>
-                                                        <span>{isFolderStaged ? 'Añadida a Cesta' : 'Añadir Carpeta'}</span>
-                                                    </button>
-                                                    <span className="text-gray-500 text-xs group-hover:text-djcyan-400 font-mono">➔</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )
-                            ) : (
-                                /* Pestaña de Archivos de Audio con Selección Incremental */
-                                <div>
-                                    {fsFiles.length > 0 && (
-                                        <div className="flex items-center justify-between p-2 mb-2 bg-djzinc-900/80 rounded border border-djzinc-800 text-xs font-mono">
-                                            <label className="flex items-center gap-2 text-gray-300 cursor-pointer select-none">
-                                                <input 
-                                                    type="checkbox"
-                                                    checked={fsFiles.length > 0 && fsFiles.every(f => stagedFiles.includes(f.path))}
-                                                    onChange={toggleStageAllCurrentFsFiles}
-                                                    className="rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
-                                                />
-                                                <span className="font-bold">Seleccionar todas las de este nivel ({fsFiles.length})</span>
-                                            </label>
-                                            {stagedFiles.length > 0 && (
-                                                <span className="text-djcyan-400 text-[11px] font-bold">
-                                                    <Icons.Check size={14} className="inline-block align-[-2px]" /> {stagedFiles.length} pista(s) acumuladas en cesta
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {fsFiles.length === 0 ? (
-                                        <div className="py-12 text-center text-gray-500 text-xs font-mono">
-                                            No se encontraron archivos de audio directos (.flac, .mp3, .wav, etc.) en este nivel.
-                                            <br />
-                                            <span className="text-gray-400 mt-1 inline-block">Navega a una subcarpeta para explorar más pistas.</span>
-                                        </div>
-                                    ) : (
-                                        fsFiles.map((fileItem, idx) => {
-                                            const isSelected = stagedFiles.includes(fileItem.path);
-                                            return (
-                                                <div 
-                                                    key={idx}
-                                                    onClick={() => toggleStageFile(fileItem.path)}
-                                                    className={`p-2 rounded flex items-center justify-between cursor-pointer border transition-colors ${
-                                                        isSelected 
-                                                            ? 'bg-djcyan-950/40 border-djcyan-500/60 text-white' 
-                                                            : 'bg-djzinc-900/40 hover:bg-djzinc-800/60 border-djzinc-800 text-gray-300'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                        <input 
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={() => {}}
-                                                            className="rounded bg-djzinc-950 border-djzinc-700 text-djcyan-500 focus:ring-0 cursor-pointer"
-                                                        />
-                                                        <Icons.Music size={14} className="inline-block align-[-2px] text-djcyan-400" />
-                                                        <span className="text-xs truncate font-mono">{fileItem.name}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 shrink-0 text-[10px] font-mono">
-                                                        <span className="px-1.5 py-0.5 rounded bg-djzinc-800 text-djcyan-300 font-bold border border-djzinc-700">
-                                                            {fileItem.ext || 'AUDIO'}
-                                                        </span>
-                                                        <span className="text-gray-400">{fileItem.size_mb ? `${fileItem.size_mb} MB` : ''}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-3.5 bg-djzinc-950 border-t border-djzinc-800 flex flex-wrap justify-between items-center gap-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-mono font-bold text-gray-300 flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-djcyan-400 animate-pulse"></span>
-                                    <span>Cesta:</span>
-                                    <span className="text-emerald-400">{stagedFolders.length} carpeta(s)</span>
-                                    <span>•</span>
-                                    <span className="text-djcyan-300">{stagedFiles.length} pista(s)</span>
-                                </span>
-                                {(stagedFolders.length > 0 || stagedFiles.length > 0) && (
-                                    <button 
-                                        type="button" 
-                                        onClick={clearStagedSelection}
-                                        className="px-2 py-0.5 text-[10px] font-mono text-red-400 hover:text-red-300 hover:underline cursor-pointer"
-                                        title="Vaciar la selección acumulada"
-                                    >
-                                        [Vaciar Cesta]
-                                    </button>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <button 
-                                    type="button"
-                                    onClick={() => setFsBrowserOpen(false)} 
-                                    className="px-5 py-2.5 min-h-[40px] bg-djzinc-800 hover:bg-djzinc-700 text-gray-200 hover:text-white rounded-xl text-xs font-mono font-bold cursor-pointer transition-all flex items-center justify-center shadow active:scale-95 border border-djzinc-700"
-                                >
-                                    Cancelar
-                                </button>
-                                {(stagedFolders.length > 0 || stagedFiles.length > 0) ? (
-                                    <button 
-                                        type="button"
-                                        onClick={handleConfirmarSeleccionLote}
-                                        className="px-5 py-2.5 min-h-[40px] bg-gradient-to-r from-emerald-500 to-djcyan-400 hover:from-emerald-400 hover:to-djcyan-300 text-black font-mono font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-950/40 cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-                                    >
-                                        <Icons.Download size={15} />
-                                        <span>Cargar Cesta Completa ({stagedFolders.length} carp., {stagedFiles.length} pistas)</span>
-                                    </button>
-                                ) : (
-                                    <button 
-                                        type="button"
-                                        onClick={() => handleSeleccionarCarpetaUI(fsCurrentPath)} 
-                                        className="px-5 py-2.5 min-h-[40px] bg-djcyan-400 hover:bg-djcyan-300 text-black font-mono font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-                                    >
-                                        <Icons.Folder size={15} />
-                                        <span>Cargar Toda la Carpeta Actual</span>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
+            {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+            <UnifiedLibraryBrowserModal
+                isOpen={fsBrowserOpen}
+                onClose={() => setFsBrowserOpen(false)}
+                title="Explorador de Biblioteca & Selección de Archivos"
+                initialPath={rutaOrigen}
+                onSelectPath={(selectedPath, append) => handleSeleccionarCarpetaUI(selectedPath)}
+                onSelectMultiple={(allTargets, append) => {
+                    handleCargarDirectorio(allTargets, append);
+                }}
+                customLibraries={customLibraries}
+                activeCustomLibId={activeCustomLibId}
+                onImportCollection={handleCargarColeccionGuardada}
+                isAppendMode={isAppendMode}
+            />
             {/* Modal Rueda Armónica Camelot (Circle of Fifths) */}
             {camelotModalOpen && (
                 <CamelotWheelModal 

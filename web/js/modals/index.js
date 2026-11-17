@@ -9,3 +9,4 @@ export { BitacoraDetailContent, BitacoraDetailModal, BitacoraModal } from './Bit
 export { detectClientOS, DJShortcutsModal } from './DJShortcutsModal.jsx';
 export { MANUAL_SECTIONS, InteractiveManualModal } from './InteractiveManualModal.jsx';
 export { MixOracleModal } from './MixOracleModal.jsx';
+export { UnifiedLibraryBrowserModal } from './UnifiedLibraryBrowserModal.jsx';

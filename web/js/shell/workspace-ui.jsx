@@ -297,35 +297,96 @@ export const FilterMenu = ({ value, onChange, groups, allLabel = 'Todas las pist
 
 const FORMATS = ['FLAC', 'WAV', 'AIFF', 'MP3', 'M4A', 'OGG'];
 
-export const IngestDropzone = ({ isDragOver, onDragOver, onDragLeave, onDrop, onBrowse }) => (
-    <div
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        className="flex-1 flex items-center justify-center p-4 sm:p-8 select-none my-auto"
-    >
-        <div className={`ws-dropzone ${isDragOver ? 'ws-dropzone-over' : ''}`}>
-            <div className="ws-dropzone-icon" aria-hidden="true">
-                <Icons.Upload size={26} strokeWidth={1.5} />
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-                <h2 className="font-sans font-semibold text-lg sm:text-xl text-zinc-50 text-balance">
-                    {isDragOver ? 'Suelta para analizar' : 'Arrastra tu música aquí'}
-                </h2>
-                <p className="text-sm text-zinc-400 leading-relaxed max-w-md text-pretty">
-                    Carpetas completas o pistas sueltas. Calculamos BPM, Key Camelot y Hot Cues, y certificamos la calidad real de cada archivo.
+export const IngestDropzone = ({ 
+    isDragOver = false, 
+    onDragOver, 
+    onDragLeave, 
+    onDrop, 
+    onBrowse,
+    onImportCollection = null,
+    customLibraries = [],
+    activeCustomLibId = null
+}) => {
+    const [selectedLib, setSelectedLib] = useState(() => {
+        if (activeCustomLibId) return activeCustomLibId;
+        if (customLibraries && customLibraries.length > 0) return customLibraries[0].id;
+        return "";
+    });
+
+    useEffect(() => {
+        if (activeCustomLibId) {
+            setSelectedLib(activeCustomLibId);
+        } else if (customLibraries && customLibraries.length > 0 && !selectedLib) {
+            setSelectedLib(customLibraries[0].id);
+        }
+    }, [activeCustomLibId, customLibraries]);
+
+    const handleImportClick = () => {
+        if (onImportCollection) {
+            onImportCollection(selectedLib || (customLibraries && customLibraries[0] ? customLibraries[0].id : null));
+        }
+    };
+
+    return (
+        <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className="flex-1 flex items-center justify-center p-4 sm:p-8 select-none my-auto"
+        >
+            <div className={`ws-dropzone ${isDragOver ? 'ws-dropzone-over' : ''}`}>
+                <div className="ws-dropzone-icon" aria-hidden="true">
+                    <Icons.Upload size={26} strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <h2 className="font-sans font-semibold text-lg sm:text-xl text-zinc-50 text-balance">
+                        {isDragOver ? 'Suelta para analizar' : 'Arrastra tu música aquí'}
+                    </h2>
+                    <p className="text-sm text-zinc-400 leading-relaxed max-w-md text-pretty">
+                        Carpetas completas o pistas sueltas. Calculamos BPM, Key Camelot y Hot Cues, y certificamos la calidad real de cada archivo.
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-1">
+                    <button type="button" onClick={onBrowse} className="ws-btn ws-btn-primary ws-btn-lg">
+                        <Icons.Folder size={16} />
+                        <span>Elegir carpeta o pistas</span>
+                    </button>
+
+                    {onImportCollection && (
+                        <div className="flex items-center gap-1.5 p-1 bg-zinc-900/90 border border-zinc-700/80 rounded-xl shadow-lg">
+                            {customLibraries && customLibraries.length > 1 && (
+                                <select
+                                    value={selectedLib}
+                                    onChange={(e) => setSelectedLib(e.target.value)}
+                                    className="bg-zinc-800 text-cyan-300 font-mono text-xs font-bold rounded-lg px-2.5 py-2 outline-none border border-zinc-700 cursor-pointer"
+                                    title="Seleccionar biblioteca a importar"
+                                >
+                                    {customLibraries.map(lib => (
+                                        <option key={lib.id} value={lib.id}>
+                                            {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            <button
+                                type="button"
+                                onClick={handleImportClick}
+                                className="ws-btn ws-btn-secondary ws-btn-lg !bg-cyan-950/80 hover:!bg-cyan-900 !border-cyan-500/60 !text-cyan-200 hover:!text-white shadow-md active:scale-95"
+                                title="Importar colección de música guardada"
+                            >
+                                <Icons.Layers size={16} className="text-cyan-400" />
+                                <span>Importar Colección</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <p className="font-mono text-[11px] tracking-wider text-zinc-500">
+                    {FORMATS.join('  ·  ')}
                 </p>
             </div>
-            <button type="button" onClick={onBrowse} className="ws-btn ws-btn-primary ws-btn-lg">
-                <Icons.Folder size={16} />
-                <span>Elegir carpeta o pistas</span>
-            </button>
-            <p className="font-mono text-[11px] tracking-wider text-zinc-500">
-                {FORMATS.join('  ·  ')}
-            </p>
         </div>
-    </div>
-);
+    );
+};
 
 export function camelotTone(keyStr) {
     const m = String(keyStr || '').trim().toUpperCase().match(/^(\d{1,2})\s*([AB])$/);
@@ -613,87 +674,51 @@ export const BeatWaveBrandIdentity = ({
     className = '' 
 }) => {
     const isHero = variant === 'hero';
-    const badgeSize = isHero ? 'hero' : 'sm'; // hero: 76px / sm: 36px
-    const titleSize = isHero ? 48 : 24;       // font-size en px (Syne 800)
-    const proSize = isHero ? 19 : 10.5;       // font-size de PRO en px (Inter 900)
-    const proBorder = isHero ? 2.5 : 1.5;     // grosor del borde
-    const proRadius = isHero ? 12 : 8;        // radio del borde
-    const proPx = isHero ? 12 : 7;            // padding horizontal
-    const proPy = isHero ? 3 : 1.5;           // padding vertical
-    const subSize = isHero ? 18.5 : 11;       // font-size de PRECISION • AUDIO • INTELLIGENCE (más grande y nítida)
-    const dotSize = isHero ? 28 : 17;         // puntos separadores notablemente más grandes
-    const subGap = isHero ? 7 : 3.5;          // margen entre título y subtítulo
-    const mainGap = isHero ? 22 : 12;         // espacio entre el badge y el texto
 
     return (
         <div 
             onClick={onClick}
-            className={`inline-flex items-center select-none ${onClick ? 'cursor-pointer' : ''} group ${className}`}
-            style={{ columnGap: `${mainGap}px` }}
+            className={`select-none ${onClick ? 'cursor-pointer' : ''} group ${
+                isHero ? 'bw-hero-brand-wrap' : 'inline-flex items-center gap-3'
+            } ${className}`}
         >
             {/* 1. Badge Circular Oficial */}
-            <BeatWaveLogoBadge size={badgeSize} />
+            <BeatWaveLogoBadge size={isHero ? 'hero' : 'sm'} />
 
             {/* 2. Bloque Tipográfico Limpio Sin Efectos de Texto con Proporción 1:1 */}
-            <div className="flex flex-col justify-center text-left shrink-0 select-none">
-                {/* Fila 1: BEATWAVE + PRO (Sin sombras ni halos de texto) */}
-                <div className="flex items-center leading-none" style={{ gap: isHero ? '12px' : '7px' }}>
+            <div className={`flex flex-col justify-center text-left shrink-0 select-none ${isHero ? 'bw-hero-text-block' : ''}`}>
+                {/* Fila 1: BEATWAVE + PRO */}
+                <div className={`flex items-center leading-none ${isHero ? 'bw-hero-row1' : 'gap-1.5'}`}>
                     <span 
                         className={`font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${
                             isTechnoActive ? 'anim-soundwave' : ''
-                        }`}
-                        style={{ 
-                            fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
-                            fontWeight: 800,
-                            fontSize: `${titleSize}px`,
-                            lineHeight: 1
-                        }}
+                        } ${isHero ? 'bw-hero-title' : 'text-2xl font-extrabold'}`}
+                        style={{ fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif" }}
                     >
                         <span className="text-white">BEAT</span>
                         <span className="text-cyan-400">WAVE</span>
                     </span>
                     <span 
-                        className="font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase"
-                        style={{
-                            fontFamily: "Inter, -apple-system, sans-serif",
-                            fontWeight: 900,
-                            fontSize: `${proSize}px`,
-                            padding: `${proPy}px ${proPx}px`,
-                            borderRadius: `${proRadius}px`,
-                            border: `${proBorder}px solid #22d3ee`,
-                            lineHeight: 1
-                        }}
+                        className={`font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase ${
+                            isHero ? 'bw-hero-pro' : 'text-[10.5px] px-1.5 py-0.5 rounded-lg border border-cyan-400'
+                        }`}
+                        style={{ fontFamily: "Inter, -apple-system, sans-serif" }}
                     >
                         PRO
                     </span>
                 </div>
 
-                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE (Tipografía mayor y puntos grandes centrados) */}
+                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE (Letras grandes, nítidas y puntos centrados) */}
                 <div 
-                    className="w-full flex justify-between items-center text-cyan-200 select-none leading-none"
-                    style={{
-                        fontFamily: "Inter, -apple-system, sans-serif",
-                        fontWeight: 800,
-                        fontSize: `${subSize}px`,
-                        letterSpacing: '0.11em',
-                        marginTop: `${subGap}px`,
-                        lineHeight: 1
-                    }}
+                    className={`w-full flex justify-between items-center select-none leading-none ${
+                        isHero ? 'bw-hero-sub' : 'text-cyan-200 text-[11px] mt-1 tracking-[0.11em] font-extrabold'
+                    }`}
+                    style={{ fontFamily: "Inter, -apple-system, sans-serif" }}
                 >
                     <span>PRECISION</span>
-                    <span 
-                        className="text-cyan-400 font-black inline-flex items-center justify-center select-none" 
-                        style={{ fontSize: `${dotSize}px`, lineHeight: 0, transform: 'translateY(-1px)' }}
-                    >
-                        •
-                    </span>
+                    <span className={isHero ? 'bw-hero-sub-dot' : 'text-cyan-400 font-black inline-flex items-center justify-center select-none text-sm'}>•</span>
                     <span>AUDIO</span>
-                    <span 
-                        className="text-cyan-400 font-black inline-flex items-center justify-center select-none" 
-                        style={{ fontSize: `${dotSize}px`, lineHeight: 0, transform: 'translateY(-1px)' }}
-                    >
-                        •
-                    </span>
+                    <span className={isHero ? 'bw-hero-sub-dot' : 'text-cyan-400 font-black inline-flex items-center justify-center select-none text-sm'}>•</span>
                     <span>INTELLIGENCE</span>
                 </div>
             </div>
