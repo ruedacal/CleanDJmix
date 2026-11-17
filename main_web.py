@@ -1405,6 +1405,8 @@ if wbs:
                         copilot_service.set_manual_master(data.get("master", 1))
                     elif action == "toggle_play":
                         copilot_service.toggle_play(data.get("deck", 1))
+                    elif action == "cue_deck":
+                        copilot_service.cue_deck(data.get("deck", 1))
                     elif action == "set_platform":
                         copilot_service.set_platform(data.get("platform", "simulation"))
                 except Exception:
@@ -1528,6 +1530,22 @@ def api_copilot_toggle_play():
     deck_val = data.get('deck') or bottle.request.params.get('deck', 'master')
     import json
     return json.dumps(copilot_service.toggle_play(deck_val))
+
+@bottle.route('/api/copilot/cue_deck', method=['POST', 'OPTIONS'])
+def api_copilot_cue_deck():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    try:
+        data = bottle.request.json or {}
+    except Exception:
+        data = {}
+    deck_val = data.get('deck') or bottle.request.params.get('deck', '1')
+    import json
+    return json.dumps(copilot_service.cue_deck(deck_val))
 
 @bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
 def api_copilot_toggle_simulation():
