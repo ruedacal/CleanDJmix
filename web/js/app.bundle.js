@@ -8447,6 +8447,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const [feedbackMsg, setFeedbackMsg] = useState5("");
     const [searchTrack, setSearchTrack] = useState5("");
     const [dragOverFolderId, setDragOverFolderId] = useState5(null);
+    const [selectedTrackKeys, setSelectedTrackKeys] = useState5(/* @__PURE__ */ new Set());
     const [fsBrowserOpen, setFsBrowserOpen] = useState5(false);
     const [fsCurrentPath, setFsCurrentPath] = useState5("/Users/admin/Music");
     const [fsParentPath, setFsParentPath] = useState5("/Users/admin");
@@ -8456,8 +8457,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const [stagedFiles, setStagedFiles] = useState5([]);
     const [fsActiveTab, setFsActiveTab] = useState5("folders");
     const [fsLoading, setFsLoading] = useState5(false);
-    const fileInputRef = useRef6(null);
-    const dirInputRef = useRef6(null);
     const [leftColWidth, setLeftColWidth] = useState5(() => {
       try {
         const saved = localStorage.getItem("bw_library_col_width");
@@ -8502,6 +8501,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         setLibNameInput(currentLib.name || "");
       }
     }, [currentLib == null ? void 0 : currentLib.id]);
+    useEffect6(() => {
+      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+    }, [selectedFolderId, activeLibId]);
     const handleCreateNewLibrary = () => {
       const newId = `lib_${Date.now()}`;
       const newLib = {
@@ -8555,6 +8557,54 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       if (selectedFolderId === folderId) {
         setSelectedFolderId("__ALL__");
       }
+    };
+    const handleEmptyActiveFolder = () => {
+      const f = (currentLib.folders || []).find((x) => x.id === selectedFolderId);
+      if (!f) return;
+      const trackCount = (f.tracks || []).length;
+      if (trackCount === 0) {
+        alert(`La carpeta "${f.name}" ya est\xE1 vac\xEDa.`);
+        return;
+      }
+      if (!window.confirm(`\xBFEst\xE1s seguro de que deseas vaciar las ${trackCount} pista(s) de la carpeta "${f.name}"? (Permanecer\xE1n en la colecci\xF3n general)`)) {
+        return;
+      }
+      const updated = libraries.map((l) => {
+        if (l.id === activeLibId) {
+          return {
+            ...l,
+            folders: (l.folders || []).map((folder) => folder.id === selectedFolderId ? { ...folder, tracks: [] } : folder)
+          };
+        }
+        return l;
+      });
+      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+      setFeedbackMsg(`\u2713 Carpeta "${f.name}" vaciada`);
+      setTimeout(() => setFeedbackMsg(""), 2500);
+    };
+    const handleEmptyEntireLibrary = () => {
+      var _a2;
+      const total = allLibTracks.length;
+      if (total === 0 && (!currentLib.folders || currentLib.folders.length === 0)) {
+        alert(`La colecci\xF3n "${currentLib.name}" ya est\xE1 vac\xEDa.`);
+        return;
+      }
+      if (!window.confirm(`\xBFEst\xE1s seguro de que deseas VACIAR TODA la colecci\xF3n "${currentLib.name}"?
+Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == null ? void 0 : _a2.length) || 0} carpeta(s).`)) {
+        return;
+      }
+      const updated = libraries.map((l) => {
+        if (l.id === activeLibId) {
+          return { ...l, tracks: [], folders: [] };
+        }
+        return l;
+      });
+      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      setSelectedFolderId("__ALL__");
+      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+      setFeedbackMsg(`\u2713 Colecci\xF3n "${currentLib.name}" vaciada por completo`);
+      setTimeout(() => setFeedbackMsg(""), 3e3);
     };
     const handleCargarDesdeAuditoria = () => {
       const sourceTracks = currentTracks || [];
@@ -8698,6 +8748,106 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         return l;
       });
       if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      setSelectedTrackKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(trackKey);
+        return next;
+      });
+    };
+    const handleToggleSelectAll = () => {
+      if (filteredTracks.length === 0) return;
+      const allKeys = filteredTracks.map((t) => t.id || t.file_path || t.path || t.f);
+      const allSelected = allKeys.every((k) => selectedTrackKeys.has(k));
+      if (allSelected) {
+        setSelectedTrackKeys(/* @__PURE__ */ new Set());
+      } else {
+        setSelectedTrackKeys(new Set(allKeys));
+      }
+    };
+    const handleToggleSelectTrack = (trackKey, e) => {
+      e.stopPropagation();
+      setSelectedTrackKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(trackKey)) {
+          next.delete(trackKey);
+        } else {
+          next.add(trackKey);
+        }
+        return next;
+      });
+    };
+    const handleBatchAssignToFolder = (targetFolderId) => {
+      var _a2;
+      if (selectedTrackKeys.size === 0 || !targetFolderId) return;
+      const tracksToAssign = displayedTracks.filter((t) => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
+      const targetFolderName = ((_a2 = (currentLib.folders || []).find((f) => f.id === targetFolderId)) == null ? void 0 : _a2.name) || "Carpeta";
+      const updated = libraries.map((l) => {
+        if (l.id === activeLibId) {
+          const newFolders = (l.folders || []).map((f) => {
+            if (f.id === targetFolderId) {
+              const existingIds = new Set((f.tracks || []).map((t) => t.id || t.file_path || t.path || t.f));
+              const added = tracksToAssign.filter((t) => !existingIds.has(t.id || t.file_path || t.path || t.f));
+              return { ...f, tracks: [...f.tracks || [], ...added] };
+            }
+            return f;
+          });
+          return { ...l, folders: newFolders };
+        }
+        return l;
+      });
+      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      setFeedbackMsg(`\u2713 ${tracksToAssign.length} pista(s) asignadas a "${targetFolderName}"`);
+      setTimeout(() => setFeedbackMsg(""), 2500);
+      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+    };
+    const handleBatchRemoveFromActiveFolder = () => {
+      if (selectedFolderId === "__ALL__" || selectedTrackKeys.size === 0) return;
+      const f = (currentLib.folders || []).find((x) => x.id === selectedFolderId);
+      if (!f) return;
+      const count = selectedTrackKeys.size;
+      const updated = libraries.map((l) => {
+        if (l.id === activeLibId) {
+          return {
+            ...l,
+            folders: (l.folders || []).map((folder) => {
+              if (folder.id === selectedFolderId) {
+                return {
+                  ...folder,
+                  tracks: (folder.tracks || []).filter((t) => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f))
+                };
+              }
+              return folder;
+            })
+          };
+        }
+        return l;
+      });
+      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+      setFeedbackMsg(`\u2713 ${count} pista(s) sacadas de "${f.name}"`);
+      setTimeout(() => setFeedbackMsg(""), 2500);
+    };
+    const handleBatchDeleteFromLibrary = () => {
+      if (selectedTrackKeys.size === 0) return;
+      const count = selectedTrackKeys.size;
+      if (!window.confirm(`\xBFEst\xE1s seguro de que deseas eliminar las ${count} pista(s) seleccionadas de toda la colecci\xF3n y sus carpetas?`)) {
+        return;
+      }
+      const updated = libraries.map((l) => {
+        if (l.id === activeLibId) {
+          const newRoot = (l.tracks || []).filter((t) => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
+          const newFolders = (l.folders || []).map((folder) => ({
+            ...folder,
+            tracks: (folder.tracks || []).filter((t) => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f))
+          }));
+          return { ...l, tracks: newRoot, folders: newFolders };
+        }
+        return l;
+      });
+      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+      setFeedbackMsg(`\u2713 ${count} pista(s) eliminadas de la colecci\xF3n`);
+      setTimeout(() => setFeedbackMsg(""), 2500);
     };
     const fetchDirListing = async (path) => {
       try {
@@ -8850,15 +9000,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       return title.includes(q) || artist.includes(q) || genre.includes(q);
     });
     const totalTracksInLib = allLibTracks.length;
-    const formatKb = (tr) => {
-      if (tr.filesize && tr.filesize > 0) {
-        return `${Math.round(tr.filesize / 1024).toLocaleString()} KB`;
-      }
-      if (tr.size_kb) return `${Math.round(tr.size_kb).toLocaleString()} KB`;
-      if (tr.size_mb) return `${Math.round(tr.size_mb * 1024).toLocaleString()} KB`;
-      if (tr.bitrate_kbps) return `${tr.bitrate_kbps} kbps`;
-      return tr.format === "FLAC" ? "38,400 KB" : "9,600 KB";
-    };
     return /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070812" }, className: "w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#0d0f1e", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }, className: "px-6 py-4 flex items-center justify-between shrink-0 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 22, className: "text-cyan-400" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-lg sm:text-xl uppercase tracking-wider text-white" }, "COLECCI\xD3N & BIBLIOTECA"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold" }, totalTracksInLib, " PISTAS EN COLECCI\xD3N")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono mt-0.5" }, "GESTOR AVANZADO DE COLECCI\xD3N, CRATES, AN\xC1LISIS AC\xDASTICO Y MATERIALIZACI\xD3N EN DISCO / USB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -8913,6 +9054,16 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       },
       "Guardar"
     ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleEmptyEntireLibrary,
+        className: "px-3 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-950 text-red-300 border border-red-800/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm",
+        title: "Vaciar por completo toda la colecci\xF3n activa (carpetas y pistas)"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 13, className: "inline-block" }),
+      /* @__PURE__ */ React.createElement("span", null, "Vaciar Colecci\xF3n")
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9050,7 +9201,17 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         className: `w-1.5 hover:w-2 transition-all cursor-col-resize shrink-0 relative flex items-center justify-center select-none z-20 group ${isResizing ? "bg-cyan-500 shadow-[0_0_12px_#06b6d4] w-2" : "bg-white/5 hover:bg-cyan-500/80 hover:shadow-[0_0_8px_rgba(6,182,212,0.6)]"}`
       },
       /* @__PURE__ */ React.createElement("div", { className: "w-0.5 h-8 bg-zinc-600 rounded-full group-hover:bg-cyan-200 transition-colors" })
-    ), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, backgroundColor: "#0a0b18", minWidth: 0, display: "flex", flexDirection: "column" }, className: "flex-1 p-4 flex flex-col gap-3 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px] text-cyan-400" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-bold" }, selectedFolderId === "__ALL__" ? "Colecci\xF3n Completa" : (activeFolder == null ? void 0 : activeFolder.name) || "Colecci\xF3n"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, "(", filteredTracks.length, " pista(s) visibles)")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, selectedFolderId !== "__ALL__" && activeFolder && onAuditarCrate && /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, backgroundColor: "#0a0b18", minWidth: 0, display: "flex", flexDirection: "column" }, className: "flex-1 p-4 flex flex-col gap-3 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px] text-cyan-400" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300 font-bold" }, selectedFolderId === "__ALL__" ? "Colecci\xF3n Completa" : (activeFolder == null ? void 0 : activeFolder.name) || "Colecci\xF3n"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, "(", filteredTracks.length, " pista(s) visibles)")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, selectedFolderId !== "__ALL__" && activeFolder && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleEmptyActiveFolder,
+        className: "px-2.5 py-1 rounded-lg bg-red-950/40 hover:bg-red-950 border border-red-800/60 text-red-300 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        title: "Quitar todas las pistas de esta carpeta"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Trash, { size: 12 }),
+      /* @__PURE__ */ React.createElement("span", null, "Vaciar Carpeta")
+    ), selectedFolderId !== "__ALL__" && activeFolder && onAuditarCrate && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9084,7 +9245,47 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         placeholder: "Buscar en la colecci\xF3n por t\xEDtulo, artista o g\xE9nero...",
         className: "w-full pl-9 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070810", borderColor: "rgba(255, 255, 255, 0.08)" }, className: "flex-1 overflow-y-auto custom-scrollbar border rounded-xl overflow-x-auto" }, filteredTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-16 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 24 })), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("strong", { className: "text-white text-sm font-syne font-bold block" }, "Colecci\xF3n Vac\xEDa"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-sans max-w-sm" }, "Carga pistas desde tu ordenador o importa lo que tengas en la Mesa de Auditor\xEDa para gestionar tu biblioteca.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-2" }, /* @__PURE__ */ React.createElement(
+    )), selectedTrackKeys.size > 0 && /* @__PURE__ */ React.createElement("div", { className: "bg-cyan-950/90 border border-cyan-500/60 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono shadow-lg shadow-cyan-950/50 animate-fadeIn shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-white" }, /* @__PURE__ */ React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold" }, selectedTrackKeys.size, " pista(s) seleccionada(s)")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[11px]" }, "Asignar a:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        defaultValue: "",
+        onChange: (e) => {
+          if (e.target.value) {
+            handleBatchAssignToFolder(e.target.value);
+            e.target.value = "";
+          }
+        },
+        className: "bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1 text-xs outline-none focus:border-cyan-400 cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar carpeta..."),
+      (currentLib.folders || []).map((f) => /* @__PURE__ */ React.createElement("option", { key: f.id, value: f.id }, "\u{1F4C1} ", f.name))
+    )), selectedFolderId !== "__ALL__" && activeFolder && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleBatchRemoveFromActiveFolder,
+        className: "px-2.5 py-1 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded cursor-pointer transition-all",
+        title: "Quitar las pistas seleccionadas de esta carpeta sin borrarlas de la colecci\xF3n"
+      },
+      "\u{1F4E4} Sacar de Carpeta"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: handleBatchDeleteFromLibrary,
+        className: "px-2.5 py-1 bg-red-950/80 hover:bg-red-900 border border-red-600/70 text-red-300 font-bold rounded cursor-pointer transition-all",
+        title: "Eliminar las pistas seleccionadas de la colecci\xF3n y de todas sus carpetas"
+      },
+      "\u{1F5D1}\uFE0F Eliminar de Colecci\xF3n"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSelectedTrackKeys(/* @__PURE__ */ new Set()),
+        className: "px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded cursor-pointer transition-colors"
+      },
+      "\u2715 Deseleccionar"
+    ))), /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070810", borderColor: "rgba(255, 255, 255, 0.08)" }, className: "flex-1 overflow-y-auto custom-scrollbar border rounded-xl overflow-x-auto" }, filteredTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-16 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 24 })), /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ React.createElement("strong", { className: "text-white text-sm font-syne font-bold block" }, "Colecci\xF3n Vac\xEDa"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 font-sans max-w-sm" }, "Carga pistas desde tu ordenador o importa lo que tengas en la Mesa de Auditor\xEDa para gestionar tu biblioteca.")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-2" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -9102,12 +9303,23 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       },
       /* @__PURE__ */ React.createElement(Icons.Download, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Cargar pistas de Auditor\xEDa (", currentTracks.length, ")")
-    ))) : /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0f1e] border-b border-white/10 text-[11px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-28 text-center text-cyan-400 font-bold" }, "Waveform"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[200px]" }, "File"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-32" }, "Artist"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-28" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-24" }, "Kilobytes"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "BPM"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "Key"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Energy"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Dance"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Intensidad"))), /* @__PURE__ */ React.createElement("tbody", null, filteredTracks.map((tr, tIdx) => {
+    ))) : /* @__PURE__ */ React.createElement("table", { className: "w-full text-left border-collapse text-xs whitespace-nowrap" }, /* @__PURE__ */ React.createElement("thead", { className: "sticky top-0 z-10 bg-[#0d0f1e] border-b border-white/10 text-[11px] font-mono uppercase text-gray-400" }, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 w-10 text-center" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: filteredTracks.length > 0 && filteredTracks.every((t) => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f)),
+        onChange: handleToggleSelectAll,
+        className: "accent-cyan-500 cursor-pointer w-3.5 h-3.5 rounded",
+        title: "Seleccionar / deseleccionar todas las pistas visibles"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-28 text-center text-cyan-400 font-bold" }, "Waveform"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[200px]" }, "File"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-32" }, "Artist"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-28" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "Formato"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "BPM"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "Key"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Energy"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Dance"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Intensidad"))), /* @__PURE__ */ React.createElement("tbody", null, filteredTracks.map((tr, tIdx) => {
       const trKey = tr.id || tr.file_path || tr.path || tIdx;
+      const isSelected = selectedTrackKeys.has(trKey);
       const trTitle = tr.title || tr.t || tr.filename || (tr.path ? tr.path.split("/").pop() : "Desconocido");
       const trFile = tr.filename || tr.f || (tr.path ? tr.path.split("/").pop() : "");
       const trArtist = tr.artist || tr.a || "Desconocido";
       const trGenre = tr.genre || tr.subgenre || "House";
+      const trFormat = tr.format || (tr.filename || tr.f || tr.path || "").split(".").pop().toUpperCase() || "FLAC";
       const trBpm = tr.bpm || tr.b || "--";
       const trKeyVal = tr.key || tr.k || tr.camelot || tr.camelot_key || "8A";
       const trEnergy = tr.energy !== void 0 ? Math.round(parseFloat(tr.energy) > 1 ? parseFloat(tr.energy) : parseFloat(tr.energy) * 100) : tr.e || 80;
@@ -9127,9 +9339,18 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
           onClick: () => {
             if (onPlayTrack) onPlayTrack(tr);
           },
-          className: "border-b border-white/5 hover:bg-cyan-950/20 transition-colors group cursor-pointer",
+          className: `border-b border-white/5 hover:bg-cyan-950/20 transition-colors group cursor-pointer ${isSelected ? "bg-cyan-950/30" : ""}`,
           title: "Arrastra para clasificar en cualquier carpeta de la izquierda o haz clic para reproducir"
         },
+        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: isSelected,
+            onChange: (e) => handleToggleSelectTrack(trKey, e),
+            className: "accent-cyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+          }
+        )),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
           TableHarmonicWaveform,
           {
@@ -9155,7 +9376,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-cyan-400 text-xs truncate max-w-[210px]", title: trTitle }, trTitle), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 font-mono truncate max-w-[210px]", title: trFile }, trFile)))),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-gray-300 font-mono text-xs truncate max-w-[130px]", title: trArtist }, trArtist),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[100px] inline-block shadow-sm" }, trGenre)),
-        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center font-mono text-[10px] text-gray-300" }, formatKb(tr)),
+        /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-cyan-400 border border-zinc-700 shadow-sm" }, trFormat)),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "ws-bpm text-xs font-mono font-bold" }, trBpm)),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-2 text-center" }, /* @__PURE__ */ React.createElement(CamelotKeyBadge, { value: trKeyVal })),
         /* @__PURE__ */ React.createElement("td", { className: "py-2 px-3 text-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center justify-center gap-0.5 w-16 mx-auto" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full text-[9px] font-mono" }, /* @__PURE__ */ React.createElement(Icons.Zap, { size: 12, className: "inline-block text-gray-400" }), /* @__PURE__ */ React.createElement("span", { className: `font-bold ${trEnergy >= 82 ? "text-red-400" : trEnergy >= 68 ? "text-amber-400" : "text-cyan-400"}` }, trEnergy, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden border border-zinc-700" }, /* @__PURE__ */ React.createElement(

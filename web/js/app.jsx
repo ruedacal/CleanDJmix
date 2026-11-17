@@ -8942,6 +8942,9 @@ const LibraryWorkspace = ({
     const [searchTrack, setSearchTrack] = useState('');
     const [dragOverFolderId, setDragOverFolderId] = useState(null);
 
+    // Selección múltiple para acciones por lote en la colección
+    const [selectedTrackKeys, setSelectedTrackKeys] = useState(new Set());
+
     // Navegador de archivos integrado multi-carpeta / multi-pista
     const [fsBrowserOpen, setFsBrowserOpen] = useState(false);
     const [fsCurrentPath, setFsCurrentPath] = useState('/Users/admin/Music');
@@ -8952,9 +8955,6 @@ const LibraryWorkspace = ({
     const [stagedFiles, setStagedFiles] = useState([]);
     const [fsActiveTab, setFsActiveTab] = useState('folders');
     const [fsLoading, setFsLoading] = useState(false);
-
-    const fileInputRef = useRef(null);
-    const dirInputRef = useRef(null);
 
     // Ancho interactivo redimensionable de la columna de carpetas (con persistencia en localStorage)
     const [leftColWidth, setLeftColWidth] = useState(() => {
@@ -9006,6 +9006,11 @@ const LibraryWorkspace = ({
             setLibNameInput(currentLib.name || '');
         }
     }, [currentLib?.id]);
+
+    // Limpiar selección de tracks al cambiar de carpeta o librería
+    useEffect(() => {
+        setSelectedTrackKeys(new Set());
+    }, [selectedFolderId, activeLibId]);
 
     // Crear nueva biblioteca en blanco (sin carpetas precreadas)
     const handleCreateNewLibrary = () => {
@@ -9067,6 +9072,56 @@ const LibraryWorkspace = ({
         if (selectedFolderId === folderId) {
             setSelectedFolderId('__ALL__');
         }
+    };
+
+    // Vaciar carpeta activa (quitar todas las pistas de la carpeta seleccionada)
+    const handleEmptyActiveFolder = () => {
+        const f = (currentLib.folders || []).find(x => x.id === selectedFolderId);
+        if (!f) return;
+        const trackCount = (f.tracks || []).length;
+        if (trackCount === 0) {
+            alert(`La carpeta "${f.name}" ya está vacía.`);
+            return;
+        }
+        if (!window.confirm(`¿Estás seguro de que deseas vaciar las ${trackCount} pista(s) de la carpeta "${f.name}"? (Permanecerán en la colección general)`)) {
+            return;
+        }
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                return {
+                    ...l,
+                    folders: (l.folders || []).map(folder => folder.id === selectedFolderId ? { ...folder, tracks: [] } : folder)
+                };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setSelectedTrackKeys(new Set());
+        setFeedbackMsg(`✓ Carpeta "${f.name}" vaciada`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+    // Vaciar colección completa (quitar todas las pistas y carpetas)
+    const handleEmptyEntireLibrary = () => {
+        const total = allLibTracks.length;
+        if (total === 0 && (!currentLib.folders || currentLib.folders.length === 0)) {
+            alert(`La colección "${currentLib.name}" ya está vacía.`);
+            return;
+        }
+        if (!window.confirm(`¿Estás seguro de que deseas VACIAR TODA la colección "${currentLib.name}"?\nSe eliminarán todas sus ${total} pista(s) y ${currentLib.folders?.length || 0} carpeta(s).`)) {
+            return;
+        }
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                return { ...l, tracks: [], folders: [] };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setSelectedFolderId('__ALL__');
+        setSelectedTrackKeys(new Set());
+        setFeedbackMsg(`✓ Colección "${currentLib.name}" vaciada por completo`);
+        setTimeout(() => setFeedbackMsg(''), 3000);
     };
 
     // Importar lo que esté en Auditoría a esta Colección
@@ -9232,6 +9287,117 @@ const LibraryWorkspace = ({
             return l;
         });
         if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setSelectedTrackKeys(prev => {
+            const next = new Set(prev);
+            next.delete(trackKey);
+            return next;
+        });
+    };
+
+    // ─── ACCIONES POR LOTE (SELECCIÓN MÚLTIPLE DE PISTAS) ───
+    const handleToggleSelectAll = () => {
+        if (filteredTracks.length === 0) return;
+        const allKeys = filteredTracks.map(t => t.id || t.file_path || t.path || t.f);
+        const allSelected = allKeys.every(k => selectedTrackKeys.has(k));
+        if (allSelected) {
+            setSelectedTrackKeys(new Set());
+        } else {
+            setSelectedTrackKeys(new Set(allKeys));
+        }
+    };
+
+    const handleToggleSelectTrack = (trackKey, e) => {
+        e.stopPropagation();
+        setSelectedTrackKeys(prev => {
+            const next = new Set(prev);
+            if (next.has(trackKey)) {
+                next.delete(trackKey);
+            } else {
+                next.add(trackKey);
+            }
+            return next;
+        });
+    };
+
+    // Asignar pistas seleccionadas por lote a una carpeta
+    const handleBatchAssignToFolder = (targetFolderId) => {
+        if (selectedTrackKeys.size === 0 || !targetFolderId) return;
+        const tracksToAssign = displayedTracks.filter(t => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
+        const targetFolderName = (currentLib.folders || []).find(f => f.id === targetFolderId)?.name || 'Carpeta';
+
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                const newFolders = (l.folders || []).map(f => {
+                    if (f.id === targetFolderId) {
+                        const existingIds = new Set((f.tracks || []).map(t => t.id || t.file_path || t.path || t.f));
+                        const added = tracksToAssign.filter(t => !existingIds.has(t.id || t.file_path || t.path || t.f));
+                        return { ...f, tracks: [...(f.tracks || []), ...added] };
+                    }
+                    return f;
+                });
+                return { ...l, folders: newFolders };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setFeedbackMsg(`✓ ${tracksToAssign.length} pista(s) asignadas a "${targetFolderName}"`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+        setSelectedTrackKeys(new Set());
+    };
+
+    // Sacar de la carpeta actual las pistas seleccionadas por lote (sin borrarlas de la colección)
+    const handleBatchRemoveFromActiveFolder = () => {
+        if (selectedFolderId === '__ALL__' || selectedTrackKeys.size === 0) return;
+        const f = (currentLib.folders || []).find(x => x.id === selectedFolderId);
+        if (!f) return;
+
+        const count = selectedTrackKeys.size;
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                return {
+                    ...l,
+                    folders: (l.folders || []).map(folder => {
+                        if (folder.id === selectedFolderId) {
+                            return {
+                                ...folder,
+                                tracks: (folder.tracks || []).filter(t => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f))
+                            };
+                        }
+                        return folder;
+                    })
+                };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setSelectedTrackKeys(new Set());
+        setFeedbackMsg(`✓ ${count} pista(s) sacadas de "${f.name}"`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+    // Eliminar de la colección completa las pistas seleccionadas por lote
+    const handleBatchDeleteFromLibrary = () => {
+        if (selectedTrackKeys.size === 0) return;
+        const count = selectedTrackKeys.size;
+        if (!window.confirm(`¿Estás seguro de que deseas eliminar las ${count} pista(s) seleccionadas de toda la colección y sus carpetas?`)) {
+            return;
+        }
+
+        const updated = libraries.map(l => {
+            if (l.id === activeLibId) {
+                const newRoot = (l.tracks || []).filter(t => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
+                const newFolders = (l.folders || []).map(folder => ({
+                    ...folder,
+                    tracks: (folder.tracks || []).filter(t => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f))
+                }));
+                return { ...l, tracks: newRoot, folders: newFolders };
+            }
+            return l;
+        });
+        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        setSelectedTrackKeys(new Set());
+        setFeedbackMsg(`✓ ${count} pista(s) eliminadas de la colección`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
     };
 
     // ─── EXPLORADOR DE ARCHIVOS UNIVERSAL (N CARPETAS Y N PISTAS SUELTAS) ───
@@ -9402,16 +9568,6 @@ const LibraryWorkspace = ({
 
     const totalTracksInLib = allLibTracks.length;
 
-    const formatKb = (tr) => {
-        if (tr.filesize && tr.filesize > 0) {
-            return `${Math.round(tr.filesize / 1024).toLocaleString()} KB`;
-        }
-        if (tr.size_kb) return `${Math.round(tr.size_kb).toLocaleString()} KB`;
-        if (tr.size_mb) return `${Math.round(tr.size_mb * 1024).toLocaleString()} KB`;
-        if (tr.bitrate_kbps) return `${tr.bitrate_kbps} kbps`;
-        return tr.format === 'FLAC' ? '38,400 KB' : '9,600 KB';
-    };
-
     return (
         <div style={{ backgroundColor: '#070812' }} className="w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans">
             {/* Cabecera Principal de Página Corporativa */}
@@ -9506,6 +9662,15 @@ const LibraryWorkspace = ({
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleEmptyEntireLibrary}
+                        className="px-3 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-950 text-red-300 border border-red-800/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                        title="Vaciar por completo toda la colección activa (carpetas y pistas)"
+                    >
+                        <Icons.Trash size={13} className="inline-block" />
+                        <span>Vaciar Colección</span>
+                    </button>
                     <button
                         type="button"
                         onClick={handleCreateNewLibrary}
@@ -9700,6 +9865,17 @@ const LibraryWorkspace = ({
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {selectedFolderId !== '__ALL__' && activeFolder && (
+                                <button
+                                    type="button"
+                                    onClick={handleEmptyActiveFolder}
+                                    className="px-2.5 py-1 rounded-lg bg-red-950/40 hover:bg-red-950 border border-red-800/60 text-red-300 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                    title="Quitar todas las pistas de esta carpeta"
+                                >
+                                    <Icons.Trash size={12} />
+                                    <span>Vaciar Carpeta</span>
+                                </button>
+                            )}
                             {selectedFolderId !== '__ALL__' && activeFolder && onAuditarCrate && (
                                 <button
                                     type="button"
@@ -9742,7 +9918,69 @@ const LibraryWorkspace = ({
                         />
                     </div>
 
-                    {/* TABLA SIMPLIFICADA CON LAS 10 COLUMNAS EXACTAS */}
+                    {/* BARRA FLOTANTE DE ACCIONES POR LOTE (MULTISELECCIÓN) */}
+                    {selectedTrackKeys.size > 0 && (
+                        <div className="bg-cyan-950/90 border border-cyan-500/60 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono shadow-lg shadow-cyan-950/50 animate-fadeIn shrink-0">
+                            <div className="flex items-center gap-2 text-white">
+                                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                <span className="font-bold">{selectedTrackKeys.size} pista(s) seleccionada(s)</span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {/* Mover / Asignar a carpeta */}
+                                <div className="flex items-center gap-1">
+                                    <span className="text-gray-400 text-[11px]">Asignar a:</span>
+                                    <select
+                                        defaultValue=""
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                handleBatchAssignToFolder(e.target.value);
+                                                e.target.value = "";
+                                            }
+                                        }}
+                                        className="bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1 text-xs outline-none focus:border-cyan-400 cursor-pointer"
+                                    >
+                                        <option value="" disabled>Seleccionar carpeta...</option>
+                                        {(currentLib.folders || []).map(f => (
+                                            <option key={f.id} value={f.id}>📁 {f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Sacar de esta carpeta si estamos en una carpeta específica */}
+                                {selectedFolderId !== '__ALL__' && activeFolder && (
+                                    <button
+                                        type="button"
+                                        onClick={handleBatchRemoveFromActiveFolder}
+                                        className="px-2.5 py-1 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/70 text-amber-300 font-bold rounded cursor-pointer transition-all"
+                                        title="Quitar las pistas seleccionadas de esta carpeta sin borrarlas de la colección"
+                                    >
+                                        📤 Sacar de Carpeta
+                                    </button>
+                                )}
+
+                                {/* Eliminar pistas seleccionadas de la colección completa */}
+                                <button
+                                    type="button"
+                                    onClick={handleBatchDeleteFromLibrary}
+                                    className="px-2.5 py-1 bg-red-950/80 hover:bg-red-900 border border-red-600/70 text-red-300 font-bold rounded cursor-pointer transition-all"
+                                    title="Eliminar las pistas seleccionadas de la colección y de todas sus carpetas"
+                                >
+                                    🗑️ Eliminar de Colección
+                                </button>
+
+                                {/* Deseleccionar */}
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedTrackKeys(new Set())}
+                                    className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded cursor-pointer transition-colors"
+                                >
+                                    ✕ Deseleccionar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TABLA SIMPLIFICADA CON LAS 10 COLUMNAS EXACTAS (CON CHECKBOX DE SELECCIÓN Y FORMATO) */}
                     <div style={{ backgroundColor: '#070810', borderColor: 'rgba(255, 255, 255, 0.08)' }} className="flex-1 overflow-y-auto custom-scrollbar border rounded-xl overflow-x-auto">
                         {filteredTracks.length === 0 ? (
                             <div className="py-16 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center gap-3">
@@ -9780,11 +10018,20 @@ const LibraryWorkspace = ({
                             <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
                                 <thead className="sticky top-0 z-10 bg-[#0d0f1e] border-b border-white/10 text-[11px] font-mono uppercase text-gray-400">
                                     <tr>
+                                        <th className="py-2.5 px-2 w-10 text-center">
+                                            <input 
+                                                type="checkbox"
+                                                checked={filteredTracks.length > 0 && filteredTracks.every(t => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f))}
+                                                onChange={handleToggleSelectAll}
+                                                className="accent-cyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+                                                title="Seleccionar / deseleccionar todas las pistas visibles"
+                                            />
+                                        </th>
                                         <th className="py-2.5 px-3 w-28 text-center text-cyan-400 font-bold">Waveform</th>
                                         <th className="py-2.5 px-3 min-w-[200px]">File</th>
                                         <th className="py-2.5 px-3 w-32">Artist</th>
                                         <th className="py-2.5 px-2 text-center w-28">Género</th>
-                                        <th className="py-2.5 px-2 text-center w-24">Kilobytes</th>
+                                        <th className="py-2.5 px-2 text-center w-20">Formato</th>
                                         <th className="py-2.5 px-2 text-center w-20">BPM</th>
                                         <th className="py-2.5 px-2 text-center w-20">Key</th>
                                         <th className="py-2.5 px-3 text-center w-28">Energy</th>
@@ -9795,10 +10042,12 @@ const LibraryWorkspace = ({
                                 <tbody>
                                     {filteredTracks.map((tr, tIdx) => {
                                         const trKey = tr.id || tr.file_path || tr.path || tIdx;
+                                        const isSelected = selectedTrackKeys.has(trKey);
                                         const trTitle = tr.title || tr.t || tr.filename || (tr.path ? tr.path.split('/').pop() : 'Desconocido');
                                         const trFile = tr.filename || tr.f || (tr.path ? tr.path.split('/').pop() : '');
                                         const trArtist = tr.artist || tr.a || 'Desconocido';
                                         const trGenre = tr.genre || tr.subgenre || 'House';
+                                        const trFormat = tr.format || (tr.filename || tr.f || tr.path || '').split('.').pop().toUpperCase() || 'FLAC';
                                         const trBpm = tr.bpm || tr.b || '--';
                                         const trKeyVal = tr.key || tr.k || tr.camelot || tr.camelot_key || '8A';
                                         const trEnergy = tr.energy !== undefined ? Math.round(parseFloat(tr.energy) > 1.0 ? parseFloat(tr.energy) : parseFloat(tr.energy) * 100) : (tr.e || 80);
@@ -9819,9 +10068,21 @@ const LibraryWorkspace = ({
                                                 onClick={() => {
                                                     if (onPlayTrack) onPlayTrack(tr);
                                                 }}
-                                                className="border-b border-white/5 hover:bg-cyan-950/20 transition-colors group cursor-pointer"
+                                                className={`border-b border-white/5 hover:bg-cyan-950/20 transition-colors group cursor-pointer ${
+                                                    isSelected ? 'bg-cyan-950/30' : ''
+                                                }`}
                                                 title="Arrastra para clasificar en cualquier carpeta de la izquierda o haz clic para reproducir"
                                             >
+                                                {/* 0. Casilla de selección múltiple */}
+                                                <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => handleToggleSelectTrack(trKey, e)}
+                                                        className="accent-cyan-500 cursor-pointer w-3.5 h-3.5 rounded"
+                                                    />
+                                                </td>
+
                                                 {/* 1. Waveform */}
                                                 <td className="py-2 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <TableHarmonicWaveform 
@@ -9866,9 +10127,11 @@ const LibraryWorkspace = ({
                                                     </span>
                                                 </td>
 
-                                                {/* 5. Kilobytes */}
-                                                <td className="py-2 px-2 text-center font-mono text-[10px] text-gray-300">
-                                                    {formatKb(tr)}
+                                                {/* 5. Formato (Sustituto exacto de Kilobytes, tomado de Auditoría) */}
+                                                <td className="py-2 px-2 text-center">
+                                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-cyan-400 border border-zinc-700 shadow-sm">
+                                                        {trFormat}
+                                                    </span>
                                                 </td>
 
                                                 {/* 6. BPM */}
