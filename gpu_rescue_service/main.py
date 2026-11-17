@@ -244,5 +244,73 @@ async def export_onnx_endpoint():
         raise HTTPException(status_code=500, detail="No se pudo exportar el modelo a ONNX")
 
 
+@app.post("/v1/export-conformer-onnx")
+async def export_conformer_onnx_endpoint():
+    """Exporta el modelo Conformer de 128-D a formato estándar ONNX para TensorRT."""
+    if app.state.processor is None:
+        app.state.processor = AudioProcessor(device=detect_device())
+
+    onnx_path = os.path.join(os.path.dirname(__file__), "conformer_128d.onnx")
+    ok = app.state.processor.fingerprint_extractor.export_onnx(onnx_path)
+    if ok:
+        return {"status": "success", "onnx_model_path": onnx_path}
+    else:
+        raise HTTPException(status_code=500, detail="No se pudo exportar Conformer a ONNX")
+
+
+@app.get("/v1/catalog")
+async def get_catalog_endpoint():
+    """Retorna información del catálogo FAISS / Milvus indexado en memoria GPU."""
+    if app.state.processor is None:
+        app.state.processor = AudioProcessor(device=detect_device())
+
+    vs = app.state.processor.vector_search
+    return {
+        "status": "success",
+        "total_tracks": len(vs.tracks_metadata),
+        "embedding_dim": vs.dim,
+        "metric": vs.metric,
+        "gpu_accelerated": vs.use_gpu,
+        "tracks": [
+            {
+                "track_id": t["track_id"],
+                "title": t["title"],
+                "artist": t["artist"],
+                "bpm": t.get("bpm"),
+                "genres": t.get("genres")
+            }
+            for t in vs.tracks_metadata
+        ]
+    }
+
+
+@app.post("/v1/search-vector")
+async def search_vector_endpoint(request: Request):
+    """
+    Búsqueda directa de vector embedding 128-D contra el índice FAISS.
+    """
+    if app.state.processor is None:
+        app.state.processor = AudioProcessor(device=detect_device())
+
+    body = await request.json()
+    embedding = body.get("embedding")
+    k = body.get("k", 5)
+    min_confidence = body.get("min_confidence", 60.0)
+
+    if not embedding or len(embedding) != 128:
+        raise HTTPException(status_code=400, detail="El campo 'embedding' debe ser un array de 128 flotantes.")
+
+    vs = app.state.processor.vector_search
+    matches = vs.search_top_k(embedding, k=k)
+    top1 = matches[0] if matches and matches[0]["score"] >= min_confidence else None
+
+    return {
+        "status": "success",
+        "top1": top1,
+        "matches": matches,
+        "total_candidates": len(matches)
+    }
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=False)
