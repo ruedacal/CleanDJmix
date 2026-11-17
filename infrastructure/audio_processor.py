@@ -1494,11 +1494,15 @@ class AudioProcessorService:
                     raw_bytes = base64.b64decode(b64_data)
                     img = Image.open(io.BytesIO(raw_bytes))
                 elif cover_str.startswith("http://") or cover_str.startswith("https://"):
+                    import ssl
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
                     req = urllib.request.Request(
                         cover_str,
                         headers={"User-Agent": "Mozilla/5.0 (BeatWave Pro)"}
                     )
-                    with urllib.request.urlopen(req, timeout=5) as resp:
+                    with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
                         raw_bytes = resp.read()
                         img = Image.open(io.BytesIO(raw_bytes))
                 elif os.path.exists(cover_str):
@@ -1635,9 +1639,11 @@ class AudioProcessorService:
 
         # 0. Lectura previa no destructiva de tags existentes en el contenedor de audio
         existing_tags = {}
+        has_existing_cover = False
         try:
             if real_fmt == "flac":
                 _f_check = FLAC(ruta)
+                has_existing_cover = bool(_f_check.pictures and len(_f_check.pictures) > 0)
                 for _k, _v in _f_check.items():
                     if _v and len(_v) > 0:
                         existing_tags[_k.upper()] = str(_v[0])
@@ -1645,6 +1651,7 @@ class AudioProcessorService:
                 from mutagen.id3 import ID3
                 try:
                     _id3_check = ID3(ruta)
+                    has_existing_cover = any(k.startswith("APIC") for k in _id3_check.keys())
                     for frame_key, frame_obj in _id3_check.items():
                         fk_up = frame_key.upper()
                         if hasattr(frame_obj, "text") and frame_obj.text:
@@ -1863,7 +1870,7 @@ class AudioProcessorService:
         flac_autotags_b64 = base64.b64encode(flac_autotags_payload).decode("ascii")
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
-        if not cover_source:
+        if not cover_source and not has_existing_cover:
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 

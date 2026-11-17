@@ -20,9 +20,10 @@ def procesar_un_archivo(path):
     try:
         # Analizar con corrección acústica de Beatgrid activa
         meta = AudioProcessorService.analizar_track_avanzado(path, verificar_beatgrid=True)
+        meta["recalcular_grid"] = True
         bpm_val = meta.get("bpm")
-        downbeat_ms = meta.get("first_downbeat_ms")
         ok = AudioProcessorService.escribir_metadatos_pro(path, meta)
+        downbeat_ms = meta.get("first_downbeat_ms")
         return {
             "path": path,
             "filename": os.path.basename(path),
