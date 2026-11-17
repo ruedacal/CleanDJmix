@@ -1818,7 +1818,7 @@ function LiveCopilotApp() {
                         </div>
                     ) : (
                         <div 
-                            className="flex items-center gap-2 py-0.5 px-1 select-none cursor-pointer transition-opacity hover:opacity-100"
+                            className="flex items-center gap-2 py-0.5 px-1 select-none cursor-pointer"
                             onClick={() => setControllerState({
                                 detected: false,
                                 name: 'controladora desconectada',
@@ -1832,7 +1832,7 @@ function LiveCopilotApp() {
                                 onError={(e) => {
                                     e.currentTarget.src = '/assets/controllers/numark_nv_ii.png';
                                 }}
-                                className="w-auto h-auto max-w-[190px] max-h-[70px] object-contain opacity-40 shrink-0 transition-all drop-shadow-md"
+                                className="w-auto h-auto max-w-[190px] max-h-[70px] object-contain opacity-40 shrink-0 transition-none drop-shadow-md"
                                 style={{ opacity: 0.4 }}
                             />
                             <div className="flex flex-col justify-center">
