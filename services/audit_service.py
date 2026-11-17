@@ -1294,6 +1294,68 @@ return folderPath'''
             "cues": cues
         }
 
+    def calcular_comparativa_hot_cues(self, filepath: str, track_id=None) -> dict:
+        """Calcula las dos versiones completas de Hot Cues (Estándar Performance vs Acústico Progresivo)
+        para visualización comparativa simultánea en doble waveform."""
+        if not filepath or not os.path.exists(filepath):
+            real_path = self.directorio_actual and os.path.join(self.directorio_actual, os.path.basename(filepath or ""))
+            if real_path and os.path.exists(real_path):
+                filepath = real_path
+            else:
+                return {"status": "error", "msg": "Archivo no encontrado"}
+
+        info = {}
+        bpm_val = 128.0
+        dur_ms = 300000
+        try:
+            info = AudioProcessorService.analizar_track_avanzado(filepath, fast_mode=True)
+            bpm_val = float(info.get("bpm") or 128.0)
+            dur_ms = int(float(info.get("duration_sec", 300)) * 1000)
+        except Exception:
+            pass
+
+        trim_ms, downbeat_ms, trim_end_ms = AudioProcessorService.detectar_trim_y_downbeat(filepath, bpm=bpm_val, incluir_cola=True)
+
+        res = AudioProcessorService.calcular_comparativa_hot_cues(
+            ruta=filepath,
+            duration_ms=dur_ms,
+            bpm=bpm_val,
+            downbeat_ms=downbeat_ms,
+            trim_start_ms=trim_ms,
+            trim_end_ms=trim_end_ms
+        )
+        res["id"] = track_id
+        res["path"] = filepath
+        res["bpm"] = bpm_val
+        res["trim_start_ms"] = trim_ms
+        res["first_downbeat_ms"] = downbeat_ms
+        return res
+
+    def guardar_modo_hot_cues(self, filepath: str, modo: str = "estandar", cues: list = None, track_data: dict = None) -> dict:
+        """Guarda de forma permanente la versión de Hot Cues elegida (Estándar o Acústica) en el archivo físico."""
+        if not filepath or not os.path.exists(filepath):
+            real_path = self.directorio_actual and os.path.join(self.directorio_actual, os.path.basename(filepath or ""))
+            if real_path and os.path.exists(real_path):
+                filepath = real_path
+            else:
+                return {"status": "error", "msg": "Archivo no encontrado"}
+
+        meta = dict(track_data or {})
+        meta["path"] = filepath
+        meta["modo_cues"] = modo
+        if cues:
+            meta["cues"] = cues
+        else:
+            meta["recalcular_cues"] = True
+
+        ok = AudioProcessorService.escribir_metadatos_pro(filepath, meta)
+        return {
+            "status": "ok" if ok else "error",
+            "modo": modo,
+            "path": filepath,
+            "msg": f"Hot Cues versión {modo.upper()} guardados correctamente en disco" if ok else "Error al escribir en archivo"
+        }
+
     @staticmethod
     def detectar_bpm_tonalidad_librosa(filepath: str, duration_sec: float = 40.0) -> dict:
         """Calcula BPM y Tonalidad Camelot de forma 100% nativa y offline mediante Librosa/DSP.

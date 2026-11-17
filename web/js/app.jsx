@@ -15854,6 +15854,97 @@ const HotCuesWorkspace = ({
     const [mobileDeckMode, setMobileDeckMode] = useState('pads'); // 'pads', 'eq_pitch', 'vinyl'
     const [autoMappingStatus, setAutoMappingStatus] = useState('');
 
+    // Estado y Control de Modos de Hot Cues (Estándar Performance vs Acústico Progresivo)
+    const [cuesVersionMode, setCuesVersionMode] = useState('estandar'); // 'estandar', 'acustico', 'comparativa'
+    const [cuesEstandar, setCuesEstandar] = useState(null);
+    const [cuesAcustico, setCuesAcustico] = useState(null);
+    const [isLoadingComparative, setIsLoadingComparative] = useState(false);
+    const [showDiferenciasModal, setShowDiferenciasModal] = useState(false);
+    const [diferenciasData, setDiferenciasData] = useState(null);
+
+    // Cargar comparativa de Hot Cues (Estándar vs Acústico) desde backend
+    const handleCargarComparativa = async (targetMode = 'comparativa') => {
+        if (!currentTrack) return;
+        setIsLoadingComparative(true);
+        setSaveStatus("Calculando versiones Estándar y Acústica...");
+        try {
+            const trackPath = currentTrack.path || currentTrack.f || "";
+            let res = null;
+            if (window.eel && window.eel.calcular_comparativa_hot_cues) {
+                res = await window.eel.calcular_comparativa_hot_cues(trackPath, currentTrack.id)();
+            } else {
+                const r = await fetch('/api/rpc/calcular_comparativa_hot_cues', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ args: [trackPath, currentTrack.id] })
+                });
+                const d = await r.json();
+                res = d.result || d;
+            }
+            if (res && res.status === "ok") {
+                setCuesEstandar(res.cues_estandar);
+                setCuesAcustico(res.cues_acustico);
+                setDiferenciasData(res.diferencias);
+                setCuesVersionMode(targetMode);
+                if (targetMode === 'estandar') {
+                    updateCues(res.cues_estandar);
+                } else if (targetMode === 'acustico') {
+                    updateCues(res.cues_acustico);
+                }
+                setSaveStatus(targetMode === 'comparativa' ? "✓ Vista Dual Waveform cargada para comparar" : `✓ Modo ${targetMode.toUpperCase()} cargado`);
+            } else {
+                setSaveStatus("Error calculando comparativa de cues");
+            }
+        } catch (e) {
+            console.error("Error comparativa cues:", e);
+            setSaveStatus("Error de comunicación en comparativa");
+        } finally {
+            setIsLoadingComparative(false);
+            setTimeout(() => setSaveStatus(''), 2500);
+        }
+    };
+
+    // Guardar una versión específica (Estándar o Acústica) directamente en el archivo físico
+    const handleGuardarModoCues = async (modo) => {
+        if (!currentTrack) return;
+        const modoStr = modo === 'acustico' ? 'Acústica' : 'Estándar';
+        setSaveStatus(`Guardando versión ${modoStr} en disco...`);
+        try {
+            const trackPath = currentTrack.path || currentTrack.f || "";
+            const cuesToSave = modo === 'acustico' ? (cuesAcustico || activeCues) : (cuesEstandar || activeCues);
+            let res = null;
+            if (window.eel && window.eel.guardar_modo_hot_cues) {
+                res = await window.eel.guardar_modo_hot_cues(trackPath, modo, cuesToSave, currentTrack)();
+            } else {
+                const r = await fetch('/api/rpc/guardar_modo_hot_cues', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ args: [trackPath, modo, cuesToSave, currentTrack] })
+                });
+                const d = await r.json();
+                res = d.result || d;
+            }
+            if (res && res.status === "ok") {
+                setSaveStatus(`✓ Versión ${modoStr} inyectada en disco con éxito`);
+                const updatedTrack = {
+                    ...currentTrack,
+                    cues: cuesToSave,
+                    modo_cues: modo
+                };
+                if (setTracks) {
+                    setTracks(prev => prev.map(t => String(t.id) === String(currentTrack.id) ? updatedTrack : t));
+                }
+            } else {
+                setSaveStatus(res?.msg || `Error guardando versión ${modoStr}`);
+            }
+        } catch (e) {
+            console.error(`Error guardando versión ${modo}:`, e);
+            setSaveStatus("Error de comunicación al guardar versión");
+        } finally {
+            setTimeout(() => setSaveStatus(''), 3000);
+        }
+    };
+
     // Motor de Auto-Mapping con Plantillas de Estructura: Template A (Club Extended)
     const handleAutoGenerateClubTemplate = () => {
         if (!currentTrack) return;
@@ -17276,28 +17367,171 @@ const HotCuesWorkspace = ({
                                 <Icons.Zap size={14} className="inline-block align-[-2px]" />
                                 <span>{t('auto_phrase') || 'Auto-Frasear 16/32b'}</span>
                             </button>
+
+                            {/* SELECTOR DE ALGORITMO HOT CUES: ESTÁNDAR VS ACÚSTICO VS COMPARATIVA DUAL */}
+                            <div className="flex items-center bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-750 text-xs font-mono shrink-0 shadow-inner">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCuesVersionMode('estandar');
+                                        if (cuesEstandar) updateCues(cuesEstandar);
+                                        else handleCargarComparativa('estandar');
+                                    }}
+                                    className={`px-2.5 py-1 rounded cursor-pointer font-bold transition-all shrink-0 text-[11px] flex items-center gap-1 ${
+                                        cuesVersionMode === 'estandar'
+                                            ? 'bg-amber-500 text-black shadow font-black'
+                                            : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                    }`}
+                                    title="Modo Estándar (Performance / Slam Mix con retroceso de 16 compases al Drop)"
+                                >
+                                    <span>⚡ Estándar</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCuesVersionMode('acustico');
+                                        if (cuesAcustico) updateCues(cuesAcustico);
+                                        else handleCargarComparativa('acustico');
+                                    }}
+                                    className={`px-2.5 py-1 rounded cursor-pointer font-bold transition-all shrink-0 text-[11px] flex items-center gap-1 ${
+                                        cuesVersionMode === 'acustico'
+                                            ? 'bg-djcyan-500 text-black shadow font-black'
+                                            : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                    }`}
+                                    title="Modo Acústico (Detección de Sub-Bass y evolución tímbrica de capas)"
+                                >
+                                    <span>🌊 Acústico</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCargarComparativa('comparativa')}
+                                    disabled={isLoadingComparative}
+                                    className={`px-2.5 py-1 rounded cursor-pointer font-bold transition-all shrink-0 text-[11px] flex items-center gap-1 ${
+                                        cuesVersionMode === 'comparativa'
+                                            ? 'bg-purple-600 text-white shadow font-black'
+                                            : 'text-gray-400 hover:text-white hover:bg-djzinc-800'
+                                    }`}
+                                    title="Comparativa Dual: Carga ambos waveforms uno debajo del otro para comparar compás a compás"
+                                >
+                                    <span>⚖️ Comparar (Dual)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDiferenciasModal(true)}
+                                    className="px-2 py-1 text-gray-400 hover:text-djcyan-400 transition-colors text-xs font-bold"
+                                    title="Ver diferencias técnicas y guía de uso entre Estándar y Acústico"
+                                >
+                                    <span>ℹ️ Diferencias</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     {/* WAVEFORM PRINCIPAL AMPLIADO CON SCROLL HORIZONTAL Y MINIMAPA OVERVIEW */}
                     <div className="bg-[#09090e] border border-djzinc-800 rounded-xl p-3 shadow-xl">
-                        <ZoomableRekordboxWaveform
-                            track={currentTrack}
-                            cues={activeCues}
-                            duration={currentTrack.duration || "05:00"}
-                            onSeekTrack={onPlayTrack}
-                            playProgress={isCurrentPlayingThis ? playProgress : 0}
-                            isCurrentPlaying={isCurrentPlayingThis}
-                            onUpdateCues={updateCues}
-                            selectedCueId={selectedCueId}
-                            onSelectCue={setSelectedCueId}
-                            snapToGrid={snapToGrid}
-                            showBeatgrid={showBeatgrid}
-                            zoom={zoom}
-                            followPlayhead={followPlayhead}
-                            height={160}
-                            lang={lang}
-                        />
+                        {cuesVersionMode === 'comparativa' ? (
+                            <div className="flex flex-col gap-3">
+                                {/* WAVEFORM 1 (SUPERIOR): MODO ESTÁNDAR PERFORMANCE */}
+                                <div className="border border-amber-500/50 rounded-lg p-2.5 bg-[#07070b]">
+                                    <div className="flex flex-wrap items-center justify-between pb-1.5 mb-1.5 border-b border-djzinc-800 gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse"></span>
+                                            <h4 className="text-xs font-black font-mono text-amber-300 uppercase tracking-wider">
+                                                Versión 1: Modo Estándar (Performance / Slam Mix)
+                                            </h4>
+                                            <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
+                                                • Ancla Drop 1 + Retroceso -16b + Escalera Salida (Pads 6-8)
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleGuardarModoCues('estandar')}
+                                            className="px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-mono font-black text-xs rounded-lg shadow-[0_0_12px_rgba(245,158,11,0.4)] transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                                            title="Guardar versión Estándar en el archivo físico"
+                                        >
+                                            <Icons.Save size={13} className="inline-block" />
+                                            <span>Guardar Versión Estándar</span>
+                                        </button>
+                                    </div>
+                                    <ZoomableRekordboxWaveform
+                                        track={currentTrack}
+                                        cues={cuesEstandar || activeCues}
+                                        duration={currentTrack.duration || "05:00"}
+                                        onSeekTrack={onPlayTrack}
+                                        playProgress={isCurrentPlayingThis ? playProgress : 0}
+                                        isCurrentPlaying={isCurrentPlayingThis}
+                                        onUpdateCues={(newCues) => setCuesEstandar(newCues)}
+                                        selectedCueId={selectedCueId}
+                                        onSelectCue={setSelectedCueId}
+                                        snapToGrid={snapToGrid}
+                                        showBeatgrid={showBeatgrid}
+                                        zoom={zoom}
+                                        followPlayhead={followPlayhead}
+                                        height={120}
+                                        lang={lang}
+                                    />
+                                </div>
+
+                                {/* WAVEFORM 2 (INFERIOR): MODO ACÚSTICO PROGRESIVO */}
+                                <div className="border border-cyan-500/50 rounded-lg p-2.5 bg-[#07070b]">
+                                    <div className="flex flex-wrap items-center justify-between pb-1.5 mb-1.5 border-b border-djzinc-800 gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse"></span>
+                                            <h4 className="text-xs font-black font-mono text-cyan-300 uppercase tracking-wider">
+                                                Versión 2: Modo Acústico (Sub-Bass Transients)
+                                            </h4>
+                                            <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
+                                                • Detección física de bombos, platos y evoluciones tímbricas de capas
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleGuardarModoCues('acustico')}
+                                            className="px-3 py-1 bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-mono font-black text-xs rounded-lg shadow-[0_0_12px_rgba(6,182,212,0.4)] transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                                            title="Guardar versión Acústica en el archivo físico"
+                                        >
+                                            <Icons.Save size={13} className="inline-block" />
+                                            <span>Guardar Versión Acústica</span>
+                                        </button>
+                                    </div>
+                                    <ZoomableRekordboxWaveform
+                                        track={currentTrack}
+                                        cues={cuesAcustico || activeCues}
+                                        duration={currentTrack.duration || "05:00"}
+                                        onSeekTrack={onPlayTrack}
+                                        playProgress={isCurrentPlayingThis ? playProgress : 0}
+                                        isCurrentPlaying={isCurrentPlayingThis}
+                                        onUpdateCues={(newCues) => setCuesAcustico(newCues)}
+                                        selectedCueId={selectedCueId}
+                                        onSelectCue={setSelectedCueId}
+                                        snapToGrid={snapToGrid}
+                                        showBeatgrid={showBeatgrid}
+                                        zoom={zoom}
+                                        followPlayhead={followPlayhead}
+                                        height={120}
+                                        lang={lang}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <ZoomableRekordboxWaveform
+                                track={currentTrack}
+                                cues={cuesVersionMode === 'estandar' ? (cuesEstandar || activeCues) : (cuesAcustico || activeCues)}
+                                duration={currentTrack.duration || "05:00"}
+                                onSeekTrack={onPlayTrack}
+                                playProgress={isCurrentPlayingThis ? playProgress : 0}
+                                isCurrentPlaying={isCurrentPlayingThis}
+                                onUpdateCues={updateCues}
+                                selectedCueId={selectedCueId}
+                                onSelectCue={setSelectedCueId}
+                                snapToGrid={snapToGrid}
+                                showBeatgrid={showBeatgrid}
+                                zoom={zoom}
+                                followPlayhead={followPlayhead}
+                                height={160}
+                                lang={lang}
+                            />
+                        )}
 
                         {/* Leyenda Espectral de Frecuencias */}
                         <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 pt-2 border-t border-djzinc-800/80 mt-2">
@@ -17899,6 +18133,125 @@ const HotCuesWorkspace = ({
                                     <Icons.Check size={14} className="inline-block align-[-2px]" /> Cargar Esta Carpeta
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL EXPLICATIVO: DIFERENCIAS TÉCNICAS ESTÁNDAR VS ACÚSTICO */}
+            {showDiferenciasModal && (
+                <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-[#0e0e18] border-2 border-djzinc-700 rounded-2xl max-w-3xl w-full p-5 shadow-2xl flex flex-col max-h-[88vh] text-xs font-mono">
+                        <div className="flex items-center justify-between border-b border-djzinc-800 pb-3 mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-cyan-400 animate-pulse"></span>
+                                <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">
+                                    Comparativa Técnica: Hot Cues Estándar vs Acústico
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowDiferenciasModal(false)}
+                                className="text-gray-400 hover:text-white text-base cursor-pointer px-2 py-1 bg-djzinc-900 rounded border border-djzinc-750"
+                            >
+                                <Icons.Close size={15} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                            {/* Resumen conceptual */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="bg-amber-950/20 border border-amber-600/40 rounded-xl p-3.5 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-amber-300 uppercase flex items-center gap-1.5 mb-1.5">
+                                            <span>⚡</span> Modo Estándar (Performance / Slam Mix)
+                                        </h4>
+                                        <p className="text-[11px] text-gray-300 leading-relaxed">
+                                            Diseñado para <strong>cabina de club y festivales</strong>. Calcula los saltos clave hacia atrás desde el clímax:
+                                            permite saltar intros largas entrando directamente a 16 compases del drop (Pad 2), meter slam mixes al Drop 1 (Pad 3)
+                                            y gestionar la transición de salida con una escalera de 3 fases (Pads 6, 7 y 8 con loop de seguridad).
+                                        </p>
+                                    </div>
+                                    <div className="mt-2.5 pt-2 border-t border-amber-800/40 text-[10px] text-amber-400 font-bold">
+                                        Ideal para: Sets enérgicos, transiciones rápidas y cambio de tema inmediato.
+                                    </div>
+                                </div>
+
+                                <div className="bg-cyan-950/20 border border-cyan-600/40 rounded-xl p-3.5 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="text-xs font-black text-cyan-300 uppercase flex items-center gap-1.5 mb-1.5">
+                                            <span>🌊</span> Modo Acústico (Sub-Bass Transients)
+                                        </h4>
+                                        <p className="text-[11px] text-gray-300 leading-relaxed">
+                                            Diseñado para <strong>mezcla progresiva y deconstrucción de capas</strong>. Detecta físicamente la evolución
+                                            tímbrica de la pista: entrada de platos (Pad 2 Hi-Hats), entrada de bajo (Pad 3 Bassline) y desglosa el
+                                            flujo melódico según la física del espectro en bajas frecuencias.
+                                        </p>
+                                    </div>
+                                    <div className="mt-2.5 pt-2 border-t border-cyan-800/40 text-[10px] text-cyan-400 font-bold">
+                                        Ideal para: Warm-up, Melodic Techno, Progressive House y mezclas largas por capas.
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Tabla comparativa pad por pad */}
+                            <div className="bg-[#090910] border border-djzinc-800 rounded-xl overflow-hidden">
+                                <div className="px-3.5 py-2 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between">
+                                    <span className="text-[11px] font-black text-white uppercase tracking-wider">
+                                        Mapeo de los 8 Pads Performance
+                                    </span>
+                                    <span className="text-[10px] text-gray-400">
+                                        Compatibilidad nativa Numark / Pioneer / Serato
+                                    </span>
+                                </div>
+                                <div className="divide-y divide-djzinc-850 overflow-x-auto">
+                                    <table className="w-full text-left text-[11px]">
+                                        <thead>
+                                            <tr className="text-gray-400 bg-djzinc-950/60 uppercase text-[10px]">
+                                                <th className="py-2 px-3 w-16">Pad</th>
+                                                <th className="py-2 px-3 text-amber-300">Modo Estándar</th>
+                                                <th className="py-2 px-3 text-cyan-300">Modo Acústico</th>
+                                                <th className="py-2 px-3 text-gray-400 hidden sm:table-cell">Función en Sesión</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-djzinc-850/60">
+                                            {[
+                                                { pad: "Pad 1", est: "Primer Golpe (Intro)", ac: "Kick / Intro", fn: "Punto de partida principal (Downbeat 1.1)", color: "#ef4444" },
+                                                { pad: "Pad 2", est: "Entrada Rápida (-16b Drop)", ac: "Hi-Hats In", fn: "Saltar intro larga vs añadir platos progresivos", color: "#f97316" },
+                                                { pad: "Pad 3", est: "Drop 1 (Clímax Principal)", ac: "Bassline In", fn: "Slam mix de golpe vs meter groove de subgraves", color: "#eab308" },
+                                                { pad: "Pad 4", est: "Break 1 (Parón / Vocal)", ac: "Main Break", fn: "Bajar energía o lanzar acapella sobre la base", color: "#06b6d4" },
+                                                { pad: "Pad 5", est: "Drop 2 (Segundo Clímax)", ac: "Drop 1 (Climax)", fn: "Saltar directamente al momento álgido final", color: "#22c55e" },
+                                                { pad: "Pad 6", est: "Aviso Salida (-16b Fin)", ac: "Mid Break", fn: "Aviso visual en cabina para preparar la siguiente pista", color: "#3b82f6" },
+                                                { pad: "Pad 7", est: "Inicio Outro (Salida)", ac: "Drop 2 (Re-Kick)", fn: "Se apaga la melodía y queda solo la base rítmica", color: "#a855f7" },
+                                                { pad: "Pad 8", est: "Loop Seguridad (Outro Loop)", ac: "Outro Mix Point", fn: "Bucle automático 4/8 compases para no quedarse sin pista", color: "#ec4899" }
+                                            ].map((row, i) => (
+                                                <tr key={i} className="hover:bg-djzinc-900/50 transition-colors">
+                                                    <td className="py-2 px-3 font-bold flex items-center gap-1.5">
+                                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: row.color }}></span>
+                                                        <span className="text-white">{row.pad}</span>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-amber-200 font-semibold">{row.est}</td>
+                                                    <td className="py-2 px-3 text-cyan-200 font-semibold">{row.ac}</td>
+                                                    <td className="py-2 px-3 text-gray-400 text-[10px] hidden sm:table-cell">{row.fn}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-djzinc-800">
+                            <span className="text-[10px] text-gray-500 font-mono">
+                                Puedes alternar entre ambos modos o usar la vista Dual para comparar compás a compás.
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setShowDiferenciasModal(false)}
+                                className="px-4 py-1.5 bg-djcyan-500 hover:bg-djcyan-400 text-black text-xs font-mono font-black rounded-lg shadow transition-transform active:scale-95 cursor-pointer"
+                            >
+                                Entendido
+                            </button>
                         </div>
                     </div>
                 </div>

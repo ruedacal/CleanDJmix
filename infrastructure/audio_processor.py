@@ -399,10 +399,8 @@ class AudioProcessorService:
             total_frames = info.frames
             dur_total_ms = round((total_frames / sr) * 1000.0, 1)
 
-            # Si no se pasó un BPM válido, calcular primero el BPM acústico real
-            b_est = float(bpm) if bpm and float(bpm) > 40.0 else 0.0
-            if b_est <= 40.0:
-                b_est = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
+            # Calcular primero el BPM acústico real validado contra el reloj físico de la pista
+            b_est = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
 
             # Cargar hasta 12 segundos de cabecera (suficiente para cubrir silencios iniciales, frases de intro y bombos 1.1)
             mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
@@ -1257,6 +1255,245 @@ class AudioProcessorService:
         return result
 
     @staticmethod
+    def generar_hot_cues_estandar_performance(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, ruta: str = None, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
+        """Motor de Hot Cues Estándar de Performance (Club / Slam Mix).
+        Asigna los 8 Pads con cuantización exacta al Beatgrid y retroceso desde puntos clave:
+        Pad 1 (Rojo): Primer golpe de la intro (Lanzamiento principal en downbeat 1.1)
+        Pad 2 (Naranja): Entrada rápida (-16 compases antes del Drop 1, para saltar intros largas)
+        Pad 3 (Amarillo): Drop 1 (Clímax principal / Slam mix)
+        Pad 4 (Verde): Break 1 (Primer parón o vocal para bajar energía)
+        Pad 5 (Cian): Drop 2 (Segundo clímax / Re-kick para remezcla en vivo)
+        Pad 6 (Azul): Aviso de salida (-16 compases antes del final, alerta visual de mezcla)
+        Pad 7 (Morado): Inicio del outro (Base rítmica sin melodía)
+        Pad 8 (Rosa): Loop de seguridad (Últimos compases / bucle de rescate)
+        """
+        try:
+            bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        except Exception:
+            bpm_clean = 128.0
+
+        try:
+            dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
+        except Exception:
+            dur_clean = 300000
+
+        try:
+            downbeat_clean = max(0, int(downbeat_ms))
+        except Exception:
+            downbeat_clean = 0
+
+        beat_ms = 60000.0 / bpm_clean
+        bar_ms = beat_ms * 4.0
+        end_ms = trim_end_ms if (trim_end_ms and trim_end_ms > downbeat_clean) else dur_clean
+        usable_dur = max(1000, end_ms - downbeat_clean)
+        total_bars = max(8, int(usable_dur / bar_ms))
+
+        # Intentar detección acústica de drops si ruta existe
+        best_d1 = None
+        best_d2 = None
+        brk_cand = None
+
+        if ruta and os.path.exists(ruta):
+            try:
+                import soundfile as sf
+                import numpy as np
+                import scipy.signal as signal
+                data, sr_in = sf.read(ruta, dtype='float32')
+                mono = np.mean(data, axis=1) if data.ndim > 1 else data
+                decimate = max(1, sr_in // 12000)
+                sr_sub = sr_in // decimate
+                mono_sub = mono[::decimate]
+                sos = signal.butter(2, 150.0 / (sr_sub / 2.0), btype='low', output='sos')
+                low_mono = signal.sosfilt(sos, mono_sub)
+                bar_samples = int(sr_sub * (bar_ms / 1000.0))
+                num_bars_audio = min(total_bars, len(mono_sub) // bar_samples) if bar_samples > 0 else 0
+
+                if num_bars_audio >= 16:
+                    rms_sub = np.zeros(num_bars_audio)
+                    for b in range(num_bars_audio):
+                        s = b * bar_samples
+                        e = s + bar_samples
+                        rms_sub[b] = np.sqrt(np.mean(low_mono[s:e]**2))
+                    delta_low = np.zeros(num_bars_audio)
+                    for i in range(2, num_bars_audio):
+                        prev_low = np.mean(rms_sub[max(0, i-4):i])
+                        delta_low[i] = rms_sub[i] - prev_low
+
+                    # Drop 1
+                    d1_min = max(8, int(total_bars * 0.20))
+                    d1_max = min(num_bars_audio - 16, int(total_bars * 0.60))
+                    if d1_max > d1_min:
+                        best_d1_score = -999.0
+                        for b in range(d1_min, d1_max):
+                            score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+                            if score > best_d1_score:
+                                best_d1_score = score
+                                best_d1 = b
+
+                    # Break 1
+                    if best_d1 is not None:
+                        q_d1 = int(round(best_d1 / 8.0)) * 8
+                        for b in range(q_d1 + 8, min(q_d1 + 32, num_bars_audio)):
+                            if rms_sub[b] < np.mean(rms_sub) * 0.65:
+                                brk_cand = int(round(b / 8.0)) * 8
+                                break
+
+                    # Drop 2
+                    d2_min = max((brk_cand or int(total_bars * 0.50)) + 8, int(total_bars * 0.60))
+                    d2_max = min(num_bars_audio - 8, int(total_bars * 0.88))
+                    if d2_max > d2_min:
+                        best_d2_score = -999.0
+                        for b in range(d2_min, d2_max):
+                            score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+                            if score > best_d2_score:
+                                best_d2_score = score
+                                best_d2 = b
+            except Exception:
+                pass
+
+        # Pad 1: Primer golpe intro
+        o1 = 0
+
+        # Pad 3: Drop 1 (Clímax)
+        if best_d1 is not None:
+            o3 = int(round(best_d1 / 8.0)) * 8
+        elif total_bars >= 112:
+            o3 = 64
+        elif total_bars >= 64:
+            o3 = 32
+        else:
+            o3 = max(4, int(total_bars * 0.40 / 4) * 4)
+
+        # Pad 2: Entrada rápida (-16 o -8 compases del Drop 1)
+        if o3 >= 24:
+            o2 = max(o1 + 8, o3 - 16)
+        elif o3 >= 12:
+            o2 = max(o1 + 4, o3 - 8)
+        else:
+            o2 = max(o1 + 2, o3 // 2)
+
+        # Pad 4: Break 1 (Parón / Vocal)
+        if brk_cand is not None and brk_cand > o3:
+            o4 = brk_cand
+        elif total_bars >= 112:
+            o4 = max(o3 + 8, int(total_bars * 0.52 / 8) * 8)
+        else:
+            o4 = max(o3 + 4, int(total_bars * 0.52 / 4) * 4)
+
+        # Pad 5: Segundo Drop (Drop 2)
+        if best_d2 is not None:
+            o5 = int(round(best_d2 / 8.0)) * 8
+        elif total_bars >= 112:
+            o5 = max(o4 + 8, int(total_bars * 0.72 / 8) * 8)
+        else:
+            o5 = max(o4 + 4, int(total_bars * 0.72 / 4) * 4)
+        if o5 <= o4:
+            o5 = o4 + 8
+
+        # Pad 6: Aviso salida (16 compases antes del final)
+        if total_bars >= 64:
+            o6 = max(o5 + 4, total_bars - 16)
+        else:
+            o6 = max(o5 + 2, total_bars - 8)
+
+        # Pad 7: Inicio del outro (base rítmica)
+        if total_bars >= 64:
+            o7 = max(o6 + 4, total_bars - 8)
+        else:
+            o7 = max(o6 + 2, total_bars - 4)
+
+        # Pad 8: Últimos compases / Loop de salida
+        o8 = max(o7 + 2, total_bars - 4)
+
+        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
+        for i in range(1, 8):
+            if bar_offsets[i] <= bar_offsets[i - 1]:
+                bar_offsets[i] = bar_offsets[i - 1] + 1
+            if bar_offsets[i] >= total_bars:
+                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
+
+        perf_configs = [
+            {"id": 1, "name": "Primer Golpe (Intro)", "short_name": "Primer Golpe", "color": "#ef4444", "rgb": (239, 68, 68), "desc": "Lanzamiento principal en compás 1.1"},
+            {"id": 2, "name": "Entrada Rápida (-16b Drop)", "short_name": "Entrada Rápida", "color": "#f97316", "rgb": (249, 115, 22), "desc": "16 compases antes del Drop 1 (saltar intro larga)"},
+            {"id": 3, "name": "Drop 1 (Clímax)", "short_name": "Drop 1", "color": "#eab308", "rgb": (234, 179, 8), "desc": "Explosión principal / Slam Mix"},
+            {"id": 4, "name": "Break 1 (Parón/Vocal)", "short_name": "Break 1", "color": "#22c55e", "rgb": (34, 197, 94), "desc": "Bajada de energía para acapella o transición"},
+            {"id": 5, "name": "Drop 2 (Segundo Clímax)", "short_name": "Drop 2", "color": "#06b6d4", "rgb": (6, 182, 212), "desc": "Segundo clímax / Re-kick para remezcla en vivo"},
+            {"id": 6, "name": "Aviso Salida (-16b Fin)", "short_name": "Aviso Salida", "color": "#3b82f6", "rgb": (59, 130, 246), "desc": "16 compases antes del final (iniciar mezcla salida)"},
+            {"id": 7, "name": "Inicio Outro (Salida)", "short_name": "Inicio Outro", "color": "#a855f7", "rgb": (168, 85, 247), "desc": "Base rítmica limpia sin sintes ni melodías"},
+            {"id": 8, "name": "Loop Seguridad (Outro Loop)", "short_name": "Loop Seguridad", "color": "#ec4899", "rgb": (236, 72, 153), "desc": "Bucle automático de emergencia en la cola"}
+        ]
+
+        result = []
+        for idx in range(8):
+            cfg = perf_configs[idx]
+            b_off = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
+            compas = b_off + 1
+            pos_ms = int(downbeat_clean + (b_off * bar_ms))
+            if pos_ms >= dur_clean:
+                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
+
+            sec = pos_ms / 1000.0
+            m = int(sec // 60)
+            s = sec % 60
+            time_str = f"{m:02d}:{s:04.1f}"
+            pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
+
+            result.append({
+                "id": cfg["id"],
+                "bar": compas,
+                "bar_str": f"Bar {compas}",
+                "name": f"{cfg['name']} (Bar {compas})",
+                "short_name": cfg["short_name"],
+                "pos_ms": pos_ms,
+                "time": time_str,
+                "pct": pct,
+                "color": cfg["color"],
+                "rgb": cfg["rgb"],
+                "desc": cfg["desc"]
+            })
+
+        return result
+
+    @staticmethod
+    def calcular_comparativa_hot_cues(ruta: str = None, duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, trim_start_ms: int = 0, trim_end_ms: int = 0) -> dict:
+        """Calcula simultáneamente las dos variantes de Hot Cues (Estándar Performance vs Acústico Progresivo)
+        con su descripción comparativa compás a compás para previsualización dual en el Waveform."""
+        cues_estandar = AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms,
+            ruta=ruta,
+            trim_start_ms=trim_start_ms,
+            trim_end_ms=trim_end_ms
+        )
+        cues_acustico = AudioProcessorService.calcular_8_hot_cues_fraseo(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms,
+            ruta=ruta,
+            trim_start_ms=trim_start_ms,
+            trim_end_ms=trim_end_ms
+        )
+
+        return {
+            "status": "ok",
+            "cues_estandar": cues_estandar,
+            "cues_acustico": cues_acustico,
+            "explicacion": {
+                "estandar": {
+                    "titulo": "Estándar (Performance / Slam Mix)",
+                    "descripcion": "Diseñado para mezcla rápida en cabina y cambios de energía inmediatos. El Pad 2 salta exactamente 16 compases antes del Drop 1 para no esperar intros largas; el Pad 3 entra directamente en el Clímax; y los Pads 6 a 8 forman una escalera de salida con aviso previo de 16 compases y bucle final de emergencia.",
+                    "enfoque": "Cabina DJ, saltos rápidos (slam mixing), transiciones dinámicas."
+                },
+                "acustico": {
+                    "titulo": "Acústico (Sub-Bass + Transients)",
+                    "descripcion": "Diseñado para sets progresivos y deconstrucción tímbrica. Detecta la evolución de la instrumentación analizando caídas y subidas de subgraves: cuándo entran los platos (Hi-Hats In), cuándo entra el bajo (Bassline), el parón preparatorio y los picos espectrales.",
+                    "enfoque": "Mezclas largas progresivas, capas de instrumentación, sets de club envolventes."
+                }
+            }
+        }
+
+    @staticmethod
     def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
         """Construye el bloque binario base64 compatible con Serato Markers2 (Pads 1-8 Numark/Pioneer).
         Estructura oficial:
@@ -1674,10 +1911,18 @@ class AudioProcessorService:
         bpm_val = meta_track.get("bpm") or meta_track.get("b") or existing_tags.get("BPM") or existing_tags.get("TBPM") or "128.00"
         try:
             bpm_float = float(str(bpm_val).replace(",", "."))
-            bpm_str = f"{bpm_float:.2f}"
         except Exception:
-            bpm_str = str(bpm_val)
             bpm_float = 128.0
+
+        # Verificación acústica estricta de BPM: Si el BPM previo difiere > 0.8 del tempo real acústico,
+        # prevalece el tempo acústico real físico del audio para evitar beatgrids desfasados
+        bpm_acustico_real = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm_float)
+        if abs(bpm_acustico_real - bpm_float) > 0.8:
+            print(f"[TEMPO CORRECCIÓN] '{os.path.basename(ruta)}': BPM tag ({bpm_float:.2f}) discrepante con tempo acústico real ({bpm_acustico_real:.2f}). Corrigiendo a {bpm_acustico_real:.2f}.")
+            bpm_float = bpm_acustico_real
+            meta_track["recalcular_grid"] = True
+
+        bpm_str = f"{bpm_float:.2f}"
 
         raw_key = meta_track.get("key") or meta_track.get("k") or existing_tags.get("KEY") or existing_tags.get("INITIALKEY") or existing_tags.get("TKEY") or ""
         key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
@@ -1748,11 +1993,25 @@ class AudioProcessorService:
         mood_val = str(meta_track.get("mood") or existing_tags.get("MOOD") or existing_tags.get("GROUPING") or "Peak Time").strip()
         cues_list = meta_track.get("cues") or []
         if not cues_list or meta_track.get("recalcular_grid") or meta_track.get("recalcular_cues"):
-            cues_list = AudioProcessorService.generar_hot_cues_plantilla_club(
-                duration_ms=dur_ms,
-                bpm=bpm_float,
-                downbeat_ms=int(downbeat_ms)
-            )
+            modo_cues = str(meta_track.get("modo_cues") or meta_track.get("cues_mode") or "estandar").lower()
+            if modo_cues in ("acustico", "acoustic", "sub_bass"):
+                cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                    duration_ms=dur_ms,
+                    bpm=bpm_float,
+                    downbeat_ms=int(downbeat_ms),
+                    ruta=ruta,
+                    trim_start_ms=int(trim_ms),
+                    trim_end_ms=int(trim_end_ms)
+                )
+            else:
+                cues_list = AudioProcessorService.generar_hot_cues_estandar_performance(
+                    duration_ms=dur_ms,
+                    bpm=bpm_float,
+                    downbeat_ms=int(downbeat_ms),
+                    ruta=ruta,
+                    trim_start_ms=int(trim_ms),
+                    trim_end_ms=int(trim_end_ms)
+                )
         es_serato = modo_serato or bool(meta_track.get("modo_serato")) or bool(meta_track.get("export_serato"))
 
         # 1. Agrupamiento (Grouping): Solo el Mood
@@ -1848,26 +2107,30 @@ class AudioProcessorService:
         )
         serato_analysis_flags_bin = b"\x00\x00\x00\x00\x00\x00\x00\xe1"
 
-        # Payloads empaquetados para contenedores FLAC y MP4
+        # Payloads empaquetados para contenedores FLAC y MP4 según especificación oficial Serato
         flac_markers2_payload = b"application/octet-stream\x00\x00Serato Markers2\x00" + serato_markers2_geob
-        flac_markers2_b64 = base64.b64encode(flac_markers2_payload).decode("ascii")
-        flac_markers2_str = "\n".join(flac_markers2_b64[i:i+72] for i in range(0, len(flac_markers2_b64), 72))
+        flac_markers2_b64 = base64.b64encode(flac_markers2_payload).decode("ascii").rstrip("=")
+        flac_markers2_str = "\n".join(flac_markers2_b64[i:i+72] for i in range(0, len(flac_markers2_b64), 72)) + "\n"
 
         flac_markers1_payload = b"application/octet-stream\x00\x00Serato Markers_\x00" + serato_markers_v1_bin
-        flac_markers1_b64 = base64.b64encode(flac_markers1_payload).decode("ascii")
-        flac_markers1_str = "\n".join(flac_markers1_b64[i:i+72] for i in range(0, len(flac_markers1_b64), 72))
+        flac_markers1_b64 = base64.b64encode(flac_markers1_payload).decode("ascii").rstrip("=")
+        flac_markers1_str = "\n".join(flac_markers1_b64[i:i+72] for i in range(0, len(flac_markers1_b64), 72)) + "\n"
 
         flac_beatgrid_payload = b"application/octet-stream\x00\x00Serato BeatGrid\x00" + serato_beatgrid_bin
-        flac_beatgrid_b64 = base64.b64encode(flac_beatgrid_payload).decode("ascii")
+        flac_beatgrid_b64 = base64.b64encode(flac_beatgrid_payload).decode("ascii").rstrip("=")
+        flac_beatgrid_str = "\n".join(flac_beatgrid_b64[i:i+72] for i in range(0, len(flac_beatgrid_b64), 72)) + "\n"
 
         flac_tempo_map_payload = b"application/octet-stream\x00\x00Serato Tempo Map\x00" + serato_tempo_map_bin
-        flac_tempo_map_b64 = base64.b64encode(flac_tempo_map_payload).decode("ascii")
+        flac_tempo_map_b64 = base64.b64encode(flac_tempo_map_payload).decode("ascii").rstrip("=")
         flac_tempo_map_str = "\n".join(flac_tempo_map_b64[i:i+72] for i in range(0, len(flac_tempo_map_b64), 72)) + "\n"
 
-        flac_analysis_flags_b64 = base64.b64encode(serato_analysis_flags_bin).decode("ascii") + "\n"
+        flac_analysis_payload = b"application/octet-stream\x00\x00Serato Analysis\x00" + serato_analysis_flags_bin
+        flac_analysis_b64 = base64.b64encode(flac_analysis_payload).decode("ascii").rstrip("=")
+        flac_analysis_str = "\n".join(flac_analysis_b64[i:i+72] for i in range(0, len(flac_analysis_b64), 72)) + "\n"
 
         flac_autotags_payload = b"application/octet-stream\x00\x00Serato Autotags\x00" + autotags_data
-        flac_autotags_b64 = base64.b64encode(flac_autotags_payload).decode("ascii")
+        flac_autotags_b64 = base64.b64encode(flac_autotags_payload).decode("ascii").rstrip("=")
+        flac_autotags_str = "\n".join(flac_autotags_b64[i:i+72] for i in range(0, len(flac_autotags_b64), 72)) + "\n"
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
         if not cover_source and not has_existing_cover:
@@ -1933,14 +2196,16 @@ class AudioProcessorService:
                 if downbeat_ms > 0:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
 
-                # Metadatos nativos Serato DJ en VORBIS_COMMENT (sin tags no oficiales que confundan a Serato)
+                # Metadatos nativos Serato DJ en VORBIS_COMMENT canónico (especificación oficial Serato DJ Pro)
                 audio["SERATO_MARKERS_V2"] = [flac_markers2_str]
-                audio["SERATO_MARKERS"] = [flac_markers1_str]
-                audio["SERATO_BEATGRID"] = [flac_beatgrid_b64]
-                audio["SERATO_ANALYSIS_FLAGS"] = [flac_analysis_flags_b64]
-                audio["SERATO_AUTOGAIN"] = [flac_autotags_b64]
-                if "SERATO_TEMPO_MAP" in audio:
-                    del audio["SERATO_TEMPO_MAP"]
+                audio["SERATO_BEATGRID"] = [flac_beatgrid_str]
+                audio["SERATO_ANALYSIS"] = [flac_analysis_str]
+                audio["SERATO_AUTOGAIN"] = [flac_autotags_str]
+
+                # Eliminar tags obsoletos o no conformes que confunden a Serato en contenedores FLAC
+                for obsolete_key in ["SERATO_MARKERS", "SERATO_ANALYSIS_FLAGS", "SERATO_TEMPO_MAP"]:
+                    if obsolete_key in audio:
+                        del audio[obsolete_key]
 
                 if cover_bytes:
                     try:

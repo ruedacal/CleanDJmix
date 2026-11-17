@@ -454,6 +454,16 @@ def calcular_trim_downbeat_track(filepath, track_id=None):
     return audit_svc.analizar_trim_downbeat(filepath, track_id)
 
 @eel.expose
+def calcular_comparativa_hot_cues(filepath, track_id=None):
+    """Calcula las dos variantes (Estándar Performance vs Acústico) para visualización comparativa simultánea."""
+    return audit_svc.calcular_comparativa_hot_cues(filepath, track_id)
+
+@eel.expose
+def guardar_modo_hot_cues(filepath, modo="estandar", cues=None, track_data=None):
+    """Guarda físicamente en disco la versión de Hot Cues seleccionada por el usuario."""
+    return audit_svc.guardar_modo_hot_cues(filepath, modo=modo, cues=cues, track_data=track_data)
+
+@eel.expose
 def detectar_bpm_tonalidad_local(filepath):
     """Calcula BPM y escala Camelot localmente vía Librosa/FFT (100% offline)."""
     return audit_svc.detectar_bpm_tonalidad_librosa(filepath)
