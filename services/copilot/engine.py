@@ -34,14 +34,13 @@ class CopilotEngine:
         {"id": "os2l", "name": "VirtualDJ / OS2L", "icon": "🎧", "color": "#f97316", "badge": "OS2L TCP"},
         {"id": "rekordbox", "name": "Pioneer Rekordbox", "icon": "💿", "color": "#06b6d4", "badge": "REKORDBOX"},
         {"id": "serato", "name": "Serato DJ Pro", "icon": "⚡", "color": "#8b5cf6", "badge": "SERATO"},
-        {"id": "traktor", "name": "Native Instruments Traktor", "icon": "🎚️", "color": "#eab308", "badge": "TRAKTOR"},
-        {"id": "simulation", "name": "Simulación de Cabina", "icon": "🧪", "color": "#10b981", "badge": "SIMULADOR"}
+        {"id": "traktor", "name": "Native Instruments Traktor", "icon": "🎚️", "color": "#eab308", "badge": "TRAKTOR"}
     ]
 
     def __init__(self):
         self.state = LiveSessionState()
         self._lock = threading.Lock()
-        self.simulation_mode = True
+        self.simulation_mode = False
         self.platform_mode = "prodjlink"
         self.serato_db_path = os.path.expanduser("~/Music/_Serato_")
         self.loaded_library_tracks: List[Dict[str, Any]] = []
@@ -451,15 +450,15 @@ class CopilotEngine:
 
             return {
                 "connected": True,
-                "source": "PRODJLINK_LIVE" if self.platform_mode == "prodjlink" and not self.simulation_mode else "SIMULATION_MODE",
+                "source": "PRODJLINK_LIVE" if self.platform_mode == "prodjlink" and not self.simulation_mode else ("DJLINK_LIVE" if dj_app.get("is_open") else "DJLINK_STANDBY"),
                 "platform": self.platform_mode,
                 "platform_mode": self.platform_mode,
                 "platform_name": self.state.platform_name,
                 "platform_icon": "🎛️" if self.platform_mode == "prodjlink" else "🎧",
                 "platform_color": "#3b82f6",
                 "dj_app": dj_app,
-                "is_app_open": dj_app.get("is_open", False) or is_simulating,
-                "is_simulating": is_simulating,
+                "is_app_open": dj_app.get("is_open", False),
+                "is_simulating": False,
                 "master_deck": self.state.master_deck,
                 "global_bpm": round(self.state.global_bpm, 2),
                 "deck_1": formatted_decks.get(1, {}),

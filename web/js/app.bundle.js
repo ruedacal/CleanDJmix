@@ -26607,44 +26607,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       { id: "virtualdj", label: "VirtualDJ", color: "#f97316" },
       { id: "traktor", label: "Traktor", color: "#facc15" }
     ];
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-cyan-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), !controllerState.detected ? /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "flex items-center gap-1.5 py-1 px-1 font-syne font-bold text-xs sm:text-sm text-zinc-400 select-none cursor-pointer hover:text-zinc-200 transition-colors",
-        onClick: () => setControllerState({
-          detected: true,
-          name: "NUMARK NV II",
-          status: "CONECTADA"
-        }),
-        title: "Haz clic para alternar prueba de conexi\xF3n (Numark NV II)"
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-zinc-600 shrink-0" }),
-      /* @__PURE__ */ React.createElement("span", { className: "tracking-wide" }, "controladora desconectada")
-    ) : /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "flex items-center gap-2 py-0.5 px-1 select-none cursor-pointer",
-        onClick: () => setControllerState({
-          detected: false,
-          name: "controladora desconectada",
-          status: "DESCONECTADA"
-        }),
-        title: "Haz clic para alternar prueba de desconexi\xF3n"
-      },
-      /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: `/assets/controllers/${(controllerState.name || "numark_nv_ii").toLowerCase().replace(/[^a-z0-9]+/g, "_")}.png`,
-          alt: controllerState.name,
-          onError: (e) => {
-            e.currentTarget.src = "/assets/controllers/numark_nv_ii.png";
-          },
-          className: "w-auto h-auto max-w-[190px] max-h-[70px] object-contain opacity-40 shrink-0 transition-none drop-shadow-md",
-          style: { opacity: 0.4 }
-        }
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col justify-center" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-100 tracking-wider uppercase leading-tight" }, controllerState.name))
-    ), ((_a = state.ableton_link) == null ? void 0 : _a.peers) > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]", title: "Ableton Link Activo: sincronizado con software DJ" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "\u{1F517} LINK:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, `${state.ableton_link.peers} PEER (${state.ableton_link.playing ? "PLAY" : "PAUSA"})`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-cyan-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY")))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -26655,7 +26618,44 @@ Respuesta: ${qa.a}`).join("\n\n"),
       "\u21C4 DECK ",
       deck_1.is_master ? "1" : "2",
       " [M]"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-between lg:justify-end" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner" }, platformsList.map((p) => {
+    )), ((_a = state.ableton_link) == null ? void 0 : _a.peers) > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]", title: "Ableton Link Activo: sincronizado con software DJ" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "\u{1F517} LINK:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, `${state.ableton_link.peers} PEER (${state.ableton_link.playing ? "PLAY" : "PAUSA"})`)))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 hidden md:flex items-center justify-center px-2 min-w-0 select-none" }, controllerState.detected ? /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "flex flex-col items-center justify-center gap-0.5 cursor-pointer max-w-[210px] sm:max-w-[230px]",
+        onClick: () => setControllerState({
+          detected: false,
+          name: "controladora desconectada",
+          status: "DESCONECTADA"
+        }),
+        title: "Haz clic para alternar prueba de desconexi\xF3n"
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 z-10" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-xs sm:text-sm text-white tracking-wider uppercase leading-none" }, (controllerState.name || "NUMARK NV II").replace(/\s*\(USB\)\s*/i, "").trim())),
+      /* @__PURE__ */ React.createElement(
+        "img",
+        {
+          src: `/assets/controllers/${(controllerState.name || "numark_nv_ii").toLowerCase().replace(/\s*\(usb\)\s*/gi, "").replace(/[^a-z0-9]+/g, "_")}.png`,
+          alt: controllerState.name,
+          onError: (e) => {
+            e.currentTarget.src = "/assets/controllers/hardware_console_slice.png";
+          },
+          className: "h-[48px] sm:h-[54px] max-h-[54px] w-auto max-w-[210px] object-contain drop-shadow-md select-none transition-none pointer-events-none",
+          style: { opacity: 0.4 }
+        }
+      )
+    ) : /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "flex items-center gap-2 py-1.5 px-3 rounded-lg bg-zinc-900/60 border border-zinc-800 text-zinc-500 font-syne font-semibold text-xs tracking-wider uppercase select-none cursor-pointer hover:text-zinc-300 hover:border-zinc-700 transition-colors",
+        onClick: () => setControllerState({
+          detected: true,
+          name: "NUMARK NV II",
+          status: "CONECTADA"
+        }),
+        title: "Haz clic para conectar controladora (Numark NV II)"
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-zinc-600 shrink-0" }),
+      /* @__PURE__ */ React.createElement("span", null, "controladora desconectada")
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-between lg:justify-end shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center p-0.5 bg-zinc-950/90 rounded-xl border border-zinc-800 shadow-inner" }, platformsList.map((p) => {
       const isSelected = state.platform_mode === p.id || state.platform_mode === "auto" && p.id === "auto";
       return /* @__PURE__ */ React.createElement(
         "button",
@@ -26670,27 +26670,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         renderPlatformLogo(p.id, 13),
         /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline text-[10px]" }, p.label)
       );
-    })), /* @__PURE__ */ React.createElement("div", { className: "font-mono text-xs font-bold text-white bg-zinc-900 px-2 py-1 rounded-xl border border-zinc-800 shadow-inner" }, clock || state.last_updated), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: toggleSimulation,
-        className: `px-2 py-1 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${state.source === "SIMULATION_MODE" ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border-zinc-700/60"}`,
-        title: "Alternar simulaci\xF3n"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Brain, { size: 12, className: "inline-block align-[-1px]" }),
-      " ",
-      state.source === "SIMULATION_MODE" ? "Simulando" : "Simular"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setTestDisconnectSkin((v) => !v),
-        className: `px-2 py-1 rounded-xl text-xs font-mono font-bold uppercase transition-all cursor-pointer border ${testDisconnectSkin ? "bg-red-900/80 border-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] animate-pulse" : "bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700/60"}`,
-        title: "Alternar prueba de aplicaci\xF3n desconectada (modo skin con bordes rojos)"
-      },
-      testDisconnectSkin ? "Standby Skin" : "Probar Standby"
-    ), onOpenPopOut && /* @__PURE__ */ React.createElement(
+    })), /* @__PURE__ */ React.createElement("div", { className: "font-mono text-xs font-bold text-white bg-zinc-900 px-2 py-1 rounded-xl border border-zinc-800 shadow-inner" }, clock || state.last_updated), onOpenPopOut && /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
