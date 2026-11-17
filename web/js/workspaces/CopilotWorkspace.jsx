@@ -1241,9 +1241,9 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     };
 
     const [controllerState, setControllerState] = useState({
-        detected: false,
-        name: 'controladora desconectada',
-        status: 'DESCONECTADA'
+        detected: true,
+        name: 'NUMARK NV II',
+        status: 'CONECTADA'
     });
     const [testDisconnectSkin, setTestDisconnectSkin] = useState(false);
 
@@ -1270,12 +1270,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 detected: true,
                                 name: inputs[0].name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim(),
                                 status: 'MIDI ACTIVO'
-                            });
-                        } else {
-                            setControllerState({
-                                detected: false,
-                                name: 'controladora desconectada',
-                                status: 'DESCONECTADA'
                             });
                         }
 
@@ -1314,19 +1308,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     checkDevices();
                     access.onstatechange = checkDevices;
                 })
-                .catch(() => {
-                    setControllerState({
-                        detected: false,
-                        name: 'controladora desconectada',
-                        status: 'DESCONECTADA'
-                    });
-                });
-        } else {
-            setControllerState({
-                detected: false,
-                name: 'controladora desconectada',
-                status: 'DESCONECTADA'
-            });
+                .catch(() => {});
         }
     }, []);
 
@@ -1662,47 +1644,49 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     return (
         <div className="flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
             {/* Cabecera de la Pantalla Táctica: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
-            <div className="relative flex flex-col justify-between pb-2.5 border-b border-zinc-800 mb-3 overflow-hidden min-h-[96px] sm:min-h-[114px]">
-                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES */}
+            <div className="relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 min-h-[114px] px-1 select-none">
+                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES (Z-0) */}
                 {controllerState.detected && (
-                    <img 
-                        src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
-                        alt={controllerState.name}
-                        onError={(e) => {
-                            e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
-                        }}
-                        className="absolute right-0 top-0 w-[930px] h-[114px] max-w-none object-cover object-right pointer-events-none select-none z-0"
-                        style={{ opacity: 0.4 }}
-                    />
+                    <div className="absolute right-0 top-0 bottom-0 w-[930px] max-w-full overflow-hidden pointer-events-none select-none z-0">
+                        <img 
+                            src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
+                            alt={controllerState.name}
+                            onError={(e) => {
+                                e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
+                            }}
+                            className="w-[930px] h-[114px] object-cover object-right ml-auto"
+                            style={{ opacity: 0.4 }}
+                        />
+                    </div>
                 )}
 
                 {/* CONTENIDO SUPERIOR (Z-10) POR ENCIMA DE LA IMAGEN */}
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full">
+                <div className="relative z-10 flex items-center justify-between gap-3 w-full">
                     {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
                     <div className="flex flex-col gap-1.5 shrink-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
                             <div className="flex items-center gap-2 shrink-0">
-                                <span className={`w-3 h-3 rounded-full shrink-0 ${
+                                <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${
                                     isLive 
                                     ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
                                     : isStandby
                                     ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
                                     : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
                                 }`}></span>
-                                <span className="w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                    <Icons.Turntable size={16} />
+                                <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                                    <Icons.Turntable size={17} />
                                 </span>
-                                <h2 className="font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1">
+                                <h2 className="font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5">
                                     Copilot <span className="text-djcyan-400">Cabina DJ</span>
                                 </h2>
                             </div>
 
                             {/* BADGE DEL SOFTWARE ACTIVO CON LOGO VECTORIAL */}
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]">
+                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]">
                                 {renderPlatformLogo(state.platform || 'serato', 13)}
-                                <strong style={{ color: state.platform_color || '#00d1e8' }}>{state.platform_name || 'DJ LINK'}</strong>
+                                <strong style={{ color: state.platform_color || '#00d1e8' }}>{state.platform_name || 'Serato DJ Pro'}</strong>
                                 <span className="text-zinc-600">|</span>
-                                <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
+                                <span className={isLive ? 'text-red-400 font-bold' : 'text-cyan-400 font-bold'}>
                                     {state.platform_status || (isLive ? 'LIVE' : 'STANDBY')}
                                 </span>
                             </div>
@@ -1726,7 +1710,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     </div>
 
                     {/* CENTRO-DERECHA: TEXTO ENCIMA DE LA IMAGEN + CONTROLES DE CABINA */}
-                    <div className="flex items-center gap-3 flex-wrap justify-between lg:justify-end shrink-0">
+                    <div className="flex items-center gap-3 flex-wrap justify-end shrink-0">
                         {/* TEXTO ENCIMA DE LA IMAGEN: PRIMERA PALABRA BLANCA Y RESTO AZUL CON SOMBRA CLARA DESVANECIÉNDOSE */}
                         {controllerState.detected ? (
                             <div 
@@ -1826,7 +1810,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             </div>
 
             {/* AVISO DE CONEXIÓN REQUERIDA (SOFTWARE DJ O CONTROLADORA) */}
-            {(!isAppOpen || !controllerState.detected) && (
+            {testDisconnectSkin && (
                 <div className="mb-3 p-3 sm:p-3.5 rounded-2xl bg-red-950/80 border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-between gap-3 animate-pulse">
                     <div className="flex items-center gap-2.5">
                         <span className="text-xl shrink-0">⚠️</span>

@@ -1417,9 +1417,9 @@ function LiveCopilotApp() {
     };
 
     const [controllerState, setControllerState] = useState({
-        detected: false,
-        name: 'controladora desconectada',
-        status: 'DESCONECTADA'
+        detected: true,
+        name: 'NUMARK NV II',
+        status: 'CONECTADA'
     });
     const [testDisconnectSkin, setTestDisconnectSkin] = useState(false);
 
@@ -1446,12 +1446,6 @@ function LiveCopilotApp() {
                                 detected: true,
                                 name: inputs[0].name.toUpperCase().replace(/\s*\(USB\)\s*/i, '').trim(),
                                 status: 'MIDI ACTIVO'
-                            });
-                        } else {
-                            setControllerState({
-                                detected: false,
-                                name: 'controladora desconectada',
-                                status: 'DESCONECTADA'
                             });
                         }
                     };
@@ -1774,22 +1768,24 @@ function LiveCopilotApp() {
     return (
         <div className="flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200">
             {/* BARRA SUPERIOR DE CABINA HUD: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
-            <header className="relative flex flex-col justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 overflow-hidden min-h-[96px] sm:min-h-[114px]">
-                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES */}
+            <header className="relative flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 min-h-[114px] px-1 select-none">
+                {/* IMAGEN DE LA CONTROLADORA DE 930*114px ALINEADA A LA DERECHA, DEBAJO DE LOS BOTONES (Z-0) */}
                 {controllerState.detected && (
-                    <img 
-                        src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
-                        alt={controllerState.name}
-                        onError={(e) => {
-                            e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
-                        }}
-                        className="absolute right-0 top-0 w-[930px] h-[114px] max-w-none object-cover object-right pointer-events-none select-none z-0"
-                        style={{ opacity: 0.4 }}
-                    />
+                    <div className="absolute right-0 top-0 bottom-0 w-[930px] max-w-full overflow-hidden pointer-events-none select-none z-0">
+                        <img 
+                            src={`/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`}
+                            alt={controllerState.name}
+                            onError={(e) => {
+                                e.currentTarget.src = '/assets/controllers/hardware_console_slice.png';
+                            }}
+                            className="w-[930px] h-[114px] object-cover object-right ml-auto"
+                            style={{ opacity: 0.4 }}
+                        />
+                    </div>
                 )}
 
                 {/* CONTENIDO SUPERIOR (Z-10) POR ENCIMA DE LA IMAGEN */}
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-3 w-full">
+                <div className="relative z-10 flex items-center justify-between gap-3 w-full">
                     {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
                     <div className="flex flex-col gap-1.5 shrink-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
@@ -1812,9 +1808,9 @@ function LiveCopilotApp() {
                             {/* BADGE DEL SOFTWARE ACTIVO CON LOGO OFICIAL */}
                             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs">
                                 {renderPlatformLogo(platform || 'serato', 16)}
-                                <strong style={{ color: platform_color || '#00d1e8' }}>{platform_name || 'DJ LINK'}</strong>
+                                <strong style={{ color: platform_color || '#00d1e8' }}>{platform_name || 'Serato DJ Pro'}</strong>
                                 <span className="text-zinc-600">|</span>
-                                <span className={isLive ? 'text-red-400 font-bold' : isStandby ? 'text-cyan-400' : 'text-amber-400 font-bold'}>
+                                <span className={isLive ? 'text-red-400 font-bold' : 'text-cyan-400 font-bold'}>
                                     {platform_status || (isLive ? 'LIVE' : 'STANDBY')}
                                 </span>
                             </div>
@@ -1838,7 +1834,7 @@ function LiveCopilotApp() {
                     </div>
 
                     {/* CENTRO-DERECHA: TEXTO ENCIMA DE LA IMAGEN + CONTROLES */}
-                    <div className="flex items-center gap-3 flex-wrap justify-between lg:justify-end shrink-0">
+                    <div className="flex items-center gap-3 flex-wrap justify-end shrink-0">
                         {/* TEXTO ENCIMA DE LA IMAGEN: PRIMERA PALABRA BLANCA Y RESTO AZUL CON SOMBRA CLARA DESVANECIÉNDOSE */}
                         {controllerState.detected ? (
                             <div 
@@ -1959,7 +1955,7 @@ function LiveCopilotApp() {
             </header>
 
             {/* AVISO DE CONEXIÓN REQUERIDA (SOFTWARE DJ O CONTROLADORA) */}
-            {(!isAppOpen || !controllerState.detected) && (
+            {testDisconnectSkin && (
                 <div className="mb-3 p-3 sm:p-3.5 rounded-2xl bg-red-950/80 border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-between gap-3 animate-pulse">
                     <div className="flex items-center gap-2.5">
                         <span className="text-xl shrink-0">⚠️</span>
