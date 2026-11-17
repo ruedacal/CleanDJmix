@@ -6,7 +6,7 @@ export const NAV_GROUPS = [
         id: 'booth',
         label: 'Cabina',
         items: [
-            { id: 'audit', labelKey: 'nav_tab_audit', fallback: 'Biblioteca', icon: 'Library', hint: 'Auditoría FFT, tags y exportación' },
+            { id: 'audit', labelKey: 'nav_tab_audit', fallback: 'Auditoría', icon: 'AuditEye', hint: 'Auditoría FFT, tags y exportación' },
             { id: 'hotcues', labelKey: 'nav_tab_cues', fallback: 'Cues', icon: 'Cue', hint: 'Estudio de 8 Hot Cues y waveform' },
             { id: 'setbuilder', labelKey: 'nav_tab_sets', fallback: 'Sets', icon: 'Flow', hint: 'Set Builder y curva de energía' },
             { id: 'map', labelKey: 'nav_tab_map', fallback: 'Mapa', icon: 'Map', hint: 'Mapa 2D de compatibilidad', showTrackCount: true },

@@ -25,6 +25,14 @@ const makeIcon = (children, { filled = false, defaultClass = '', defaultSize = 1
 
 export const ShellIcons = {
     Library: makeIcon(<><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></>),
+    AuditEye: makeIcon(
+        <>
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+            <circle cx="12" cy="12" r="3.5" />
+            <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+            <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5" strokeWidth={1.5} opacity={0.7} />
+        </>
+    ),
     Cue: makeIcon(<><path d="M4 22V3" /><path d="M4 4h12.5l-2.8 4.5 2.8 4.5H4" /><circle cx="4" cy="4" r="1.5" /><circle cx="4" cy="21" r="1.25" fill="currentColor" /></>),
     Turntable: makeIcon(<><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3.2" /><path d="M12 3.5v5.3M12 15.2v5.3" /></>),
     Flow: makeIcon(<><path d="M21 15V6" /><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path d="M12 12H3" /><path d="M16 6H3" /><path d="M12 18H3" /></>),

@@ -404,18 +404,109 @@ def api_load_directory():
         bottle.response.status = 204
         return ""
     data = bottle.request.json or {}
-    path = data.get("path", "")
-    if not path or not os.path.isdir(path):
-        ruta = audit_svc.seleccionar_directorio()
-        if isinstance(ruta, dict):
-            path = ruta.get("path") or ""
-        elif isinstance(ruta, str):
-            path = ruta.strip()
-    if not path or not os.path.isdir(path):
+    paths = data.get("paths") or data.get("path", "")
+    if isinstance(paths, list) and len(paths) > 0:
+        valid_items = [p for p in paths if isinstance(p, str) and os.path.exists(p)]
+        if not valid_items:
+            return {"status": "error", "msg": "Ninguna ruta válida especificada", "tracks": []}
+        for item in valid_items:
+            _registrar_directorio_autorizado(os.path.dirname(item) if os.path.isfile(item) else item)
+        res = audit_svc.cargar_metadatos_directorio(valid_items, _emitir_progreso_batch)
+        return _sanitize_for_json(res)
+    elif isinstance(paths, str) and paths.strip():
+        p_clean = paths.strip()
+        if os.path.isfile(p_clean):
+            _registrar_directorio_autorizado(os.path.dirname(p_clean))
+            res = audit_svc.cargar_metadatos_directorio([p_clean], _emitir_progreso_batch)
+            return _sanitize_for_json(res)
+        elif os.path.isdir(p_clean):
+            _registrar_directorio_autorizado(p_clean)
+            res = audit_svc.cargar_metadatos_directorio(p_clean, _emitir_progreso_batch)
+            return _sanitize_for_json(res)
+    # Si no se pasó ruta válida, abrir diálogo nativo del sistema
+    ruta = audit_svc.seleccionar_directorio()
+    if isinstance(ruta, dict):
+        path = ruta.get("path") or ""
+    elif isinstance(ruta, str):
+        path = ruta.strip()
+    else:
+        path = ""
+    if not path or not os.path.exists(path):
         return {"status": "error", "msg": "Ruta inválida o cancelada", "tracks": []}
-    _registrar_directorio_autorizado(path)
+    _registrar_directorio_autorizado(os.path.dirname(path) if os.path.isfile(path) else path)
     res = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
     return _sanitize_for_json(res)
+
+@bottle.route('/api/biblioteca/guardar', method=['POST', 'OPTIONS'])
+def api_biblioteca_guardar():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    try:
+        data = bottle.request.json or {}
+        libraries = data.get("libraries", [])
+        active_id = data.get("active_id", "")
+        payload = {
+            "libraries": libraries,
+            "active_id": active_id,
+            "updated_at": time.time()
+        }
+        data_dir = os.path.join(BASE_DIR, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        file_path = os.path.join(data_dir, "saved_library.json")
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "count": len(libraries)}
+    except Exception as e:
+        bottle.response.status = 500
+        return {"status": "error", "message": str(e)}
+
+@bottle.route('/api/biblioteca/cargar', method=['GET', 'OPTIONS'])
+def api_biblioteca_cargar():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    try:
+        file_path = os.path.join(BASE_DIR, "data", "saved_library.json")
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+            return {"status": "success", "data": payload}
+        return {"status": "empty", "data": None}
+    except Exception as e:
+        bottle.response.status = 500
+        return {"status": "error", "message": str(e)}
+
+@bottle.route('/api/rpc/<method_name>', method=['POST', 'OPTIONS'])
+def api_rpc_handler(method_name):
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    data = bottle.request.json or {}
+    args = data.get("args", [])
+    kwargs = data.get("kwargs", {})
+    if not isinstance(args, list):
+        args = [args]
+    func = globals().get(method_name)
+    if func and callable(func):
+        try:
+            res = func(*args, **kwargs)
+            return {"status": "ok", "result": _sanitize_for_json(res)}
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+    if hasattr(audit_svc, method_name):
+        try:
+            res = getattr(audit_svc, method_name)(*args, **kwargs)
+            return {"status": "ok", "result": _sanitize_for_json(res)}
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+    bottle.response.status = 404
+    return {"status": "error", "message": f"Método RPC '{method_name}' no encontrado"}
 
 @bottle.route('/api/audit/progress', method=['GET', 'OPTIONS'])
 def api_audit_progress():
