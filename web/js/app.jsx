@@ -2,7 +2,7 @@ import { ShellIcons } from './shell/icons.jsx';
 import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
-import { WsButton, ToolbarDivider, ExportMenu, AddToCollectionMenu, FilterMenu, IngestDropzone, CamelotKeyBadge } from './shell/workspace-ui.jsx';
+import { WsButton, ToolbarDivider, ExportMenu, AddToCollectionMenu, FilterMenu, IngestDropzone, CamelotKeyBadge, BeatWaveBrandIdentity } from './shell/workspace-ui.jsx';
 import { PricingModal } from './shell/pricing-modal.jsx';
 import { RegisterFlowModal } from './shell/register-modal.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from './shell/map-overlays.jsx';
@@ -37,7 +37,9 @@ import {
     SetBuilderWorkspace,
     MapWorkspace,
     KnowledgeWorkspace,
-    CopilotWorkspace
+    CopilotWorkspace,
+    CopilotLaunchModal,
+    AppCinematicIntro
 } from './workspaces/index.js';
 import { 
     TableHarmonicWaveform, 
@@ -100,6 +102,10 @@ const useIsTrackPlaying = (trackId) => {
 const Icons = {
     ...ShellIcons,
     Edit: ShellIcons.Pencil,
+};
+
+const AppTutorialModal = ({ isOpen, onClose, activeTab, setActiveTab, initialMode = 'launcher' }) => {
+    return null;
 };
 
 // Componente Principal de la Aplicación

@@ -1,5 +1,5 @@
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
-import { Icons } from '../shell/icons.jsx';
+import { Icons, PlatformRekordboxLogo, PlatformSeratoLogo, PlatformTraktorLogo, PlatformVirtualDjLogo } from '../shell/icons.jsx';
 import { 
     TableHarmonicWaveform, 
     RekordboxWaveform, 
@@ -33,7 +33,19 @@ import {
     DuplicateComparisonModal, 
     HotCueStudioModal 
 } from '../modals/index.js';
-import { SectionTitle, InfoTip, RotaryKnob, getAudioEQNodes } from '../shell/workspace-ui.jsx';
+import { 
+    SectionTitle, 
+    InfoTip, 
+    RotaryKnob, 
+    getAudioEQNodes, 
+    WsButton, 
+    ToolbarDivider, 
+    ExportMenu, 
+    AddToCollectionMenu, 
+    FilterMenu, 
+    IngestDropzone, 
+    CamelotKeyBadge 
+} from '../shell/workspace-ui.jsx';
 
 // Resumen Compacto y Elegante de los 8 Hot Cues para la columna derecha de Auditoría
 const CompactHotCuesSummary = ({ track, cues = NV2_COLORS, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {

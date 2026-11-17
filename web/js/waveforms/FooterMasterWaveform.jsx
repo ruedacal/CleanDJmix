@@ -1,4 +1,4 @@
-const { useEffect, useRef } = React;
+const { useEffect, useRef, useCallback } = React;
 import { NV2_COLORS } from '../data/constants.js';
 import { getTrackHash, computeTrackStructuralBands } from './waveformUtils.js';
 

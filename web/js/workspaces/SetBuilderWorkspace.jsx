@@ -2,6 +2,7 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
+import { SectionTitle } from '../shell/workspace-ui.jsx';
 
 // =========================================================================
 // ESPACIO DE TRABAJO: SET-BUILDER & ENERGY FLOW CANVAS (MOTOR ROBUSTO)

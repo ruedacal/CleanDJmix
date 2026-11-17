@@ -1,8 +1,9 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
-import { Icons } from '../shell/icons.jsx';
+import { Icons, ShellIcons } from '../shell/icons.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from '../shell/map-overlays.jsx';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
+import { SectionTitle } from '../shell/workspace-ui.jsx';
 
 // =========================================================================
 // ESPACIO DE TRABAJO: SCATTER MAP (PAISAJE ESPACIAL 2D DE COMPATIBILIDAD MUSICAL)

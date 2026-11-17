@@ -1,5 +1,8 @@
 const { useState, useEffect, useRef } = React;
 import { Icons } from '../shell/icons.jsx';
+import { SectionTitle } from '../shell/workspace-ui.jsx';
+import { getValidCover } from '../data/constants.js';
+import { Phase1FastRecognizer } from '../modules/Phase1FastRecognizer.ts';
 
 // Espacio de Trabajo: Shazam Audio Intelligence (Reconocimiento por Micrófono y Subida de Archivos)
 export const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {

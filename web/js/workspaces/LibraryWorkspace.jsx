@@ -3,6 +3,7 @@ import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
+import { CamelotKeyBadge } from '../shell/workspace-ui.jsx';
 
 // ─── PALETA Y CONSTANTES DE COLOR PARA CARPETAS Y CRATES ────────────────────
 export const FOLDER_COLORS = [

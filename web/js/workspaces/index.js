@@ -11,4 +11,4 @@ export { TrendsWorkspace } from './TrendsWorkspace.jsx';
 export { SetBuilderWorkspace } from './SetBuilderWorkspace.jsx';
 export { MapWorkspace } from './MapWorkspace.jsx';
 export { KnowledgeWorkspace } from './KnowledgeWorkspace.jsx';
-export { CopilotWorkspace } from './CopilotWorkspace.jsx';
+export { CopilotWorkspace, CopilotLaunchModal, AppCinematicIntro } from './CopilotWorkspace.jsx';

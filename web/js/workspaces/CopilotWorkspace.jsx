@@ -2,6 +2,7 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
 import { CopilotSeratoWaveform, computeTrackStructuralBands } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover, NV2_COLORS } from '../data/constants.js';
+import { BeatWaveLogoBadge, BeatWaveBrandIdentity } from '../shell/workspace-ui.jsx';
 
 // =======================================================
 // WORKSPACE IN-APP: BEATWAVE LIVE COPILOT (CABINA)
@@ -1620,7 +1621,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 // =======================================================
 // MODAL SELECTOR Y LANZADOR DE BEATWAVE LIVE COPILOT
 // =======================================================
-const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
+export const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
     const [copilotInfo, setCopilotInfo] = useState({ local_ip: '127.0.0.1', companion_url: '/copilot.html', simulation_mode: false, platform_mode: 'auto', platforms: [] });
     const [copied, setCopied] = useState(false);
     const [qrShown, setQrShown] = useState(false);
@@ -1899,169 +1900,6 @@ const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                             <Icons.Brain size={13} /> {copilotInfo.simulation_mode ? 'Simulación Activa' : 'Activar Simulación'}
                         </button>
                     </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ==============================================================================
-// ==============================================================================
-// LOGOTIPO CORPORATIVO BEATWAVE PRO (5 BARRAS ANIMADAS EN BUCLE CONSTANTE DE 3S)
-// ==============================================================================
-const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
-    return (
-        <div 
-            className={`relative rounded-full flex items-center justify-center shrink-0 bw-brand-logo-badge size-${size} select-none transition-all duration-300 ${className}`}
-        >
-            {/* SVG Vectorial Nativo de 5 Barras Ecualizadoras Animadas en Cian Corporativo */}
-            <svg 
-                viewBox="0 0 100 100" 
-                className="w-[74%] h-[74%] overflow-visible" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <defs>
-                    <linearGradient id="bw-bar-cyan-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#a5f3fc" />
-                        <stop offset="25%" stopColor="#67e8f9" />
-                        <stop offset="55%" stopColor="#22d3ee" />
-                        <stop offset="100%" stopColor="#0891b2" />
-                    </linearGradient>
-                    <filter id="bw-bar-glow-fx" x="-30%" y="-30%" width="160%" height="160%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#06b6d4" floodOpacity="0.95" />
-                    </filter>
-                </defs>
-
-                <g filter="url(#bw-bar-glow-fx)">
-                    {/* Barra 1 (Izquierda exterior) */}
-                    <rect 
-                        x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" ry="5.9" 
-                        fill="url(#bw-bar-cyan-grad)" 
-                        className="bw-equalizer-bar-1" 
-                    />
-                    {/* Barra 2 (Izquierda interior) */}
-                    <rect 
-                        x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" ry="5.9" 
-                        fill="url(#bw-bar-cyan-grad)" 
-                        className="bw-equalizer-bar-2" 
-                    />
-                    {/* Barra 3 (Centro - Pico Máximo) */}
-                    <rect 
-                        x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" ry="5.9" 
-                        fill="url(#bw-bar-cyan-grad)" 
-                        className="bw-equalizer-bar-3" 
-                    />
-                    {/* Barra 4 (Derecha interior) */}
-                    <rect 
-                        x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" ry="5.9" 
-                        fill="url(#bw-bar-cyan-grad)" 
-                        className="bw-equalizer-bar-4" 
-                    />
-                    {/* Barra 5 (Derecha exterior) */}
-                    <rect 
-                        x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" ry="5.9" 
-                        fill="url(#bw-bar-cyan-grad)" 
-                        className="bw-equalizer-bar-5" 
-                    />
-                </g>
-            </svg>
-        </div>
-    );
-};
-
-// ==============================================================================
-// CANONICAL BRAND IDENTITY LOGO (COMPARTIDO EXACTAMENTE EN HEADER Y EN HERO/INTRO)
-// ==============================================================================
-const BeatWaveBrandIdentity = ({ 
-    variant = 'hero', // 'header' | 'hero'
-    isTechnoActive = false, 
-    onClick = null,
-    className = '' 
-}) => {
-    const isHero = variant === 'hero';
-    const badgeSize = isHero ? 'hero' : 'sm'; // hero: 76px / sm: 36px
-    const titleSize = isHero ? 48 : 24;       // font-size en px (Syne 800)
-    const proSize = isHero ? 19 : 10.5;       // font-size de PRO en px (Inter 900)
-    const proBorder = isHero ? 2.5 : 1.5;     // grosor del borde
-    const proRadius = isHero ? 12 : 8;        // radio del borde
-    const proPx = isHero ? 12 : 7;            // padding horizontal
-    const proPy = isHero ? 3 : 1.5;           // padding vertical
-    const subSize = isHero ? 18.5 : 11;       // font-size de PRECISION • AUDIO • INTELLIGENCE (más grande y nítida)
-    const dotSize = isHero ? 28 : 17;         // puntos separadores notablemente más grandes
-    const subGap = isHero ? 7 : 3.5;          // margen entre título y subtítulo
-    const mainGap = isHero ? 22 : 12;         // espacio entre el badge y el texto
-
-    return (
-        <div 
-            onClick={onClick}
-            className={`inline-flex items-center select-none ${onClick ? 'cursor-pointer' : ''} group ${className}`}
-            style={{ columnGap: `${mainGap}px` }}
-        >
-            {/* 1. Badge Circular Oficial */}
-            <BeatWaveLogoBadge size={badgeSize} />
-
-            {/* 2. Bloque Tipográfico Limpio Sin Efectos de Texto con Proporción 1:1 */}
-            <div className="flex flex-col justify-center text-left shrink-0 select-none">
-                {/* Fila 1: BEATWAVE + PRO (Sin sombras ni halos de texto) */}
-                <div className="flex items-center leading-none" style={{ gap: isHero ? '12px' : '7px' }}>
-                    <span 
-                        className={`font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${
-                            isTechnoActive ? 'anim-soundwave' : ''
-                        }`}
-                        style={{ 
-                            fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif",
-                            fontWeight: 800,
-                            fontSize: `${titleSize}px`,
-                            lineHeight: 1
-                        }}
-                    >
-                        <span className="text-white">BEAT</span>
-                        <span className="text-cyan-400">WAVE</span>
-                    </span>
-                    <span 
-                        className="font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase"
-                        style={{
-                            fontFamily: "Inter, -apple-system, sans-serif",
-                            fontWeight: 900,
-                            fontSize: `${proSize}px`,
-                            padding: `${proPy}px ${proPx}px`,
-                            borderRadius: `${proRadius}px`,
-                            border: `${proBorder}px solid #22d3ee`,
-                            lineHeight: 1
-                        }}
-                    >
-                        PRO
-                    </span>
-                </div>
-
-                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE (Tipografía mayor y puntos grandes centrados) */}
-                <div 
-                    className="w-full flex justify-between items-center text-cyan-200 select-none leading-none"
-                    style={{
-                        fontFamily: "Inter, -apple-system, sans-serif",
-                        fontWeight: 800,
-                        fontSize: `${subSize}px`,
-                        letterSpacing: '0.11em',
-                        marginTop: `${subGap}px`,
-                        lineHeight: 1
-                    }}
-                >
-                    <span>PRECISION</span>
-                    <span 
-                        className="text-cyan-400 font-black inline-flex items-center justify-center select-none" 
-                        style={{ fontSize: `${dotSize}px`, lineHeight: 0, transform: 'translateY(-1px)' }}
-                    >
-                        •
-                    </span>
-                    <span>AUDIO</span>
-                    <span 
-                        className="text-cyan-400 font-black inline-flex items-center justify-center select-none" 
-                        style={{ fontSize: `${dotSize}px`, lineHeight: 0, transform: 'translateY(-1px)' }}
-                    >
-                        •
-                    </span>
-                    <span>INTELLIGENCE</span>
                 </div>
             </div>
         </div>
@@ -2369,7 +2207,7 @@ const CleanLineKineticStudioStage = () => {
     );
 };
 
-const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
+export const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
 
     const [phase, setPhase] = useState('video'); // 'video' | 'portal'

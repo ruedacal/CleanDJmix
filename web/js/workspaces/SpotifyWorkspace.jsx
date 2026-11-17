@@ -1,8 +1,9 @@
-const { useState, useEffect, useRef, useCallback } = React;
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../waveforms/index.js';
-import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
+import { DEFAULT_VINYL_SVG, getValidCover, DEFAULT_POOL_COLUMNS, POOL_COLUMN_CATEGORIES } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
+import { SectionTitle } from '../shell/workspace-ui.jsx';
 
 // Espacio de Trabajo: Record Pool Ingest
 export const SpotifyWorkspace = ({ 

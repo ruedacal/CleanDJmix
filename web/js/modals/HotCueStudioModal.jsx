@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
-import { NV2_COLORS } from '../data/constants.js';
+import { NV2_COLORS, getValidCover } from '../data/constants.js';
 import { ZoomableRekordboxWaveform, parseDurationMs, formatMsToTime } from '../waveforms/index.js';
 
 // Modal de Estudio Completo de Hot Cues & Beatgrid Rekordbox con Reproductor Dedicado y Guardado por Pista

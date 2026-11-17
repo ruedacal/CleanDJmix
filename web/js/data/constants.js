@@ -43,3 +43,79 @@ export function getHarmonicKeyDisplay(k) {
     return mus ? `${clean} (${mus})` : clean;
 }
 
+// Configuración y Categorías de Columnas Visibles para Record Pool
+export const DEFAULT_POOL_COLUMNS = {
+    select: true,
+    play: true,
+    title: true,
+    match_score: true,
+    artist: true,
+    genre: true,
+    subgenre: true,
+    origin: true,
+    pre_quality_tier: true,
+    format: true,
+    sample_rate_khz: true,
+    bitrate_kbps: true,
+    calidad: true,
+    cutoff_khz: true,
+    duration: true,
+    bpm: true,
+    key: true,
+    energy: true,
+    danceability: true,
+    intensity: true,
+    valence: true,
+    status: true
+};
+
+export const POOL_COLUMN_CATEGORIES = [
+    {
+        id: 'identity',
+        name: 'Identificación & Catálogo',
+        icon: '🎵',
+        color: 'text-djcyan-400',
+        columns: [
+            { key: 'select', label: 'Selector (#)', desc: 'Casilla para selección de descargas por lote' },
+            { key: 'play', label: 'Play / Previa', desc: 'Botón de reproducción instantánea' },
+            { key: 'title', label: 'Título / Álbum', desc: 'Nombre del track, portada y álbum' },
+            { key: 'artist', label: 'Artista', desc: 'Intérprete o productor principal' },
+            { key: 'origin', label: 'Origen', desc: 'Fuente de procedencia (Búsqueda, Reemplazo HD, etc.)' }
+        ]
+    },
+    {
+        id: 'fidelity',
+        name: 'Fidelidad & Pre-Auditoría',
+        icon: '💎',
+        color: 'text-amber-400',
+        columns: [
+            { key: 'match_score', label: 'Match Acústico (%)', desc: 'Fidelidad de coincidencia respecto a la búsqueda' },
+            { key: 'pre_quality_tier', label: 'Nivel Fidelidad', desc: 'Tier FLAC / MP3 / Transcode detectado' },
+            { key: 'format', label: 'Formato Contenedor', desc: 'Extensión y códec de audio' },
+            { key: 'sample_rate_khz', label: 'Muestreo (kHz)', desc: 'Frecuencia de muestreo (44.1, 48, 96 kHz)' },
+            { key: 'bitrate_kbps', label: 'Bitrate (kbps)', desc: 'Tasa de bits por segundo' },
+            { key: 'calidad', label: 'Calidad Serato (%)', desc: 'Puntuación global de calidad' },
+            { key: 'cutoff_khz', label: 'Corte Nyquist (kHz)', desc: 'Frecuencia de corte espectral observada' }
+        ]
+    },
+    {
+        id: 'dj_metrics',
+        name: 'Métricas DJ & Armonía',
+        icon: '⚡',
+        color: 'text-emerald-400',
+        columns: [
+            { key: 'duration', label: 'Duración', desc: 'Tiempo total de reproducción' },
+            { key: 'bpm', label: 'BPM', desc: 'Tempo cuantizado' },
+            { key: 'key', label: 'Tonalidad Camelot', desc: 'Clave armónica para mezcla' },
+            { key: 'energy', label: 'Energía (%)', desc: 'Intensidad sonora percibida' },
+            { key: 'danceability', label: 'Bailabilidad (%)', desc: 'Fuerza del pulso rítmico' },
+            { key: 'intensity', label: 'Intensidad', desc: 'Nivel dinámico en vivo' },
+            { key: 'valence', label: 'Positividad (Valence)', desc: 'Carácter emocional del track' },
+            { key: 'genre', label: 'Género Raíz', desc: 'Categoría musical principal' },
+            { key: 'subgenre', label: 'Subgénero Estilo', desc: 'Estilo específico de pista' },
+            { key: 'status', label: 'Estado / Descarga', desc: 'Progreso y botón de acción individual' }
+        ]
+    }
+];
+
+

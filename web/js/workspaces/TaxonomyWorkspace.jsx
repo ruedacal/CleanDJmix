@@ -1,6 +1,9 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
 import { DJ_CURATED_CATALOG, TAXONOMY_TREE, CAMELOT_WHEEL_DATA, AI_PROMPT_CHIPS, parseAIDJQuery } from '../data/djCatalog.js';
+import { SectionTitle, CamelotKeyBadge } from '../shell/workspace-ui.jsx';
+import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
+import { CamelotWheelModal } from '../modals/index.js';
 
 // Espacio de Trabajo: Taxonomía, Buscador Inteligente IA (Estilo Cuenca Music) y Ruteo a Serato Crates
 export const TaxonomyWorkspace = ({ 

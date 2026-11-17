@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 import { Icons } from '../shell/icons.jsx';
 import { useDrawerResize } from '../shell/hooks.js';
 

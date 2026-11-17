@@ -1,7 +1,8 @@
-const { useState, useEffect, useRef, useCallback } = React;
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
 import { ZoomableRekordboxWaveform, parseDurationMs, formatMsToTime, parseTimeToMs } from '../waveforms/index.js';
-import { NV2_COLORS } from '../data/constants.js';
+import { NV2_COLORS, getValidCover } from '../data/constants.js';
+import { SectionTitle, InfoTip, RotaryKnob, getAudioEQNodes } from '../shell/workspace-ui.jsx';
 
 
 // =========================================================================
@@ -2536,88 +2537,4 @@ export const HotCuesWorkspace = ({
     );
 };
 
-// Configuración y Categorías de Columnas Visibles para Record Pool
-const DEFAULT_POOL_COLUMNS = {
-    select: true,
-    play: true,
-    title: true,
-    match_score: true,
-    artist: true,
-    genre: true,
-    subgenre: true,
-    origin: true,
-    pre_quality_tier: true,
-    format: true,
-    sample_rate_khz: true,
-    bitrate_kbps: true,
-    calidad: true,
-    cutoff_khz: true,
-    duration: true,
-    bpm: true,
-    key: true,
-    energy: true,
-    danceability: true,
-    intensity: true,
-    valence: true,
-    status: true
-};
-
-const POOL_COLUMN_CATEGORIES = [
-    {
-        id: 'identity',
-        name: 'Identificación & Catálogo',
-        icon: '🎵',
-        color: 'text-djcyan-400',
-        columns: [
-            { key: 'select', label: 'Selector (#)', desc: 'Casilla para selección de descargas por lote' },
-            { key: 'play', label: 'Play / Previa', desc: 'Botón de reproducción instantánea' },
-            { key: 'title', label: 'Título / Álbum', desc: 'Nombre del track, portada y álbum' },
-            { key: 'artist', label: 'Artista', desc: 'Intérprete o productor principal' },
-            { key: 'origin', label: 'Origen', desc: 'Fuente de procedencia (Búsqueda, Reemplazo HD, etc.)' }
-        ]
-    },
-    {
-        id: 'fidelity',
-        name: 'Fidelidad & Pre-Auditoría',
-        icon: '💎',
-        color: 'text-amber-400',
-        columns: [
-            { key: 'match_score', label: 'Match Acústico (%)', desc: 'Fidelidad de coincidencia respecto a la búsqueda' },
-            { key: 'pre_quality_tier', label: 'Pre-Auditoría (Valor)', desc: 'Dictamen de máster 24-bit / 16-bit Lossless' },
-            { key: 'status', label: 'Estado / Acción', desc: 'Estado de descarga y veredicto' }
-        ]
-    },
-    {
-        id: 'quality',
-        name: 'Pureza Sonora & Espectro',
-        icon: '🔬',
-        color: 'text-emerald-400',
-        columns: [
-            { key: 'format', label: 'Formato Audio', desc: 'Extensión y códec (FLAC, WAV, AIFF, MP3)' },
-            { key: 'sample_rate_khz', label: 'Frecuencia (kHz)', desc: 'Tasa de muestreo (44.1, 48, 96 kHz)' },
-            { key: 'bitrate_kbps', label: 'Bitrate (kbps)', desc: 'Tasa de bits real calculada' },
-            { key: 'calidad', label: 'Calidad Master', desc: 'Certificación acústica y pureza' },
-            { key: 'cutoff_khz', label: 'Pérdida / Corte FFT', desc: 'Frecuencia de corte para cazar fakes' }
-        ]
-    },
-    {
-        id: 'dj',
-        name: 'Taxonomía & Cabina DJ',
-        icon: '🎛️',
-        color: 'text-purple-400',
-        columns: [
-            { key: 'genre', label: 'Género Musical', desc: 'Clasificación electrónica primaria' },
-            { key: 'subgenre', label: 'Subgénero', desc: 'Taxonomía electrónica de precisión' },
-            { key: 'duration', label: 'Duración (Time)', desc: 'Tiempo total de reproducción MM:SS' },
-            { key: 'bpm', label: 'Tempo (BPM)', desc: 'Velocidad en pulsos por minuto' },
-            { key: 'key', label: 'Tonalidad (Key)', desc: 'Rueda armónica Camelot' },
-            { key: 'energy', label: 'Energía (⚡ %)', desc: 'Intensidad acústica percibida' },
-            { key: 'danceability', label: 'Bailabilidad (🕺 %)', desc: 'Regularidad rítmica para pista' },
-            { key: 'intensity', label: 'Intensidad (🔥 %)', desc: 'Nivel de excitación y pegada acústica (Arousal)' },
-            { key: 'valence', label: 'Positividad (✨ %)', desc: 'Valencia afectiva y brillo positivo (Valence)' }
-        ]
-    }
-];
-
-// Espacio de Trabajo: Record Pool Ingest
 

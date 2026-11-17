@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
 
 // ─── UX CABINA: Detección Automática de Sistema Operativo ──────────────────
