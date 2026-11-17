@@ -23695,17 +23695,23 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
             minScoreClub: 92,
             minScoreStudio: 88,
             probationMinScore: 76,
+            rescueEndpoint: '/v1/rescue',
+            rescueTimeoutMs: 8000,
+            autoRescuePhase2: true,
             onStateChange: (ev) => {
                 setRadarEvent(ev);
                 if (ev.state === 'MATCH_CONFIRMED' && ev.match) {
+                    const sourceLabel = ev.match.source === 'local_olaf' 
+                        ? 'Olaf LMDB' 
+                        : (ev.match.source?.startsWith('gpu_') ? 'GPU Neural Rescue' : 'ACRCloud Edge');
                     const matchItem = {
                         title: ev.match.title,
                         artist: ev.match.artist,
                         album: ev.match.album || `${ev.match.title} - Single`,
                         genre: ev.match.genres?.[0] || 'Electronic',
-                        subgenre: 'Peak-Time Techno',
+                        subgenre: ev.match.stemIsolated ? `Stem: ${ev.match.stemIsolated}` : 'Peak-Time Techno',
                         score: ev.match.score,
-                        motor_usado: `BeatWave Radar C++ [${ev.match.source === 'local_olaf' ? 'Olaf LMDB' : 'ACRCloud Edge'}]`,
+                        motor_usado: `BeatWave Radar C++ [${sourceLabel}]`,
                         play_offset_ms: ev.match.playOffsetMs,
                         rho: ev.rho,
                         status: 'ok'
@@ -23715,6 +23721,10 @@ const ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
                     setHistory(prev => [matchItem, ...prev.filter(item => item.title !== matchItem.title || item.artist !== matchItem.artist)]);
                 } else if (ev.state === 'ESCALATE_PHASE2') {
                     setStatusMsg(`⚠️ ${ev.message}`);
+                } else if (ev.state === 'RESCUING_PHASE2') {
+                    setStatusMsg(`🚀 ${ev.message}`);
+                } else if (ev.state === 'UNIDENTIFIED_ID') {
+                    setStatusMsg(`❌ ${ev.message}`);
                 } else if (ev.state === 'PROBATION_BUFFER') {
                     setStatusMsg(`⏳ ${ev.message}`);
                 } else if (ev.state === 'TIMEOUT_FALLBACK') {

@@ -1,13 +1,10 @@
 (() => {
-  var __defProp = Object.defineProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
     get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
   }) : x)(function(x) {
     if (typeof require !== "undefined") return require.apply(this, arguments);
     throw Error('Dynamic require of "' + x + '" is not supported');
   });
-  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // web/js/shell/icons.jsx
   var makeIcon = (children, { filled = false, defaultClass = "", defaultSize = 16 } = {}) => {
@@ -597,21 +594,18 @@
       /* @__PURE__ */ React.createElement(ShellIcons.Plus, { size: 15 }),
       /* @__PURE__ */ React.createElement("span", { className: "ws-btn-label" }, "Llevar a Colecci\xF3n"),
       /* @__PURE__ */ React.createElement(ShellIcons.ChevronDown, { size: 14, className: `transition-transform duration-200 ${open ? "rotate-180" : ""}` })
-    ), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "ws-menu left-0 w-80 bw-fade-in z-50 shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-3 py-2 border-b border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-heading !p-0" }, "Crate de Destino"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold" }, selectedCount, " ", selectedCount === 1 ? "pista" : "pistas")), /* @__PURE__ */ React.createElement("div", { className: "max-h-56 overflow-y-auto py-1" }, activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders.map((folder) => {
-      var _a;
-      return /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: folder.id,
-          type: "button",
-          role: "menuitem",
-          className: "ws-menu-row w-full flex items-center justify-between hover:bg-white/5",
-          onClick: () => handleSelect(folder)
-        },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400" }, /* @__PURE__ */ React.createElement(ShellIcons.Folder, { size: 15 })), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title truncate text-xs" }, folder.name)),
-        /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-white/5 shrink-0 ml-2" }, ((_a = folder.tracks) == null ? void 0 : _a.length) || 0)
-      );
-    }) : /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2 text-xs text-zinc-500 font-mono italic" }, "No hay crates creados a\xFAn.")), /* @__PURE__ */ React.createElement("div", { className: "ws-menu-sep" }), isCreating ? /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreate, className: "p-2 flex flex-col gap-1.5 bg-black/40" }, /* @__PURE__ */ React.createElement(
+    ), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "ws-menu left-0 w-80 bw-fade-in z-50 shadow-2xl" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-3 py-2 border-b border-white/10" }, /* @__PURE__ */ React.createElement("span", { className: "ws-menu-heading !p-0" }, "Crate de Destino"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold" }, selectedCount, " ", selectedCount === 1 ? "pista" : "pistas")), /* @__PURE__ */ React.createElement("div", { className: "max-h-56 overflow-y-auto py-1" }, activeLib.folders && activeLib.folders.length > 0 ? activeLib.folders.map((folder) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: folder.id,
+        type: "button",
+        role: "menuitem",
+        className: "ws-menu-row w-full flex items-center justify-between hover:bg-white/5",
+        onClick: () => handleSelect(folder)
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400" }, /* @__PURE__ */ React.createElement(ShellIcons.Folder, { size: 15 })), /* @__PURE__ */ React.createElement("span", { className: "ws-menu-title truncate text-xs" }, folder.name)),
+      /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-white/5 shrink-0 ml-2" }, folder.tracks?.length || 0)
+    )) : /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2 text-xs text-zinc-500 font-mono italic" }, "No hay crates creados a\xFAn.")), /* @__PURE__ */ React.createElement("div", { className: "ws-menu-sep" }), isCreating ? /* @__PURE__ */ React.createElement("form", { onSubmit: handleCreate, className: "p-2 flex flex-col gap-1.5 bg-black/40" }, /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -660,7 +654,6 @@
     zinc: "bg-zinc-500"
   };
   var FilterMenu = ({ value, onChange, groups, allLabel = "Todas las pistas", allCount = 0 }) => {
-    var _a;
     const [open, setOpen] = useState2(false);
     const rootRef = useDismissable(open, setOpen);
     const flat = groups.flatMap((g) => g.options);
@@ -676,8 +669,8 @@
         onClick: () => setOpen((v) => !v)
       },
       /* @__PURE__ */ React.createElement(ShellIcons.Filter, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", { className: "ws-btn-label" }, isFiltered ? active == null ? void 0 : active.label : "Filtros"),
-      /* @__PURE__ */ React.createElement("span", { className: `ws-count ${isFiltered ? "ws-count-on" : ""}` }, isFiltered ? (_a = active == null ? void 0 : active.count) != null ? _a : 0 : allCount),
+      /* @__PURE__ */ React.createElement("span", { className: "ws-btn-label" }, isFiltered ? active?.label : "Filtros"),
+      /* @__PURE__ */ React.createElement("span", { className: `ws-count ${isFiltered ? "ws-count-on" : ""}` }, isFiltered ? active?.count ?? 0 : allCount),
       /* @__PURE__ */ React.createElement(ShellIcons.ChevronDown, { size: 14 })
     ), isFiltered && /* @__PURE__ */ React.createElement("button", { type: "button", className: "ws-icon-btn", onClick: () => onChange("todos"), "aria-label": "Quitar filtro" }, /* @__PURE__ */ React.createElement(ShellIcons.Close, { size: 14 })), open && /* @__PURE__ */ React.createElement("div", { role: "menu", className: "ws-menu left-0 w-64 bw-fade-in" }, /* @__PURE__ */ React.createElement(
       "button",
@@ -795,13 +788,12 @@
     const [billing, setBilling] = useState3("annual");
     const dialogRef = useRef4(null);
     useEffect4(() => {
-      var _a;
       if (!isOpen) return void 0;
       const onKey = (e) => {
-        if (e.key === "Escape") onClose == null ? void 0 : onClose();
+        if (e.key === "Escape") onClose?.();
       };
       document.addEventListener("keydown", onKey);
-      (_a = dialogRef.current) == null ? void 0 : _a.focus();
+      dialogRef.current?.focus();
       return () => document.removeEventListener("keydown", onKey);
     }, [isOpen, onClose]);
     if (!isOpen) return null;
@@ -823,7 +815,7 @@
         {
           type: "button",
           className: `ws-btn ws-btn-${plan.variant} w-full justify-center h-10`,
-          onClick: () => onSelectPlan == null ? void 0 : onSelectPlan(plan.id, billing)
+          onClick: () => onSelectPlan?.(plan.id, billing)
         },
         plan.id === "lifetime" && /* @__PURE__ */ React.createElement(ShellIcons.Infinity, { size: 14 }),
         plan.cta
@@ -865,17 +857,16 @@
     const [paymentError, setPaymentError] = useState4("");
     const dialogRef = useRef5(null);
     useEffect5(() => {
-      var _a;
       if (!isOpen) return;
       setStep(1);
       setStep1Error("");
       setPaymentError("");
       setIsProcessing(false);
       const onKey = (e) => {
-        if (e.key === "Escape" && !isProcessing) onClose == null ? void 0 : onClose();
+        if (e.key === "Escape" && !isProcessing) onClose?.();
       };
       document.addEventListener("keydown", onKey);
-      (_a = dialogRef.current) == null ? void 0 : _a.focus();
+      dialogRef.current?.focus();
       return () => document.removeEventListener("keydown", onKey);
     }, [isOpen]);
     if (!isOpen) return null;
@@ -1887,20 +1878,220 @@
     };
   }
 
+  // web/js/modules/Phase2RescueClient.ts
+  var Phase2RescueClient = class _Phase2RescueClient {
+    rescueEndpoint;
+    timeoutMs;
+    onRescueProgress;
+    isRescuing = false;
+    constructor(config = {}) {
+      this.rescueEndpoint = config.rescueEndpoint || "/v1/rescue";
+      this.timeoutMs = config.timeoutMs || 8e3;
+      this.onRescueProgress = config.onRescueProgress;
+    }
+    /**
+     * Extrae el buffer FLAC retenido a 16 kHz en memoria RAM desde el bridge nativo.
+     * Soporta JSI (React Native), N-API (Desktop / Tauri) y Node.js.
+     */
+    static retrieveNativeFlacBuffer(fallbackAudio, sampleRate = 44100) {
+      const globalJsi = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
+      if (globalJsi && typeof globalJsi.getEscalationBufferFLAC === "function") {
+        try {
+          const res = globalJsi.getEscalationBufferFLAC(fallbackAudio, sampleRate);
+          if (res && res instanceof Uint8Array && res.byteLength > 0) {
+            return res;
+          }
+        } catch (e) {
+          console.warn("[Phase2RescueClient] Error en JSI getEscalationBufferFLAC:", e);
+        }
+      }
+      if (typeof window !== "undefined" && window.beatwaveCore?.getEscalationBufferFLAC) {
+        try {
+          const res = window.beatwaveCore.getEscalationBufferFLAC(fallbackAudio, sampleRate);
+          if (res && res instanceof Uint8Array && res.byteLength > 0) {
+            return res;
+          }
+        } catch (e) {
+          console.warn("[Phase2RescueClient] Error en window.beatwaveCore getEscalationBufferFLAC:", e);
+        }
+      }
+      try {
+        if (typeof process !== "undefined" && process.versions && process.versions.node) {
+          const nodeRequire = typeof __require === "function" ? __require : typeof module !== "undefined" && module.require ? module.require : null;
+          if (nodeRequire) {
+            const nodePath = "path";
+            const pathMod = nodeRequire(nodePath);
+            const nodeAddonPath = pathMod.resolve("native/build/beatwave_core.node");
+            const napi = nodeRequire(nodeAddonPath);
+            if (typeof napi.getEscalationBufferFLAC === "function") {
+              const res = napi.getEscalationBufferFLAC(fallbackAudio, sampleRate);
+              if (res && res instanceof Uint8Array && res.byteLength > 0) {
+                return res;
+              }
+            }
+          }
+        }
+      } catch {
+      }
+      return null;
+    }
+    /**
+     * Orquesta la subida asíncrona del búfer FLAC al microservicio GPU Cloud.
+     * No bloquea el hilo de renderizado (UI), aplica AbortController con timeout de 8s.
+     */
+    async rescueTrack(request) {
+      const startTime = Date.now();
+      this.isRescuing = true;
+      this.emitProgress("UPLOADING", `Preparando payload FLAC para rescate neuronal GPU (Motivo: ${request.reason})...`);
+      let flacBytes = request.flacBuffer;
+      if (!flacBytes || flacBytes.byteLength === 0) {
+        flacBytes = _Phase2RescueClient.retrieveNativeFlacBuffer();
+      }
+      if (!flacBytes || flacBytes.byteLength === 0) {
+        this.isRescuing = false;
+        const msg = "No se encontr\xF3 un b\xFAfer FLAC retenido v\xE1lido en memoria RAM para el rescate";
+        this.emitProgress("FAILED", msg);
+        return {
+          success: false,
+          state: "UNIDENTIFIED_ID",
+          match: null,
+          latencyMs: Date.now() - startTime,
+          reason: request.reason,
+          errorMessage: msg,
+          diagnosticLog: `[Phase2RescueClient] Buffer FLAC vac\xEDo. Estado final marcado como UNIDENTIFIED_ID.`
+        };
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, this.timeoutMs);
+      try {
+        const formData = new FormData();
+        const blobBytes = flacBytes.buffer.slice(flacBytes.byteOffset, flacBytes.byteOffset + flacBytes.byteLength);
+        const flacBlob = new Blob([blobBytes], { type: "audio/flac" });
+        formData.append("audio", flacBlob, "escalation_rescue.flac");
+        formData.append("reason", request.reason);
+        formData.append("rho", request.rho.toString());
+        formData.append("environment", request.environment);
+        formData.append("timestamp", (request.timestampQueryMs || Date.now()).toString());
+        if (request.candidateHint) {
+          formData.append("candidate_hint", JSON.stringify(request.candidateHint));
+        }
+        this.emitProgress("PROCESSING_GPU", `Audio FLAC transmitido (${(flacBytes.byteLength / 1024).toFixed(1)} KB). Inferencia Conformer + Source Separation en ejecuci\xF3n...`);
+        const response = await fetch(this.rescueEndpoint, {
+          method: "POST",
+          headers: {
+            "X-Client-Platform": "BeatWave-Hybrid-Phase2",
+            "X-Escalation-Reason": request.reason
+          },
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        const elapsed = Date.now() - startTime;
+        if (!response.ok) {
+          const statusText = response.statusText || `HTTP ${response.status}`;
+          const msg = `El servidor GPU respondi\xF3 con error de rescate: ${statusText}`;
+          this.isRescuing = false;
+          this.emitProgress("FAILED", msg);
+          return {
+            success: false,
+            state: "UNIDENTIFIED_ID",
+            match: null,
+            latencyMs: elapsed,
+            reason: request.reason,
+            errorMessage: msg,
+            diagnosticLog: `[Phase2RescueClient] Error HTTP ${response.status} tras ${elapsed} ms. Marcado UNIDENTIFIED_ID.`
+          };
+        }
+        const data = await response.json();
+        if (data?.status === "success" && data?.match) {
+          const match = {
+            title: data.match.title || "Desconocido",
+            artist: data.match.artist || "Artista Desconocido",
+            album: data.match.album,
+            label: data.match.label,
+            score: Number(data.match.score || 95),
+            stemIsolated: data.match.stem_isolated || "full_mix",
+            tempoWarpApplied: data.match.tempo_warp_applied ? Number(data.match.tempo_warp_applied) : void 0,
+            source: data.match.source || "gpu_neural_conformer",
+            playOffsetMs: data.match.play_offset_ms,
+            genres: data.match.genres || ["Electronic"],
+            acrid: data.match.acrid
+          };
+          this.isRescuing = false;
+          this.emitProgress("RESOLVED", `\u2713 Pista rescatada por red neuronal (${match.artist} - ${match.title}, Score: ${match.score}%)`);
+          return {
+            success: true,
+            state: "RESCUED_MATCH",
+            match,
+            latencyMs: elapsed,
+            reason: request.reason,
+            diagnosticLog: `[Phase2RescueClient] Coincidencia neuronal verificada: ${match.artist} - ${match.title} en ${elapsed} ms.`
+          };
+        }
+        this.isRescuing = false;
+        const notFoundMsg = "El motor neuronal GPU no hall\xF3 coincidencias concluyentes en el cat\xE1logo vectorial";
+        this.emitProgress("FAILED", notFoundMsg);
+        return {
+          success: false,
+          state: "UNIDENTIFIED_ID",
+          match: null,
+          latencyMs: elapsed,
+          reason: request.reason,
+          errorMessage: notFoundMsg,
+          diagnosticLog: `[Phase2RescueClient] ANN Search no arroj\xF3 vecinos cercanos suficientes. Marcado definitivamente como UNIDENTIFIED_ID.`
+        };
+      } catch (err) {
+        clearTimeout(timeoutId);
+        this.isRescuing = false;
+        const elapsed = Date.now() - startTime;
+        const error = err;
+        const isTimeout = error.name === "AbortError" || error.message?.includes("aborted") || elapsed >= this.timeoutMs;
+        const errDescription = isTimeout ? `Timeout extendido de rescate agotado tras ${elapsed} ms (l\xEDmite: ${this.timeoutMs} ms)` : `Fallo de red o transporte: ${error.message || "Error desconocido"}`;
+        this.emitProgress("FAILED", errDescription);
+        return {
+          success: false,
+          state: "UNIDENTIFIED_ID",
+          match: null,
+          latencyMs: elapsed,
+          reason: request.reason,
+          errorMessage: errDescription,
+          diagnosticLog: `[Phase2RescueClient] ${errDescription}. Pista marcada definitivamente como UNIDENTIFIED_ID.`
+        };
+      }
+    }
+    getIsRescuing() {
+      return this.isRescuing;
+    }
+    emitProgress(stage, message) {
+      if (this.onRescueProgress) {
+        try {
+          this.onRescueProgress(stage, message);
+        } catch (e) {
+          console.error("[Phase2RescueClient] Error en callback de progreso:", e);
+        }
+      }
+    }
+  };
+
   // web/js/modules/Phase1FastRecognizer.ts
   var Phase1FastRecognizer = class {
+    workerGatewayUrl;
+    environment;
+    totalBudgetMs;
+    minScoreStudio;
+    minScoreClub;
+    probationMinScore;
+    onStateChange;
+    // Cliente de Rescate Neuronal GPU (Fase 2)
+    rescueClient;
+    autoRescuePhase2;
+    // Buffer de probación para confirmación en el siguiente stride de 2.0s
+    probationBuffer = /* @__PURE__ */ new Map();
+    lastConfirmedTrack = null;
+    isBusy = false;
     constructor(config) {
-      __publicField(this, "workerGatewayUrl");
-      __publicField(this, "environment");
-      __publicField(this, "totalBudgetMs");
-      __publicField(this, "minScoreStudio");
-      __publicField(this, "minScoreClub");
-      __publicField(this, "probationMinScore");
-      __publicField(this, "onStateChange");
-      // Buffer de probación para confirmación en el siguiente stride de 2.0s
-      __publicField(this, "probationBuffer", /* @__PURE__ */ new Map());
-      __publicField(this, "lastConfirmedTrack", null);
-      __publicField(this, "isBusy", false);
       this.workerGatewayUrl = config.workerGatewayUrl.replace(/\/+$/, "");
       this.environment = config.environment || "club";
       this.totalBudgetMs = config.totalBudgetMs || 1750;
@@ -1908,6 +2099,23 @@
       this.minScoreClub = config.minScoreClub || 92;
       this.probationMinScore = config.probationMinScore || 76;
       this.onStateChange = config.onStateChange;
+      this.autoRescuePhase2 = config.autoRescuePhase2 !== false;
+      this.rescueClient = new Phase2RescueClient({
+        rescueEndpoint: config.rescueEndpoint || "/v1/rescue",
+        timeoutMs: config.rescueTimeoutMs || 8e3,
+        onRescueProgress: (stage, message) => {
+          if (stage === "PROCESSING_GPU" || stage === "UPLOADING") {
+            this.emitState(
+              "RESCUING_PHASE2",
+              null,
+              1,
+              true,
+              null,
+              `[Fase 2 GPU] ${message}`
+            );
+          }
+        }
+      });
     }
     setEnvironment(env) {
       this.environment = env;
@@ -1926,7 +2134,6 @@
      * Aplica Promise.race con un presupuesto estricto de 1,750 ms y ejecución concurrente.
      */
     async recognizeBuffer(audioPcm, sampleRate = 44100) {
-      var _a;
       if (this.isBusy) {
         return this.buildEvent(
           "CAPTURING",
@@ -1953,7 +2160,7 @@
         this.isBusy = false;
         const error = err;
         const elapsed = Date.now() - startTime;
-        if ((_a = error.message) == null ? void 0 : _a.includes("ABSOLUTE_TIMEOUT_EXCEEDED")) {
+        if (error.message?.includes("ABSOLUTE_TIMEOUT_EXCEEDED")) {
           const event = this.buildEvent(
             "TIMEOUT_FALLBACK",
             null,
@@ -2032,7 +2239,92 @@
       const { rho, pitchShiftSuspected } = this.calculateTemporalCoherence(bestCandidate);
       const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry);
       this.notifyListener(event);
+      if (event.state === "ESCALATE_PHASE2" && this.autoRescuePhase2) {
+        this.triggerPhase2Rescue(event, audioPcm).catch((err) => {
+          console.error("[Phase1FastRecognizer] Error no capturado en rescate Fase 2:", err);
+        });
+      }
       return event;
+    }
+    /**
+     * Orquesta el Rescate Neuronal de Fase 2 (GPU Cloud)
+     * Puede invocarse de manera automática ante ESCALATE_PHASE2 o explícitamente desde la UI.
+     */
+    async triggerPhase2Rescue(escalationEvent, fallbackAudio) {
+      const startTime = Date.now();
+      let reason = "TIME_DRIFT_SUSPECTED_PITCH";
+      if (escalationEvent.pitchShiftSuspected) {
+        reason = "TIME_DRIFT_SUSPECTED_PITCH";
+      } else if (escalationEvent.match && escalationEvent.match.score < this.probationMinScore) {
+        reason = "LOW_CONFIDENCE_PROBATION_EXHAUSTED";
+      } else {
+        reason = "MANUAL_RESCUE_TRIGGER";
+      }
+      this.emitState(
+        "RESCUING_PHASE2",
+        escalationEvent.match,
+        escalationEvent.rho,
+        true,
+        escalationEvent.telemetry,
+        `\u{1F680} Rescate Neuronal Fase 2 activo: aislando stems y corrigiendo pitch-shift en GPU (Motivo: ${reason})...`
+      );
+      const rescueResult = await this.rescueClient.rescueTrack({
+        reason,
+        rho: escalationEvent.rho,
+        environment: this.environment,
+        candidateHint: escalationEvent.match ? {
+          artist: escalationEvent.match.artist,
+          title: escalationEvent.match.title,
+          score: escalationEvent.match.score
+        } : null,
+        timestampQueryMs: escalationEvent.timestamp
+      });
+      const elapsed = Date.now() - startTime;
+      const telemetry = {
+        rmsDbfs: escalationEvent.telemetry?.rmsDbfs ?? -16,
+        peakDbfs: escalationEvent.telemetry?.peakDbfs ?? -1,
+        isClipping: escalationEvent.telemetry?.isClipping ?? false,
+        durationMs: 1e4,
+        sampleRate: 16e3,
+        environment: this.environment,
+        latencyMs: elapsed
+      };
+      if (rescueResult.success && rescueResult.match) {
+        const confirmedMatch = {
+          title: rescueResult.match.title,
+          artist: rescueResult.match.artist,
+          album: rescueResult.match.album,
+          label: rescueResult.match.label,
+          score: rescueResult.match.score,
+          playOffsetMs: rescueResult.match.playOffsetMs || 0,
+          timestampQueryMs: Date.now(),
+          source: rescueResult.match.source,
+          genres: rescueResult.match.genres,
+          stemIsolated: rescueResult.match.stemIsolated,
+          tempoWarpApplied: rescueResult.match.tempoWarpApplied
+        };
+        const confirmedEvent = this.buildEvent(
+          "MATCH_CONFIRMED",
+          confirmedMatch,
+          escalationEvent.rho,
+          false,
+          telemetry,
+          `\u2713 Pista identificada mediante Rescate Neuronal GPU (${confirmedMatch.artist} - ${confirmedMatch.title}, Stem: ${confirmedMatch.stemIsolated || "mix"}, Warp: ${confirmedMatch.tempoWarpApplied ? confirmedMatch.tempoWarpApplied + "%" : "0%"})`
+        );
+        this.lastConfirmedTrack = confirmedMatch;
+        this.notifyListener(confirmedEvent);
+        return confirmedEvent;
+      }
+      const unidentifiedEvent = this.buildEvent(
+        "UNIDENTIFIED_ID",
+        null,
+        escalationEvent.rho,
+        escalationEvent.pitchShiftSuspected,
+        telemetry,
+        `\u274C UNIDENTIFIED_ID: Pista no identificada tras agotar escaneo r\xE1pido y rescate neuronal (${rescueResult.errorMessage || "Sin coincidencias en cat\xE1logo vectorial"}).`
+      );
+      this.notifyListener(unidentifiedEvent);
+      return unidentifiedEvent;
     }
     /**
      * Cálculo de Coherencia Temporal rho:
@@ -2143,8 +2435,14 @@
       }
       try {
         if (typeof process !== "undefined" && process.versions && process.versions.node) {
-          const napiModule = __require("../../../native/build/beatwave_core.node");
-          return napiModule.processAudioBuffer(audio, profile, sampleRate);
+          const nodeRequire = typeof __require === "function" ? __require : typeof module !== "undefined" && module.require ? module.require : null;
+          if (nodeRequire) {
+            const nodePath = "path";
+            const pathMod = nodeRequire(nodePath);
+            const nodeAddonPath = pathMod.resolve("native/build/beatwave_core.node");
+            const napiModule = nodeRequire(nodeAddonPath);
+            return napiModule.processAudioBuffer(audio, profile, sampleRate);
+          }
         }
       } catch {
       }
@@ -2178,7 +2476,6 @@
      * Búsqueda en catálogo remoto vía Cloudflare Worker Gateway
      */
     async queryRemoteGateway(acrcloudFingerprint) {
-      var _a, _b, _c, _d, _e, _f;
       if (!acrcloudFingerprint || acrcloudFingerprint.byteLength === 0) return null;
       const response = await fetch(this.workerGatewayUrl, {
         method: "POST",
@@ -2192,21 +2489,21 @@
         return null;
       }
       const data = await response.json();
-      const music = (_b = (_a = data == null ? void 0 : data.metadata) == null ? void 0 : _a.music) == null ? void 0 : _b[0];
+      const music = data?.metadata?.music?.[0];
       if (!music) {
         return null;
       }
       return {
         title: music.title || "Desconocido",
-        artist: ((_d = (_c = music.artists) == null ? void 0 : _c[0]) == null ? void 0 : _d.name) || "Artista Desconocido",
-        album: (_e = music.album) == null ? void 0 : _e.name,
+        artist: music.artists?.[0]?.name || "Artista Desconocido",
+        album: music.album?.name,
         acrid: music.acrid,
         score: Number(music.score || 85),
         playOffsetMs: Number(music.play_offset_ms || 3e4),
         timestampQueryMs: Date.now(),
         source: "remote_acrcloud",
         label: music.label,
-        genres: ((_f = music.genres) == null ? void 0 : _f.map((g) => g.name)) || []
+        genres: music.genres?.map((g) => g.name) || []
       };
     }
     /**
@@ -2740,7 +3037,7 @@
     const beatPhase = (curMs - downbeatMs) / beatMs;
     const rawEnergy = track ? track.energy !== void 0 ? parseFloat(track.energy) : track.e !== void 0 ? parseFloat(track.e) : 0.65 : 0.65;
     const energy = Math.max(0.35, Math.min(1, rawEnergy <= 1 ? rawEnergy : rawEnergy / 10));
-    const role = String((track == null ? void 0 : track.acoustic_role) || (track == null ? void 0 : track.role) || (track == null ? void 0 : track.genre) || "").toLowerCase();
+    const role = String(track?.acoustic_role || track?.role || track?.genre || "").toLowerCase();
     const isBassDriver = role.includes("bass") || role.includes("sub") || role.includes("techno") || role.includes("tech");
     const isVocalLead = role.includes("vocal") || role.includes("lead") || role.includes("melodic") || role.includes("anthem");
     const isPercussive = role.includes("drum") || role.includes("perc") || role.includes("tool") || role.includes("groove");
@@ -3071,7 +3368,6 @@
     onToggleSnap,
     onToggleGrid
   }) => {
-    var _a, _b;
     const canvasRef = useRef6(null);
     const containerRef = useRef6(null);
     const [draggingCueIdx, setDraggingCueIdx] = useState5(null);
@@ -3348,8 +3644,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           className: "absolute top-1 pointer-events-none z-50 px-2 py-0.5 bg-black/90 border border-djcyan-400 rounded shadow-xl text-center transform -translate-x-1/2 flex items-center gap-1.5",
           style: { left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }
         },
-        /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: ((_a = activeCues[dragInfo.idx]) == null ? void 0 : _a.color) || "#ef4444" } }),
-        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", ((_b = activeCues[dragInfo.idx]) == null ? void 0 : _b.id) || dragInfo.idx + 1, ":"),
+        /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: activeCues[dragInfo.idx]?.color || "#ef4444" } }),
+        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", activeCues[dragInfo.idx]?.id || dragInfo.idx + 1, ":"),
         /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-djcyan-400" }, dragInfo.time),
         /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-gray-300" }, "(", dragInfo.bar, ")"),
         snapToGrid && /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded" }, "Snap")
@@ -3420,7 +3716,6 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     height = 160,
     lang = "es"
   }) => {
-    var _a, _b;
     const scrollContainerRef = useRef6(null);
     const canvasRef = useRef6(null);
     const minimapCanvasRef = useRef6(null);
@@ -3834,7 +4129,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           return /* @__PURE__ */ React.createElement(
             "div",
             {
-              key: `${(track == null ? void 0 : track.id) || "trk"}_wave_cue_${idx}`,
+              key: `${track?.id || "trk"}_wave_cue_${idx}`,
               style: {
                 left: `${cuePct}%`,
                 animation: "cuePointCascadeBeam 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
@@ -3887,8 +4182,8 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
             className: "absolute -top-7 -translate-x-1/2 bg-djzinc-900 text-white px-2 py-0.5 rounded border border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)] flex items-center gap-1.5 pointer-events-none z-30 whitespace-nowrap",
             style: { left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }
           },
-          /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: ((_a = activeCues[dragInfo.idx]) == null ? void 0 : _a.color) || "#ef4444" } }),
-          /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", ((_b = activeCues[dragInfo.idx]) == null ? void 0 : _b.id) || dragInfo.idx + 1, ":"),
+          /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: activeCues[dragInfo.idx]?.color || "#ef4444" } }),
+          /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", activeCues[dragInfo.idx]?.id || dragInfo.idx + 1, ":"),
           /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-djcyan-400" }, dragInfo.time),
           /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-gray-300" }, "(", dragInfo.bar, ")"),
           snapToGrid && /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded" }, "Snap")
@@ -4405,8 +4700,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       const w = el.clientWidth || 640;
       buildBitmap(w);
       const ro = new ResizeObserver((entries) => {
-        var _a;
-        const newW = ((_a = entries[0]) == null ? void 0 : _a.contentRect.width) | 0;
+        const newW = entries[0]?.contentRect.width | 0;
         if (newW > 0) buildBitmap(newW);
       });
       ro.observe(el);
@@ -5210,7 +5504,6 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       });
     }
     const handleConfirmDelete = async () => {
-      var _a;
       const pathsToDelete = Object.keys(selectedToDelete).filter((p) => selectedToDelete[p]);
       if (pathsToDelete.length === 0) {
         alert("No has seleccionado ninguna pista duplicada para eliminar.");
@@ -5232,7 +5525,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
             }
             onClose();
           } else {
-            alert(`Error al eliminar: ${((_a = res == null ? void 0 : res.errores) == null ? void 0 : _a.join(", ")) || "Fallo de permisos en disco"}`);
+            alert(`Error al eliminar: ${res?.errores?.join(", ") || "Fallo de permisos en disco"}`);
           }
         }
       } catch (err) {
@@ -5243,7 +5536,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
         setStatusMsg("");
       }
     };
-    const displayedGrupos = (dupData == null ? void 0 : dupData.grupos) ? filterOnlyWithDups ? dupData.grupos.filter((g) => (g.duplicados_a_eliminar || 0) > 0) : dupData.grupos : [];
+    const displayedGrupos = dupData?.grupos ? filterOnlyWithDups ? dupData.grupos.filter((g) => (g.duplicados_a_eliminar || 0) > 0) : dupData.grupos : [];
     return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-djzinc-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" }, /* @__PURE__ */ React.createElement("div", { className: "px-6 py-4 border-b border-djzinc-800 bg-djzinc-950 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(Icons.Scale, { size: 14, className: "inline-block align-[-2px] p-2 bg-amber-500/10 text-amber-400 rounded-lg  border border-amber-500/20" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-sm uppercase tracking-wider text-white font-mono" }, "Comparador & Deduplicador Ac\xFAstico"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-gray-400" }, "Compara duplicados cara a cara (FLAC vs MP3, Bitrate, Cutoff Nyquist FFT, tama\xF1o) y conserva la m\xE1xima calidad protegiendo versiones DJ."))), /* @__PURE__ */ React.createElement("button", { onClick: onClose, className: "w-7 h-7 rounded-full bg-djzinc-800 text-gray-400 hover:text-white flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }))), dupData && /* @__PURE__ */ React.createElement("div", { className: "px-6 py-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center justify-between text-xs font-mono flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Grupos: ", /* @__PURE__ */ React.createElement("strong", { className: "text-djcyan-400" }, dupData.total_grupos)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Duplicados: ", /* @__PURE__ */ React.createElement("strong", { className: "text-amber-400" }, dupData.total_duplicados)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-300" }, "Espacio recuperable: ", /* @__PURE__ */ React.createElement("strong", { className: "text-emerald-400" }, dupData.espacio_recuperable_mb, " MB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("label", { className: "flex items-center gap-1.5 text-[11px] text-gray-300 cursor-pointer select-none" }, /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -6650,9 +6943,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     );
   };
   var detectClientOS = () => {
-    var _a;
     if (typeof window === "undefined" || typeof navigator === "undefined") return "mac";
-    const ua = (((_a = navigator.userAgentData) == null ? void 0 : _a.platform) || navigator.platform || navigator.userAgent || "").toLowerCase();
+    const ua = (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || "").toLowerCase();
     if (ua.includes("mac") || ua.includes("darwin") || ua.includes("iphone") || ua.includes("ipad")) return "mac";
     if (ua.includes("win")) return "windows";
     if (ua.includes("linux")) return "linux";
@@ -8170,7 +8462,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     onLoadFolderFromDisk,
     currentFolder = ""
   }) => {
-    var _a;
     const [activeLibId, setActiveLibId] = useState5(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
     const [libNameInput, setLibNameInput] = useState5("");
     const [newFolderName, setNewFolderName] = useState5("");
@@ -8223,7 +8514,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
           setSelectedFolderId(currentLib.folders[0].id);
         }
       }
-    }, [currentLib == null ? void 0 : currentLib.id]);
+    }, [currentLib?.id]);
     const handleCreateNewLibrary = () => {
       const newId = `lib_${Date.now()}`;
       const newLib = {
@@ -8385,16 +8676,13 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
     };
     const activeFolder = (currentLib.folders || []).find((f) => f.id === selectedFolderId) || currentLib.folders && currentLib.folders[0];
-    const folderTracks = (activeFolder == null ? void 0 : activeFolder.tracks) || [];
+    const folderTracks = activeFolder?.tracks || [];
     const filteredFolderTracks = folderTracks.filter((t) => {
       if (!searchTrack.trim()) return true;
       const q = searchTrack.toLowerCase();
       return t.title && t.title.toLowerCase().includes(q) || t.artist && t.artist.toLowerCase().includes(q);
     });
-    const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => {
-      var _a2;
-      return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
-    }, 0);
+    const totalTracksInLib = (currentLib.folders || []).reduce((acc, f) => acc + (f.tracks?.length || 0), 0);
     return /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070812" }, className: "w-full h-full flex flex-col text-gray-200 select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#0d0f1e", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }, className: "px-6 py-4 flex items-center justify-between shrink-0 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3.5" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-cyan-950/90 border border-cyan-500/60 flex items-center justify-center text-cyan-400 text-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0 font-black" }, /* @__PURE__ */ React.createElement(Icons.Knowledge, { size: 20 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("h3", { className: "text-base sm:text-lg font-sans font-bold uppercase text-white tracking-wider" }, "COLECCI\xD3N & CRATES PERSONALIZADOS"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-600/60 px-2.5 py-0.5 rounded-full font-mono font-bold" }, totalTracksInLib, " PISTAS EN COLECCI\xD3N")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-zinc-400 font-mono mt-0.5" }, "GESTOR AVANZADO DE COLECCI\xD3N, CARPETAS VIRTUALES, AGRUPACIONES POR G\xC9NERO Y MATERIALIZACI\xD3N F\xCDSICA EN DISCO / USB"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), onLoadFolderFromDisk && /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -8426,10 +8714,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         },
         className: "px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
       },
-      libraries.map((lib) => {
-        var _a2;
-        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.length) || 0, " carpetas)");
-      })
+      libraries.map((lib) => /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", lib.folders?.length || 0, " carpetas)"))
     ), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -8470,7 +8755,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         },
         className: "p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0 select-none"
       },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", currentLib.folders?.length || 0, ")")), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -8503,10 +8788,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         "+ Crear"
       )),
       /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib.folders || currentLib.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-6 text-center text-gray-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea una arriba o pulsa "Auto por G\xE9nero".') : currentLib.folders.map((f) => {
-        var _a2;
         const isSelected = selectedFolderId === f.id;
         const isDropOver = dragOverFolderId === f.id;
-        const trCount = ((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0;
+        const trCount = f.tracks?.length || 0;
         return /* @__PURE__ */ React.createElement(
           "div",
           {
@@ -8576,7 +8860,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         className: `w-1.5 hover:w-2 transition-all cursor-col-resize shrink-0 relative flex items-center justify-center select-none z-20 group ${isResizing ? "bg-cyan-500 shadow-[0_0_12px_#06b6d4] w-2" : "bg-white/5 hover:bg-cyan-500/80 hover:shadow-[0_0_8px_rgba(6,182,212,0.6)]"}`
       },
       /* @__PURE__ */ React.createElement("div", { className: "w-0.5 h-8 bg-zinc-600 rounded-full group-hover:bg-cyan-200 transition-colors" })
-    ), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, backgroundColor: "#0a0b18", minWidth: 0, display: "flex", flexDirection: "column" }, className: "flex-1 p-5 flex flex-col gap-3.5 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300" }, (activeFolder == null ? void 0 : activeFolder.name) || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta \u2022 Arrastra pistas a cualquier carpeta de la izquierda")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, backgroundColor: "#0a0b18", minWidth: 0, display: "flex", flexDirection: "column" }, className: "flex-1 p-5 flex flex-col gap-3.5 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between shrink-0" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Pistas en: ", /* @__PURE__ */ React.createElement("span", { className: "text-cyan-300" }, activeFolder?.name || "Ninguna carpeta"))), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, folderTracks.length, " pista(s) en esta carpeta \u2022 Arrastra pistas a cualquier carpeta de la izquierda")), activeFolder && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -8620,7 +8904,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         className: "w-full pl-8 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-gray-500 outline-none focus:border-cyan-400"
       }
     )), /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#070810", borderColor: "rgba(255, 255, 255, 0.08)" }, className: "flex-1 overflow-y-auto custom-scrollbar divide-y divide-zinc-850/60 border rounded-xl p-2" }, !activeFolder || folderTracks.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-12 text-center text-gray-500 font-mono text-xs flex flex-col items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Esta carpeta est\xE1 vac\xEDa."), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] text-gray-600" }, 'Pulsa "+ A\xF1adir Todas" o arrastra pistas aqu\xED para organizarlas.')) : filteredFolderTracks.map((tr, tIdx) => {
-      var _a2;
       const trKey = tr.id || tr.file_path || tIdx;
       return /* @__PURE__ */ React.createElement(
         "div",
@@ -8634,7 +8917,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
           className: "py-1.5 px-2 flex items-center justify-between gap-2 hover:bg-zinc-900/60 rounded-lg group cursor-grab active:cursor-grabbing border border-transparent hover:border-zinc-700/60 transition-all",
           title: "Arrastra esta pista hacia cualquier carpeta de la izquierda para reasignarla"
         },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600 group-hover:text-cyan-400 select-none text-xs font-mono" }, "\u22EE\u22EE"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-gray-500 w-5" }, tIdx + 1), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, tr.title || tr.filename || ((_a2 = tr.file_path) == null ? void 0 : _a2.split("/").pop()) || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 block truncate" }, tr.artist || "Artista desconocido", " \u2022 ", tr.genre || tr.subgenre || "Electr\xF3nica", " \u2022 ", tr.bpm ? `${Math.round(tr.bpm)} BPM` : "", " ", tr.key || ""))),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600 group-hover:text-cyan-400 select-none text-xs font-mono" }, "\u22EE\u22EE"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-gray-500 w-5" }, tIdx + 1), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, tr.title || tr.filename || tr.file_path?.split("/").pop() || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400 block truncate" }, tr.artist || "Artista desconocido", " \u2022 ", tr.genre || tr.subgenre || "Electr\xF3nica", " \u2022 ", tr.bpm ? `${Math.round(tr.bpm)} BPM` : "", " ", tr.key || ""))),
         /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -8699,7 +8982,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     onClearCrateFilter,
     onOpenBeatgridStudio
   }) => {
-    var _a;
     const [localRutaOrigen, setLocalRutaOrigen] = useState5("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
@@ -8904,7 +9186,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
     };
     const handleCargarColeccionGuardada = () => {
-      var _a2;
       const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
       const colTracks = [];
       const seenKeys = /* @__PURE__ */ new Set();
@@ -8921,7 +9202,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       if (colTracks.length > 0) {
         setTracks(colTracks);
-        setSelectedTrack(((_a2 = colTracks[0]) == null ? void 0 : _a2.id) || null);
+        setSelectedTrack(colTracks[0]?.id || null);
         setSaveFeedback(lang === "en" ? `\u2713 Loaded ${colTracks.length} tracks from Colecci\xF3n` : `\u2713 Colecci\xF3n cargada (${colTracks.length} pistas)`);
       } else {
         setSaveFeedback(lang === "en" ? "Your saved Colecci\xF3n is empty. Add tracks with 'Llevar a Colecci\xF3n'." : "Tu Colecci\xF3n guardada est\xE1 vac\xEDa. A\xF1ade pistas con 'Llevar a Colecci\xF3n'.");
@@ -9103,7 +9384,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     };
     const updateCurrentTrackField = (field, val) => {
       setTracks((prev) => prev.map((t2) => {
-        if (t2.id !== (currentTrack == null ? void 0 : currentTrack.id)) return t2;
+        if (t2.id !== currentTrack?.id) return t2;
         const updated = { ...t2, [field]: val };
         if (field === "bpm" || field === "b") {
           const bpmNum = parseFloat(val);
@@ -9179,19 +9460,19 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       return (tracks || []).filter((t2) => isFlacUpgradeCandidate(t2));
     }, [tracks]);
     const missingMetaTracks = useMemo(() => {
-      return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido");
+      return (tracks || []).filter((t2) => !t2?.title || !t2?.t || String(t2?.title || t2?.t).toLowerCase().trim() === "untitled" || !t2?.artist || !t2?.a || String(t2?.artist || t2?.a).toLowerCase().trim() === "desconocido");
     }, [tracks]);
     const missingCuesTracks = useMemo(() => {
-      return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues));
+      return (tracks || []).filter((t2) => !t2?.cues || Array.isArray(t2?.cues) && t2?.cues.length === 0 || !t2?.hotcues);
     }, [tracks]);
     const trimmedSilenceTracks = useMemo(() => {
-      return (tracks || []).filter((t2) => Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim)));
+      return (tracks || []).filter((t2) => Boolean(t2?.trim_start_ms && t2?.trim_start_ms > 0 || t2?.silence_trimmed || t2?.zero_cross_trim));
     }, [tracks]);
     const excellentQualityTracks = useMemo(() => {
-      return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320));
+      return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && (t2?.format === "FLAC" || t2?.format === "WAV" || t2?.format === "AIFF" || t2?.bitrate_kbps && t2?.bitrate_kbps >= 320));
     }, [tracks]);
     const highEnergyTracks = useMemo(() => {
-      return (tracks || []).filter((t2) => Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75);
+      return (tracks || []).filter((t2) => Number(t2?.e || t2?.energy || 0) >= 75);
     }, [tracks]);
     const handleToggleSelectRow = (id, e) => {
       if (e && e.stopPropagation) e.stopPropagation();
@@ -9280,7 +9561,6 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         setBatchProgress(90);
         setBatchStatusMsg(`\u2713 ${results.length} pistas transferidas a Descargas. Redirigiendo a Pool Ingest...`);
         const formattedTracks = results.map((r, i) => {
-          var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
           const isVerified = (r.match_score !== void 0 ? r.match_score >= 80 : true) && r.es_misma_pista !== false;
           return {
             id: `sp_hd_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
@@ -9293,12 +9573,12 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
             duration: r.duration || "03:45",
             origin: "audit_upgrade",
             reemplazo_de: r.reemplazo_de || r.filename || (targetTracks[i] ? `${targetTracks[i].artist || targetTracks[i].a || ""} - ${targetTracks[i].title || targetTracks[i].t || ""}` : null),
-            original_file: r.original_file || r.filename || ((_a2 = targetTracks[i]) == null ? void 0 : _a2.filename) || ((_b = targetTracks[i]) == null ? void 0 : _b.f) || null,
-            original_path: r.original_path || ((_c = targetTracks[i]) == null ? void 0 : _c.path) || ((_d = targetTracks[i]) == null ? void 0 : _d.filepath) || ((_e = targetTracks[i]) == null ? void 0 : _e.f) || null,
-            original_duration: r.original_duration || ((_f = targetTracks[i]) == null ? void 0 : _f.duration) || null,
-            original_artist: r.original_artist || ((_g = targetTracks[i]) == null ? void 0 : _g.artist) || ((_h = targetTracks[i]) == null ? void 0 : _h.a) || "Desconocido",
-            original_title: r.original_title || ((_i = targetTracks[i]) == null ? void 0 : _i.title) || ((_j = targetTracks[i]) == null ? void 0 : _j.t) || "Sin T\xEDtulo",
-            original_calidad: r.original_calidad || ((_k = targetTracks[i]) == null ? void 0 : _k.calidad) || null,
+            original_file: r.original_file || r.filename || targetTracks[i]?.filename || targetTracks[i]?.f || null,
+            original_path: r.original_path || targetTracks[i]?.path || targetTracks[i]?.filepath || targetTracks[i]?.f || null,
+            original_duration: r.original_duration || targetTracks[i]?.duration || null,
+            original_artist: r.original_artist || targetTracks[i]?.artist || targetTracks[i]?.a || "Desconocido",
+            original_title: r.original_title || targetTracks[i]?.title || targetTracks[i]?.t || "Sin T\xEDtulo",
+            original_calidad: r.original_calidad || targetTracks[i]?.calidad || null,
             downloaded: false,
             selected: true,
             // Pre-marcar siempre para que el DJ pueda descargar inmediatamente el lote
@@ -9362,7 +9642,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
             onNavigateTab("spotify");
           }
         } else {
-          const errMsg = (err == null ? void 0 : err.message) || (typeof err === "object" ? JSON.stringify(err) : String(err)) || "Error desconocido";
+          const errMsg = err?.message || (typeof err === "object" ? JSON.stringify(err) : String(err)) || "Error desconocido";
           alert("Aviso al procesar reemplazos: " + errMsg);
         }
       } finally {
@@ -9484,7 +9764,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
             setSaveFeedback("\u2713 Enrutado a Crate Serato");
             setTimeout(() => setSaveFeedback(""), 3e3);
           } else {
-            setBatchStatusMsg((res == null ? void 0 : res.msg) || "Error al enrutar archivo.");
+            setBatchStatusMsg(res?.msg || "Error al enrutar archivo.");
           }
         }
       } catch (err) {
@@ -9575,13 +9855,12 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
     };
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
-      var _a2, _b;
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || (typeof rutaOrigen === "string" && !rutaOrigen.includes("pista") ? rutaOrigen : "") || "";
       try {
         let res = await fetchDirectoryListing(startPath);
-        if (!res || !((_a2 = res.folders) == null ? void 0 : _a2.length) && !((_b = res.files) == null ? void 0 : _b.length) && !res.current) {
+        if (!res || !res.folders?.length && !res.files?.length && !res.current) {
           res = await fetchDirectoryListing("/Users/admin/Music");
         }
         if (res) {
@@ -9826,23 +10105,23 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
             });
           }
           setBatchProgress(100);
-          setBatchStatusMsg(`\u2713 Auditor\xEDa completada: ${(res == null ? void 0 : res.total) || 0} pistas procesadas.`);
+          setBatchStatusMsg(`\u2713 Auditor\xEDa completada: ${res?.total || 0} pistas procesadas.`);
           if (typeof registrarEnBitacora === "function") {
             registrarEnBitacora({
               action: "Auditor\xEDa Ac\xFAstica DSP",
               category: "audit",
-              trackTitle: `Auditor\xEDa ${(res == null ? void 0 : res.total) || 0} pistas`,
+              trackTitle: `Auditor\xEDa ${res?.total || 0} pistas`,
               filePath: targetDesc,
               detailsBefore: "Sin certificar",
-              detailsAfter: `${(res == null ? void 0 : res.ready) || 0} Lossless OK \u2022 ${(res == null ? void 0 : res.errors) || 0} Fakes \u2022 ${(res == null ? void 0 : res.sin_meta) || 0} Sin Meta`,
-              status: ((res == null ? void 0 : res.errors) || 0) > 0 ? "\u26A0\uFE0F Con advertencias" : "\u2713 Completado",
+              detailsAfter: `${res?.ready || 0} Lossless OK \u2022 ${res?.errors || 0} Fakes \u2022 ${res?.sin_meta || 0} Sin Meta`,
+              status: (res?.errors || 0) > 0 ? "\u26A0\uFE0F Con advertencias" : "\u2713 Completado",
               fullLog: `=== REPORTE DE AUDITOR\xCDA AC\xDASTICA ===
 Directorio / Pistas: ${targetDesc}
-Total procesadas: ${(res == null ? void 0 : res.total) || 0}
-Lossless Certificadas: ${(res == null ? void 0 : res.ready) || 0}
-Transcodificaciones Fake / Corruptos: ${(res == null ? void 0 : res.errors) || 0}
-Pistas sin metadatos: ${(res == null ? void 0 : res.sin_meta) || 0}
-Duplicados detectados: ${(res == null ? void 0 : res.duplicates) || 0}
+Total procesadas: ${res?.total || 0}
+Lossless Certificadas: ${res?.ready || 0}
+Transcodificaciones Fake / Corruptos: ${res?.errors || 0}
+Pistas sin metadatos: ${res?.sin_meta || 0}
+Duplicados detectados: ${res?.duplicates || 0}
 Inspecci\xF3n FFT: Activa
 Fijaci\xF3n BeatGrid 1.0.0: Activa`
             });
@@ -9864,7 +10143,6 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
       }
     };
     const handleEjecutarAuditoriaLote = async (overrideOpts = null) => {
-      var _a2, _b, _c;
       const target = resolveAuditTargets();
       if (!target || Array.isArray(target) && target.length === 0) {
         alert("Por favor selecciona una carpeta o carga pistas sueltas primero con 'Cargar Colecci\xF3n'.");
@@ -9914,14 +10192,14 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
               registrarEnBitacora({
                 action: "Auditor\xEDa en Lote & DSP",
                 category: "audit",
-                trackTitle: `Lote ${(res == null ? void 0 : res.total) || ((_a2 = res == null ? void 0 : res.tracks) == null ? void 0 : _a2.length) || 0} pistas`,
+                trackTitle: `Lote ${res?.total || res?.tracks?.length || 0} pistas`,
                 filePath: targetDesc,
                 detailsBefore: "Pendiente de procesamiento",
-                detailsAfter: `${(res == null ? void 0 : res.total) || ((_b = res == null ? void 0 : res.tracks) == null ? void 0 : _b.length) || 0} pistas procesadas con \xE9xito`,
+                detailsAfter: `${res?.total || res?.tracks?.length || 0} pistas procesadas con \xE9xito`,
                 status: "\u2713 Completado",
                 fullLog: `=== AUDITOR\xCDA EN LOTE BEATWAVE PRO ===
 Objetivo: ${targetDesc}
-Pistas analizadas: ${((_c = res == null ? void 0 : res.tracks) == null ? void 0 : _c.length) || 0}
+Pistas analizadas: ${res?.tracks?.length || 0}
 Opciones aplicadas: ${Object.entries(opts).filter(([_, v]) => v).map(([k]) => k).join(", ")}
 Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-120Hz)" : "Desactivado"}`
               });
@@ -9963,7 +10241,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
             setTimeout(() => setSaveFeedback(""), 4e3);
           } else {
             setBatchStatusMsg("Error al exportar a Excel.");
-            alert((res == null ? void 0 : res.msg) || "Error al exportar a Excel.");
+            alert(res?.msg || "Error al exportar a Excel.");
           }
         } catch (e) {
           console.error("Error al exportar XLS:", e);
@@ -9996,7 +10274,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
             setSaveFeedback(`\u2713 Metadatos Serato inyectados en los archivos de audio`);
             setTimeout(() => setSaveFeedback(""), 4500);
           } else {
-            alert((res == null ? void 0 : res.msg) || "Error al inyectar metadatos para Serato.");
+            alert(res?.msg || "Error al inyectar metadatos para Serato.");
           }
         }
       } catch (e) {
@@ -10030,7 +10308,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
             setSaveFeedback(`\u2713 Traktor NML guardado en ${destino}`);
             setTimeout(() => setSaveFeedback(""), 4e3);
           } else {
-            alert((res == null ? void 0 : res.msg) || "Error al exportar Traktor NML.");
+            alert(res?.msg || "Error al exportar Traktor NML.");
           }
         } catch (e) {
           console.error("Error al exportar Traktor NML:", e);
@@ -10095,7 +10373,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
             setTimeout(() => setSaveFeedback(""), 4e3);
           } else {
             setBatchStatusMsg("Error al exportar rekordbox.xml.");
-            alert((res == null ? void 0 : res.msg) || "Error al exportar rekordbox.xml.");
+            alert(res?.msg || "Error al exportar rekordbox.xml.");
           }
         } catch (e) {
           console.error("Error al exportar rekordbox XML:", e);
@@ -10137,7 +10415,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
           setSaveFeedback(`\u2713 Sincronizado en ${destino}: Rekordbox XML, Traktor NML y VirtualDJ M3U`);
           setTimeout(() => setSaveFeedback(""), 5e3);
         } else {
-          alert("Error sincronizando: " + ((res == null ? void 0 : res.msg) || "Fallo inesperado"));
+          alert("Error sincronizando: " + (res?.msg || "Fallo inesperado"));
         }
       } catch (e) {
         console.error("Error en Pasaporte Universal:", e);
@@ -10152,7 +10430,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
     };
     const handleAbrirFftModal = async (trackParaAnalisis) => {
       const trk = trackParaAnalisis || currentTrack;
-      const targetPath = (trk == null ? void 0 : trk.path) || (trk == null ? void 0 : trk.f);
+      const targetPath = trk?.path || trk?.f;
       if (!targetPath) {
         alert("No hay ruta de archivo disponible para el an\xE1lisis espectral FFT.");
         return;
@@ -10193,8 +10471,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
             setSaveFeedback("\u2713 Guardado en disco e inyectado");
             setTimeout(() => setSaveFeedback(""), 3e3);
           } else {
-            setBatchStatusMsg((res == null ? void 0 : res.msg) || "Error al inyectar metadatos.");
-            alert((res == null ? void 0 : res.msg) || "Error al inyectar metadatos.");
+            setBatchStatusMsg(res?.msg || "Error al inyectar metadatos.");
+            alert(res?.msg || "Error al inyectar metadatos.");
           }
         }
       } catch (err) {
@@ -10605,7 +10883,6 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       saveFolders(updateTree(libraryFolders));
     };
     const handleAssignTracksToFolder = (targetFolderId, trackKeys) => {
-      var _a2;
       if (!trackKeys || trackKeys.length === 0) return;
       const keySet = new Set(trackKeys);
       const updateTree = (list) => list.map((f) => {
@@ -10631,7 +10908,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       });
       saveFolders(updateTree(libraryFolders));
       const target = findFolderOrSub(libraryFolders, targetFolderId);
-      setSaveFeedback(`\u2713 ${trackKeys.length} pistas asignadas a "${((_a2 = target == null ? void 0 : target.folder) == null ? void 0 : _a2.name) || "carpeta"}"`);
+      setSaveFeedback(`\u2713 ${trackKeys.length} pistas asignadas a "${target?.folder?.name || "carpeta"}"`);
     };
     const handleAutoGroupByGenre = () => {
       if (!tracks || tracks.length === 0) {
@@ -10729,7 +11006,7 @@ Pistas copiadas: ${res.total_copied}
 
 Tus archivos originales de respaldo permanecen 100% intactos.`);
           } else {
-            alert((res == null ? void 0 : res.msg) || "Error al crear la estructura en disco.");
+            alert(res?.msg || "Error al crear la estructura en disco.");
           }
         }
       } catch (err) {
@@ -10934,96 +11211,96 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }
         if (parsed && parsed.tokens && parsed.tokens.length > 0) {
           if (parsed.targetBpm) {
-            const trkBpm = parseFloat((t2 == null ? void 0 : t2.bpm) || (t2 == null ? void 0 : t2.b)) || 0;
+            const trkBpm = parseFloat(t2?.bpm || t2?.b) || 0;
             if (trkBpm > 0 && Math.abs(trkBpm - parsed.targetBpm) > 4.5) return false;
           } else if (parsed.minBpm && parsed.maxBpm) {
-            const trkBpm = parseFloat((t2 == null ? void 0 : t2.bpm) || (t2 == null ? void 0 : t2.b)) || 0;
+            const trkBpm = parseFloat(t2?.bpm || t2?.b) || 0;
             if (trkBpm < parsed.minBpm || trkBpm > parsed.maxBpm) return false;
           }
           if (parsed.key) {
-            const trkKey = ((t2 == null ? void 0 : t2.key) || (t2 == null ? void 0 : t2.k) || "").toUpperCase();
+            const trkKey = (t2?.key || t2?.k || "").toUpperCase();
             if (trkKey !== parsed.key && !parsed.compatibleKeys.includes(trkKey)) return false;
           }
           if (parsed.acousticRole) {
-            if ((t2 == null ? void 0 : t2.acoustic_role) !== parsed.acousticRole) return false;
+            if (t2?.acoustic_role !== parsed.acousticRole) return false;
           }
           if (parsed.minEnergy) {
-            const trkE = Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 80);
+            const trkE = Number(t2?.e || t2?.energy || 80);
             if (trkE < parsed.minEnergy) return false;
           }
           if (parsed.maxEnergy) {
-            const trkE = Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 80);
+            const trkE = Number(t2?.e || t2?.energy || 80);
             if (trkE > parsed.maxEnergy) return false;
           }
           if (parsed.subgenre) {
-            const sub = ((t2 == null ? void 0 : t2.subgenre) || (t2 == null ? void 0 : t2.genre) || "").toLowerCase();
+            const sub = (t2?.subgenre || t2?.genre || "").toLowerCase();
             if (!sub.includes(parsed.subgenre.toLowerCase())) return false;
           } else if (parsed.genre) {
-            const g = ((t2 == null ? void 0 : t2.genre) || "").toLowerCase();
+            const g = (t2?.genre || "").toLowerCase();
             if (!g.includes(parsed.genre.toLowerCase())) return false;
           }
         } else {
-          const m = ((t2 == null ? void 0 : t2.t) || (t2 == null ? void 0 : t2.title) || "").toLowerCase().includes(term) || ((t2 == null ? void 0 : t2.a) || (t2 == null ? void 0 : t2.artist) || "").toLowerCase().includes(term) || ((t2 == null ? void 0 : t2.f) || (t2 == null ? void 0 : t2.filename) || "").toLowerCase().includes(term);
+          const m = (t2?.t || t2?.title || "").toLowerCase().includes(term) || (t2?.a || t2?.artist || "").toLowerCase().includes(term) || (t2?.f || t2?.filename || "").toLowerCase().includes(term);
           if (!m) return false;
         }
-        if (filtro === "missing") return (t2 == null ? void 0 : t2.b) === "--" || (t2 == null ? void 0 : t2.k) === "--";
-        if (filtro === "missing_title") return Boolean((t2 == null ? void 0 : t2.missing_title) || !(t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.title.toLowerCase().trim()) === "untitled");
-        if (filtro === "missing_artist") return Boolean((t2 == null ? void 0 : t2.missing_artist) || !(t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.artist.toLowerCase().trim()) === "desconocido");
-        if (filtro === "missing_cover") return Boolean((t2 == null ? void 0 : t2.missing_cover) === true || !(t2 == null ? void 0 : t2.cover) && !(t2 == null ? void 0 : t2.has_cover));
-        if (filtro === "missing_meta") return !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido";
-        if (filtro === "missing_cues") return !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues);
-        if (filtro === "silences_trimmed") return Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim));
-        if (filtro === "excellent_quality") return !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320);
-        if (filtro === "high_energy") return Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75;
-        if (filtro === "error") return Boolean(t2 == null ? void 0 : t2.es_fake) || (t2 == null ? void 0 : t2.format) === "FLAC" && String((t2 == null ? void 0 : t2.status) || "").includes("Fake");
+        if (filtro === "missing") return t2?.b === "--" || t2?.k === "--";
+        if (filtro === "missing_title") return Boolean(t2?.missing_title || !t2?.title || t2?.title.toLowerCase().trim() === "untitled");
+        if (filtro === "missing_artist") return Boolean(t2?.missing_artist || !t2?.artist || t2?.artist.toLowerCase().trim() === "desconocido");
+        if (filtro === "missing_cover") return Boolean(t2?.missing_cover === true || !t2?.cover && !t2?.has_cover);
+        if (filtro === "missing_meta") return !t2?.title || !t2?.t || String(t2?.title || t2?.t).toLowerCase().trim() === "untitled" || !t2?.artist || !t2?.a || String(t2?.artist || t2?.a).toLowerCase().trim() === "desconocido";
+        if (filtro === "missing_cues") return !t2?.cues || Array.isArray(t2?.cues) && t2?.cues.length === 0 || !t2?.hotcues;
+        if (filtro === "silences_trimmed") return Boolean(t2?.trim_start_ms && t2?.trim_start_ms > 0 || t2?.silence_trimmed || t2?.zero_cross_trim);
+        if (filtro === "excellent_quality") return !isBadQualityTrack(t2) && (t2?.format === "FLAC" || t2?.format === "WAV" || t2?.format === "AIFF" || t2?.bitrate_kbps && t2?.bitrate_kbps >= 320);
+        if (filtro === "high_energy") return Number(t2?.e || t2?.energy || 0) >= 75;
+        if (filtro === "error") return Boolean(t2?.es_fake) || t2?.format === "FLAC" && String(t2?.status || "").includes("Fake");
         if (filtro === "bad_quality") return isBadQualityTrack(t2);
         if (filterHeaderSearch) {
           const hTerm = filterHeaderSearch.toLowerCase();
-          const matchHeader = ((t2 == null ? void 0 : t2.t) || (t2 == null ? void 0 : t2.title) || "").toLowerCase().includes(hTerm) || ((t2 == null ? void 0 : t2.f) || (t2 == null ? void 0 : t2.filename) || "").toLowerCase().includes(hTerm);
+          const matchHeader = (t2?.t || t2?.title || "").toLowerCase().includes(hTerm) || (t2?.f || t2?.filename || "").toLowerCase().includes(hTerm);
           if (!matchHeader) return false;
         }
         if (filterHeaderArtist) {
           const aTerm = filterHeaderArtist.toLowerCase();
-          if (!((t2 == null ? void 0 : t2.a) || (t2 == null ? void 0 : t2.artist) || "").toLowerCase().includes(aTerm)) return false;
+          if (!(t2?.a || t2?.artist || "").toLowerCase().includes(aTerm)) return false;
         }
         if (filterHeaderFormat !== "ALL") {
-          if (String((t2 == null ? void 0 : t2.format) || "").toUpperCase() !== filterHeaderFormat) return false;
+          if (String(t2?.format || "").toUpperCase() !== filterHeaderFormat) return false;
         }
         if (filterHeaderKhz !== "ALL") {
-          const khzVal = String((t2 == null ? void 0 : t2.sample_rate_khz) || "");
+          const khzVal = String(t2?.sample_rate_khz || "");
           if (!khzVal.includes(filterHeaderKhz)) return false;
         }
         if (filterHeaderKbps !== "ALL") {
-          const kbpsVal = Number((t2 == null ? void 0 : t2.bitrate_kbps) || 0);
+          const kbpsVal = Number(t2?.bitrate_kbps || 0);
           if (filterHeaderKbps === "320" && kbpsVal < 320) return false;
           if (filterHeaderKbps === "LOSSLESS" && kbpsVal < 700) return false;
           if (filterHeaderKbps === "LOW" && kbpsVal >= 320) return false;
         }
         if (filterHeaderQuality !== "ALL") {
-          if (!String((t2 == null ? void 0 : t2.calidad) || "").toLowerCase().includes(filterHeaderQuality.toLowerCase())) return false;
+          if (!String(t2?.calidad || "").toLowerCase().includes(filterHeaderQuality.toLowerCase())) return false;
         }
         if (filterHeaderLoss !== "ALL") {
-          const isSinPerdida = (t2 == null ? void 0 : t2.perdida) === "Sin P\xE9rdida" && !(t2 == null ? void 0 : t2.es_fake);
+          const isSinPerdida = t2?.perdida === "Sin P\xE9rdida" && !t2?.es_fake;
           if (filterHeaderLoss === "SIN_PERDIDA" && !isSinPerdida) return false;
           if (filterHeaderLoss === "CON_PERDIDA" && isSinPerdida) return false;
         }
         if (filterHeaderCutoff !== "ALL") {
-          const cutoff = Number((t2 == null ? void 0 : t2.cutoff_khz) || 0);
+          const cutoff = Number(t2?.cutoff_khz || 0);
           if (filterHeaderCutoff === "PASS" && cutoff > 0 && cutoff < 20) return false;
           if (filterHeaderCutoff === "CUT" && cutoff > 0 && cutoff >= 20) return false;
         }
         if (filterHeaderLufs !== "ALL") {
-          if (filterHeaderLufs === "CLIP" && !(t2 == null ? void 0 : t2.clipping)) return false;
-          if (filterHeaderLufs === "LOUD" && Number((t2 == null ? void 0 : t2.lufs) || -9) < -7) return false;
-          if (filterHeaderLufs === "QUIET" && Number((t2 == null ? void 0 : t2.lufs) || -9) > -14) return false;
+          if (filterHeaderLufs === "CLIP" && !t2?.clipping) return false;
+          if (filterHeaderLufs === "LOUD" && Number(t2?.lufs || -9) < -7) return false;
+          if (filterHeaderLufs === "QUIET" && Number(t2?.lufs || -9) > -14) return false;
         }
         if (filterHeaderDuration) {
           const durTerm = filterHeaderDuration.toLowerCase();
-          if (!String((t2 == null ? void 0 : t2.duration) || "").toLowerCase().includes(durTerm)) return false;
+          if (!String(t2?.duration || "").toLowerCase().includes(durTerm)) return false;
         }
         if (filterHeaderBpm) {
           const bpmTerm = filterHeaderBpm.trim();
-          const trkBpm = parseFloat((t2 == null ? void 0 : t2.bpm) || (t2 == null ? void 0 : t2.b)) || 0;
+          const trkBpm = parseFloat(t2?.bpm || t2?.b) || 0;
           if (bpmTerm.startsWith(">")) {
             const min = parseFloat(bpmTerm.slice(1)) || 0;
             if (trkBpm < min) return false;
@@ -11037,52 +11314,52 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }
         if (filterHeaderKey) {
           const keyTerm = filterHeaderKey.trim().toUpperCase();
-          const trkKey = ((t2 == null ? void 0 : t2.key) || (t2 == null ? void 0 : t2.k) || "").toUpperCase();
+          const trkKey = (t2?.key || t2?.k || "").toUpperCase();
           if (!trkKey.includes(keyTerm)) return false;
         }
         if (filterHeaderCues !== "ALL") {
-          const hasCues = Boolean((t2 == null ? void 0 : t2.cues) && Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) > 0) || Boolean(t2 == null ? void 0 : t2.hotcues);
+          const hasCues = Boolean(t2?.cues && Array.isArray(t2?.cues) && t2?.cues.length > 0) || Boolean(t2?.hotcues);
           if (filterHeaderCues === "YES" && !hasCues) return false;
           if (filterHeaderCues === "NO" && hasCues) return false;
         }
         if (filterHeaderStatus !== "ALL") {
-          const isFake = Boolean((t2 == null ? void 0 : t2.es_fake) || (t2 == null ? void 0 : t2.format) === "FLAC" && String((t2 == null ? void 0 : t2.status) || "").includes("Fake"));
+          const isFake = Boolean(t2?.es_fake || t2?.format === "FLAC" && String(t2?.status || "").includes("Fake"));
           if (filterHeaderStatus === "FAKE" && !isFake) return false;
-          if (filterHeaderStatus === "LOSSLESS" && (isFake || !String((t2 == null ? void 0 : t2.status) || "").includes("Lossless") && !String((t2 == null ? void 0 : t2.status) || "").includes("VERDADERO") && !String((t2 == null ? void 0 : t2.status) || "").includes("HI-RES"))) return false;
-          if (filterHeaderStatus === "MP3" && ((t2 == null ? void 0 : t2.format) !== "MP3" && !String((t2 == null ? void 0 : t2.status) || "").includes("MP3"))) return false;
+          if (filterHeaderStatus === "LOSSLESS" && (isFake || !String(t2?.status || "").includes("Lossless") && !String(t2?.status || "").includes("VERDADERO") && !String(t2?.status || "").includes("HI-RES"))) return false;
+          if (filterHeaderStatus === "MP3" && (t2?.format !== "MP3" && !String(t2?.status || "").includes("MP3"))) return false;
         }
         if (filterHeaderEnergy !== "ALL") {
-          const eVal = Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 80);
+          const eVal = Number(t2?.e || t2?.energy || 80);
           if (filterHeaderEnergy === "HIGH" && eVal < 80) return false;
           if (filterHeaderEnergy === "MED" && (eVal < 65 || eVal >= 80)) return false;
           if (filterHeaderEnergy === "LOW" && eVal >= 65) return false;
         }
         if (filterHeaderDance !== "ALL") {
-          const dVal = Number((t2 == null ? void 0 : t2.dance) || (t2 == null ? void 0 : t2.danceability) || 80);
+          const dVal = Number(t2?.dance || t2?.danceability || 80);
           if (filterHeaderDance === "HIGH" && dVal < 80) return false;
           if (filterHeaderDance === "MED" && (dVal < 65 || dVal >= 80)) return false;
           if (filterHeaderDance === "LOW" && dVal >= 65) return false;
         }
         if (filterHeaderPhase !== "ALL") {
-          const p = String((t2 == null ? void 0 : t2.fase_badge) || "");
+          const p = String(t2?.fase_badge || "");
           if (!p.toUpperCase().includes(filterHeaderPhase.toUpperCase())) return false;
         }
         if (filterHeaderGenre) {
           const gTerm = filterHeaderGenre.toLowerCase();
-          const trkGenre = ((t2 == null ? void 0 : t2.genre) || "House").toLowerCase();
+          const trkGenre = (t2?.genre || "House").toLowerCase();
           if (!trkGenre.includes(gTerm)) return false;
         }
         if (filterHeaderSubgenre) {
           const sgTerm = filterHeaderSubgenre.toLowerCase();
-          const trkSubgenre = ((t2 == null ? void 0 : t2.subgenre) || (TAXONOMY_TREE[(t2 == null ? void 0 : t2.genre) || "Tech House"] ? TAXONOMY_TREE[(t2 == null ? void 0 : t2.genre) || "Tech House"][0] : "Tech House")).toLowerCase();
+          const trkSubgenre = (t2?.subgenre || (TAXONOMY_TREE[t2?.genre || "Tech House"] ? TAXONOMY_TREE[t2?.genre || "Tech House"][0] : "Tech House")).toLowerCase();
           if (!trkSubgenre.includes(sgTerm)) return false;
         }
         if (filterHeaderAcousticRole !== "ALL") {
-          if ((t2 == null ? void 0 : t2.acoustic_role) !== filterHeaderAcousticRole) return false;
+          if (t2?.acoustic_role !== filterHeaderAcousticRole) return false;
         }
         if (filterHeaderComment) {
           const cTerm = filterHeaderComment.toLowerCase();
-          if (!((t2 == null ? void 0 : t2.comment) || "").toLowerCase().includes(cTerm)) return false;
+          if (!(t2?.comment || "").toLowerCase().includes(cTerm)) return false;
         }
         return true;
       });
@@ -11814,7 +12091,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       },
       /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
       " Limpiar Filtros de Cabecera"
-    )))) : null, virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), ((virtualRows == null ? void 0 : virtualRows.length) > 0 ? virtualRows : tracksFiltrados.slice(0, 60)).map((row, i) => {
+    )))) : null, virtualPaddingTop > 0 && /* @__PURE__ */ React.createElement("tr", { "aria-hidden": "true", style: { height: virtualPaddingTop } }, /* @__PURE__ */ React.createElement("td", { colSpan: Math.max(1, Object.values(visibleColumns).filter(Boolean).length) })), (virtualRows?.length > 0 ? virtualRows : tracksFiltrados.slice(0, 60)).map((row, i) => {
       const isRowPlaying = nowPlayingTrack && String(nowPlayingTrack.id) === String(row.id) && isPlaying;
       const coverUrl = getValidCover(row.cover || (row.path ? `/cover?path=${encodeURIComponent(row.path)}` : row.f ? `/cover?path=${encodeURIComponent(row.f)}` : null));
       const isFake = Boolean(row.es_fake || row.format === "FLAC" && String(row.status || "").includes("Fake"));
@@ -12349,7 +12626,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Dividir por 2" }, "/2"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
         const v = parseFloat(currentTrack.b);
         if (!isNaN(v)) updateCurrentTrackField("b", (v * 2).toFixed(2));
-      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", ((_a = CAMELOT_WHEEL_DATA[currentTrack.k]) == null ? void 0 : _a.classical) || "Am", ")")), /* @__PURE__ */ React.createElement(
+      }, className: "px-1 py-1 text-[9px] font-mono bg-djzinc-800 hover:bg-djzinc-700 text-gray-300 rounded border border-djzinc-700 cursor-pointer", title: "Multiplicar por 2" }, "x2"))), /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950 p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[11px] text-gray-400 mb-1" }, /* @__PURE__ */ React.createElement("span", { className: "flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "Key"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold" }, "(", CAMELOT_WHEEL_DATA[currentTrack.k]?.classical || "Am", ")")), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -13154,7 +13431,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const [tapTimes, setTapTimes] = useState5([]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
-    const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
+    const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
     const bpm = currentTrack && (currentTrack.bpm || currentTrack.b) ? Math.max(30, parseFloat(currentTrack.bpm || currentTrack.b) || 128) : 128;
     const beatMs = 6e4 / bpm;
     const barMs = beatMs * 4;
@@ -13332,7 +13609,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       const clamped = Math.max(-pitchRange, Math.min(pitchRange, Math.round(newPitch * 100) / 100));
       setPitchPercent(clamped);
       const rate = 1 + clamped / 100;
-      const audio = (audioRef == null ? void 0 : audioRef.current) || window.__bwGlobalAudio;
+      const audio = audioRef?.current || window.__bwGlobalAudio;
       if (audio) {
         audio.playbackRate = Math.max(0.2, Math.min(2, rate));
       }
@@ -13341,7 +13618,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       handlePitchChange(pitchPercent + delta);
     };
     const handleEqChange = (band, val) => {
-      const audio = (audioRef == null ? void 0 : audioRef.current) || window.__bwGlobalAudio;
+      const audio = audioRef?.current || window.__bwGlobalAudio;
       const nodes = getAudioEQNodes(audio);
       if (band === "bass") {
         setEqBass(val);
@@ -13426,12 +13703,12 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
     const [cueNameInput, setCueNameInput] = useState5(currentCue.name || "");
     const [cueTimeInput, setCueTimeInput] = useState5(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState5((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    const [tacticalComment, setTacticalComment] = useState5(currentTrack?.comment || "");
     useEffect6(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
-    }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
+    }, [currentTrack?.id, currentTrack?.comment]);
     useEffect6(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
@@ -13507,7 +13784,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const handleJumpToCue = (cue) => {
       if (!currentTrack || !onPlayTrack) return;
-      const audio = audioRef == null ? void 0 : audioRef.current;
+      const audio = audioRef?.current;
       const audioDur = audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5 ? audio.duration : durMs / 1e3;
       let posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
       let targetSec = posMs / 1e3;
@@ -13636,7 +13913,7 @@ Inyecci\xF3n: GEOB:Serato BeatGrid, GEOB:Serato Markers2, ID3v2.4 / Vorbis Comme
             });
           }
         } else {
-          setSaveStatus((res == null ? void 0 : res.msg) || "Error al guardar pista");
+          setSaveStatus(res?.msg || "Error al guardar pista");
         }
       } catch (e) {
         setSaveStatus("Error de comunicaci\xF3n al guardar");
@@ -13764,7 +14041,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       const q = filterQuery.toLowerCase();
       return (t2.title || t2.t || "").toLowerCase().includes(q) || (t2.artist || t2.a || "").toLowerCase().includes(q) || (t2.bpm || t2.b || "").toLowerCase().includes(q) || (t2.key || t2.k || "").toLowerCase().includes(q);
     });
-    const isCurrentPlayingThis = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack == null ? void 0 : currentTrack.id) || nowPlayingTrack.path === (currentTrack == null ? void 0 : currentTrack.path) || nowPlayingTrack.f === (currentTrack == null ? void 0 : currentTrack.f));
+    const isCurrentPlayingThis = isPlaying && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack?.id) || nowPlayingTrack.path === currentTrack?.path || nowPlayingTrack.f === currentTrack?.f);
     return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-hotcues flex-1 min-h-0 w-full flex flex-col bg-[#07070a] overflow-hidden text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "border-b border-djzinc-800 bg-[#0a0a0f] px-3 md:px-4 py-2 md:py-0 md:h-14 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-2 md:gap-3 z-10 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Cue, title: "Studio", accent: studioMode === "beatgrid" ? "Beatgrid" : "Hot Cues" }), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#101018] p-1 rounded-xl border border-djzinc-750 shrink-0" }, /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -14099,7 +14376,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       return /* @__PURE__ */ React.createElement(
         "div",
         {
-          key: `${(currentTrack == null ? void 0 : currentTrack.id) || "cue"}_pad_${idx}`,
+          key: `${currentTrack?.id || "cue"}_pad_${idx}`,
           onClick: () => {
             setSelectedCueId(padNum);
             handleJumpToCue(cue);
@@ -14742,7 +15019,6 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     lang = "es",
     t = (k) => k
   }) => {
-    var _a, _b;
     const [internalTracks, setInternalTracks] = useState5([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
@@ -14920,14 +15196,14 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
                 sample_rate_khz: res.sample_rate_khz || null,
                 bitrate_kbps: res.bitrate_kbps || null,
                 perdida: res.perdida || "--",
-                path: res.path || (trk == null ? void 0 : trk.path) || "",
+                path: res.path || trk?.path || "",
                 audit_status: res.audit_status || "pendiente",
                 consejo: res.consejo || "Pendiente de an\xE1lisis FFT",
                 sugerencia_formato: res.sugerencia_formato || null,
                 es_fake: res.es_fake || false,
                 badge_color: res.badge_color || "gray",
-                spotify_url: (trk == null ? void 0 : trk.spotify_url) || res.spotify_url || "",
-                cover: (trk == null ? void 0 : trk.cover) || (trk == null ? void 0 : trk.cover_url) || res.cover || "",
+                spotify_url: trk?.spotify_url || res.spotify_url || "",
+                cover: trk?.cover || trk?.cover_url || res.cover || "",
                 selected: true
               };
               setDownloadSession((sPrev) => ({
@@ -15115,7 +15391,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
           setXlsToast(`\u2713 Reporte Excel generado (${res.descargadas} descargadas, ${res.fallidas} fallidas) en: ${res.path}`);
           setTimeout(() => setXlsToast(""), 6e3);
         } else {
-          alert(`Error al generar reporte: ${(res == null ? void 0 : res.msg) || "Error desconocido"}`);
+          alert(`Error al generar reporte: ${res?.msg || "Error desconocido"}`);
         }
       } catch (err) {
         console.error("Error exportando reporte XLS:", err);
@@ -15125,7 +15401,6 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
     };
     const handleAbrirNavegadorCarpetas = async (initialPath = "") => {
-      var _a2, _b2;
       setFsBrowserOpen(true);
       setFsLoading(true);
       const startPath = initialPath || destDir || "";
@@ -15142,7 +15417,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
           console.warn("[EXPLORADOR] Fallo llamada Eel, recurriendo a HTTP:", err);
         }
       }
-      if (!res || !((_a2 = res.folders) == null ? void 0 : _a2.length) && !((_b2 = res.files) == null ? void 0 : _b2.length) && !res.current) {
+      if (!res || !res.folders?.length && !res.files?.length && !res.current) {
         try {
           const resp = await fetch("/api/listar_subcarpetas?ruta=" + encodeURIComponent("/Users/admin/Music"));
           if (resp.ok) res = await resp.json();
@@ -15760,7 +16035,7 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
             setDownloadingMsg(`[DESCARGANDO] Lote en segundo plano (${pistasADescargar.length} pistas) hacia: ${res.dest || destDir}`);
             setDownloadProgress(35);
           } else {
-            setDownloadingMsg(`[ERROR] ${(res == null ? void 0 : res.msg) || "Error al iniciar descarga"}`);
+            setDownloadingMsg(`[ERROR] ${res?.msg || "Error al iniciar descarga"}`);
             setIsDownloading(false);
             setDownloadProgress(0);
           }
@@ -16660,17 +16935,16 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       {
         type: "button",
         onClick: (e) => {
-          var _a2, _b2;
-          const currentOrTop = ((_a2 = candidateModal.candidates) == null ? void 0 : _a2.find((c) => candidateModal.targetTrack && (candidateModal.targetTrack.spotify_url === c.spotify_url || candidateModal.targetTrack.title === c.title))) || ((_b2 = candidateModal.candidates) == null ? void 0 : _b2[0]);
+          const currentOrTop = candidateModal.candidates?.find((c) => candidateModal.targetTrack && (candidateModal.targetTrack.spotify_url === c.spotify_url || candidateModal.targetTrack.title === c.title)) || candidateModal.candidates?.[0];
           if (currentOrTop) handlePlayCandidateTrack(currentOrTop, e);
         },
-        className: `px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${((_a = candidateModal.candidates) == null ? void 0 : _a.some((c) => isTrackCandPlaying(c))) ? "bg-djcyan-400 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.6)]" : "bg-djzinc-900 text-djcyan-300 border border-djcyan-800/50 hover:bg-djzinc-800"}`,
+        className: `px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${candidateModal.candidates?.some((c) => isTrackCandPlaying(c)) ? "bg-djcyan-400 text-black font-black shadow-[0_0_10px_rgba(6,182,212,0.6)]" : "bg-djzinc-900 text-djcyan-300 border border-djcyan-800/50 hover:bg-djzinc-800"}`,
         title: "Escuchar la versi\xF3n oficial encontrada para descargar (Deck B)"
       },
       /* @__PURE__ */ React.createElement("span", null, "\u{1F171}\uFE0F"),
       " ",
       /* @__PURE__ */ React.createElement("span", null, "Versi\xF3n Descarga (Cat\xE1logo Oficial)"),
-      ((_b = candidateModal.candidates) == null ? void 0 : _b.some((c) => isTrackCandPlaying(c))) && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-black animate-ping" })
+      candidateModal.candidates?.some((c) => isTrackCandPlaying(c)) && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-black animate-ping" })
     )), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-500 hidden md:block" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "inline-block align-[-2px]" }), " Compara A vs B para comprobar que intro, remix y mezcla sean exactamente iguales")), /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-900 border-b border-djzinc-800 flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3 top-2.5 text-gray-500" }), /* @__PURE__ */ React.createElement(
       "input",
       {
@@ -16692,11 +16966,10 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       },
       candidateModal.isSearching ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", null, "Buscando...")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", null, "Buscar Versiones"))
     )), candidateModal.searchMsg && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-1.5 bg-djzinc-950/70 border-b border-djzinc-800 text-[11px] font-mono text-gray-400 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Info, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, candidateModal.searchMsg)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-2.5" }, candidateModal.candidates && candidateModal.candidates.length > 0 ? candidateModal.candidates.map((cand, idx) => {
-      var _a2, _b2;
       const score = cand.match_score !== void 0 ? cand.match_score : cand.score || 0;
       const conf = cand.match_confianza || (score >= 80 ? "ALTA" : score >= 50 ? "MEDIA" : "BAJA");
       const hasAlert = !!cand.alerta_version;
-      const targetDur = ((_a2 = candidateModal.targetTrack) == null ? void 0 : _a2.original_duration) || ((_b2 = candidateModal.targetTrack) == null ? void 0 : _b2.duration) || 0;
+      const targetDur = candidateModal.targetTrack?.original_duration || candidateModal.targetTrack?.duration || 0;
       const candDur = cand.duration || 0;
       const durDiff = Math.abs(candDur - targetDur);
       const isCurrentlySelected = candidateModal.targetTrack && (candidateModal.targetTrack.spotify_url === cand.spotify_url || candidateModal.targetTrack.apple_url === cand.apple_url || candidateModal.targetTrack.title === cand.title && candidateModal.targetTrack.artist === cand.artist);
@@ -17445,7 +17718,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           if (res && res.status === "ok") {
             setFeedbackMsg(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
           } else {
-            setFeedbackMsg(`\u26A0 ${(res == null ? void 0 : res.msg) || "Error al enrutar pista"}`);
+            setFeedbackMsg(`\u26A0 ${res?.msg || "Error al enrutar pista"}`);
           }
           setTimeout(() => setFeedbackMsg(""), 3500);
         }
@@ -17479,8 +17752,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             setRouteProgress(100);
             setRouteStatusMsg(`\u2713 Lote completado: ${res.procesados} pistas organizadas.`);
           } else {
-            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error en el ruteo de lote." });
-            setRouteStatusMsg((res == null ? void 0 : res.msg) || "Error durante la operaci\xF3n.");
+            setResultSummary({ status: "error", msg: res?.msg || "Error en el ruteo de lote." });
+            setRouteStatusMsg(res?.msg || "Error durante la operaci\xF3n.");
           }
         }
       } catch (err) {
@@ -17509,7 +17782,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
               msg: `\u2713 ${res.total_crates} crates generados exitosamente en ${res.destino}`
             });
           } else {
-            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar crates Serato." });
+            setResultSummary({ status: "error", msg: res?.msg || "Error al exportar crates Serato." });
           }
         }
       } catch (err) {
@@ -17537,7 +17810,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
               msg: `\u2713 Archivo rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists) en ${res.path}`
             });
           } else {
-            setResultSummary({ status: "error", msg: (res == null ? void 0 : res.msg) || "Error al exportar rekordbox.xml." });
+            setResultSummary({ status: "error", msg: res?.msg || "Error al exportar rekordbox.xml." });
           }
         }
       } catch (err) {
@@ -18527,7 +18800,6 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     ));
   };
   var ShazamWorkspace = ({ onSendToSpotify, onSendToAudit, onNavigateTab }) => {
-    var _a, _b;
     const [isListening, setIsListening] = useState5(false);
     const [countdown, setCountdown] = useState5(10);
     const [isAnalyzing, setIsAnalyzing] = useState5(false);
@@ -18593,18 +18865,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         minScoreClub: 92,
         minScoreStudio: 88,
         probationMinScore: 76,
+        rescueEndpoint: "/v1/rescue",
+        rescueTimeoutMs: 8e3,
+        autoRescuePhase2: true,
         onStateChange: (ev) => {
-          var _a2;
           setRadarEvent(ev);
           if (ev.state === "MATCH_CONFIRMED" && ev.match) {
+            const sourceLabel = ev.match.source === "local_olaf" ? "Olaf LMDB" : ev.match.source?.startsWith("gpu_") ? "GPU Neural Rescue" : "ACRCloud Edge";
             const matchItem = {
               title: ev.match.title,
               artist: ev.match.artist,
               album: ev.match.album || `${ev.match.title} - Single`,
-              genre: ((_a2 = ev.match.genres) == null ? void 0 : _a2[0]) || "Electronic",
-              subgenre: "Peak-Time Techno",
+              genre: ev.match.genres?.[0] || "Electronic",
+              subgenre: ev.match.stemIsolated ? `Stem: ${ev.match.stemIsolated}` : "Peak-Time Techno",
               score: ev.match.score,
-              motor_usado: `BeatWave Radar C++ [${ev.match.source === "local_olaf" ? "Olaf LMDB" : "ACRCloud Edge"}]`,
+              motor_usado: `BeatWave Radar C++ [${sourceLabel}]`,
               play_offset_ms: ev.match.playOffsetMs,
               rho: ev.rho,
               status: "ok"
@@ -18614,6 +18889,10 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             setHistory((prev) => [matchItem, ...prev.filter((item) => item.title !== matchItem.title || item.artist !== matchItem.artist)]);
           } else if (ev.state === "ESCALATE_PHASE2") {
             setStatusMsg(`\u26A0\uFE0F ${ev.message}`);
+          } else if (ev.state === "RESCUING_PHASE2") {
+            setStatusMsg(`\u{1F680} ${ev.message}`);
+          } else if (ev.state === "UNIDENTIFIED_ID") {
+            setStatusMsg(`\u274C ${ev.message}`);
           } else if (ev.state === "PROBATION_BUFFER") {
             setStatusMsg(`\u23F3 ${ev.message}`);
           } else if (ev.state === "TIMEOUT_FALLBACK") {
@@ -19005,7 +19284,6 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           if (e.data && e.data.size > 0) chunks.push(e.data);
         };
         mediaRecorder.onstop = async () => {
-          var _a2;
           if (animFrameRef.current) {
             cancelAnimationFrame(animFrameRef.current);
             animFrameRef.current = null;
@@ -19034,7 +19312,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
             console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
           }
-          const actualMime = ((_a2 = chunks[0]) == null ? void 0 : _a2.type) || selectedMime || "audio/webm";
+          const actualMime = chunks[0]?.type || selectedMime || "audio/webm";
           const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
           const audioBlob = new Blob(chunks, { type: actualMime });
           const reader = new FileReader();
@@ -19182,7 +19460,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       } else if (res && res.status === "silence") {
         setStatusMsg(res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micr\xF3fono.");
       } else {
-        setStatusMsg((res == null ? void 0 : res.msg) || "No se encontraron coincidencias para este fragmento de audio.");
+        setStatusMsg(res?.msg || "No se encontraron coincidencias para este fragmento de audio.");
       }
     };
     const handleSendToAuditInternal = (trk) => {
@@ -19294,7 +19572,7 @@ ${text}`);
       /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, showConfig ? "Ocultar Opciones" : "Opciones API"),
       auddToken && /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" })
-    )), /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16] border border-djzinc-750 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `absolute inset-0 rounded-full border border-indigo-500/30 ${isListening || isAnalyzing ? "animate-ping" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-1.5 rounded-full border border-indigo-500/20" }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-3 rounded-full border border-indigo-500/40" }), /* @__PURE__ */ React.createElement("div", { className: `w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500 text-black shadow-emerald-500/50" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-600 text-white shadow-pink-600/50 animate-pulse" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500 text-black shadow-amber-500/50" : isListening || isAnalyzing ? "bg-cyan-500 text-black animate-spin" : "bg-djzinc-800 text-zinc-400"}` }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 18 }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase tracking-wider font-black text-indigo-400" }, "Telemetr\xEDa de Cabina Radar"), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${(radarEvent == null ? void 0 : radarEvent.state) === "MATCH_CONFIRMED" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "ESCALATE_PHASE2" ? "bg-pink-500/20 text-pink-300 border border-pink-500/40" : (radarEvent == null ? void 0 : radarEvent.state) === "PROBATION_BUFFER" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : isListening || isAnalyzing ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-zinc-800 text-zinc-400 border border-zinc-700"}` }, (radarEvent == null ? void 0 : radarEvent.state) || (isListening ? "CAPTURING" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate max-w-sm" }, (radarEvent == null ? void 0 : radarEvent.message) || (isListening ? "Escuchando ventana de 10s (stride 2s)..." : "Listo para capturar en cabina")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto shrink-0 font-mono text-center" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Nivel RMS"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-cyan-400" }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? `${radarEvent.telemetry.rmsDbfs.toFixed(1)} dBFS` : "-16.0 dBFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Pico / Clip"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${((_a = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _a.isClipping) ? "text-rose-500" : "text-emerald-400"}` }, (radarEvent == null ? void 0 : radarEvent.telemetry) ? radarEvent.telemetry.isClipping ? "\u26A0\uFE0F CLIPPING" : `${radarEvent.telemetry.peakDbfs.toFixed(1)} dB` : "\u2264 -1.0 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Coherencia \u03C1"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${(radarEvent == null ? void 0 : radarEvent.pitchShiftSuspected) ? "text-pink-400 animate-pulse" : "text-indigo-300"}` }, (radarEvent == null ? void 0 : radarEvent.rho) ? `${radarEvent.rho.toFixed(3)}x` : "1.000x")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Latencia Edge"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-white" }, ((_b = radarEvent == null ? void 0 : radarEvent.telemetry) == null ? void 0 : _b.latencyMs) ? `${radarEvent.telemetry.latencyMs} ms` : "< 1750 ms")))), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "bg-[#0b0c16] border border-djzinc-750 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-4 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative w-14 h-14 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `absolute inset-0 rounded-full border border-indigo-500/30 ${isListening || isAnalyzing ? "animate-ping" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-1.5 rounded-full border border-indigo-500/20" }), /* @__PURE__ */ React.createElement("span", { className: "absolute inset-3 rounded-full border border-indigo-500/40" }), /* @__PURE__ */ React.createElement("div", { className: `w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-colors ${radarEvent?.state === "MATCH_CONFIRMED" ? "bg-emerald-500 text-black shadow-emerald-500/50" : radarEvent?.state === "ESCALATE_PHASE2" ? "bg-pink-600 text-white shadow-pink-600/50 animate-pulse" : radarEvent?.state === "PROBATION_BUFFER" ? "bg-amber-500 text-black shadow-amber-500/50" : isListening || isAnalyzing ? "bg-cyan-500 text-black animate-spin" : "bg-djzinc-800 text-zinc-400"}` }, /* @__PURE__ */ React.createElement(Icons.Radar, { size: 18 }))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono uppercase tracking-wider font-black text-indigo-400" }, "Telemetr\xEDa de Cabina Radar"), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded text-[9px] font-mono font-bold uppercase ${radarEvent?.state === "MATCH_CONFIRMED" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : radarEvent?.state === "ESCALATE_PHASE2" ? "bg-pink-500/20 text-pink-300 border border-pink-500/40" : radarEvent?.state === "PROBATION_BUFFER" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : isListening || isAnalyzing ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-zinc-800 text-zinc-400 border border-zinc-700"}` }, radarEvent?.state || (isListening ? "CAPTURING" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-mono font-bold text-white truncate max-w-sm" }, radarEvent?.message || (isListening ? "Escuchando ventana de 10s (stride 2s)..." : "Listo para capturar en cabina")))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto shrink-0 font-mono text-center" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Nivel RMS"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-cyan-400" }, radarEvent?.telemetry ? `${radarEvent.telemetry.rmsDbfs.toFixed(1)} dBFS` : "-16.0 dBFS")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Pico / Clip"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${radarEvent?.telemetry?.isClipping ? "text-rose-500" : "text-emerald-400"}` }, radarEvent?.telemetry ? radarEvent.telemetry.isClipping ? "\u26A0\uFE0F CLIPPING" : `${radarEvent.telemetry.peakDbfs.toFixed(1)} dB` : "\u2264 -1.0 dB")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Coherencia \u03C1"), /* @__PURE__ */ React.createElement("div", { className: `text-xs font-bold ${radarEvent?.pitchShiftSuspected ? "text-pink-400 animate-pulse" : "text-indigo-300"}` }, radarEvent?.rho ? `${radarEvent.rho.toFixed(3)}x` : "1.000x")), /* @__PURE__ */ React.createElement("div", { className: "bg-black/50 border border-djzinc-800 rounded-lg px-2.5 py-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[9px] text-zinc-400 uppercase" }, "Latencia Edge"), /* @__PURE__ */ React.createElement("div", { className: "text-xs font-bold text-white" }, radarEvent?.telemetry?.latencyMs ? `${radarEvent.telemetry.latencyMs} ms` : "< 1750 ms")))), showConfig && /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-2)] p-3.5 rounded-xl border border-[var(--bw-line-strong)] text-xs font-mono space-y-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-bold block" }, "Token de Red Ac\xFAstica API:"), /* @__PURE__ */ React.createElement("span", { className: "text-[10.5px] text-zinc-400" }, 'Por defecto BeatWave usa el token comunitario ("test"). Si posees tu propio token de API ac\xFAstica, ingr\xE9salo aqu\xED para consultas comerciales ilimitadas.')), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -20259,8 +20537,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
   }
   function evaluateAntiMuddyTransition(trackA, trackB) {
-    const isBassA = ((trackA == null ? void 0 : trackA.low_ratio) || 33) >= 45 || (trackA == null ? void 0 : trackA.acoustic_role) === "Bass Driver";
-    const isBassB = ((trackB == null ? void 0 : trackB.low_ratio) || 33) >= 45 || (trackB == null ? void 0 : trackB.acoustic_role) === "Bass Driver";
+    const isBassA = (trackA?.low_ratio || 33) >= 45 || trackA?.acoustic_role === "Bass Driver";
+    const isBassB = (trackB?.low_ratio || 33) >= 45 || trackB?.acoustic_role === "Bass Driver";
     if (isBassA && isBassB) {
       return {
         isCollision: true,
@@ -20269,8 +20547,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         advice: "Ambos temas son Bass Drivers. Cortar EQ Low del tema saliente antes del drop para evitar barrizal de graves y cancelaci\xF3n de fase."
       };
     }
-    const isCompA = isBassA && ((trackB == null ? void 0 : trackB.acoustic_role) === "Vocal / Lead" || (trackB == null ? void 0 : trackB.acoustic_role) === "Percussive Tool");
-    const isCompB = isBassB && ((trackA == null ? void 0 : trackA.acoustic_role) === "Vocal / Lead" || (trackA == null ? void 0 : trackA.acoustic_role) === "Percussive Tool");
+    const isCompA = isBassA && (trackB?.acoustic_role === "Vocal / Lead" || trackB?.acoustic_role === "Percussive Tool");
+    const isCompB = isBassB && (trackA?.acoustic_role === "Vocal / Lead" || trackA?.acoustic_role === "Percussive Tool");
     if (isCompA || isCompB) {
       return {
         isCollision: false,
@@ -20490,7 +20768,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setTimeout(() => setExportStatus(null), 4e3);
     };
     const handleAddFolderToSet = async () => {
-      var _a;
       try {
         setFolderLoading(true);
         setFolderProgress({ pct: 5, msg: "Examinando carpeta de m\xFAsica en disco..." });
@@ -20515,7 +20792,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         if (!res && window.eel && window.eel.seleccionar_carpeta_para_set) {
           res = await window.eel.seleccionar_carpeta_para_set()();
         }
-        const rawTracks = Array.isArray(res == null ? void 0 : res.tracks) ? res.tracks : ((_a = res == null ? void 0 : res.tracks) == null ? void 0 : _a.tracks) || [];
+        const rawTracks = Array.isArray(res?.tracks) ? res.tracks : res?.tracks?.tracks || [];
         if (res && rawTracks && rawTracks.length > 0) {
           setFolderProgress({ pct: 100, msg: `\u2713 ${rawTracks.length} pistas le\xEDdas correctamente.` });
           const formattedTracks = rawTracks.map((t, idx) => ({
@@ -22596,7 +22873,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
             }
           }
         }
-        setHoveredTrack((prev) => (prev == null ? void 0 : prev.id) === (found == null ? void 0 : found.id) && (prev == null ? void 0 : prev.title) === (found == null ? void 0 : found.title) ? prev : found);
+        setHoveredTrack((prev) => prev?.id === found?.id && prev?.title === found?.title ? prev : found);
       });
     };
     const handleMouseUp = () => {
@@ -24973,7 +25250,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
     "is_simulating": true
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
-    var _a, _b;
     const [state, setState] = useState5(DEFAULT_COPILOT_STATE);
     const [clock, setClock] = useState5("");
     const [latency, setLatency] = useState5(2);
@@ -25281,9 +25557,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       }
       setState((prev) => {
-        var _a2;
         if (!prev) return prev;
-        const cur1Master = (_a2 = prev.deck_1) == null ? void 0 : _a2.is_master;
+        const cur1Master = prev.deck_1?.is_master;
         const new1Master = deckTarget === "1" ? true : deckTarget === "2" ? false : !cur1Master;
         return {
           ...prev,
@@ -25306,7 +25581,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     useEffect6(() => {
       const handleKeyDown = (e) => {
-        var _a2, _b2;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
           e.preventDefault();
@@ -25319,11 +25593,11 @@ Respuesta: ${qa.a}`).join("\n\n"),
           togglePlayDeck("2");
         } else if (e.code === "Space") {
           e.preventDefault();
-          const masterTarget = ((_a2 = state == null ? void 0 : state.deck_1) == null ? void 0 : _a2.is_master) ? "1" : "2";
+          const masterTarget = state?.deck_1?.is_master ? "1" : "2";
           togglePlayDeck(masterTarget);
         } else if (e.key === "c" || e.key === "C") {
           e.preventDefault();
-          const cueTarget = ((_b2 = state == null ? void 0 : state.deck_1) == null ? void 0 : _b2.is_master) ? "2" : "1";
+          const cueTarget = state?.deck_1?.is_master ? "2" : "1";
           cueDeck(cueTarget);
         }
       };
@@ -25418,7 +25692,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       updated.splice(targetIdx, 0, movedItem);
       setTracksList(updated);
       setDraggedIdx(null);
-      const masterTrack = (state == null ? void 0 : state.deck_1) || {};
+      const masterTrack = state?.deck_1 || {};
       const incomingTrack = updated[0];
       const mCamelot = masterTrack.camelot || "10A";
       const inCamelot = incomingTrack.camelot || "10A";
@@ -25452,7 +25726,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       { id: "virtualdj", label: "VirtualDJ", color: "#f97316" },
       { id: "traktor", label: "Traktor", color: "#facc15" }
     ];
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-cyan-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[10px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name)), ((_a = state.ableton_link) == null ? void 0 : _a.peers) > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]", title: "Ableton Link Activo: sincronizado con software DJ" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "\u{1F517} LINK:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, `${state.ableton_link.peers} PEER (${state.ableton_link.playing ? "PLAY" : "PAUSA"})`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3 h-3 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-7 h-7 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 16 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "DJ LINK"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : isStandby ? "text-cyan-400" : "text-amber-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900 border border-emerald-500/50 font-mono text-[10px] text-emerald-300" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u{1F39B}\uFE0F"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, controllerState.name)), state.ableton_link?.peers > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[10px] border bg-purple-950/70 border-purple-500/80 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.35)]", title: "Ableton Link Activo: sincronizado con software DJ" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" }), /* @__PURE__ */ React.createElement("span", null, "\u{1F517} LINK:"), /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, `${state.ableton_link.peers} PEER (${state.ableton_link.playing ? "PLAY" : "PAUSA"})`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -25499,7 +25773,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       },
       /* @__PURE__ */ React.createElement(Icons.Grid, { size: 12 }),
       /* @__PURE__ */ React.createElement("span", null, "Pop-Out \u2197")
-    ))), /* @__PURE__ */ React.createElement("section", { className: "mb-2.5" }, /* @__PURE__ */ React.createElement("div", { className: `px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${anti_muddy.status === "danger" ? "bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]" : anti_muddy.status === "warning" ? "bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]" : "bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-xs text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${anti_muddy.status === "danger" ? "bg-red-600 text-white" : anti_muddy.status === "warning" ? "bg-amber-500 text-black" : "bg-emerald-500 text-black"}` }, anti_muddy.tag)), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-zinc-300 truncate mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono" }, (anti_muddy.controller_knobs || anti_muddy.flx4) && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F ", (((_b = state.controller) == null ? void 0 : _b.name) || controllerState.name || "NUMARK NV II").replace(" (USB)", ""), ":"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).eq_low)), /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("section", { className: "mb-2.5" }, /* @__PURE__ */ React.createElement("div", { className: `px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${anti_muddy.status === "danger" ? "bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]" : anti_muddy.status === "warning" ? "bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]" : "bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-xs text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${anti_muddy.status === "danger" ? "bg-red-600 text-white" : anti_muddy.status === "warning" ? "bg-amber-500 text-black" : "bg-emerald-500 text-black"}` }, anti_muddy.tag)), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-zinc-300 truncate mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono" }, (anti_muddy.controller_knobs || anti_muddy.flx4) && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F ", (state.controller?.name || controllerState.name || "NUMARK NV II").replace(" (USB)", ""), ":"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).eq_low)), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -26776,7 +27050,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
               alert(`\u2713 Biblioteca "${lib.name}" creada con \xE9xito en:
 ${res.path}`);
             } else {
-              alert(`Atenci\xF3n: ${(res == null ? void 0 : res.error) || "No se pudo exportar a disco"}`);
+              alert(`Atenci\xF3n: ${res?.error || "No se pudo exportar a disco"}`);
             }
           }
         } catch (err) {

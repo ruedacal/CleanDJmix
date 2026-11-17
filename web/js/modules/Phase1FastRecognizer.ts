@@ -15,6 +15,8 @@
  * 4. Parallel execution: queries local Olaf DB and Cloudflare Edge proxy simultaneously.
  */
 
+import { Phase2RescueClient, EscalationReason, Phase2RescueResult } from './Phase2RescueClient';
+
 export type EnvironmentProfile = 'club' | 'studio';
 
 export type RecognitionState =
@@ -23,6 +25,8 @@ export type RecognitionState =
     | 'MATCH_CONFIRMED'
     | 'PROBATION_BUFFER'
     | 'ESCALATE_PHASE2'
+    | 'RESCUING_PHASE2'
+    | 'UNIDENTIFIED_ID'
     | 'NO_MATCH'
     | 'TIMEOUT_FALLBACK'
     | 'ERROR';
@@ -35,10 +39,12 @@ export interface TrackMatch {
     score: number;             // [0 - 100]
     playOffsetMs: number;       // Posición detectada dentro del tema (ms)
     timestampQueryMs: number;   // Timestamp de la muestra analizada (ms)
-    source: 'local_olaf' | 'remote_acrcloud';
+    source: 'local_olaf' | 'remote_acrcloud' | 'gpu_neural_conformer' | 'gpu_grafprint_ann';
     label?: string;
     genres?: string[];
     bpmEstimated?: number;
+    stemIsolated?: 'drums' | 'bass' | 'other' | 'vocals' | 'full_mix';
+    tempoWarpApplied?: number; // Variación especulativa aplicada por la GPU
 }
 
 export interface TelemetryData {
@@ -83,6 +89,9 @@ export interface RecognizerConfig {
     minScoreStudio?: number;     // Default 88
     minScoreClub?: number;       // Default 92
     probationMinScore?: number;  // Default 76
+    rescueEndpoint?: string;     // Default '/v1/rescue' (Fase 2 GPU Cloud)
+    rescueTimeoutMs?: number;    // Default 8000 ms
+    autoRescuePhase2?: boolean;  // Default true (dispara rescate no bloqueante al emitir ESCALATE_PHASE2)
     onStateChange?: (event: RecognitionEvent) => void;
 }
 
@@ -101,6 +110,10 @@ export class Phase1FastRecognizer {
     private readonly probationMinScore: number;
     private readonly onStateChange?: (event: RecognitionEvent) => void;
 
+    // Cliente de Rescate Neuronal GPU (Fase 2)
+    private readonly rescueClient: Phase2RescueClient;
+    private readonly autoRescuePhase2: boolean;
+
     // Buffer de probación para confirmación en el siguiente stride de 2.0s
     private probationBuffer: Map<string, ProbationRecord> = new Map();
     private lastConfirmedTrack: TrackMatch | null = null;
@@ -114,6 +127,24 @@ export class Phase1FastRecognizer {
         this.minScoreClub = config.minScoreClub || 92;
         this.probationMinScore = config.probationMinScore || 76;
         this.onStateChange = config.onStateChange;
+
+        this.autoRescuePhase2 = config.autoRescuePhase2 !== false;
+        this.rescueClient = new Phase2RescueClient({
+            rescueEndpoint: config.rescueEndpoint || '/v1/rescue',
+            timeoutMs: config.rescueTimeoutMs || 8000,
+            onRescueProgress: (stage, message) => {
+                if (stage === 'PROCESSING_GPU' || stage === 'UPLOADING') {
+                    this.emitState(
+                        'RESCUING_PHASE2',
+                        null,
+                        1.0,
+                        true,
+                        null,
+                        `[Fase 2 GPU] ${message}`
+                    );
+                }
+            }
+        });
     }
 
     public setEnvironment(env: EnvironmentProfile): void {
@@ -271,7 +302,107 @@ export class Phase1FastRecognizer {
         // 4. Máquina de Estados con Escalado Táctico
         const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry);
         this.notifyListener(event);
+
+        // Si se emitió ESCALATE_PHASE2 y el auto-rescate está activo,
+        // lanzar el proceso de rescate en GPU en segundo plano sin bloquear el hilo UI
+        if (event.state === 'ESCALATE_PHASE2' && this.autoRescuePhase2) {
+            this.triggerPhase2Rescue(event, audioPcm).catch(err => {
+                console.error('[Phase1FastRecognizer] Error no capturado en rescate Fase 2:', err);
+            });
+        }
+
         return event;
+    }
+
+    /**
+     * Orquesta el Rescate Neuronal de Fase 2 (GPU Cloud)
+     * Puede invocarse de manera automática ante ESCALATE_PHASE2 o explícitamente desde la UI.
+     */
+    public async triggerPhase2Rescue(
+        escalationEvent: RecognitionEvent,
+        fallbackAudio?: Float32Array
+    ): Promise<RecognitionEvent> {
+        const startTime = Date.now();
+        let reason: EscalationReason = 'TIME_DRIFT_SUSPECTED_PITCH';
+        if (escalationEvent.pitchShiftSuspected) {
+            reason = 'TIME_DRIFT_SUSPECTED_PITCH';
+        } else if (escalationEvent.match && escalationEvent.match.score < this.probationMinScore) {
+            reason = 'LOW_CONFIDENCE_PROBATION_EXHAUSTED';
+        } else {
+            reason = 'MANUAL_RESCUE_TRIGGER';
+        }
+
+        this.emitState(
+            'RESCUING_PHASE2',
+            escalationEvent.match,
+            escalationEvent.rho,
+            true,
+            escalationEvent.telemetry,
+            `🚀 Rescate Neuronal Fase 2 activo: aislando stems y corrigiendo pitch-shift en GPU (Motivo: ${reason})...`
+        );
+
+        const rescueResult = await this.rescueClient.rescueTrack({
+            reason,
+            rho: escalationEvent.rho,
+            environment: this.environment,
+            candidateHint: escalationEvent.match ? {
+                artist: escalationEvent.match.artist,
+                title: escalationEvent.match.title,
+                score: escalationEvent.match.score
+            } : null,
+            timestampQueryMs: escalationEvent.timestamp
+        });
+
+        const elapsed = Date.now() - startTime;
+        const telemetry: TelemetryData = {
+            rmsDbfs: escalationEvent.telemetry?.rmsDbfs ?? -16.0,
+            peakDbfs: escalationEvent.telemetry?.peakDbfs ?? -1.0,
+            isClipping: escalationEvent.telemetry?.isClipping ?? false,
+            durationMs: 10000,
+            sampleRate: 16000,
+            environment: this.environment,
+            latencyMs: elapsed
+        };
+
+        if (rescueResult.success && rescueResult.match) {
+            const confirmedMatch: TrackMatch = {
+                title: rescueResult.match.title,
+                artist: rescueResult.match.artist,
+                album: rescueResult.match.album,
+                label: rescueResult.match.label,
+                score: rescueResult.match.score,
+                playOffsetMs: rescueResult.match.playOffsetMs || 0,
+                timestampQueryMs: Date.now(),
+                source: rescueResult.match.source,
+                genres: rescueResult.match.genres,
+                stemIsolated: rescueResult.match.stemIsolated,
+                tempoWarpApplied: rescueResult.match.tempoWarpApplied
+            };
+
+            const confirmedEvent = this.buildEvent(
+                'MATCH_CONFIRMED',
+                confirmedMatch,
+                escalationEvent.rho,
+                false,
+                telemetry,
+                `✓ Pista identificada mediante Rescate Neuronal GPU (${confirmedMatch.artist} - ${confirmedMatch.title}, Stem: ${confirmedMatch.stemIsolated || 'mix'}, Warp: ${confirmedMatch.tempoWarpApplied ? confirmedMatch.tempoWarpApplied + '%' : '0%'})`
+            );
+            this.lastConfirmedTrack = confirmedMatch;
+            this.notifyListener(confirmedEvent);
+            return confirmedEvent;
+        }
+
+        // Si falló o agotó el tiempo: marcar definitivamente como UNIDENTIFIED_ID
+        const unidentifiedEvent = this.buildEvent(
+            'UNIDENTIFIED_ID',
+            null,
+            escalationEvent.rho,
+            escalationEvent.pitchShiftSuspected,
+            telemetry,
+            `❌ UNIDENTIFIED_ID: Pista no identificada tras agotar escaneo rápido y rescate neuronal (${rescueResult.errorMessage || 'Sin coincidencias en catálogo vectorial'}).`
+        );
+        this.notifyListener(unidentifiedEvent);
+        return unidentifiedEvent;
     }
 
     /**
@@ -422,8 +553,17 @@ export class Phase1FastRecognizer {
             // @ts-ignore
             if (typeof process !== 'undefined' && process.versions && process.versions.node) {
                 // @ts-ignore
-                const napiModule = require('../../../native/build/beatwave_core.node');
-                return napiModule.processAudioBuffer(audio, profile, sampleRate);
+                const nodeRequire = (typeof require === 'function')
+                    // @ts-ignore
+                    ? require
+                    : ((typeof module !== 'undefined' && module.require) ? module.require : null);
+                if (nodeRequire) {
+                    const nodePath = 'path';
+                    const pathMod = nodeRequire(nodePath);
+                    const nodeAddonPath = pathMod.resolve('native/build/beatwave_core.node');
+                    const napiModule = nodeRequire(nodeAddonPath);
+                    return napiModule.processAudioBuffer(audio, profile, sampleRate);
+                }
             }
         } catch {
             // Fallback silencioso a simulación controlada si estamos en entorno Web sin binding compilado
