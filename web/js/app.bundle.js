@@ -2559,13 +2559,7 @@
     }
   };
 
-  // web/js/app.jsx
-  var { useState: useState5, useEffect: useEffect6, useRef: useRef6, useMemo, useCallback, createContext, useContext } = React;
-  var PlayerContext = createContext({
-    playProgressRef: { current: 0 },
-    isPlaying: false,
-    nowPlayingTrack: null
-  });
+  // web/js/data/constants.js
   var NV2_COLORS = [
     { id: 1, name: "Kick / Intro", color: "#ef4444", text: "text-red-400", border: "border-red-500/50", bg: "bg-red-500/10", time: "00:00.215" },
     { id: 2, name: "Hi-Hats In", color: "#f97316", text: "text-orange-400", border: "border-orange-500/50", bg: "bg-orange-500/10", time: "00:15.110" },
@@ -2614,6 +2608,8 @@
     const mus = CAMELOT_TO_MUSICAL[clean];
     return mus ? `${clean} (${mus})` : clean;
   }
+
+  // web/js/data/i18n.js
   var I18N_TRANSLATIONS = {
     es: {
       nav_audit: "Auditor\xEDa & DSP",
@@ -2932,6 +2928,946 @@
       taxonomy_tab_crates: "Serato Crates & Rekordbox"
     }
   };
+
+  // web/js/data/djCatalog.js
+  var CAMELOT_WHEEL_DATA = {
+    "1A": { classical: "G#m", name: "Sol# menor", rel: "1B", up: "2A", down: "12A", color: "#06b6d4" },
+    "1B": { classical: "B", name: "Si Mayor", rel: "1A", up: "2B", down: "12B", color: "#38bdf8" },
+    "2A": { classical: "D#m", name: "Re# menor", rel: "2B", up: "3A", down: "1A", color: "#0284c7" },
+    "2B": { classical: "F#", name: "Fa# Mayor", rel: "2A", up: "3B", down: "1B", color: "#0369a1" },
+    "3A": { classical: "A#m", name: "La# menor", rel: "3B", up: "4A", down: "2A", color: "#22d3ee" },
+    "3B": { classical: "Db", name: "Re\u266D Mayor", rel: "3A", up: "4B", down: "2B", color: "#1d4ed8" },
+    "4A": { classical: "Fm", name: "Fa menor", rel: "4B", up: "5A", down: "3A", color: "#4f46e5" },
+    "4B": { classical: "Ab", name: "La\u266D Mayor", rel: "4A", up: "5B", down: "3B", color: "#4338ca" },
+    "5A": { classical: "Cm", name: "Do menor", rel: "5B", up: "6A", down: "4A", color: "#7c3aed" },
+    "5B": { classical: "Eb", name: "Mi\u266D Mayor", rel: "5A", up: "6B", down: "4B", color: "#6d28d9" },
+    "6A": { classical: "Gm", name: "Sol menor", rel: "6B", up: "7A", down: "5A", color: "#9333ea" },
+    "6B": { classical: "Bb", name: "Si\u266D Mayor", rel: "6A", up: "7B", down: "5B", color: "#7e22ce" },
+    "7A": { classical: "Dm", name: "Re menor", rel: "7B", up: "8A", down: "6A", color: "#c026d3" },
+    "7B": { classical: "F", name: "Fa Mayor", rel: "7A", up: "8B", down: "6B", color: "#a21caf" },
+    "8A": { classical: "Am", name: "La menor", rel: "8B", up: "9A", down: "7A", color: "#db2777" },
+    "8B": { classical: "C", name: "Do Mayor", rel: "8A", up: "9B", down: "7B", color: "#be185d" },
+    "9A": { classical: "Em", name: "Mi menor", rel: "9B", up: "10A", down: "8A", color: "#e11d48" },
+    "9B": { classical: "G", name: "Sol Mayor", rel: "9A", up: "10B", down: "8B", color: "#be123c" },
+    "10A": { classical: "Bm", name: "Si menor", rel: "10B", up: "11A", down: "9A", color: "#ea580c" },
+    "10B": { classical: "D", name: "Re Mayor", rel: "10A", up: "11B", down: "9B", color: "#c2410c" },
+    "11A": { classical: "F#m", name: "Fa# menor", rel: "11B", up: "12A", down: "10A", color: "#d97706" },
+    "11B": { classical: "A", name: "La Mayor", rel: "11A", up: "12B", down: "10B", color: "#b45309" },
+    "12A": { classical: "C#m", name: "Do# menor", rel: "12B", up: "1A", down: "11A", color: "#16a34a" },
+    "12B": { classical: "E", name: "Mi Mayor", rel: "12A", up: "1B", down: "11B", color: "#15803d" }
+  };
+  var TAXONOMY_TREE = {
+    "Peak-Time Techno": [
+      "Peak Time / Driving (130-135 BPM)",
+      "Raw / Driving Techno",
+      "Acid Peak-Time",
+      "Festival Techno"
+    ],
+    "Tech House": [
+      "Tech House (126-129 BPM)",
+      "Groove Tech House",
+      "Minimal Tech House",
+      "Latin Tech House",
+      "Mainstage Tech"
+    ],
+    "Hard Techno": [
+      "Hard Techno / Schranz (150-160 BPM)",
+      "Industrial Hard Techno",
+      "Neo-Rave / Hard Dance",
+      "Acid Hard Techno"
+    ],
+    "Techno": [
+      "Peak Time / Driving (130-135 BPM)",
+      "Raw / Deep / Hypnotic",
+      "Melodic Techno",
+      "Acid Techno",
+      "Dark / Industrial Techno"
+    ],
+    "House": [
+      "Tech House (126-129 BPM)",
+      "Afro House",
+      "Deep House",
+      "Minimal / Deep Tech",
+      "Melodic / Progressive House",
+      "Bass House"
+    ],
+    "Trance": [
+      "Psy-Trance (138-145 BPM)",
+      "Uplifting Trance",
+      "Tech Trance",
+      "Progressive Trance"
+    ],
+    "Drum & Bass": [
+      "Dancefloor DnB (174 BPM)",
+      "Neurofunk",
+      "Liquid Drum & Bass",
+      "Jump Up"
+    ],
+    "Electro & Breaks": [
+      "Breakbeat",
+      "UK Garage / 2-Step",
+      "Electro House"
+    ],
+    "Downtempo & Organic": [
+      "Organic House / Downtempo",
+      "Electronica / Melodic Ambient",
+      "Chillout / Lounge"
+    ],
+    "Latin & Urban": [
+      "Latin House",
+      "Guaracha / Tribal",
+      "Reggaet\xF3n & RKT"
+    ]
+  };
+  var DJ_GENRES_LIST = Object.keys(TAXONOMY_TREE);
+  var DJ_VERSIONS_LIST = [
+    "Extended Mix",
+    "Intro / Outro",
+    "Remix / Club Mix",
+    "Mashup / Bootleg",
+    "Transition",
+    "Acapella / DIY",
+    "Short Edit / Radio"
+  ];
+  var AI_PROMPT_CHIPS = [
+    { label: "\u{1F528} Hard Techno 150 BPM Ca\xF1a", query: "hard techno 150 bpm a tope de ca\xF1a" },
+    { label: "\u26A1 Techno Peak Time 132 BPM", query: "techno peak time driving 132 bpm" },
+    { label: "\u{1F9EA} Acid Techno en 8A 140 BPM", query: "acid techno en 8A a 140 bpm" },
+    { label: "\u{1F30C} Melodic Techno en 6A", query: "melodic techno en 6A" },
+    { label: "\u{1F525} Tech House a 128 BPM", query: "tech house a 128 bpm" },
+    { label: "\u{1F334} Afro House Groove", query: "afro house groove para bailar" },
+    { label: "\u{1F941} Minimal / Deep Tech 126 BPM", query: "minimal deep tech 126 bpm" },
+    { label: "\u{1F680} Psy-Trance 142 BPM Ca\xF1a", query: "psy-trance 142 bpm ca\xF1a" },
+    { label: "\u{1F4A5} Drum & Bass 174 BPM", query: "drum & bass neurofunk 174 bpm" },
+    { label: "\u{1F39B}\uFE0F Progressive House 124 BPM", query: "progressive house 124 bpm" }
+  ];
+  var DJ_CURATED_CATALOG = [
+    {
+      id: "cat_0",
+      title: "Legacy (Original Mix)",
+      artist: "Sara Landry",
+      genre: "Hard Techno",
+      subgenre: "Hard Techno / Schranz (150-160 BPM)",
+      bpm: 155,
+      key: "11A",
+      version: "Original Mix",
+      mood: "A Tope de Ca\xF1a",
+      year: 2024,
+      cover: "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      duration: "05:42",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_1",
+      title: "Losing It (Extended Mix)",
+      artist: "Fisher",
+      genre: "House",
+      subgenre: "Tech House",
+      bpm: 126,
+      key: "8A",
+      version: "Extended Mix",
+      mood: "Peak Time / Pista",
+      year: 2018,
+      cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      duration: "06:40",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_2",
+      title: "The Garden (Original Mix)",
+      artist: "Black Coffee, Caiiro",
+      genre: "House",
+      subgenre: "Afro House",
+      bpm: 122,
+      key: "4A",
+      version: "Extended Mix",
+      mood: "Chill / Sunset / After",
+      year: 2021,
+      cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      duration: "07:15",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_3",
+      title: "Eternity (Club Edit)",
+      artist: "Anyma & Chris Avantgarde",
+      genre: "Techno",
+      subgenre: "Melodic Techno",
+      bpm: 125,
+      key: "6A",
+      version: "Remix / Club Mix",
+      mood: "Peak Time / Pista",
+      year: 2023,
+      cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      duration: "05:50",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_4",
+      title: "Gasolina (DJ Intro Previa Edit)",
+      artist: "Daddy Yankee",
+      genre: "Latin & Urban",
+      subgenre: "Reggaet\xF3n",
+      bpm: 96,
+      key: "11A",
+      version: "Intro / Outro",
+      mood: "Previa / Warm Up",
+      year: 2004,
+      cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      duration: "03:45",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_5",
+      title: "RKT Session (Mashup Bailable)",
+      artist: "L-Gante x Bizarrap",
+      genre: "Latin & Urban",
+      subgenre: "Cachengue / RKT",
+      bpm: 100,
+      key: "2A",
+      version: "Mashup / Bootleg",
+      mood: "Peak Time / Pista",
+      year: 2021,
+      cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+      duration: "03:12",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_6",
+      title: "Me Provocas (Guaracha Tribal Mix)",
+      artist: "Fumaratto",
+      genre: "Latin & Urban",
+      subgenre: "Guaracha",
+      bpm: 130,
+      key: "7A",
+      version: "Extended Mix",
+      mood: "Peak Time / Pista",
+      year: 2020,
+      cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+      duration: "04:30",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_7",
+      title: "Cola (VIP Extended Mix)",
+      artist: "CamelPhat & Elderbrook",
+      genre: "House",
+      subgenre: "Melodic / Progressive House",
+      bpm: 122,
+      key: "8A",
+      version: "Extended Mix",
+      mood: "Previa / Warm Up",
+      year: 2017,
+      cover: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+      duration: "06:55",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_8",
+      title: "Feel It (Driving Acid Techno)",
+      artist: "Amelie Lens",
+      genre: "Techno",
+      subgenre: "Peak Time / Driving",
+      bpm: 134,
+      key: "10A",
+      version: "Extended Mix",
+      mood: "Peak Time / Pista",
+      year: 2022,
+      cover: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+      duration: "06:10",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_9",
+      title: "Lo Mejor del Amor (Transition Cuarteto)",
+      artist: "Rodrigo",
+      genre: "Latin & Urban",
+      subgenre: "Cuarteto",
+      bpm: 140,
+      key: "5B",
+      version: "Transition",
+      mood: "Peak Time / Pista",
+      year: 2e3,
+      cover: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+      duration: "03:50",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_10",
+      title: "Hanging Tree (Groove Edit)",
+      artist: "Michael Bibi",
+      genre: "Electro & Breaks",
+      subgenre: "Minimal / Deep Tech",
+      bpm: 128,
+      key: "3A",
+      version: "Short Edit / Radio",
+      mood: "Peak Time / Pista",
+      year: 2019,
+      cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+      duration: "05:15",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_11",
+      title: "Communication (Uplifting Euphoria)",
+      artist: "Armin van Buuren",
+      genre: "Trance",
+      subgenre: "Uplifting Trance",
+      bpm: 138,
+      key: "1B",
+      version: "Extended Mix",
+      mood: "Peak Time / Pista",
+      year: 2007,
+      cover: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      duration: "07:40",
+      cues: NV2_COLORS
+    },
+    {
+      id: "cat_12",
+      title: "Aguila (Latin House Extended)",
+      artist: "Hugel & Westend",
+      genre: "House",
+      subgenre: "Latin House",
+      bpm: 126,
+      key: "9A",
+      version: "Extended Mix",
+      mood: "Peak Time / Pista",
+      year: 2022,
+      cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=300&fit=crop",
+      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      duration: "05:30",
+      cues: NV2_COLORS
+    }
+  ];
+  function parseAIDJQuery(query) {
+    if (!query || typeof query !== "string") {
+      return {
+        raw: "",
+        genre: null,
+        subgenre: null,
+        targetBpm: null,
+        minBpm: null,
+        maxBpm: null,
+        key: null,
+        compatibleKeys: [],
+        version: null,
+        mood: null,
+        year: null,
+        tokens: []
+      };
+    }
+    const q = query.toLowerCase().trim();
+    const result = {
+      raw: query,
+      genre: null,
+      subgenre: null,
+      targetBpm: null,
+      minBpm: null,
+      maxBpm: null,
+      key: null,
+      compatibleKeys: [],
+      version: null,
+      mood: null,
+      year: null,
+      tokens: []
+    };
+    const bpmRangeMatch = q.match(/(\d{2,3})\s*(?:-|a|to)\s*(\d{2,3})\s*(?:bpm)?/);
+    if (bpmRangeMatch) {
+      result.minBpm = parseInt(bpmRangeMatch[1], 10);
+      result.maxBpm = parseInt(bpmRangeMatch[2], 10);
+      result.targetBpm = Math.round((result.minBpm + result.maxBpm) / 2);
+      result.tokens.push({ type: "bpm", label: `${result.minBpm}-${result.maxBpm} BPM`, rawMatch: bpmRangeMatch[0] });
+    } else {
+      const singleBpmMatch = q.match(/(?:a\s+)?(\b1[0-9]{2}\b|\b[6-9][0-9]\b)\s*(?:bpm)?/);
+      if (singleBpmMatch) {
+        const val = parseInt(singleBpmMatch[1], 10);
+        if (val >= 60 && val <= 200) {
+          result.targetBpm = val;
+          result.minBpm = val - 3;
+          result.maxBpm = val + 3;
+          result.tokens.push({ type: "bpm", label: `${val} BPM (\xB13)`, rawMatch: singleBpmMatch[0] });
+        }
+      }
+    }
+    const camelotMatch = q.match(/\b(1[0-2]|[1-9])([abAB])\b/);
+    if (camelotMatch) {
+      const k = (camelotMatch[1] + camelotMatch[2]).toUpperCase();
+      result.key = k;
+      if (CAMELOT_WHEEL_DATA[k]) {
+        result.compatibleKeys = [k, CAMELOT_WHEEL_DATA[k].rel, CAMELOT_WHEEL_DATA[k].up, CAMELOT_WHEEL_DATA[k].down];
+      }
+      result.tokens.push({ type: "key", label: `Key ${k}`, rawMatch: camelotMatch[0] });
+    } else {
+      for (const [camKey, data] of Object.entries(CAMELOT_WHEEL_DATA)) {
+        const cls = data.classical.toLowerCase();
+        const nm = data.name.toLowerCase();
+        if (q.includes(`en ${cls}`) || q.includes(`en ${nm}`) || q.includes(` ${cls}`)) {
+          result.key = camKey;
+          result.compatibleKeys = [camKey, data.rel, data.up, data.down];
+          result.tokens.push({ type: "key", label: `Key ${camKey} (${data.classical})`, rawMatch: cls });
+          break;
+        }
+      }
+    }
+    if (q.includes("extended") || q.includes("ext")) {
+      result.version = "Extended Mix";
+      result.tokens.push({ type: "version", label: "Extended Mix", rawMatch: q.includes("extended") ? "extended" : "ext" });
+    } else if (q.includes("intro") || q.includes("outro")) {
+      result.version = "Intro / Outro";
+      result.tokens.push({ type: "version", label: "Intro / Outro", rawMatch: q.includes("intro") ? "intro" : "outro" });
+    } else if (q.includes("mashup") || q.includes("bootleg")) {
+      result.version = "Mashup / Bootleg";
+      result.tokens.push({ type: "version", label: "Mashup", rawMatch: q.includes("mashup") ? "mashup" : "bootleg" });
+    } else if (q.includes("remix") || q.includes("club mix")) {
+      result.version = "Remix / Club Mix";
+      result.tokens.push({ type: "version", label: "Remix", rawMatch: q.includes("remix") ? "remix" : "club mix" });
+    } else if (q.includes("acapella") || q.includes("acappella")) {
+      result.version = "Acapella";
+      result.tokens.push({ type: "version", label: "Acapella", rawMatch: q.includes("acapella") ? "acapella" : "acappella" });
+    } else if (q.includes("transition") || q.includes("transicion")) {
+      result.version = "Transition";
+      result.tokens.push({ type: "version", label: "Transition", rawMatch: q.includes("transition") ? "transition" : "transicion" });
+    }
+    if (q.includes("previa") || q.includes("warm up") || q.includes("warmup")) {
+      result.mood = "Previa / Warm Up";
+      result.tokens.push({ type: "mood", label: "Previa / Warm Up", rawMatch: q.includes("warm up") ? "warm up" : q.includes("warmup") ? "warmup" : "previa" });
+    } else if (q.includes("pista") || q.includes("peak time") || q.includes("festival") || q.includes("driving") || q.includes("bailar") || q.includes("baile")) {
+      result.mood = "Peak Time / Pista";
+      result.tokens.push({ type: "mood", label: "Peak Time / Pista", rawMatch: q.includes("peak time") ? "peak time" : q.includes("pista") ? "pista" : q.includes("driving") ? "driving" : "bailar" });
+    } else if (q.includes("sunset") || q.includes("chill") || q.includes("after") || q.includes("lounge")) {
+      result.mood = "Chill / Sunset / After";
+      result.tokens.push({ type: "mood", label: "Chill / Sunset", rawMatch: q.includes("sunset") ? "sunset" : q.includes("chill") ? "chill" : q.includes("after") ? "after" : "lounge" });
+    }
+    const yearMatch = q.match(/\b(19\d{2}|20\d{2})\b/);
+    if (yearMatch) {
+      result.year = parseInt(yearMatch[1], 10);
+      result.tokens.push({ type: "year", label: `A\xF1o ${result.year}`, rawMatch: yearMatch[0] });
+    } else if (q.includes("retro") || q.includes("90s") || q.includes("80s") || q.includes("2000s")) {
+      result.year = "Retro";
+      result.tokens.push({ type: "year", label: "Retro", rawMatch: q.includes("retro") ? "retro" : q.includes("90s") ? "90s" : q.includes("80s") ? "80s" : "2000s" });
+    }
+    if (q.includes("bass driver") || q.includes("subgrave") || q.includes("bombo") || q.includes("sub-bass") || q.includes("sub bass")) {
+      result.acousticRole = "Bass Driver";
+      result.tokens.push({ type: "role", label: "Rol: Bass Driver (Graves)", rawMatch: "bass driver" });
+    } else if (q.includes("vocal") || q.includes("vocales") || q.includes("lead") || q.includes("melodia") || q.includes("mel\xF3dico") || q.includes("melodica")) {
+      result.acousticRole = "Vocal / Lead";
+      result.tokens.push({ type: "role", label: "Rol: Vocal / Lead (Medios)", rawMatch: "vocal" });
+    } else if (q.includes("percussive") || q.includes("percusivo") || q.includes("percursion") || q.includes("tool") || q.includes("hats") || q.includes("platos")) {
+      result.acousticRole = "Percussive Tool";
+      result.tokens.push({ type: "role", label: "Rol: Percussive Tool (Agudos)", rawMatch: "percussive" });
+    }
+    if (q.includes("energico") || q.includes("en\xE9rgico") || q.includes("alta energia") || q.includes("alta energ\xEDa") || q.includes("high energy")) {
+      result.minEnergy = 80;
+      result.tokens.push({ type: "energy", label: "Energ\xEDa > 80%", rawMatch: "en\xE9rgico" });
+    } else if (q.includes("chill") || q.includes("baja energia") || q.includes("baja energ\xEDa") || q.includes("suave")) {
+      result.maxEnergy = 65;
+      result.tokens.push({ type: "energy", label: "Energ\xEDa < 65%", rawMatch: "chill" });
+    }
+    if (q.includes("tech house")) {
+      result.genre = "House";
+      result.subgenre = "Tech House";
+      result.tokens.push({ type: "genre", label: "Tech House", rawMatch: "tech house" });
+    } else if (q.includes("afro house") || q.includes("afro")) {
+      result.genre = "House";
+      result.subgenre = "Afro House";
+      result.tokens.push({ type: "genre", label: "Afro House", rawMatch: q.includes("afro house") ? "afro house" : "afro" });
+    } else if (q.includes("melodic techno")) {
+      result.genre = "Techno";
+      result.subgenre = "Melodic Techno";
+      result.tokens.push({ type: "genre", label: "Melodic Techno", rawMatch: "melodic techno" });
+    } else if (q.includes("progressive house") || q.includes("house progresivo")) {
+      result.genre = "House";
+      result.subgenre = "Melodic / Progressive House";
+      result.tokens.push({ type: "genre", label: "Progressive House", rawMatch: q.includes("progressive house") ? "progressive house" : "house progresivo" });
+    } else if (q.includes("deep house")) {
+      result.genre = "House";
+      result.subgenre = "Deep House";
+      result.tokens.push({ type: "genre", label: "Deep House", rawMatch: "deep house" });
+    } else if (q.includes("minimal") || q.includes("deep tech")) {
+      result.genre = "Electro & Breaks";
+      result.subgenre = "Minimal / Deep Tech";
+      result.tokens.push({ type: "genre", label: "Minimal / Deep Tech", rawMatch: q.includes("minimal") ? "minimal" : "deep tech" });
+    } else if (q.includes("reggaeton") || q.includes("reggaet\xF3n")) {
+      result.genre = "Latin & Urban";
+      result.subgenre = "Reggaet\xF3n";
+      result.tokens.push({ type: "genre", label: "Reggaet\xF3n", rawMatch: q.includes("reggaet\xF3n") ? "reggaet\xF3n" : "reggaeton" });
+    } else if (q.includes("cachengue") || q.includes("rkt")) {
+      result.genre = "Latin & Urban";
+      result.subgenre = "Cachengue / RKT";
+      result.tokens.push({ type: "genre", label: "Cachengue / RKT", rawMatch: q.includes("cachengue") ? "cachengue" : "rkt" });
+    } else if (q.includes("cuarteto")) {
+      result.genre = "Latin & Urban";
+      result.subgenre = "Cuarteto";
+      result.tokens.push({ type: "genre", label: "Cuarteto", rawMatch: "cuarteto" });
+    } else if (q.includes("guaracha")) {
+      result.genre = "Latin & Urban";
+      result.subgenre = "Guaracha";
+      result.tokens.push({ type: "genre", label: "Guaracha", rawMatch: "guaracha" });
+    } else if (q.includes("cumbia")) {
+      result.genre = "Latin & Urban";
+      result.subgenre = "Cumbia";
+      result.tokens.push({ type: "genre", label: "Cumbia", rawMatch: "cumbia" });
+    } else if (q.includes("latin house")) {
+      result.genre = "House";
+      result.subgenre = "Latin House";
+      result.tokens.push({ type: "genre", label: "Latin House", rawMatch: "latin house" });
+    } else if (q.includes("techno") || q.includes("tecno")) {
+      result.genre = "Techno";
+      result.subgenre = "Techno";
+      result.tokens.push({ type: "genre", label: "Techno", rawMatch: q.includes("techno") ? "techno" : "tecno" });
+    } else if (q.includes("house")) {
+      result.genre = "House";
+      result.subgenre = "House";
+      result.tokens.push({ type: "genre", label: "House", rawMatch: "house" });
+    } else if (q.includes("trance")) {
+      result.genre = "Trance";
+      result.subgenre = "Trance";
+      result.tokens.push({ type: "genre", label: "Trance", rawMatch: "trance" });
+    } else if (q.includes("drum & bass") || q.includes("drum and bass") || q.includes("dnb")) {
+      result.genre = "Drum & Bass";
+      result.subgenre = "Drum & Bass";
+      result.tokens.push({ type: "genre", label: "Drum & Bass", rawMatch: q.includes("drum & bass") ? "drum & bass" : q.includes("drum and bass") ? "drum and bass" : "dnb" });
+    }
+    return result;
+  }
+  var DJ_MOODS_LIST = [
+    { id: "Peak Time", label: "\u{1F525} Peak Time", desc: "Cl\xEDmax de pista, alta pegada" },
+    { id: "Dark", label: "\u{1F311} Dark", desc: "Oscuro, industrial, contundente" },
+    { id: "Euphoric", label: "\u2728 Euphoric", desc: "Melod\xEDas \xE9picas, subid\xF3n emotivo" },
+    { id: "Hypnotic", label: "\u{1F300} Hypnotic", desc: "Groove continuo y envolvente" },
+    { id: "Raw", label: "\u26A1 Raw", desc: "Seco, crudo y minimalista" },
+    { id: "Melancholic", label: "\u{1F327} Melancholic", desc: "Atmosf\xE9rico y profundo" }
+  ];
+
+  // web/js/data/glossary.js
+  var BEATWAVE_MASTER_GLOSSARY = [
+    // DSP & ACÚSTICA AVANZADA (AUDIO INFORMATION RETRIEVAL)
+    {
+      term: "FFT (Fast Fourier Transform)",
+      category: "DSP & Ac\xFAstica",
+      tag: "ESPECTRO",
+      color: "#06b6d4",
+      icon: "\u{1F52C}",
+      definition: "Transformada R\xE1pida de Fourier. Algoritmo matem\xE1tico que descompone en tiempo real una forma de onda de audio del dominio temporal al espectro de frecuencias (magnitud y fase). Es la base del an\xE1lisis espectral, la detecci\xF3n precisa de transitorios del bombo y la calibraci\xF3n arm\xF3nica en BeatWave Pro.",
+      formula: "X[k] = \u2211 x[n] \xB7 e^(-i 2\u03C0 k n / N) (N=2048, Hop=512)",
+      impact: "Permite visualizar el espectro 3-band y aislar frecuencias para Beatgrid y tonalidad."
+    },
+    {
+      term: "Crest Factor (Factor de Cresta)",
+      category: "DSP & Ac\xFAstica",
+      tag: "DIN\xC1MICA",
+      color: "#f59e0b",
+      icon: "\u{1F4CA}",
+      definition: "Relaci\xF3n en decibelios entre la amplitud pico m\xE1xima de la se\xF1al y su valor medio cuadr\xE1tico (RMS). Cuantifica el grado de compresi\xF3n y limitaci\xF3n en el mastering. Un Crest Factor bajo (< 7.5 dB) indica transitorios comprimidos y bombos saturados propios de Hard Techno o Schranz, mientras que valores altos (> 12 dB) reflejan din\xE1mica org\xE1nica.",
+      formula: "CF (dB) = 20 \xB7 log10( Peak / RMS )",
+      impact: "Diferencia de inmediato pistas ultracomprimidas de temas con din\xE1mica natural para masterizar la ganancia del mixer."
+    },
+    {
+      term: "Zero-Crossing Rate (ZCR)",
+      category: "DSP & Ac\xFAstica",
+      tag: "RUGOSIDAD",
+      color: "#ec4899",
+      icon: "\u26A1",
+      definition: "Tasa de cruces por cero. Mide la frecuencia con la que la onda de audio atraviesa el eje de amplitud cero por unidad de tiempo. En m\xFAsica electr\xF3nica revela el contenido de altas frecuencias, la aspereza de sintetizadores distorsionados y la presencia de componentes ruidosos o percusivos frente a tonos sinusoidales puros.",
+      formula: "ZCR = (1 / 2N) \u2211 |sgn(x[n]) - sgn(x[n-1])|",
+      impact: "Identifica texturas industriales, bombos crujientes y saturaci\xF3n anal\xF3gica en el Drop."
+    },
+    {
+      term: "Spectral Centroid (Centroide Espectral)",
+      category: "DSP & Ac\xFAstica",
+      tag: "TIMBRE",
+      color: "#8b5cf6",
+      icon: "\u{1F308}",
+      definition: "Centro de gravedad del espectro de frecuencias ponderado por su magnitud. Correlaciona directamente con la percepci\xF3n psicoac\xFAstica de 'brillo' u 'oscuridad' sonora. Un centroide bajo (< 1600 Hz) caracteriza al Raw y Hypnotic Techno; un centroide elevado (> 2600 Hz) define la estridencia de Acid, Industrial o Peak Time.",
+      formula: "fc = \u2211 (f \xB7 |X(f)|) / \u2211 |X(f)|",
+      impact: "Permite emparejar pistas por balance t\xEDmbrico para que la mezcla no suene ni opaca ni chillona."
+    },
+    {
+      term: "Spectral Flatness (Entrop\xEDa de Wiener)",
+      category: "DSP & Ac\xFAstica",
+      tag: "RUIDO / TONAL",
+      color: "#10b981",
+      icon: "\u{1F4D0}",
+      definition: "Medida del aplanamiento espectral calculada como el cociente entre la media geom\xE9trica y la media aritm\xE9tica del espectro de potencia. Valores cercanos a 0 indican presencia de tonos arm\xF3nicos puros (sintetizadores de Melodic Techno), mientras que valores cercanos a 1 indican ruido blanco o percusiones met\xE1licas (Hard Groove / Industrial).",
+      formula: "Flatness = exp( (1/N) \u2211 ln(|X|^2) ) / ( (1/N) \u2211 |X|^2 )",
+      impact: "Separa autom\xE1ticamente tracks mel\xF3dicos y arm\xF3nicos de producciones percusivas y ruidosas."
+    },
+    {
+      term: "Drop Window MIR (Ventana de Cl\xEDmax)",
+      category: "DSP & Ac\xFAstica",
+      tag: "DETECCI\xD3N",
+      color: "#ef4444",
+      icon: "\u{1F4A5}",
+      definition: "Algoritmo de perfilado energ\xE9tico por RMS que analiza la canci\xF3n en bloques de 4 segundos para localizar la ventana de 12 segundos con m\xE1xima presi\xF3n ac\xFAstica (Drop 1 o Drop 2). Al omitir intros minimalistas y parones et\xE9reos, la extracci\xF3n de descriptores se realiza exclusivamente en el cl\xEDmax sonoro.",
+      formula: "Ventana 12s @ Max RMS Energy Profile",
+      impact: "Evita falsos positivos de g\xE9nero derivados de introducciones desnudas o breakdowns ambientales."
+    },
+    {
+      term: "Rumble Sub-Bass Ratio (20\u201360 Hz vs 60\u2013140 Hz)",
+      category: "DSP & Ac\xFAstica",
+      tag: "SUB-GRAVES",
+      color: "#22d3ee",
+      icon: "\u{1F50A}",
+      definition: "Cociente entre la energ\xEDa sub-grave continua (cola de rumble generada con reverb/retraso filtrado) y el golpe seco del bombo (punch). Crucial en el Techno contempor\xE1neo: permite discernir si un track tiene un subgrave rodante masivo (Hard/Raw Techno) o una l\xEDnea de bajo corta y punteada (Tech House / Melodic).",
+      formula: "Ratio = E(20\u201360 Hz) / E(60\u2013140 Hz)",
+      impact: "Previene saturaci\xF3n en el sistema de sonido del club al ecualizar los subgraves en la mezcla."
+    },
+    {
+      term: "Danzabilidad (Danceability)",
+      category: "DSP & Ac\xFAstica",
+      tag: "PSICO-RITMO",
+      color: "#a855f7",
+      icon: "\u{1F483}",
+      definition: "Descriptor psicoac\xFAstico que eval\xFAa la regularidad r\xEDtmica, la estabilidad del pulso 4-on-the-floor, la fuerza de los transitorios percusivos y la consistencia del groove. Puntuaci\xF3n del 0% al 100% que predice la naturalidad con la que el p\xFAblico responde con movimiento corporal continuo en pista.",
+      formula: "Algoritmo Multi-Onsets + Regularidad de Fase",
+      impact: "Garantiza tracks con tracci\xF3n f\xEDsica irresistible para mantener la pista de baile en movimiento."
+    },
+    {
+      term: "LUFS Integrado & True Peak",
+      category: "DSP & Ac\xFAstica",
+      tag: "SONORIDAD",
+      color: "#14b8a6",
+      icon: "\u{1F4CF}",
+      definition: "Loudness Units relative to Full Scale seg\xFAn norma internacional EBU R128 e ITU-R BS.1770. Mide el volumen percibido por el o\xEDdo humano en lugar del pico el\xE9ctrico. El True Peak detecta picos inter-muestrales generados tras la conversi\xF3n anal\xF3gica, evitando distorsi\xF3n en etapas de potencia.",
+      formula: "EBU R128 (-14 a -6 LUFS) \u2022 True Peak < -0.5 dBTP",
+      impact: "Nivelaci\xF3n matem\xE1tica de ganancias entre temas para no tocar el trim del mezclador durante la sesi\xF3n."
+    },
+    {
+      term: "Dynamic Range (DR / Rango Din\xE1mico)",
+      category: "DSP & Ac\xFAstica",
+      tag: "DIN\xC1MICA",
+      color: "#f97316",
+      icon: "\u{1F39A}\uFE0F",
+      definition: "Diferencia de sonoridad entre los pasajes m\xE1s en\xE9rgicos del track y el promedio RMS general (medici\xF3n estilo DR Meter). Un rango din\xE1mico adecuado preserva el impacto del kick y evita la fatiga auditiva en el p\xFAblico durante sesiones de m\xE1s de tres horas.",
+      formula: "DR = Top 20% RMS - Media Ac\xFAstica (dB)",
+      impact: "Mantiene la pegada f\xEDsica en el pecho sin emborronar las frecuencias medias del sintetizador."
+    },
+    {
+      term: "ID3v2.4 & Serato GEOB Tags",
+      category: "DSP & Ac\xFAstica",
+      tag: "METADATOS",
+      color: "#0284c7",
+      icon: "\u{1F4BE}",
+      definition: "Estructura binaria avanzada de encapsulaci\xF3n en formato ID3v2.4 UTF-8. Las etiquetas GEOB (General Encapsulated Object) almacenan Beatgrids milim\xE9tricos, puntos Hot Cue nombrados, colores RGB corporativos y mapas de tempo compatibles nativamente con Serato DJ Pro, Rekordbox y Traktor Pro.",
+      formula: "Trama GEOB: 'Serato Markers_V2' + 'BeatWave Pro Cues'",
+      impact: "Carga instant\xE1nea de Cues y BPM de alta fidelidad en cualquier reproductor o cabina sin rean\xE1lisis."
+    },
+    {
+      term: "Teorema de Nyquist-Shannon",
+      category: "DSP & Ac\xFAstica",
+      tag: "MUESTREO",
+      color: "#6366f1",
+      icon: "\u{1F4C9}",
+      definition: "Ley matem\xE1tica de procesamiento digital de se\xF1ales: para muestrear una onda anal\xF3gica sin distorsi\xF3n por aliasing, la frecuencia de muestreo (Fs) debe ser estrictamente superior al doble de la componente espectral m\xE1s alta (Fmax). Por ello, el est\xE1ndar de audio CD a 44.1 kHz cubre exactamente el l\xEDmite del o\xEDdo humano hasta 22.05 kHz.",
+      formula: "Fs \u2265 2 \xB7 Fmax \u2022 L\xEDmite Nyquist = Fs / 2",
+      impact: "Explica por qu\xE9 un MP3 de 128 kbps con corte a 16 kHz suena apagado frente a un FLAC sin p\xE9rdidas a 44.1/48 kHz."
+    },
+    {
+      term: "Dithering & Ruido TPDF",
+      category: "DSP & Ac\xFAstica",
+      tag: "CUANTIZACI\xD3N",
+      color: "#84cc16",
+      icon: "\u{1F3B2}",
+      definition: "Inyecci\xF3n intencional de ruido estoc\xE1stico no correlacionado con funci\xF3n de densidad triangular (TPDF) al reducir la profundidad de bits (ej. de 24-bit o 32-bit float a 16-bit). Elimina la distorsi\xF3n arm\xF3nica no lineal generada por el truncamiento de muestras, transformando el error en un suave siseo uniforme inaudible.",
+      formula: "TPDF Dither: e[n] = (rand1 - rand2) \xB7 LSB",
+      impact: "Preserva la reverberaci\xF3n y colas de silencio sin chirridos digitales en los breakdowns de cabina."
+    },
+    {
+      term: "Cancelaci\xF3n de Fase en Subgraves",
+      category: "DSP & Ac\xFAstica",
+      tag: "FASE / CLUB",
+      color: "#ef4444",
+      icon: "\u26A0\uFE0F",
+      definition: "Interferencia destructiva originada cuando dos pistas reproducen simult\xE1neamente componentes en la banda de 30-100 Hz con desfase cercano a 180\xB0. Las presiones ac\xFAsticas se anulan f\xEDsicamente en el aire del club, haciendo desaparecer por completo la pegada del bombo en la pista.",
+      formula: "\u0394\u03B8 = 180\xB0 \u21D2 y_total = y1 - y2 \u2248 0",
+      impact: "Exige la regla de oro: nunca mezclar dos bombos con sus faders de LOW abiertos a la vez (Bass Swapping)."
+    },
+    {
+      term: "Anti-Aliasing Filter (Brickwall LPF)",
+      category: "DSP & Ac\xFAstica",
+      tag: "FILTRADO",
+      color: "#a855f7",
+      icon: "\u{1F6E1}\uFE0F",
+      definition: "Filtro paso-bajas anal\xF3gico y digital de pendiente ultraempinada (brickwall) situado antes de la digitalizaci\xF3n ADC o resampling. Corta cualquier componente arm\xF3nica por encima de Fs/2 para evitar que se pliegue hacia el espectro audible como frecuencias fantasma inarm\xF3nicas.",
+      formula: "Atenuaci\xF3n > 96 dB @ F > Fs / 2",
+      impact: "Garantiza un sonido cristalino y n\xEDtido al cambiar el pitch de una canci\xF3n en vivo."
+    },
+    {
+      term: "Headroom Ac\xFAstico del Mixer",
+      category: "Cabina & Decks",
+      tag: "GANANCIA",
+      color: "#f59e0b",
+      icon: "\u{1F39A}\uFE0F",
+      definition: "Margen de seguridad en decibelios existente entre el nivel nominal de trabajo (0 dBVU / +4 dBu) y el umbral de distorsi\xF3n anal\xF3gica o clip digital absoluto (0 dBFS). Mantener un headroom de +6 a +12 dB en los canales permite que los transitorios del bombo respiren sin aplastamiento.",
+      formula: "Headroom = Nivel de Clip (0 dBFS) - Nivel RMS",
+      impact: "Evita que el sonido del club se comprima y sature cuando suenan dos decks a la vez."
+    },
+    // CABINA & HARDWARE
+    {
+      term: "Downbeat (Beat 1.0.0)",
+      category: "Cabina & Decks",
+      tag: "M\xC9TRICA",
+      color: "#06b6d4",
+      icon: "\u{1F3AF}",
+      definition: "Primer golpe o pulso fuerte de un comp\xE1s de 4 tiempos (4/4). Marcar el Hot Cue 1 en el downbeat exacto garantiza que las transiciones queden matem\xE1ticamente alineadas sin desfase r\xEDtmico ni choque de bombos.",
+      formula: "Comp\xE1s 4/4 \u2022 T1 (1.0.0)",
+      impact: "Alineaci\xF3n de fraseo (frase de 16/32 compases) en Rekordbox, Serato y Traktor."
+    },
+    {
+      term: "Beatgrid & Cuantizaci\xF3n",
+      category: "Cabina & Decks",
+      tag: "TEMPORAL",
+      color: "#38bdf8",
+      icon: "\u{1F39B}\uFE0F",
+      definition: "Malla temporal microsc\xF3pica superpuesta a la forma de onda de audio. La cuantizaci\xF3n fuerza a los Hot Cues, bucles y transiciones a anclarse autom\xE1ticamente al pulso m\xE1s cercano, evitando desviaciones humanas al tocar los pads.",
+      formula: "Resoluci\xF3n: 1/16 beat @ 60fps",
+      impact: "Garantiza loops sin imperfecciones y saltos en directo 100% r\xEDtmicos."
+    },
+    {
+      term: "Hot Cues T\xE1cticos (1\u20138)",
+      category: "Cabina & Decks",
+      tag: "ESTRUCTURA",
+      color: "#f59e0b",
+      icon: "\u{1F3F7}\uFE0F",
+      definition: "Marcadores de acceso instant\xE1neo mapeados a los 8 pads de la controladora DJ. BeatWave Pro estandariza la convenci\xF3n NV2: CUE 1 (Intro/Downbeat), CUE 2 (Build-up), CUE 3 (Drop Principal), CUE 4 (Break/Breakdown), CUE 5 (Segundo Drop) y CUE 8 (Outro Seguro).",
+      formula: "8 Cues \u2022 Colores NV2 Corporativos",
+      impact: "Navegaci\xF3n espacial instant\xE1nea por la estructura del track en cualquier reproductor."
+    },
+    {
+      term: "Slip Mode",
+      category: "Cabina & Decks",
+      tag: "REPRODUCCI\xD3N",
+      color: "#10b981",
+      icon: "\u26A1",
+      definition: "Modo de reproducci\xF3n donde la m\xFAsica contin\xFAa corriendo en silencio en segundo plano mientras el DJ ejecuta scratch, bucles manuales o reverse. Al soltar el pad o jogwheel, la canci\xF3n retoma exactamente en el comp\xE1s donde estar\xEDa normalmente.",
+      formula: "Playhead Virtual Continuo",
+      impact: "Permite trucos r\xEDtmicos sin perder la sincronizaci\xF3n con el otro deck."
+    },
+    {
+      term: "Master Tempo (Key Lock)",
+      category: "Cabina & Decks",
+      tag: "DSP TONAL",
+      color: "#a855f7",
+      icon: "\u{1F512}",
+      definition: "Algoritmo de time-stretching en tiempo real que preserva la tonalidad original (pitch/key) de una pista incluso al alterar dr\xE1sticamente su velocidad (BPM) con el fader de pitch.",
+      formula: "Pitch Shift = 0 semitonos @ \u0394BPM",
+      impact: "Evita el efecto 'voces de pitufo' o ralentizaciones graves al ajustar tempo."
+    },
+    {
+      term: "Zero-Crossing (Paso por Cero)",
+      category: "Cabina & Decks",
+      tag: "DSP AUDIO",
+      color: "#ec4899",
+      icon: "\u2702\uFE0F",
+      definition: "Punto exacto de la onda sonora donde la amplitud el\xE9ctrica cruza el eje de 0 voltios. Colocar cortes y Hot Cues en el zero-crossing previene micro-chasquidos (clicks o pops) que pueden da\xF1ar altavoces de gran potencia.",
+      formula: "Amplitud: V(t) = 0.00 V",
+      impact: "Transiciones limpias sin ruidos par\xE1sitos en sistemas de sonido de club."
+    },
+    // DSP & ACÚSTICA
+    {
+      term: "Bass Clash (Conflicto de Graves)",
+      category: "DSP & Ac\xFAstica",
+      tag: "CR\xCDTICO",
+      color: "#ef4444",
+      icon: "\u26A0\uFE0F",
+      definition: "Solapamiento destructivo de energ\xEDa de sub-graves (<120 Hz) entre dos pistas reproduci\xE9ndose simult\xE1neamente. Genera cancelaci\xF3n de fase ac\xFAstica, p\xE9rdida de pegada en el bombo y sobrecarga en los amplificadores de subgraves del club.",
+      formula: "Energ\xEDa Sub-Bass > 44% en ambos Decks",
+      impact: "BeatWave Copilot emite alerta y activa corte preventivo de EQ Low (-6dB a -12dB)."
+    },
+    {
+      term: "Anti-Muddy DSP",
+      category: "DSP & Ac\xFAstica",
+      tag: "ALGORITMO",
+      color: "#10b981",
+      icon: "\u{1F6E1}\uFE0F",
+      definition: "Motor algor\xEDtmico exclusivo de BeatWave Pro que analiza el espectro combinado de frecuencias de ambos decks en tiempo real para predecir y disipar el enmascaramiento sonoro antes de que el DJ abra el fader en la mesa de mezclas.",
+      formula: "An\xE1lisis espectral FFT de 512 bandas",
+      impact: "Mezclas di\xE1fanas y cristalinas con punch absoluto en sala grande."
+    },
+    {
+      term: "LUFS Integrado (EBU R128)",
+      category: "DSP & Ac\xFAstica",
+      tag: "SONORIDAD",
+      color: "#38bdf8",
+      icon: "\u{1F4CA}",
+      definition: "Unidad de Sonoridad Relativa a Escala Completa que mide la potencia ac\xFAstica percibida por el o\xEDdo humano a lo largo de toda la pista. Est\xE1ndar club recomendado: -7.0 a -6.0 LUFS para tracks de m\xFAsica electr\xF3nica comercial.",
+      formula: "Curva de ponderaci\xF3n K (ITU-R BS.1770)",
+      impact: "Asegura niveles homog\xE9neos de ganancia sin saturaci\xF3n ni saltos de volumen."
+    },
+    {
+      term: "True Peak (dBTP)",
+      category: "DSP & Ac\xFAstica",
+      tag: "DIN\xC1MICA",
+      color: "#fbbf24",
+      icon: "\u{1F4C8}",
+      definition: "Nivel de pico inter-muestra que reconstruye anal\xF3gicamente la se\xF1al sonora entre muestras digitales. Superar 0.0 dBTP genera recorte duro (clipping) en los convertidores DAC de mesas de club como Pioneer DJM-V10 o Allen & Heath Xone:96.",
+      formula: "Over-sampling x4 inter-sample peak",
+      impact: "Mantiene la se\xF1al bajo -0.3 dBTP para evitar distorsi\xF3n anal\xF3gica."
+    },
+    {
+      term: "Espectro Tri-Banda (3-Way Split)",
+      category: "DSP & Ac\xFAstica",
+      tag: "VISUALIZADOR",
+      color: "#06b6d4",
+      icon: "\u{1F308}",
+      definition: "Visualizaci\xF3n de forma de onda dividida en 3 rangos espectrales: Azul Oscuro para Graves y Sub-bajos (<200 Hz), Naranja/Cian para Medios y Voces (200 Hz \u2013 2.5 kHz), y Blanco Puro para Agudos y Transitorios (>2.5 kHz).",
+      formula: "Low (<200Hz) \u2022 Mid \u2022 High (>2.5kHz)",
+      impact: "Permite al DJ anticipar visualmente bajadas, drops y entradas vocales al segundo."
+    },
+    // ARMONÍA & CAMELOT
+    {
+      term: "Camelot Wheel",
+      category: "Armon\xEDa & Camelot",
+      tag: "TEOR\xCDA",
+      color: "#ec4899",
+      icon: "\u{1F3A1}",
+      definition: "Sistema circular de 24 casillas que traduce el c\xEDrculo de quintas a 12 n\xFAmeros (1 al 12) y dos letras: A para tonalidades menores y B para tonalidades mayores. Permite a cualquier DJ seleccionar la pista arm\xF3nica perfecta de un vistazo.",
+      formula: "12 n\xFAmeros x 2 modos (A/B)",
+      impact: "Evita notas disonantes y melod\xEDas enfrentadas en mezclas largas."
+    },
+    {
+      term: "Energy Boost (+2 Camelot)",
+      category: "Armon\xEDa & Camelot",
+      tag: "PSICO-ENERG\xCDA",
+      color: "#f59e0b",
+      icon: "\u{1F680}",
+      definition: "T\xE9cnica arm\xF3nica que consiste en saltar dos posiciones horarias en la rueda de Camelot (ejemplo: de 8A a 10A, o de 11B a 1B). Provoca una elevaci\xF3n inmediata de la tensi\xF3n emocional y la euforia en la pista de baile.",
+      formula: "Key actual + 2 (ej. 8A \u2192 10A / Bm \u2192 C#m)",
+      impact: "Ideal para momentos culminantes y cambios de energ\xEDa en festivales."
+    },
+    {
+      term: "Mezcla Diat\xF3nica (+1 / -1)",
+      category: "Armon\xEDa & Camelot",
+      tag: "ARMON\xCDA PURA",
+      color: "#10b981",
+      icon: "\u{1F3B5}",
+      definition: "Mezcla entre casillas vecinas de la rueda Camelot (ejemplo: 8A con 7A o 9A). Al compartir casi todas las notas de sus respectivas escalas, las melod\xEDas y l\xEDneas de bajo se entrelazan de forma 100% natural sin choques tonales.",
+      formula: "Quinta Justa ascendente (+1) o descendente (-1)",
+      impact: "La regla de oro para sets continuos, fluidos e hipn\xF3ticos."
+    },
+    {
+      term: "Modo Relativo (A \u2194 B)",
+      category: "Armon\xEDa & Camelot",
+      tag: "CAMBIO DE COLOR",
+      color: "#8b5cf6",
+      icon: "\u{1F3AD}",
+      definition: "Transici\xF3n entre la tonalidad menor y su mayor relativa en el mismo n\xFAmero de la rueda (ejemplo: 8A/La menor a 8B/Do mayor). Ambas tonalidades comparten exactamente las mismas notas, transformando el mood de oscuro a luminoso.",
+      formula: "Tono relativo: Mismo n\xFAmero, distinta letra",
+      impact: "Inyecci\xF3n de luz y \xE9pica en breaks vocales sin cambiar centro tonal."
+    },
+    // PSICOACÚSTICA & IA
+    {
+      term: "Energ\xEDa (0\u2013100%)",
+      category: "Psicoac\xFAstica & IA",
+      tag: "POTENCIA",
+      color: "#f97316",
+      icon: "\u26A1",
+      definition: "M\xE9trica calculada por algoritmos de Machine Learning que combina la densidad r\xEDtmica de los transitorios, el volumen de frecuencias medias-altas y la compresi\xF3n espectral para calibrar la fuerza percibida en pista.",
+      formula: "ML Acoustic Energy Index",
+      impact: "Permite programar la curva de intensidad del set sin bajones inesperados."
+    },
+    {
+      term: "Intensidad (Arousal)",
+      category: "Psicoac\xFAstica & IA",
+      tag: "ACTIVACI\xD3N",
+      color: "#10b981",
+      icon: "\u{1F4C8}",
+      definition: "Nivel de activaci\xF3n fisiol\xF3gica y excitaci\xF3n motora que la m\xFAsica induce en el sistema nervioso del oyente (frecuencia card\xEDaca y ganas de bailar). Rango de 0% (relajaci\xF3n/chillout) a 100% (frenes\xED rave / peak time).",
+      formula: "Russells Circumplex Arousal Axis",
+      impact: "Gestiona el ritmo biol\xF3gico del p\xFAblico durante sesiones de m\xE1s de 3 horas."
+    },
+    {
+      term: "Positividad (Valence)",
+      category: "Psicoac\xFAstica & IA",
+      tag: "VALENCIA",
+      color: "#06b6d4",
+      icon: "\u2728",
+      definition: "Valencia afectiva y emocional de una pista de audio. Valores cercanos al 0% indican temas oscuros, industriales, densos o melanc\xF3licos; valores cercanos al 100% reflejan temas euf\xF3ricos, alegres, veraniegos o festivos.",
+      formula: "Affective Valence Meter (0.0 \u2013 1.0)",
+      impact: "Alinea la selecci\xF3n musical con la vibra exacta de la noche y el p\xFAblico."
+    },
+    {
+      term: "Mood & Fase de Set",
+      category: "Psicoac\xFAstica & IA",
+      tag: "ESTRATEGIA",
+      color: "#c084fc",
+      icon: "\u{1F9ED}",
+      definition: "Clasificaci\xF3n t\xE1ctica del rol de cada pista dentro de la sesi\xF3n DJ: Warm-up (construcci\xF3n inicial), Mid-Set Groove (mantenimiento de ritmo), Peak Time Climax (momento de m\xE1xima euforia) y Afterhours (ritmo hipn\xF3tico para cierre).",
+      formula: "Clasificador Heur\xEDstico Multicriterio",
+      impact: "Sugiere autom\xE1ticamente las mejores pistas de entrada para cada hora del evento."
+    },
+    // METADATOS & SUITES DJ
+    {
+      term: "ID3v2.4 UTF-8",
+      category: "Metadatos & Suites",
+      tag: "EST\xC1NDAR",
+      color: "#38bdf8",
+      icon: "\u{1F4BE}",
+      definition: "Versi\xF3n m\xE1s avanzada y robusta del est\xE1ndar internacional de metadatos de audio MP3/WAV/AIFF. El uso de codificaci\xF3n UTF-8 previene caracteres corruptos (mojibake) en pantallas t\xE1ctiles de Pioneer CDJ-3000 y Denon SC6000.",
+      formula: "ID3v2.4.0 \u2022 Codificaci\xF3n UTF-8 pura",
+      impact: "T\xEDtulos, artistas y comentarios legibles al 100% en cualquier cabina del mundo."
+    },
+    {
+      term: "Rekordbox XML",
+      category: "Metadatos & Suites",
+      tag: "PIONEER DJ",
+      color: "#0284c7",
+      icon: "\u{1F4BF}",
+      definition: "Estructura jer\xE1rquica nativa de Pioneer DJ que almacena metadatos enriquecidos, listas de reproducci\xF3n, memoria de Hot Cues con milisegundos exactos y coordenadas del beatgrid para exportaci\xF3n r\xE1pida a pendrives USB.",
+      formula: "Rekordbox 6/7 Master XML Schema",
+      impact: "Carga instant\xE1nea de colecciones en equipos est\xE1ndar de club (CDJ/XDJ)."
+    },
+    {
+      term: "Serato Markers2",
+      category: "Metadatos & Suites",
+      tag: "SERATO DJ",
+      color: "#00d1e8",
+      icon: "\u{1F39A}\uFE0F",
+      definition: "Bloque de datos binarios almacenado en el tag ID3 GEOB (General Encapsulated Object) de Serato DJ Pro. Contiene los colores RGB de los 8 Hot Cues, bucles guardados y configuraciones de scratch sin requerir bases de datos externas.",
+      formula: "GEOB:Serato Markers2 Binary Chunk",
+      impact: "Los Hot Cues aparecen con sus colores corporativos exactos al pinchar en Serato."
+    },
+    {
+      term: "Traktor NML",
+      category: "Metadatos & Suites",
+      tag: "NATIVE INST.",
+      color: "#facc15",
+      icon: "\u26A1",
+      definition: "Formato de archivo XML nativo de Native Instruments Traktor Pro 3/4. Registra los puntos de acceso CUE, GRID, FADE-IN, FADE-OUT y bucles tipo POI para sincronizaci\xF3n en directo.",
+      formula: "Traktor Collection NML v19+",
+      impact: "Compatibilidad absoluta con controladores Traktor Kontrol S4/X1/Z2."
+    },
+    {
+      term: "VirtualDJ POI",
+      category: "Metadatos & Suites",
+      tag: "ATOMIX VDJ",
+      color: "#f97316",
+      icon: "\u{1F3A7}",
+      definition: "Puntos de Inter\xE9s (POI) propios del motor VirtualDJ 2024. Permite automatizar transiciones por stem separation, avisos de corte de frecuencias y marcas de mezcla arm\xF3nica por comp\xE1s.",
+      formula: "VirtualDJ Extended VDJ_POI Tag",
+      impact: "Desbloquea el m\xE1ximo potencial de mezcla con Stems ac\xFAsticos en directo."
+    }
+  ];
+
+  // web/js/app.jsx
+  var { useState: useState5, useEffect: useEffect6, useRef: useRef6, useMemo, useCallback, createContext, useContext } = React;
+  var PlayerContext = createContext({
+    playProgressRef: { current: 0 },
+    isPlaying: false,
+    nowPlayingTrack: null
+  });
   var Icons = {
     ...ShellIcons,
     Edit: ShellIcons.Pencil
@@ -4743,526 +5679,6 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       return /* @__PURE__ */ React.createElement("div", { key: cue.id || idx, className: "absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-10", style: { left: `${leftPos}%` } }, /* @__PURE__ */ React.createElement("div", { className: "w-3.5 h-3 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow", style: { backgroundColor: cue.color || "#ef4444" } }, cue.id || idx + 1), /* @__PURE__ */ React.createElement("div", { className: "w-[1px] h-full opacity-50", style: { backgroundColor: cue.color || "#ef4444" } }));
     }));
   };
-  var CAMELOT_WHEEL_DATA = {
-    "1A": { classical: "G#m", name: "Sol# menor", rel: "1B", up: "2A", down: "12A", color: "#06b6d4" },
-    "1B": { classical: "B", name: "Si Mayor", rel: "1A", up: "2B", down: "12B", color: "#38bdf8" },
-    "2A": { classical: "D#m", name: "Re# menor", rel: "2B", up: "3A", down: "1A", color: "#0284c7" },
-    "2B": { classical: "F#", name: "Fa# Mayor", rel: "2A", up: "3B", down: "1B", color: "#0369a1" },
-    "3A": { classical: "A#m", name: "La# menor", rel: "3B", up: "4A", down: "2A", color: "#22d3ee" },
-    "3B": { classical: "Db", name: "Re\u266D Mayor", rel: "3A", up: "4B", down: "2B", color: "#1d4ed8" },
-    "4A": { classical: "Fm", name: "Fa menor", rel: "4B", up: "5A", down: "3A", color: "#4f46e5" },
-    "4B": { classical: "Ab", name: "La\u266D Mayor", rel: "4A", up: "5B", down: "3B", color: "#4338ca" },
-    "5A": { classical: "Cm", name: "Do menor", rel: "5B", up: "6A", down: "4A", color: "#7c3aed" },
-    "5B": { classical: "Eb", name: "Mi\u266D Mayor", rel: "5A", up: "6B", down: "4B", color: "#6d28d9" },
-    "6A": { classical: "Gm", name: "Sol menor", rel: "6B", up: "7A", down: "5A", color: "#9333ea" },
-    "6B": { classical: "Bb", name: "Si\u266D Mayor", rel: "6A", up: "7B", down: "5B", color: "#7e22ce" },
-    "7A": { classical: "Dm", name: "Re menor", rel: "7B", up: "8A", down: "6A", color: "#c026d3" },
-    "7B": { classical: "F", name: "Fa Mayor", rel: "7A", up: "8B", down: "6B", color: "#a21caf" },
-    "8A": { classical: "Am", name: "La menor", rel: "8B", up: "9A", down: "7A", color: "#db2777" },
-    "8B": { classical: "C", name: "Do Mayor", rel: "8A", up: "9B", down: "7B", color: "#be185d" },
-    "9A": { classical: "Em", name: "Mi menor", rel: "9B", up: "10A", down: "8A", color: "#e11d48" },
-    "9B": { classical: "G", name: "Sol Mayor", rel: "9A", up: "10B", down: "8B", color: "#be123c" },
-    "10A": { classical: "Bm", name: "Si menor", rel: "10B", up: "11A", down: "9A", color: "#ea580c" },
-    "10B": { classical: "D", name: "Re Mayor", rel: "10A", up: "11B", down: "9B", color: "#c2410c" },
-    "11A": { classical: "F#m", name: "Fa# menor", rel: "11B", up: "12A", down: "10A", color: "#d97706" },
-    "11B": { classical: "A", name: "La Mayor", rel: "11A", up: "12B", down: "10B", color: "#b45309" },
-    "12A": { classical: "C#m", name: "Do# menor", rel: "12B", up: "1A", down: "11A", color: "#16a34a" },
-    "12B": { classical: "E", name: "Mi Mayor", rel: "12A", up: "1B", down: "11B", color: "#15803d" }
-  };
-  var TAXONOMY_TREE = {
-    "Peak-Time Techno": [
-      "Peak Time / Driving (130-135 BPM)",
-      "Raw / Driving Techno",
-      "Acid Peak-Time",
-      "Festival Techno"
-    ],
-    "Tech House": [
-      "Tech House (126-129 BPM)",
-      "Groove Tech House",
-      "Minimal Tech House",
-      "Latin Tech House",
-      "Mainstage Tech"
-    ],
-    "Hard Techno": [
-      "Hard Techno / Schranz (150-160 BPM)",
-      "Industrial Hard Techno",
-      "Neo-Rave / Hard Dance",
-      "Acid Hard Techno"
-    ],
-    "Techno": [
-      "Peak Time / Driving (130-135 BPM)",
-      "Raw / Deep / Hypnotic",
-      "Melodic Techno",
-      "Acid Techno",
-      "Dark / Industrial Techno"
-    ],
-    "House": [
-      "Tech House (126-129 BPM)",
-      "Afro House",
-      "Deep House",
-      "Minimal / Deep Tech",
-      "Melodic / Progressive House",
-      "Bass House"
-    ],
-    "Trance": [
-      "Psy-Trance (138-145 BPM)",
-      "Uplifting Trance",
-      "Tech Trance",
-      "Progressive Trance"
-    ],
-    "Drum & Bass": [
-      "Dancefloor DnB (174 BPM)",
-      "Neurofunk",
-      "Liquid Drum & Bass",
-      "Jump Up"
-    ],
-    "Electro & Breaks": [
-      "Breakbeat",
-      "UK Garage / 2-Step",
-      "Electro House"
-    ],
-    "Downtempo & Organic": [
-      "Organic House / Downtempo",
-      "Electronica / Melodic Ambient",
-      "Chillout / Lounge"
-    ],
-    "Latin & Urban": [
-      "Latin House",
-      "Guaracha / Tribal",
-      "Reggaet\xF3n & RKT"
-    ]
-  };
-  var DJ_GENRES_LIST = Object.keys(TAXONOMY_TREE);
-  var DJ_VERSIONS_LIST = [
-    "Extended Mix",
-    "Intro / Outro",
-    "Remix / Club Mix",
-    "Mashup / Bootleg",
-    "Transition",
-    "Acapella / DIY",
-    "Short Edit / Radio"
-  ];
-  var AI_PROMPT_CHIPS = [
-    { label: "\u{1F528} Hard Techno 150 BPM Ca\xF1a", query: "hard techno 150 bpm a tope de ca\xF1a" },
-    { label: "\u26A1 Techno Peak Time 132 BPM", query: "techno peak time driving 132 bpm" },
-    { label: "\u{1F9EA} Acid Techno en 8A 140 BPM", query: "acid techno en 8A a 140 bpm" },
-    { label: "\u{1F30C} Melodic Techno en 6A", query: "melodic techno en 6A" },
-    { label: "\u{1F525} Tech House a 128 BPM", query: "tech house a 128 bpm" },
-    { label: "\u{1F334} Afro House Groove", query: "afro house groove para bailar" },
-    { label: "\u{1F941} Minimal / Deep Tech 126 BPM", query: "minimal deep tech 126 bpm" },
-    { label: "\u{1F680} Psy-Trance 142 BPM Ca\xF1a", query: "psy-trance 142 bpm ca\xF1a" },
-    { label: "\u{1F4A5} Drum & Bass 174 BPM", query: "drum & bass neurofunk 174 bpm" },
-    { label: "\u{1F39B}\uFE0F Progressive House 124 BPM", query: "progressive house 124 bpm" }
-  ];
-  var DJ_CURATED_CATALOG = [
-    {
-      id: "cat_0",
-      title: "Legacy (Original Mix)",
-      artist: "Sara Landry",
-      genre: "Hard Techno",
-      subgenre: "Hard Techno / Schranz (150-160 BPM)",
-      bpm: 155,
-      key: "11A",
-      version: "Original Mix",
-      mood: "A Tope de Ca\xF1a",
-      year: 2024,
-      cover: "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-      duration: "05:42",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_1",
-      title: "Losing It (Extended Mix)",
-      artist: "Fisher",
-      genre: "House",
-      subgenre: "Tech House",
-      bpm: 126,
-      key: "8A",
-      version: "Extended Mix",
-      mood: "Peak Time / Pista",
-      year: 2018,
-      cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-      duration: "06:40",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_2",
-      title: "The Garden (Original Mix)",
-      artist: "Black Coffee, Caiiro",
-      genre: "House",
-      subgenre: "Afro House",
-      bpm: 122,
-      key: "4A",
-      version: "Extended Mix",
-      mood: "Chill / Sunset / After",
-      year: 2021,
-      cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-      duration: "07:15",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_3",
-      title: "Eternity (Club Edit)",
-      artist: "Anyma & Chris Avantgarde",
-      genre: "Techno",
-      subgenre: "Melodic Techno",
-      bpm: 125,
-      key: "6A",
-      version: "Remix / Club Mix",
-      mood: "Peak Time / Pista",
-      year: 2023,
-      cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-      duration: "05:50",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_4",
-      title: "Gasolina (DJ Intro Previa Edit)",
-      artist: "Daddy Yankee",
-      genre: "Latin & Urban",
-      subgenre: "Reggaet\xF3n",
-      bpm: 96,
-      key: "11A",
-      version: "Intro / Outro",
-      mood: "Previa / Warm Up",
-      year: 2004,
-      cover: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
-      duration: "03:45",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_5",
-      title: "RKT Session (Mashup Bailable)",
-      artist: "L-Gante x Bizarrap",
-      genre: "Latin & Urban",
-      subgenre: "Cachengue / RKT",
-      bpm: 100,
-      key: "2A",
-      version: "Mashup / Bootleg",
-      mood: "Peak Time / Pista",
-      year: 2021,
-      cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-      duration: "03:12",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_6",
-      title: "Me Provocas (Guaracha Tribal Mix)",
-      artist: "Fumaratto",
-      genre: "Latin & Urban",
-      subgenre: "Guaracha",
-      bpm: 130,
-      key: "7A",
-      version: "Extended Mix",
-      mood: "Peak Time / Pista",
-      year: 2020,
-      cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
-      duration: "04:30",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_7",
-      title: "Cola (VIP Extended Mix)",
-      artist: "CamelPhat & Elderbrook",
-      genre: "House",
-      subgenre: "Melodic / Progressive House",
-      bpm: 122,
-      key: "8A",
-      version: "Extended Mix",
-      mood: "Previa / Warm Up",
-      year: 2017,
-      cover: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
-      duration: "06:55",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_8",
-      title: "Feel It (Driving Acid Techno)",
-      artist: "Amelie Lens",
-      genre: "Techno",
-      subgenre: "Peak Time / Driving",
-      bpm: 134,
-      key: "10A",
-      version: "Extended Mix",
-      mood: "Peak Time / Pista",
-      year: 2022,
-      cover: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
-      duration: "06:10",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_9",
-      title: "Lo Mejor del Amor (Transition Cuarteto)",
-      artist: "Rodrigo",
-      genre: "Latin & Urban",
-      subgenre: "Cuarteto",
-      bpm: 140,
-      key: "5B",
-      version: "Transition",
-      mood: "Peak Time / Pista",
-      year: 2e3,
-      cover: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
-      duration: "03:50",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_10",
-      title: "Hanging Tree (Groove Edit)",
-      artist: "Michael Bibi",
-      genre: "Electro & Breaks",
-      subgenre: "Minimal / Deep Tech",
-      bpm: 128,
-      key: "3A",
-      version: "Short Edit / Radio",
-      mood: "Peak Time / Pista",
-      year: 2019,
-      cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
-      duration: "05:15",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_11",
-      title: "Communication (Uplifting Euphoria)",
-      artist: "Armin van Buuren",
-      genre: "Trance",
-      subgenre: "Uplifting Trance",
-      bpm: 138,
-      key: "1B",
-      version: "Extended Mix",
-      mood: "Peak Time / Pista",
-      year: 2007,
-      cover: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-      duration: "07:40",
-      cues: NV2_COLORS
-    },
-    {
-      id: "cat_12",
-      title: "Aguila (Latin House Extended)",
-      artist: "Hugel & Westend",
-      genre: "House",
-      subgenre: "Latin House",
-      bpm: 126,
-      key: "9A",
-      version: "Extended Mix",
-      mood: "Peak Time / Pista",
-      year: 2022,
-      cover: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=300&fit=crop",
-      preview_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-      duration: "05:30",
-      cues: NV2_COLORS
-    }
-  ];
-  function parseAIDJQuery(query) {
-    if (!query || typeof query !== "string") {
-      return {
-        raw: "",
-        genre: null,
-        subgenre: null,
-        targetBpm: null,
-        minBpm: null,
-        maxBpm: null,
-        key: null,
-        compatibleKeys: [],
-        version: null,
-        mood: null,
-        year: null,
-        tokens: []
-      };
-    }
-    const q = query.toLowerCase().trim();
-    const result = {
-      raw: query,
-      genre: null,
-      subgenre: null,
-      targetBpm: null,
-      minBpm: null,
-      maxBpm: null,
-      key: null,
-      compatibleKeys: [],
-      version: null,
-      mood: null,
-      year: null,
-      tokens: []
-    };
-    const bpmRangeMatch = q.match(/(\d{2,3})\s*(?:-|a|to)\s*(\d{2,3})\s*(?:bpm)?/);
-    if (bpmRangeMatch) {
-      result.minBpm = parseInt(bpmRangeMatch[1], 10);
-      result.maxBpm = parseInt(bpmRangeMatch[2], 10);
-      result.targetBpm = Math.round((result.minBpm + result.maxBpm) / 2);
-      result.tokens.push({ type: "bpm", label: `${result.minBpm}-${result.maxBpm} BPM`, rawMatch: bpmRangeMatch[0] });
-    } else {
-      const singleBpmMatch = q.match(/(?:a\s+)?(\b1[0-9]{2}\b|\b[6-9][0-9]\b)\s*(?:bpm)?/);
-      if (singleBpmMatch) {
-        const val = parseInt(singleBpmMatch[1], 10);
-        if (val >= 60 && val <= 200) {
-          result.targetBpm = val;
-          result.minBpm = val - 3;
-          result.maxBpm = val + 3;
-          result.tokens.push({ type: "bpm", label: `${val} BPM (\xB13)`, rawMatch: singleBpmMatch[0] });
-        }
-      }
-    }
-    const camelotMatch = q.match(/\b(1[0-2]|[1-9])([abAB])\b/);
-    if (camelotMatch) {
-      const k = (camelotMatch[1] + camelotMatch[2]).toUpperCase();
-      result.key = k;
-      if (CAMELOT_WHEEL_DATA[k]) {
-        result.compatibleKeys = [k, CAMELOT_WHEEL_DATA[k].rel, CAMELOT_WHEEL_DATA[k].up, CAMELOT_WHEEL_DATA[k].down];
-      }
-      result.tokens.push({ type: "key", label: `Key ${k}`, rawMatch: camelotMatch[0] });
-    } else {
-      for (const [camKey, data] of Object.entries(CAMELOT_WHEEL_DATA)) {
-        const cls = data.classical.toLowerCase();
-        const nm = data.name.toLowerCase();
-        if (q.includes(`en ${cls}`) || q.includes(`en ${nm}`) || q.includes(` ${cls}`)) {
-          result.key = camKey;
-          result.compatibleKeys = [camKey, data.rel, data.up, data.down];
-          result.tokens.push({ type: "key", label: `Key ${camKey} (${data.classical})`, rawMatch: cls });
-          break;
-        }
-      }
-    }
-    if (q.includes("extended") || q.includes("ext")) {
-      result.version = "Extended Mix";
-      result.tokens.push({ type: "version", label: "Extended Mix", rawMatch: q.includes("extended") ? "extended" : "ext" });
-    } else if (q.includes("intro") || q.includes("outro")) {
-      result.version = "Intro / Outro";
-      result.tokens.push({ type: "version", label: "Intro / Outro", rawMatch: q.includes("intro") ? "intro" : "outro" });
-    } else if (q.includes("mashup") || q.includes("bootleg")) {
-      result.version = "Mashup / Bootleg";
-      result.tokens.push({ type: "version", label: "Mashup", rawMatch: q.includes("mashup") ? "mashup" : "bootleg" });
-    } else if (q.includes("remix") || q.includes("club mix")) {
-      result.version = "Remix / Club Mix";
-      result.tokens.push({ type: "version", label: "Remix", rawMatch: q.includes("remix") ? "remix" : "club mix" });
-    } else if (q.includes("acapella") || q.includes("acappella")) {
-      result.version = "Acapella";
-      result.tokens.push({ type: "version", label: "Acapella", rawMatch: q.includes("acapella") ? "acapella" : "acappella" });
-    } else if (q.includes("transition") || q.includes("transicion")) {
-      result.version = "Transition";
-      result.tokens.push({ type: "version", label: "Transition", rawMatch: q.includes("transition") ? "transition" : "transicion" });
-    }
-    if (q.includes("previa") || q.includes("warm up") || q.includes("warmup")) {
-      result.mood = "Previa / Warm Up";
-      result.tokens.push({ type: "mood", label: "Previa / Warm Up", rawMatch: q.includes("warm up") ? "warm up" : q.includes("warmup") ? "warmup" : "previa" });
-    } else if (q.includes("pista") || q.includes("peak time") || q.includes("festival") || q.includes("driving") || q.includes("bailar") || q.includes("baile")) {
-      result.mood = "Peak Time / Pista";
-      result.tokens.push({ type: "mood", label: "Peak Time / Pista", rawMatch: q.includes("peak time") ? "peak time" : q.includes("pista") ? "pista" : q.includes("driving") ? "driving" : "bailar" });
-    } else if (q.includes("sunset") || q.includes("chill") || q.includes("after") || q.includes("lounge")) {
-      result.mood = "Chill / Sunset / After";
-      result.tokens.push({ type: "mood", label: "Chill / Sunset", rawMatch: q.includes("sunset") ? "sunset" : q.includes("chill") ? "chill" : q.includes("after") ? "after" : "lounge" });
-    }
-    const yearMatch = q.match(/\b(19\d{2}|20\d{2})\b/);
-    if (yearMatch) {
-      result.year = parseInt(yearMatch[1], 10);
-      result.tokens.push({ type: "year", label: `A\xF1o ${result.year}`, rawMatch: yearMatch[0] });
-    } else if (q.includes("retro") || q.includes("90s") || q.includes("80s") || q.includes("2000s")) {
-      result.year = "Retro";
-      result.tokens.push({ type: "year", label: "Retro", rawMatch: q.includes("retro") ? "retro" : q.includes("90s") ? "90s" : q.includes("80s") ? "80s" : "2000s" });
-    }
-    if (q.includes("bass driver") || q.includes("subgrave") || q.includes("bombo") || q.includes("sub-bass") || q.includes("sub bass")) {
-      result.acousticRole = "Bass Driver";
-      result.tokens.push({ type: "role", label: "Rol: Bass Driver (Graves)", rawMatch: "bass driver" });
-    } else if (q.includes("vocal") || q.includes("vocales") || q.includes("lead") || q.includes("melodia") || q.includes("mel\xF3dico") || q.includes("melodica")) {
-      result.acousticRole = "Vocal / Lead";
-      result.tokens.push({ type: "role", label: "Rol: Vocal / Lead (Medios)", rawMatch: "vocal" });
-    } else if (q.includes("percussive") || q.includes("percusivo") || q.includes("percursion") || q.includes("tool") || q.includes("hats") || q.includes("platos")) {
-      result.acousticRole = "Percussive Tool";
-      result.tokens.push({ type: "role", label: "Rol: Percussive Tool (Agudos)", rawMatch: "percussive" });
-    }
-    if (q.includes("energico") || q.includes("en\xE9rgico") || q.includes("alta energia") || q.includes("alta energ\xEDa") || q.includes("high energy")) {
-      result.minEnergy = 80;
-      result.tokens.push({ type: "energy", label: "Energ\xEDa > 80%", rawMatch: "en\xE9rgico" });
-    } else if (q.includes("chill") || q.includes("baja energia") || q.includes("baja energ\xEDa") || q.includes("suave")) {
-      result.maxEnergy = 65;
-      result.tokens.push({ type: "energy", label: "Energ\xEDa < 65%", rawMatch: "chill" });
-    }
-    if (q.includes("tech house")) {
-      result.genre = "House";
-      result.subgenre = "Tech House";
-      result.tokens.push({ type: "genre", label: "Tech House", rawMatch: "tech house" });
-    } else if (q.includes("afro house") || q.includes("afro")) {
-      result.genre = "House";
-      result.subgenre = "Afro House";
-      result.tokens.push({ type: "genre", label: "Afro House", rawMatch: q.includes("afro house") ? "afro house" : "afro" });
-    } else if (q.includes("melodic techno")) {
-      result.genre = "Techno";
-      result.subgenre = "Melodic Techno";
-      result.tokens.push({ type: "genre", label: "Melodic Techno", rawMatch: "melodic techno" });
-    } else if (q.includes("progressive house") || q.includes("house progresivo")) {
-      result.genre = "House";
-      result.subgenre = "Melodic / Progressive House";
-      result.tokens.push({ type: "genre", label: "Progressive House", rawMatch: q.includes("progressive house") ? "progressive house" : "house progresivo" });
-    } else if (q.includes("deep house")) {
-      result.genre = "House";
-      result.subgenre = "Deep House";
-      result.tokens.push({ type: "genre", label: "Deep House", rawMatch: "deep house" });
-    } else if (q.includes("minimal") || q.includes("deep tech")) {
-      result.genre = "Electro & Breaks";
-      result.subgenre = "Minimal / Deep Tech";
-      result.tokens.push({ type: "genre", label: "Minimal / Deep Tech", rawMatch: q.includes("minimal") ? "minimal" : "deep tech" });
-    } else if (q.includes("reggaeton") || q.includes("reggaet\xF3n")) {
-      result.genre = "Latin & Urban";
-      result.subgenre = "Reggaet\xF3n";
-      result.tokens.push({ type: "genre", label: "Reggaet\xF3n", rawMatch: q.includes("reggaet\xF3n") ? "reggaet\xF3n" : "reggaeton" });
-    } else if (q.includes("cachengue") || q.includes("rkt")) {
-      result.genre = "Latin & Urban";
-      result.subgenre = "Cachengue / RKT";
-      result.tokens.push({ type: "genre", label: "Cachengue / RKT", rawMatch: q.includes("cachengue") ? "cachengue" : "rkt" });
-    } else if (q.includes("cuarteto")) {
-      result.genre = "Latin & Urban";
-      result.subgenre = "Cuarteto";
-      result.tokens.push({ type: "genre", label: "Cuarteto", rawMatch: "cuarteto" });
-    } else if (q.includes("guaracha")) {
-      result.genre = "Latin & Urban";
-      result.subgenre = "Guaracha";
-      result.tokens.push({ type: "genre", label: "Guaracha", rawMatch: "guaracha" });
-    } else if (q.includes("cumbia")) {
-      result.genre = "Latin & Urban";
-      result.subgenre = "Cumbia";
-      result.tokens.push({ type: "genre", label: "Cumbia", rawMatch: "cumbia" });
-    } else if (q.includes("latin house")) {
-      result.genre = "House";
-      result.subgenre = "Latin House";
-      result.tokens.push({ type: "genre", label: "Latin House", rawMatch: "latin house" });
-    } else if (q.includes("techno") || q.includes("tecno")) {
-      result.genre = "Techno";
-      result.subgenre = "Techno";
-      result.tokens.push({ type: "genre", label: "Techno", rawMatch: q.includes("techno") ? "techno" : "tecno" });
-    } else if (q.includes("house")) {
-      result.genre = "House";
-      result.subgenre = "House";
-      result.tokens.push({ type: "genre", label: "House", rawMatch: "house" });
-    } else if (q.includes("trance")) {
-      result.genre = "Trance";
-      result.subgenre = "Trance";
-      result.tokens.push({ type: "genre", label: "Trance", rawMatch: "trance" });
-    } else if (q.includes("drum & bass") || q.includes("drum and bass") || q.includes("dnb")) {
-      result.genre = "Drum & Bass";
-      result.subgenre = "Drum & Bass";
-      result.tokens.push({ type: "genre", label: "Drum & Bass", rawMatch: q.includes("drum & bass") ? "drum & bass" : q.includes("drum and bass") ? "drum and bass" : "dnb" });
-    }
-    return result;
-  }
-  var DJ_MOODS_LIST = [
-    { id: "Peak Time", label: "\u{1F525} Peak Time", desc: "Cl\xEDmax de pista, alta pegada" },
-    { id: "Dark", label: "\u{1F311} Dark", desc: "Oscuro, industrial, contundente" },
-    { id: "Euphoric", label: "\u2728 Euphoric", desc: "Melod\xEDas \xE9picas, subid\xF3n emotivo" },
-    { id: "Hypnotic", label: "\u{1F300} Hypnotic", desc: "Groove continuo y envolvente" },
-    { id: "Raw", label: "\u26A1 Raw", desc: "Seco, crudo y minimalista" },
-    { id: "Melancholic", label: "\u{1F327} Melancholic", desc: "Atmosf\xE9rico y profundo" }
-  ];
   var CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
     if (!isOpen) return null;
     const currentData = CAMELOT_WHEEL_DATA[currentKey] || CAMELOT_WHEEL_DATA["8A"];
@@ -24246,414 +24662,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     )));
   };
-  var BEATWAVE_MASTER_GLOSSARY = [
-    // DSP & ACÚSTICA AVANZADA (AUDIO INFORMATION RETRIEVAL)
-    {
-      term: "FFT (Fast Fourier Transform)",
-      category: "DSP & Ac\xFAstica",
-      tag: "ESPECTRO",
-      color: "#06b6d4",
-      icon: "\u{1F52C}",
-      definition: "Transformada R\xE1pida de Fourier. Algoritmo matem\xE1tico que descompone en tiempo real una forma de onda de audio del dominio temporal al espectro de frecuencias (magnitud y fase). Es la base del an\xE1lisis espectral, la detecci\xF3n precisa de transitorios del bombo y la calibraci\xF3n arm\xF3nica en BeatWave Pro.",
-      formula: "X[k] = \u2211 x[n] \xB7 e^(-i 2\u03C0 k n / N) (N=2048, Hop=512)",
-      impact: "Permite visualizar el espectro 3-band y aislar frecuencias para Beatgrid y tonalidad."
-    },
-    {
-      term: "Crest Factor (Factor de Cresta)",
-      category: "DSP & Ac\xFAstica",
-      tag: "DIN\xC1MICA",
-      color: "#f59e0b",
-      icon: "\u{1F4CA}",
-      definition: "Relaci\xF3n en decibelios entre la amplitud pico m\xE1xima de la se\xF1al y su valor medio cuadr\xE1tico (RMS). Cuantifica el grado de compresi\xF3n y limitaci\xF3n en el mastering. Un Crest Factor bajo (< 7.5 dB) indica transitorios comprimidos y bombos saturados propios de Hard Techno o Schranz, mientras que valores altos (> 12 dB) reflejan din\xE1mica org\xE1nica.",
-      formula: "CF (dB) = 20 \xB7 log10( Peak / RMS )",
-      impact: "Diferencia de inmediato pistas ultracomprimidas de temas con din\xE1mica natural para masterizar la ganancia del mixer."
-    },
-    {
-      term: "Zero-Crossing Rate (ZCR)",
-      category: "DSP & Ac\xFAstica",
-      tag: "RUGOSIDAD",
-      color: "#ec4899",
-      icon: "\u26A1",
-      definition: "Tasa de cruces por cero. Mide la frecuencia con la que la onda de audio atraviesa el eje de amplitud cero por unidad de tiempo. En m\xFAsica electr\xF3nica revela el contenido de altas frecuencias, la aspereza de sintetizadores distorsionados y la presencia de componentes ruidosos o percusivos frente a tonos sinusoidales puros.",
-      formula: "ZCR = (1 / 2N) \u2211 |sgn(x[n]) - sgn(x[n-1])|",
-      impact: "Identifica texturas industriales, bombos crujientes y saturaci\xF3n anal\xF3gica en el Drop."
-    },
-    {
-      term: "Spectral Centroid (Centroide Espectral)",
-      category: "DSP & Ac\xFAstica",
-      tag: "TIMBRE",
-      color: "#8b5cf6",
-      icon: "\u{1F308}",
-      definition: "Centro de gravedad del espectro de frecuencias ponderado por su magnitud. Correlaciona directamente con la percepci\xF3n psicoac\xFAstica de 'brillo' u 'oscuridad' sonora. Un centroide bajo (< 1600 Hz) caracteriza al Raw y Hypnotic Techno; un centroide elevado (> 2600 Hz) define la estridencia de Acid, Industrial o Peak Time.",
-      formula: "fc = \u2211 (f \xB7 |X(f)|) / \u2211 |X(f)|",
-      impact: "Permite emparejar pistas por balance t\xEDmbrico para que la mezcla no suene ni opaca ni chillona."
-    },
-    {
-      term: "Spectral Flatness (Entrop\xEDa de Wiener)",
-      category: "DSP & Ac\xFAstica",
-      tag: "RUIDO / TONAL",
-      color: "#10b981",
-      icon: "\u{1F4D0}",
-      definition: "Medida del aplanamiento espectral calculada como el cociente entre la media geom\xE9trica y la media aritm\xE9tica del espectro de potencia. Valores cercanos a 0 indican presencia de tonos arm\xF3nicos puros (sintetizadores de Melodic Techno), mientras que valores cercanos a 1 indican ruido blanco o percusiones met\xE1licas (Hard Groove / Industrial).",
-      formula: "Flatness = exp( (1/N) \u2211 ln(|X|^2) ) / ( (1/N) \u2211 |X|^2 )",
-      impact: "Separa autom\xE1ticamente tracks mel\xF3dicos y arm\xF3nicos de producciones percusivas y ruidosas."
-    },
-    {
-      term: "Drop Window MIR (Ventana de Cl\xEDmax)",
-      category: "DSP & Ac\xFAstica",
-      tag: "DETECCI\xD3N",
-      color: "#ef4444",
-      icon: "\u{1F4A5}",
-      definition: "Algoritmo de perfilado energ\xE9tico por RMS que analiza la canci\xF3n en bloques de 4 segundos para localizar la ventana de 12 segundos con m\xE1xima presi\xF3n ac\xFAstica (Drop 1 o Drop 2). Al omitir intros minimalistas y parones et\xE9reos, la extracci\xF3n de descriptores se realiza exclusivamente en el cl\xEDmax sonoro.",
-      formula: "Ventana 12s @ Max RMS Energy Profile",
-      impact: "Evita falsos positivos de g\xE9nero derivados de introducciones desnudas o breakdowns ambientales."
-    },
-    {
-      term: "Rumble Sub-Bass Ratio (20\u201360 Hz vs 60\u2013140 Hz)",
-      category: "DSP & Ac\xFAstica",
-      tag: "SUB-GRAVES",
-      color: "#22d3ee",
-      icon: "\u{1F50A}",
-      definition: "Cociente entre la energ\xEDa sub-grave continua (cola de rumble generada con reverb/retraso filtrado) y el golpe seco del bombo (punch). Crucial en el Techno contempor\xE1neo: permite discernir si un track tiene un subgrave rodante masivo (Hard/Raw Techno) o una l\xEDnea de bajo corta y punteada (Tech House / Melodic).",
-      formula: "Ratio = E(20\u201360 Hz) / E(60\u2013140 Hz)",
-      impact: "Previene saturaci\xF3n en el sistema de sonido del club al ecualizar los subgraves en la mezcla."
-    },
-    {
-      term: "Danzabilidad (Danceability)",
-      category: "DSP & Ac\xFAstica",
-      tag: "PSICO-RITMO",
-      color: "#a855f7",
-      icon: "\u{1F483}",
-      definition: "Descriptor psicoac\xFAstico que eval\xFAa la regularidad r\xEDtmica, la estabilidad del pulso 4-on-the-floor, la fuerza de los transitorios percusivos y la consistencia del groove. Puntuaci\xF3n del 0% al 100% que predice la naturalidad con la que el p\xFAblico responde con movimiento corporal continuo en pista.",
-      formula: "Algoritmo Multi-Onsets + Regularidad de Fase",
-      impact: "Garantiza tracks con tracci\xF3n f\xEDsica irresistible para mantener la pista de baile en movimiento."
-    },
-    {
-      term: "LUFS Integrado & True Peak",
-      category: "DSP & Ac\xFAstica",
-      tag: "SONORIDAD",
-      color: "#14b8a6",
-      icon: "\u{1F4CF}",
-      definition: "Loudness Units relative to Full Scale seg\xFAn norma internacional EBU R128 e ITU-R BS.1770. Mide el volumen percibido por el o\xEDdo humano en lugar del pico el\xE9ctrico. El True Peak detecta picos inter-muestrales generados tras la conversi\xF3n anal\xF3gica, evitando distorsi\xF3n en etapas de potencia.",
-      formula: "EBU R128 (-14 a -6 LUFS) \u2022 True Peak < -0.5 dBTP",
-      impact: "Nivelaci\xF3n matem\xE1tica de ganancias entre temas para no tocar el trim del mezclador durante la sesi\xF3n."
-    },
-    {
-      term: "Dynamic Range (DR / Rango Din\xE1mico)",
-      category: "DSP & Ac\xFAstica",
-      tag: "DIN\xC1MICA",
-      color: "#f97316",
-      icon: "\u{1F39A}\uFE0F",
-      definition: "Diferencia de sonoridad entre los pasajes m\xE1s en\xE9rgicos del track y el promedio RMS general (medici\xF3n estilo DR Meter). Un rango din\xE1mico adecuado preserva el impacto del kick y evita la fatiga auditiva en el p\xFAblico durante sesiones de m\xE1s de tres horas.",
-      formula: "DR = Top 20% RMS - Media Ac\xFAstica (dB)",
-      impact: "Mantiene la pegada f\xEDsica en el pecho sin emborronar las frecuencias medias del sintetizador."
-    },
-    {
-      term: "ID3v2.4 & Serato GEOB Tags",
-      category: "DSP & Ac\xFAstica",
-      tag: "METADATOS",
-      color: "#0284c7",
-      icon: "\u{1F4BE}",
-      definition: "Estructura binaria avanzada de encapsulaci\xF3n en formato ID3v2.4 UTF-8. Las etiquetas GEOB (General Encapsulated Object) almacenan Beatgrids milim\xE9tricos, puntos Hot Cue nombrados, colores RGB corporativos y mapas de tempo compatibles nativamente con Serato DJ Pro, Rekordbox y Traktor Pro.",
-      formula: "Trama GEOB: 'Serato Markers_V2' + 'BeatWave Pro Cues'",
-      impact: "Carga instant\xE1nea de Cues y BPM de alta fidelidad en cualquier reproductor o cabina sin rean\xE1lisis."
-    },
-    {
-      term: "Teorema de Nyquist-Shannon",
-      category: "DSP & Ac\xFAstica",
-      tag: "MUESTREO",
-      color: "#6366f1",
-      icon: "\u{1F4C9}",
-      definition: "Ley matem\xE1tica de procesamiento digital de se\xF1ales: para muestrear una onda anal\xF3gica sin distorsi\xF3n por aliasing, la frecuencia de muestreo (Fs) debe ser estrictamente superior al doble de la componente espectral m\xE1s alta (Fmax). Por ello, el est\xE1ndar de audio CD a 44.1 kHz cubre exactamente el l\xEDmite del o\xEDdo humano hasta 22.05 kHz.",
-      formula: "Fs \u2265 2 \xB7 Fmax \u2022 L\xEDmite Nyquist = Fs / 2",
-      impact: "Explica por qu\xE9 un MP3 de 128 kbps con corte a 16 kHz suena apagado frente a un FLAC sin p\xE9rdidas a 44.1/48 kHz."
-    },
-    {
-      term: "Dithering & Ruido TPDF",
-      category: "DSP & Ac\xFAstica",
-      tag: "CUANTIZACI\xD3N",
-      color: "#84cc16",
-      icon: "\u{1F3B2}",
-      definition: "Inyecci\xF3n intencional de ruido estoc\xE1stico no correlacionado con funci\xF3n de densidad triangular (TPDF) al reducir la profundidad de bits (ej. de 24-bit o 32-bit float a 16-bit). Elimina la distorsi\xF3n arm\xF3nica no lineal generada por el truncamiento de muestras, transformando el error en un suave siseo uniforme inaudible.",
-      formula: "TPDF Dither: e[n] = (rand1 - rand2) \xB7 LSB",
-      impact: "Preserva la reverberaci\xF3n y colas de silencio sin chirridos digitales en los breakdowns de cabina."
-    },
-    {
-      term: "Cancelaci\xF3n de Fase en Subgraves",
-      category: "DSP & Ac\xFAstica",
-      tag: "FASE / CLUB",
-      color: "#ef4444",
-      icon: "\u26A0\uFE0F",
-      definition: "Interferencia destructiva originada cuando dos pistas reproducen simult\xE1neamente componentes en la banda de 30-100 Hz con desfase cercano a 180\xB0. Las presiones ac\xFAsticas se anulan f\xEDsicamente en el aire del club, haciendo desaparecer por completo la pegada del bombo en la pista.",
-      formula: "\u0394\u03B8 = 180\xB0 \u21D2 y_total = y1 - y2 \u2248 0",
-      impact: "Exige la regla de oro: nunca mezclar dos bombos con sus faders de LOW abiertos a la vez (Bass Swapping)."
-    },
-    {
-      term: "Anti-Aliasing Filter (Brickwall LPF)",
-      category: "DSP & Ac\xFAstica",
-      tag: "FILTRADO",
-      color: "#a855f7",
-      icon: "\u{1F6E1}\uFE0F",
-      definition: "Filtro paso-bajas anal\xF3gico y digital de pendiente ultraempinada (brickwall) situado antes de la digitalizaci\xF3n ADC o resampling. Corta cualquier componente arm\xF3nica por encima de Fs/2 para evitar que se pliegue hacia el espectro audible como frecuencias fantasma inarm\xF3nicas.",
-      formula: "Atenuaci\xF3n > 96 dB @ F > Fs / 2",
-      impact: "Garantiza un sonido cristalino y n\xEDtido al cambiar el pitch de una canci\xF3n en vivo."
-    },
-    {
-      term: "Headroom Ac\xFAstico del Mixer",
-      category: "Cabina & Decks",
-      tag: "GANANCIA",
-      color: "#f59e0b",
-      icon: "\u{1F39A}\uFE0F",
-      definition: "Margen de seguridad en decibelios existente entre el nivel nominal de trabajo (0 dBVU / +4 dBu) y el umbral de distorsi\xF3n anal\xF3gica o clip digital absoluto (0 dBFS). Mantener un headroom de +6 a +12 dB en los canales permite que los transitorios del bombo respiren sin aplastamiento.",
-      formula: "Headroom = Nivel de Clip (0 dBFS) - Nivel RMS",
-      impact: "Evita que el sonido del club se comprima y sature cuando suenan dos decks a la vez."
-    },
-    // CABINA & HARDWARE
-    {
-      term: "Downbeat (Beat 1.0.0)",
-      category: "Cabina & Decks",
-      tag: "M\xC9TRICA",
-      color: "#06b6d4",
-      icon: "\u{1F3AF}",
-      definition: "Primer golpe o pulso fuerte de un comp\xE1s de 4 tiempos (4/4). Marcar el Hot Cue 1 en el downbeat exacto garantiza que las transiciones queden matem\xE1ticamente alineadas sin desfase r\xEDtmico ni choque de bombos.",
-      formula: "Comp\xE1s 4/4 \u2022 T1 (1.0.0)",
-      impact: "Alineaci\xF3n de fraseo (frase de 16/32 compases) en Rekordbox, Serato y Traktor."
-    },
-    {
-      term: "Beatgrid & Cuantizaci\xF3n",
-      category: "Cabina & Decks",
-      tag: "TEMPORAL",
-      color: "#38bdf8",
-      icon: "\u{1F39B}\uFE0F",
-      definition: "Malla temporal microsc\xF3pica superpuesta a la forma de onda de audio. La cuantizaci\xF3n fuerza a los Hot Cues, bucles y transiciones a anclarse autom\xE1ticamente al pulso m\xE1s cercano, evitando desviaciones humanas al tocar los pads.",
-      formula: "Resoluci\xF3n: 1/16 beat @ 60fps",
-      impact: "Garantiza loops sin imperfecciones y saltos en directo 100% r\xEDtmicos."
-    },
-    {
-      term: "Hot Cues T\xE1cticos (1\u20138)",
-      category: "Cabina & Decks",
-      tag: "ESTRUCTURA",
-      color: "#f59e0b",
-      icon: "\u{1F3F7}\uFE0F",
-      definition: "Marcadores de acceso instant\xE1neo mapeados a los 8 pads de la controladora DJ. BeatWave Pro estandariza la convenci\xF3n NV2: CUE 1 (Intro/Downbeat), CUE 2 (Build-up), CUE 3 (Drop Principal), CUE 4 (Break/Breakdown), CUE 5 (Segundo Drop) y CUE 8 (Outro Seguro).",
-      formula: "8 Cues \u2022 Colores NV2 Corporativos",
-      impact: "Navegaci\xF3n espacial instant\xE1nea por la estructura del track en cualquier reproductor."
-    },
-    {
-      term: "Slip Mode",
-      category: "Cabina & Decks",
-      tag: "REPRODUCCI\xD3N",
-      color: "#10b981",
-      icon: "\u26A1",
-      definition: "Modo de reproducci\xF3n donde la m\xFAsica contin\xFAa corriendo en silencio en segundo plano mientras el DJ ejecuta scratch, bucles manuales o reverse. Al soltar el pad o jogwheel, la canci\xF3n retoma exactamente en el comp\xE1s donde estar\xEDa normalmente.",
-      formula: "Playhead Virtual Continuo",
-      impact: "Permite trucos r\xEDtmicos sin perder la sincronizaci\xF3n con el otro deck."
-    },
-    {
-      term: "Master Tempo (Key Lock)",
-      category: "Cabina & Decks",
-      tag: "DSP TONAL",
-      color: "#a855f7",
-      icon: "\u{1F512}",
-      definition: "Algoritmo de time-stretching en tiempo real que preserva la tonalidad original (pitch/key) de una pista incluso al alterar dr\xE1sticamente su velocidad (BPM) con el fader de pitch.",
-      formula: "Pitch Shift = 0 semitonos @ \u0394BPM",
-      impact: "Evita el efecto 'voces de pitufo' o ralentizaciones graves al ajustar tempo."
-    },
-    {
-      term: "Zero-Crossing (Paso por Cero)",
-      category: "Cabina & Decks",
-      tag: "DSP AUDIO",
-      color: "#ec4899",
-      icon: "\u2702\uFE0F",
-      definition: "Punto exacto de la onda sonora donde la amplitud el\xE9ctrica cruza el eje de 0 voltios. Colocar cortes y Hot Cues en el zero-crossing previene micro-chasquidos (clicks o pops) que pueden da\xF1ar altavoces de gran potencia.",
-      formula: "Amplitud: V(t) = 0.00 V",
-      impact: "Transiciones limpias sin ruidos par\xE1sitos en sistemas de sonido de club."
-    },
-    // DSP & ACÚSTICA
-    {
-      term: "Bass Clash (Conflicto de Graves)",
-      category: "DSP & Ac\xFAstica",
-      tag: "CR\xCDTICO",
-      color: "#ef4444",
-      icon: "\u26A0\uFE0F",
-      definition: "Solapamiento destructivo de energ\xEDa de sub-graves (<120 Hz) entre dos pistas reproduci\xE9ndose simult\xE1neamente. Genera cancelaci\xF3n de fase ac\xFAstica, p\xE9rdida de pegada en el bombo y sobrecarga en los amplificadores de subgraves del club.",
-      formula: "Energ\xEDa Sub-Bass > 44% en ambos Decks",
-      impact: "BeatWave Copilot emite alerta y activa corte preventivo de EQ Low (-6dB a -12dB)."
-    },
-    {
-      term: "Anti-Muddy DSP",
-      category: "DSP & Ac\xFAstica",
-      tag: "ALGORITMO",
-      color: "#10b981",
-      icon: "\u{1F6E1}\uFE0F",
-      definition: "Motor algor\xEDtmico exclusivo de BeatWave Pro que analiza el espectro combinado de frecuencias de ambos decks en tiempo real para predecir y disipar el enmascaramiento sonoro antes de que el DJ abra el fader en la mesa de mezclas.",
-      formula: "An\xE1lisis espectral FFT de 512 bandas",
-      impact: "Mezclas di\xE1fanas y cristalinas con punch absoluto en sala grande."
-    },
-    {
-      term: "LUFS Integrado (EBU R128)",
-      category: "DSP & Ac\xFAstica",
-      tag: "SONORIDAD",
-      color: "#38bdf8",
-      icon: "\u{1F4CA}",
-      definition: "Unidad de Sonoridad Relativa a Escala Completa que mide la potencia ac\xFAstica percibida por el o\xEDdo humano a lo largo de toda la pista. Est\xE1ndar club recomendado: -7.0 a -6.0 LUFS para tracks de m\xFAsica electr\xF3nica comercial.",
-      formula: "Curva de ponderaci\xF3n K (ITU-R BS.1770)",
-      impact: "Asegura niveles homog\xE9neos de ganancia sin saturaci\xF3n ni saltos de volumen."
-    },
-    {
-      term: "True Peak (dBTP)",
-      category: "DSP & Ac\xFAstica",
-      tag: "DIN\xC1MICA",
-      color: "#fbbf24",
-      icon: "\u{1F4C8}",
-      definition: "Nivel de pico inter-muestra que reconstruye anal\xF3gicamente la se\xF1al sonora entre muestras digitales. Superar 0.0 dBTP genera recorte duro (clipping) en los convertidores DAC de mesas de club como Pioneer DJM-V10 o Allen & Heath Xone:96.",
-      formula: "Over-sampling x4 inter-sample peak",
-      impact: "Mantiene la se\xF1al bajo -0.3 dBTP para evitar distorsi\xF3n anal\xF3gica."
-    },
-    {
-      term: "Espectro Tri-Banda (3-Way Split)",
-      category: "DSP & Ac\xFAstica",
-      tag: "VISUALIZADOR",
-      color: "#06b6d4",
-      icon: "\u{1F308}",
-      definition: "Visualizaci\xF3n de forma de onda dividida en 3 rangos espectrales: Azul Oscuro para Graves y Sub-bajos (<200 Hz), Naranja/Cian para Medios y Voces (200 Hz \u2013 2.5 kHz), y Blanco Puro para Agudos y Transitorios (>2.5 kHz).",
-      formula: "Low (<200Hz) \u2022 Mid \u2022 High (>2.5kHz)",
-      impact: "Permite al DJ anticipar visualmente bajadas, drops y entradas vocales al segundo."
-    },
-    // ARMONÍA & CAMELOT
-    {
-      term: "Camelot Wheel",
-      category: "Armon\xEDa & Camelot",
-      tag: "TEOR\xCDA",
-      color: "#ec4899",
-      icon: "\u{1F3A1}",
-      definition: "Sistema circular de 24 casillas que traduce el c\xEDrculo de quintas a 12 n\xFAmeros (1 al 12) y dos letras: A para tonalidades menores y B para tonalidades mayores. Permite a cualquier DJ seleccionar la pista arm\xF3nica perfecta de un vistazo.",
-      formula: "12 n\xFAmeros x 2 modos (A/B)",
-      impact: "Evita notas disonantes y melod\xEDas enfrentadas en mezclas largas."
-    },
-    {
-      term: "Energy Boost (+2 Camelot)",
-      category: "Armon\xEDa & Camelot",
-      tag: "PSICO-ENERG\xCDA",
-      color: "#f59e0b",
-      icon: "\u{1F680}",
-      definition: "T\xE9cnica arm\xF3nica que consiste en saltar dos posiciones horarias en la rueda de Camelot (ejemplo: de 8A a 10A, o de 11B a 1B). Provoca una elevaci\xF3n inmediata de la tensi\xF3n emocional y la euforia en la pista de baile.",
-      formula: "Key actual + 2 (ej. 8A \u2192 10A / Bm \u2192 C#m)",
-      impact: "Ideal para momentos culminantes y cambios de energ\xEDa en festivales."
-    },
-    {
-      term: "Mezcla Diat\xF3nica (+1 / -1)",
-      category: "Armon\xEDa & Camelot",
-      tag: "ARMON\xCDA PURA",
-      color: "#10b981",
-      icon: "\u{1F3B5}",
-      definition: "Mezcla entre casillas vecinas de la rueda Camelot (ejemplo: 8A con 7A o 9A). Al compartir casi todas las notas de sus respectivas escalas, las melod\xEDas y l\xEDneas de bajo se entrelazan de forma 100% natural sin choques tonales.",
-      formula: "Quinta Justa ascendente (+1) o descendente (-1)",
-      impact: "La regla de oro para sets continuos, fluidos e hipn\xF3ticos."
-    },
-    {
-      term: "Modo Relativo (A \u2194 B)",
-      category: "Armon\xEDa & Camelot",
-      tag: "CAMBIO DE COLOR",
-      color: "#8b5cf6",
-      icon: "\u{1F3AD}",
-      definition: "Transici\xF3n entre la tonalidad menor y su mayor relativa en el mismo n\xFAmero de la rueda (ejemplo: 8A/La menor a 8B/Do mayor). Ambas tonalidades comparten exactamente las mismas notas, transformando el mood de oscuro a luminoso.",
-      formula: "Tono relativo: Mismo n\xFAmero, distinta letra",
-      impact: "Inyecci\xF3n de luz y \xE9pica en breaks vocales sin cambiar centro tonal."
-    },
-    // PSICOACÚSTICA & IA
-    {
-      term: "Energ\xEDa (0\u2013100%)",
-      category: "Psicoac\xFAstica & IA",
-      tag: "POTENCIA",
-      color: "#f97316",
-      icon: "\u26A1",
-      definition: "M\xE9trica calculada por algoritmos de Machine Learning que combina la densidad r\xEDtmica de los transitorios, el volumen de frecuencias medias-altas y la compresi\xF3n espectral para calibrar la fuerza percibida en pista.",
-      formula: "ML Acoustic Energy Index",
-      impact: "Permite programar la curva de intensidad del set sin bajones inesperados."
-    },
-    {
-      term: "Intensidad (Arousal)",
-      category: "Psicoac\xFAstica & IA",
-      tag: "ACTIVACI\xD3N",
-      color: "#10b981",
-      icon: "\u{1F4C8}",
-      definition: "Nivel de activaci\xF3n fisiol\xF3gica y excitaci\xF3n motora que la m\xFAsica induce en el sistema nervioso del oyente (frecuencia card\xEDaca y ganas de bailar). Rango de 0% (relajaci\xF3n/chillout) a 100% (frenes\xED rave / peak time).",
-      formula: "Russells Circumplex Arousal Axis",
-      impact: "Gestiona el ritmo biol\xF3gico del p\xFAblico durante sesiones de m\xE1s de 3 horas."
-    },
-    {
-      term: "Positividad (Valence)",
-      category: "Psicoac\xFAstica & IA",
-      tag: "VALENCIA",
-      color: "#06b6d4",
-      icon: "\u2728",
-      definition: "Valencia afectiva y emocional de una pista de audio. Valores cercanos al 0% indican temas oscuros, industriales, densos o melanc\xF3licos; valores cercanos al 100% reflejan temas euf\xF3ricos, alegres, veraniegos o festivos.",
-      formula: "Affective Valence Meter (0.0 \u2013 1.0)",
-      impact: "Alinea la selecci\xF3n musical con la vibra exacta de la noche y el p\xFAblico."
-    },
-    {
-      term: "Mood & Fase de Set",
-      category: "Psicoac\xFAstica & IA",
-      tag: "ESTRATEGIA",
-      color: "#c084fc",
-      icon: "\u{1F9ED}",
-      definition: "Clasificaci\xF3n t\xE1ctica del rol de cada pista dentro de la sesi\xF3n DJ: Warm-up (construcci\xF3n inicial), Mid-Set Groove (mantenimiento de ritmo), Peak Time Climax (momento de m\xE1xima euforia) y Afterhours (ritmo hipn\xF3tico para cierre).",
-      formula: "Clasificador Heur\xEDstico Multicriterio",
-      impact: "Sugiere autom\xE1ticamente las mejores pistas de entrada para cada hora del evento."
-    },
-    // METADATOS & SUITES DJ
-    {
-      term: "ID3v2.4 UTF-8",
-      category: "Metadatos & Suites",
-      tag: "EST\xC1NDAR",
-      color: "#38bdf8",
-      icon: "\u{1F4BE}",
-      definition: "Versi\xF3n m\xE1s avanzada y robusta del est\xE1ndar internacional de metadatos de audio MP3/WAV/AIFF. El uso de codificaci\xF3n UTF-8 previene caracteres corruptos (mojibake) en pantallas t\xE1ctiles de Pioneer CDJ-3000 y Denon SC6000.",
-      formula: "ID3v2.4.0 \u2022 Codificaci\xF3n UTF-8 pura",
-      impact: "T\xEDtulos, artistas y comentarios legibles al 100% en cualquier cabina del mundo."
-    },
-    {
-      term: "Rekordbox XML",
-      category: "Metadatos & Suites",
-      tag: "PIONEER DJ",
-      color: "#0284c7",
-      icon: "\u{1F4BF}",
-      definition: "Estructura jer\xE1rquica nativa de Pioneer DJ que almacena metadatos enriquecidos, listas de reproducci\xF3n, memoria de Hot Cues con milisegundos exactos y coordenadas del beatgrid para exportaci\xF3n r\xE1pida a pendrives USB.",
-      formula: "Rekordbox 6/7 Master XML Schema",
-      impact: "Carga instant\xE1nea de colecciones en equipos est\xE1ndar de club (CDJ/XDJ)."
-    },
-    {
-      term: "Serato Markers2",
-      category: "Metadatos & Suites",
-      tag: "SERATO DJ",
-      color: "#00d1e8",
-      icon: "\u{1F39A}\uFE0F",
-      definition: "Bloque de datos binarios almacenado en el tag ID3 GEOB (General Encapsulated Object) de Serato DJ Pro. Contiene los colores RGB de los 8 Hot Cues, bucles guardados y configuraciones de scratch sin requerir bases de datos externas.",
-      formula: "GEOB:Serato Markers2 Binary Chunk",
-      impact: "Los Hot Cues aparecen con sus colores corporativos exactos al pinchar en Serato."
-    },
-    {
-      term: "Traktor NML",
-      category: "Metadatos & Suites",
-      tag: "NATIVE INST.",
-      color: "#facc15",
-      icon: "\u26A1",
-      definition: "Formato de archivo XML nativo de Native Instruments Traktor Pro 3/4. Registra los puntos de acceso CUE, GRID, FADE-IN, FADE-OUT y bucles tipo POI para sincronizaci\xF3n en directo.",
-      formula: "Traktor Collection NML v19+",
-      impact: "Compatibilidad absoluta con controladores Traktor Kontrol S4/X1/Z2."
-    },
-    {
-      term: "VirtualDJ POI",
-      category: "Metadatos & Suites",
-      tag: "ATOMIX VDJ",
-      color: "#f97316",
-      icon: "\u{1F3A7}",
-      definition: "Puntos de Inter\xE9s (POI) propios del motor VirtualDJ 2024. Permite automatizar transiciones por stem separation, avisos de corte de frecuencias y marcas de mezcla arm\xF3nica por comp\xE1s.",
-      formula: "VirtualDJ Extended VDJ_POI Tag",
-      impact: "Desbloquea el m\xE1ximo potencial de mezcla con Stems ac\xFAsticos en directo."
-    }
-  ];
   var KnowledgeWorkspace = ({ lang = "es" }) => {
     const [activeSection, setActiveSection] = useState5("courses");
     const [knowledgeData, setKnowledgeData] = useState5({
