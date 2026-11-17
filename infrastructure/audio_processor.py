@@ -409,8 +409,8 @@ class AudioProcessorService:
             if mono_head is None or len(mono_head) == 0:
                 return (0.0, 0.0, dur_total_ms) if incluir_cola else (0.0, 0.0)
 
-            # FASE 1A: Zero-Crossing Silence Trim en Cabecera
-            hop_silence = max(1, int(sr_head * 0.005))  # bloques de 5ms
+            # FASE 1A: Zero-Crossing Silence Trim en Cabecera (Resolución fina de 2ms)
+            hop_silence = max(1, int(sr_head * 0.002))  # bloques de 2ms
             head_samples = len(mono_head)
             num_blocks = head_samples // hop_silence
             trim_start_ms = 0.0
@@ -422,27 +422,23 @@ class AudioProcessorService:
 
                 audible_blocks = np.where(block_rms > 0.00398)[0]
                 if len(audible_blocks) == 0:
-                    audible_blocks = np.where(block_rms > 0.00200)[0]
+                    audible_blocks = np.where(block_rms > 0.00150)[0]
                 if len(audible_blocks) == 0:
-                    audible_blocks = np.where(block_rms > 0.00100)[0]
+                    audible_blocks = np.where(block_rms > 0.00080)[0]
 
                 if len(audible_blocks) > 0:
-                    first_block = audible_blocks[0]
-                    sample_candidate = first_block * hop_silence
-                    search_start = max(0, sample_candidate - int(sr_head * 0.025))
-                    sub = mono_head[search_start:sample_candidate + hop_silence]
-                    signs = np.signbit(sub)
-                    diffs = np.where(np.diff(signs))[0]
-                    if len(diffs) > 0:
-                        zero_cross_idx = search_start + int(diffs[-1])
-                    else:
-                        zero_cross_idx = sample_candidate
-
-                    trim_start_ms = round(float(zero_cross_idx) / sr_head * 1000.0, 1)
+                    first_aud_sample = audible_blocks[0] * hop_silence
+                    # Retroceder muestra a muestra hasta cruzar el suelo de ruido (< 0.0015) o cruce por cero
+                    back = first_aud_sample
+                    while back > 0 and abs(mono_head[back]) > 0.0015:
+                        back -= 1
+                    trim_sample = back
+                    trim_start_ms = round(float(trim_sample) / sr_head * 1000.0, 1)
 
                     # FASE 1B: Detección estricta y milimétrica del Beat 1.1 (Downbeat Físico)
-                    # En lugar de medir la pendiente del subgrave filtrado (que introduce retardo de fase de 70-120 ms),
-                    # localiza el primer bombo o transitorio real y retrocede al ataque físico exacto (< 2 ms de error)
+                    # En lugar de recortar a 80 ms fijos (lo que mutila bombos cuya resonancia subgrave
+                    # alcanza el pico 150ms después del ataque), localizamos el valle previo y retrocedemos
+                    # al cruce por cero del ataque transitorio exacto (< 1 ms de error).
                     beat_sec = 60.0 / b_est
                     beat_samples = int(beat_sec * sr_head)
                     sos = butter(2, [40, 140], btype='bandpass', fs=sr_head, output='sos')
@@ -453,36 +449,48 @@ class AudioProcessorService:
                     peaks, _ = find_peaks(env, distance=int(0.70 * beat_samples), height=0.15 * np.max(env))
 
                     trim_start_sec = trim_start_ms / 1000.0
+
+                    def _get_onset_of_kick(peak_sample):
+                        w_start = max(0, peak_sample - int(0.85 * beat_samples))
+                        seg = mono_head[w_start:peak_sample]
+                        h_local = max(1, int(sr_head * 0.005))
+                        n_l = len(seg) // h_local
+                        if n_l > 1:
+                            blks = seg[:n_l * h_local].reshape((n_l, h_local))
+                            rms_l = np.sqrt(np.mean(blks ** 2, axis=1))
+                            min_idx = np.argmin(rms_l)
+                            valley_s = w_start + min_idx * h_local
+                        else:
+                            valley_s = w_start
+                        sub_seg = np.abs(mono_head[valley_s:peak_sample])
+                        k_max = np.max(sub_seg)
+                        th = max(0.008, 0.03 * k_max)
+                        above = np.where(sub_seg > th)[0]
+                        if len(above):
+                            first_s = valley_s + above[0]
+                            b = first_s
+                            while b > valley_s and abs(mono_head[b]) > 0.002:
+                                b -= 1
+                            return b
+                        return valley_s
+
                     if len(peaks) > 0:
                         first_peak_sec = peaks[0] / sr_head
                         if first_peak_sec <= trim_start_sec + 1.2 * beat_sec:
                             # Comienza directamente con bombo: retroceder al inicio del transitorio
-                            win_len = int(0.08 * sr_head)
-                            win_start = max(0, peaks[0] - win_len)
-                            win = np.abs(mono_head[win_start:peaks[0]])
-                            thresh = max(0.01, 0.03 * np.max(win))
-                            above = np.where(win > thresh)[0]
-                            if len(above):
-                                onset_sample = win_start + above[0]
-                                z_search = max(0, onset_sample - int(0.005 * sr_head))
-                                z_sub = mono_head[z_search:onset_sample + 1]
-                                z_signs = np.signbit(z_sub)
-                                z_diffs = np.where(np.diff(z_signs))[0]
-                                exact_sample = z_search + z_diffs[-1] if len(z_diffs) else onset_sample
-                                downbeat_ms = round((exact_sample / sr_head) * 1000.0, 1)
-                            else:
+                            kick_sample = _get_onset_of_kick(peaks[0])
+                            downbeat_ms = round((kick_sample / sr_head) * 1000.0, 1)
+                            if abs(downbeat_ms - trim_start_ms) <= 15.0 or downbeat_ms < trim_start_ms:
                                 downbeat_ms = trim_start_ms
                         else:
                             # Comienza con intro melódica o percusión suave: proyectar la fase del bombo hacia atrás
-                            win_len = int(0.08 * sr_head)
-                            win_start = max(0, peaks[0] - win_len)
-                            win = np.abs(mono_head[win_start:peaks[0]])
-                            thresh = max(0.01, 0.03 * np.max(win))
-                            above = np.where(win > thresh)[0]
-                            kick1_sec = (win_start + above[0]) / sr_head if len(above) else first_peak_sec
+                            kick1_sample = _get_onset_of_kick(peaks[0])
+                            kick1_sec = kick1_sample / sr_head
                             n_beats = round((kick1_sec - trim_start_sec) / beat_sec)
                             downbeat_sec = kick1_sec - (n_beats * beat_sec)
                             downbeat_ms = round(max(0.0, downbeat_sec * 1000.0), 1)
+                            if downbeat_ms < trim_start_ms and abs(downbeat_ms - trim_start_ms) <= 15.0:
+                                downbeat_ms = trim_start_ms
                     else:
                         downbeat_ms = trim_start_ms
                 else:
