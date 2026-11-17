@@ -363,14 +363,15 @@
     { id: "n3", title: "Pago fallido", body: "Actualiza tu m\xE9todo de pago para mantener STUDIO.", channel: "Email", audience: "Impagos", date: "2026-11-06", status: "enviado" }
   ];
   var LOGS = [
-    ["2026-11-10 09:42:18", "ERROR", "api/analyze", "Timeout analizando t_88116 (Afterglow) tras 30s"],
+    ["2026-11-10 09:42:18", "ERROR", "api/analyze", "Timeout analizando t_88116 (Afterglow) tras 30s", "analyze_timeout"],
     ["2026-11-10 09:41:02", "INFO", "auth", "Login correcto u_1042 desde 83.45.x.x"],
-    ["2026-11-10 09:40:55", "WARN", "billing", "Reintento de cobro s_3299 (2/3)"],
+    ["2026-11-10 09:40:55", "WARN", "billing", "Reintento de cobro s_3299 (2/3)", "billing_retry"],
     ["2026-11-10 09:39:12", "INFO", "promo", "C\xF3digo BFRIDAY40 aplicado por u_1038"],
     ["2026-11-10 09:37:40", "DEBUG", "copilot", "Cache hit arm\xF3nico 8A\u21929A (12ms)"],
     ["2026-11-10 09:35:21", "INFO", "admin", "Banner b1 activado por admin@beatwave.pro"],
-    ["2026-11-10 09:33:09", "ERROR", "storage", "Car\xE1tula no encontrada para set_509"],
-    ["2026-11-10 09:30:44", "WARN", "api/rate", "L\xEDmite de peticiones alcanzado IP 190.12.x.x"],
+    ["2026-11-10 09:33:09", "ERROR", "storage", "Car\xE1tula no encontrada para set_509", "cover_missing"],
+    ["2026-11-10 09:30:44", "WARN", "auth/remote", "HTTP 403 token de sesi\xF3n inv\xE1lido desde IP 190.12.x.x", "remote_token"],
+    ["2026-11-10 09:29:51", "ERROR", "spotify", "ValueError al crear cliente Spotify en /api/analizar_spotify", "spotify_credentials"],
     ["2026-11-10 09:28:13", "INFO", "skills", "Skill sk2 habilitada para plan PRO"],
     ["2026-11-10 09:25:57", "DEBUG", "map", "Render 412 nodos en 38ms"],
     ["2026-11-10 09:22:30", "INFO", "auth", "Registro nuevo u_1043 (ES)"]
@@ -381,6 +382,229 @@
     { path: "/precios", title: "Planes y precios", score: 72, clicks: 1204, pos: 8.1 },
     { path: "/academy", title: "Academy \u2014 aprende a mezclar", score: 65, clicks: 860, pos: 11.4 }
   ];
+
+  // web/js/admin/log-snippets.js
+  var SNIPPETS = {
+    "analyze_timeout": {
+      "file": "application/analysis_service.py",
+      "start": 80,
+      "errLine": 111,
+      "lines": [
+        "    def escanear_directorio(",
+        "        self, ",
+        "        directorio_raiz: str, ",
+        "        subcarpetas: Optional[List[str]] = None,",
+        "        callback_progreso: Optional[Callable[[int, int, str], None]] = None",
+        "    ) -> List[Dict[str, Any]]:",
+        "        ",
+        "        archivos_a_procesar = []",
+        '        carpetas = subcarpetas if subcarpetas else [""]',
+        "",
+        "        for sub in carpetas:",
+        "            ruta_dir = os.path.join(directorio_raiz, sub) if sub else directorio_raiz",
+        "            if not os.path.exists(ruta_dir):",
+        "                continue",
+        "            for root, _, files in os.walk(ruta_dir):",
+        "                for f in files:",
+        '                    if f.lower().endswith(".mp3"):',
+        "                        archivos_a_procesar.append(os.path.join(root, f))",
+        "",
+        "        total = len(archivos_a_procesar)",
+        "        resultados = []",
+        "",
+        "        if total == 0:",
+        "            return resultados",
+        "",
+        "        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:",
+        "            futuros = {executor.submit(procesar_archivo_audio, path): path for path in archivos_a_procesar}",
+        "            completados = 0",
+        "            for future in as_completed(futuros):",
+        "                completados += 1",
+        "                try:",
+        "                    res = future.result()",
+        "                    if res:",
+        "                        resultados.append(res)",
+        "                        if callback_progreso:",
+        '                            callback_progreso(completados, total, res["nombre_archivo"])',
+        "                except Exception:",
+        "                    pass",
+        "",
+        "        return resultados"
+      ]
+    },
+    "cover_missing": {
+      "file": "services/media_service.py",
+      "start": 189,
+      "errLine": 214,
+      "lines": [
+        "    def obtener_caratula_binaria(self, file_path: str, thumbnail_size: int = None):",
+        '        """Extrae la car\xE1tula binaria del archivo, opcionalmente generando una miniatura ultra-optimizada para la interfaz."""',
+        "        if not file_path or not os.path.exists(file_path):",
+        "            return None, None",
+        "",
+        `        cache_key = f"{file_path}_{thumbnail_size or 'full'}"`,
+        "        if cache_key in self._thumb_cache:",
+        "            return self._thumb_cache[cache_key]",
+        "",
+        "        data = None",
+        "        mime = None",
+        "        try:",
+        "            m = MutagenFile(file_path)",
+        "            if m:",
+        "                if hasattr(m, 'pictures') and m.pictures:",
+        "                    data, mime = m.pictures[0].data, m.pictures[0].mime",
+        "                elif hasattr(m, 'tags') and m.tags:",
+        "                    for tag in m.tags.values():",
+        "                        if getattr(tag, 'FrameID', None) == 'APIC':",
+        "                            data, mime = tag.data, tag.mime",
+        "                            break",
+        "        except Exception:",
+        "            pass",
+        "",
+        "        if not data:",
+        "            folder = os.path.dirname(file_path)",
+        '            for fname in ("cover.jpg", "folder.jpg", "cover.png", "folder.png", "front.jpg"):',
+        "                cpath = os.path.join(folder, fname)",
+        "                if os.path.isfile(cpath):",
+        "                    try:",
+        '                        with open(cpath, "rb") as f:',
+        "                            data = f.read()",
+        '                            mime = "image/png" if fname.endswith(".png") else "image/jpeg"',
+        "                            break",
+        "                    except Exception:",
+        "                        pass",
+        "",
+        "        if data and thumbnail_size and thumbnail_size > 0:",
+        "            try:",
+        "                import io",
+        "                from PIL import Image",
+        "                im = Image.open(io.BytesIO(data))",
+        "                im.thumbnail((thumbnail_size, thumbnail_size), Image.LANCZOS)",
+        "                out_io = io.BytesIO()",
+        '                im.convert("RGB").save(out_io, format="JPEG", quality=82, optimize=True)',
+        "                data = out_io.getvalue()",
+        '                mime = "image/jpeg"',
+        "            except Exception:",
+        "                pass",
+        ""
+      ]
+    },
+    "spotify_credentials": {
+      "file": "infrastructure/spotify_adapter.py",
+      "start": 34,
+      "errLine": 45,
+      "lines": [
+        "    @classmethod",
+        "    def _obtener_cliente_spotify(cls) -> Optional[spotipy.Spotify]:",
+        "        try:",
+        "            return cls._get_client()",
+        "        except Exception:",
+        "            return None",
+        "",
+        "    @classmethod",
+        "    def _get_client(cls) -> spotipy.Spotify:",
+        "        client_id, client_secret = cls._cargar_credenciales_env()",
+        "        if not client_id or not client_secret:",
+        '            raise ValueError("Credenciales de Spotify no localizadas en entorno ni en archivo .env")',
+        "",
+        "        auth_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)",
+        "        return spotipy.Spotify(auth_manager=auth_manager)",
+        "",
+        "    @classmethod"
+      ]
+    },
+    "remote_token": {
+      "file": "main_web.py",
+      "start": 81,
+      "errLine": 93,
+      "lines": [
+        "def _verificar_token_remoto():",
+        '    """',
+        "    En modo remoto verifica que la petici\xF3n incluya el token de sesi\xF3n.",
+        "    Devuelve None si es v\xE1lido o una respuesta HTTP 403 si no lo es.",
+        '    """',
+        "    if not _REMOTE_MODE:",
+        "        return None",
+        "    token = (",
+        '        bottle.request.headers.get("X-Session-Token", "")',
+        '        or bottle.request.query.get("token", "")',
+        '        or (bottle.request.json or {}).get("token", "")',
+        "    )",
+        "    if not secrets.compare_digest(token, _SESSION_TOKEN):",
+        "        bottle.response.status = 403",
+        '        return {"status": "error", "msg": "Token de sesi\xF3n inv\xE1lido o ausente."}',
+        "",
+        "# CR\xCDTICO: Permitir subidas de audio en Base64 desde micr\xF3fono y archivos (hasta 50 MB)",
+        "# Evita el fallo HTTP 413 ('Request entity too large') que bloqueaba la escucha de Shazam (100 KB por defecto)",
+        "bottle.BaseRequest.MEMFILE_MAX = 50 * 1024 * 1024"
+      ]
+    }
+  };
+
+  // web/js/admin/log-details.js
+  var DETAILS = {
+    analyze_timeout: {
+      fn: "AnalysisService.escanear_directorio",
+      exception: "concurrent.futures.TimeoutError",
+      message: "El worker no devolvi\xF3 resultado para /Music/Afterglow.mp3 en 30 s; la petici\xF3n HTTP se cerr\xF3 antes.",
+      cause: "future.result() espera sin l\xEDmite y el bloque except silencia el error, as\xED que el fallo de un fichero (MP3 corrupto o muy largo decodific\xE1ndose en librosa) bloquea el lote hasta que salta el timeout del gateway.",
+      fix: 'Usa future.result(timeout=25), registra la ruta en el except con logger.exception(path) y marca la pista como "pendiente" en lugar de descartarla.',
+      stack: [
+        "main_web.py:344 in api_load_directory",
+        "application/analysis_service.py:108 in escanear_directorio",
+        "application/analysis_service.py:111 in escanear_directorio",
+        "concurrent/futures/_base.py:456 in result"
+      ]
+    },
+    cover_missing: {
+      fn: "MediaService.obtener_caratula_binaria",
+      exception: "FileNotFoundError (l\xF3gico, devuelve None)",
+      message: "Sin APIC/pictures en las etiquetas y sin cover.jpg/folder.jpg en la carpeta de set_509.",
+      cause: "El fichero no tiene car\xE1tula embebida y la carpeta no tiene imagen de respaldo. El except de Mutagen oculta si la lectura fall\xF3 o si simplemente no hab\xEDa imagen.",
+      fix: 'Distingue "sin car\xE1tula" de "error de lectura" con un log en el except; como respaldo, pide la car\xE1tula a iTunes con buscar_metadata_itunes y gu\xE1rdala en cach\xE9.',
+      stack: [
+        "main_web.py:172 in cover",
+        "services/media_service.py:214 in obtener_caratula_binaria"
+      ]
+    },
+    spotify_credentials: {
+      fn: "SpotifyAdapter._get_client",
+      exception: "ValueError",
+      message: "Credenciales de Spotify no localizadas en entorno ni en archivo .env",
+      cause: "SPOTIFY_CLIENT_ID o SPOTIFY_CLIENT_SECRET no est\xE1n definidos en el entorno de despliegue (en local se leen de .env, que no se sube a producci\xF3n).",
+      fix: "A\xF1ade SPOTIFY_CLIENT_ID y SPOTIFY_CLIENT_SECRET en Vercel \u2192 Settings \u2192 Environment Variables y vuelve a desplegar.",
+      stack: [
+        "main_web.py:561 in api_analizar_spotify",
+        "infrastructure/spotify_adapter.py:80 in escanear_lista",
+        "infrastructure/spotify_adapter.py:45 in _get_client"
+      ]
+    },
+    remote_token: {
+      fn: "_verificar_token_remoto",
+      exception: "HTTP 403 Forbidden",
+      message: "Token de sesi\xF3n inv\xE1lido o ausente.",
+      cause: "En modo remoto la petici\xF3n lleg\xF3 sin cabecera X-Session-Token o con un token caducado. 14 intentos en 60 s desde la misma IP apuntan a un script automatizado.",
+      fix: "Si es un cliente leg\xEDtimo, renueva el token al iniciar sesi\xF3n. Si se repite, bloquea la IP en el firewall de Vercel o a\xF1ade un rate limit con Upstash Redis.",
+      stack: [
+        "bottle.py:868 in _handle",
+        "main_web.py:93 in _verificar_token_remoto"
+      ]
+    },
+    billing_retry: {
+      fn: "Webhook invoice.payment_failed",
+      exception: "card_declined (insufficient_funds)",
+      message: "Stripe reintentar\xE1 el cobro de s_3299 el 12/11 (intento 3 de 3).",
+      cause: "La tarjeta del cliente se rechaz\xF3 por fondos insuficientes. Es un aviso de Stripe, no un fallo de nuestro c\xF3digo.",
+      fix: 'Env\xEDa el aviso "Pago fallido" al usuario desde Avisos. Si falla el tercer intento, la suscripci\xF3n pasa a past_due.',
+      stack: [],
+      external: "Stripe Billing"
+    }
+  };
+  function getLogDetail(key) {
+    const detail = DETAILS[key];
+    if (!detail) return null;
+    return { ...detail, snippet: SNIPPETS[key] || null };
+  }
 
   // web/js/admin/sections-core.jsx
   var { useState: useState2, useMemo } = React;
@@ -415,11 +639,27 @@
       }), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", onClick: () => toast(`Editar ${r[0]}`) }, "Editar")))))), !rows.length && /* @__PURE__ */ React.createElement("div", { className: "empty" }, "Sin resultados para \u201C", q, "\u201D."))
     ));
   }
+  function LogDetail({ id, detail }) {
+    if (!detail) return null;
+    const s = detail.snippet;
+    return /* @__PURE__ */ React.createElement("div", { id, className: "log-detail" }, /* @__PURE__ */ React.createElement("dl", { className: "log-meta" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("dt", null, "Excepci\xF3n"), /* @__PURE__ */ React.createElement("dd", { className: "lvl-ERROR" }, detail.exception)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("dt", null, s ? "Fichero" : "Origen"), /* @__PURE__ */ React.createElement("dd", null, s ? `${s.file}:${s.errLine}` : detail.external)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("dt", null, "Funci\xF3n"), /* @__PURE__ */ React.createElement("dd", null, detail.fn))), /* @__PURE__ */ React.createElement("p", { className: "log-text" }, detail.message), s && /* @__PURE__ */ React.createElement("div", { className: "code-view", role: "region", "aria-label": `C\xF3digo de ${s.file}, l\xEDneas ${s.start} a ${s.start + s.lines.length - 1}` }, /* @__PURE__ */ React.createElement("div", { className: "code-head" }, /* @__PURE__ */ React.createElement("span", null, s.file), /* @__PURE__ */ React.createElement("span", { className: "faint" }, `L${s.start}\u2013${s.start + s.lines.length - 1} \xB7 ${s.lines.length} l\xEDneas`)), /* @__PURE__ */ React.createElement("pre", null, /* @__PURE__ */ React.createElement("code", null, s.lines.map((line, i) => {
+      const n = s.start + i;
+      const isErr = n === s.errLine;
+      return /* @__PURE__ */ React.createElement("span", { key: n, className: isErr ? "code-ln is-err" : "code-ln" }, /* @__PURE__ */ React.createElement("span", { className: "code-no", "aria-hidden": "true" }, n), /* @__PURE__ */ React.createElement("span", { className: "code-src" }, line || " "), isErr && /* @__PURE__ */ React.createElement("span", { className: "sr-only" }, " (l\xEDnea del error)"));
+    })))), detail.stack.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "log-block" }, /* @__PURE__ */ React.createElement("h4", null, "Traza"), /* @__PURE__ */ React.createElement("ol", { className: "log-stack" }, detail.stack.map((f) => /* @__PURE__ */ React.createElement("li", { key: f }, f)))), /* @__PURE__ */ React.createElement("div", { className: "log-grid" }, /* @__PURE__ */ React.createElement("div", { className: "log-block" }, /* @__PURE__ */ React.createElement("h4", null, "Motivo probable"), /* @__PURE__ */ React.createElement("p", null, detail.cause)), /* @__PURE__ */ React.createElement("div", { className: "log-block" }, /* @__PURE__ */ React.createElement("h4", null, "Soluci\xF3n sugerida"), /* @__PURE__ */ React.createElement("p", null, detail.fix))));
+  }
   function Logs() {
     const [level, setLevel] = useState2("Todos");
     const [q, setQ] = useState2("");
+    const [openId, setOpenId] = useState2(null);
     const rows = LOGS.filter((l) => (level === "Todos" || l[1] === level) && l.join(" ").toLowerCase().includes(q.toLowerCase()));
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Sistema", title: "Logs", desc: "Registro en tiempo real de API, autenticaci\xF3n, facturaci\xF3n y acciones de administradores." }, /* @__PURE__ */ React.createElement(Button, { icon: "refresh" }, "Actualizar"), /* @__PURE__ */ React.createElement(Button, { icon: "download" }, "Descargar")), /* @__PURE__ */ React.createElement("div", { className: "row between wrap" }, /* @__PURE__ */ React.createElement(Chips, { label: "Nivel", options: ["Todos", "ERROR", "WARN", "INFO", "DEBUG"], value: level, onChange: setLevel }), /* @__PURE__ */ React.createElement("div", { className: "adm-search", style: { maxWidth: 300 } }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 14 }), /* @__PURE__ */ React.createElement("label", { htmlFor: "log-q", className: "sr-only" }, "Buscar en logs"), /* @__PURE__ */ React.createElement("input", { id: "log-q", placeholder: "Buscar m\xF3dulo o mensaje\u2026", value: q, onChange: (e) => setQ(e.target.value) }))), /* @__PURE__ */ React.createElement(Card, { bodyClass: "log" }, rows.map((l, i) => /* @__PURE__ */ React.createElement("div", { key: i, className: "log-line" }, /* @__PURE__ */ React.createElement("span", { className: "faint" }, l[0]), /* @__PURE__ */ React.createElement("span", { className: `lvl-${l[1]}` }, l[1]), /* @__PURE__ */ React.createElement("span", { className: "muted" }, l[2]), /* @__PURE__ */ React.createElement("span", null, l[3]))), !rows.length && /* @__PURE__ */ React.createElement("div", { className: "empty" }, "No hay eventos con estos filtros.")));
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Sistema", title: "Logs", desc: "Registro en tiempo real de API, autenticaci\xF3n, facturaci\xF3n y acciones de administradores." }, /* @__PURE__ */ React.createElement(Button, { icon: "refresh" }, "Actualizar"), /* @__PURE__ */ React.createElement(Button, { icon: "download" }, "Descargar")), /* @__PURE__ */ React.createElement("div", { className: "row between wrap" }, /* @__PURE__ */ React.createElement(Chips, { label: "Nivel", options: ["Todos", "ERROR", "WARN", "INFO", "DEBUG"], value: level, onChange: setLevel }), /* @__PURE__ */ React.createElement("div", { className: "adm-search", style: { maxWidth: 300 } }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 14 }), /* @__PURE__ */ React.createElement("label", { htmlFor: "log-q", className: "sr-only" }, "Buscar en logs"), /* @__PURE__ */ React.createElement("input", { id: "log-q", placeholder: "Buscar m\xF3dulo o mensaje\u2026", value: q, onChange: (e) => setQ(e.target.value) }))), /* @__PURE__ */ React.createElement(Card, { bodyClass: "log" }, rows.map((l) => {
+      const id = l[0] + l[2];
+      const hasDetail = Boolean(l[4]);
+      const open = openId === id;
+      const cells = /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "faint" }, l[0]), /* @__PURE__ */ React.createElement("span", { className: `lvl-${l[1]}` }, l[1]), /* @__PURE__ */ React.createElement("span", { className: "muted" }, l[2]), /* @__PURE__ */ React.createElement("span", { className: "log-msg" }, l[3], hasDetail && /* @__PURE__ */ React.createElement(Icon, { name: open ? "up" : "down", size: 14, className: "log-chev" })));
+      return /* @__PURE__ */ React.createElement("div", { key: id, className: open ? "log-item is-open" : "log-item" }, hasDetail ? /* @__PURE__ */ React.createElement("button", { type: "button", className: "log-line is-clickable", "aria-expanded": open, "aria-controls": `log-d-${id}`, onClick: () => setOpenId(open ? null : id) }, cells) : /* @__PURE__ */ React.createElement("div", { className: "log-line" }, cells), open && /* @__PURE__ */ React.createElement(LogDetail, { id: `log-d-${id}`, detail: getLogDetail(l[4]) }));
+    }), !rows.length && /* @__PURE__ */ React.createElement("div", { className: "empty" }, "No hay eventos con estos filtros.")));
   }
 
   // web/js/admin/sections-growth.jsx

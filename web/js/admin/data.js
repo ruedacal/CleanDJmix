@@ -95,14 +95,15 @@ export const NOTICES = [
 ];
 
 export const LOGS = [
-    ['2026-11-10 09:42:18', 'ERROR', 'api/analyze', 'Timeout analizando t_88116 (Afterglow) tras 30s'],
+    ['2026-11-10 09:42:18', 'ERROR', 'api/analyze', 'Timeout analizando t_88116 (Afterglow) tras 30s', 'analyze_timeout'],
     ['2026-11-10 09:41:02', 'INFO', 'auth', 'Login correcto u_1042 desde 83.45.x.x'],
-    ['2026-11-10 09:40:55', 'WARN', 'billing', 'Reintento de cobro s_3299 (2/3)'],
+    ['2026-11-10 09:40:55', 'WARN', 'billing', 'Reintento de cobro s_3299 (2/3)', 'billing_retry'],
     ['2026-11-10 09:39:12', 'INFO', 'promo', 'Código BFRIDAY40 aplicado por u_1038'],
     ['2026-11-10 09:37:40', 'DEBUG', 'copilot', 'Cache hit armónico 8A→9A (12ms)'],
     ['2026-11-10 09:35:21', 'INFO', 'admin', 'Banner b1 activado por admin@beatwave.pro'],
-    ['2026-11-10 09:33:09', 'ERROR', 'storage', 'Carátula no encontrada para set_509'],
-    ['2026-11-10 09:30:44', 'WARN', 'api/rate', 'Límite de peticiones alcanzado IP 190.12.x.x'],
+    ['2026-11-10 09:33:09', 'ERROR', 'storage', 'Carátula no encontrada para set_509', 'cover_missing'],
+    ['2026-11-10 09:30:44', 'WARN', 'auth/remote', 'HTTP 403 token de sesión inválido desde IP 190.12.x.x', 'remote_token'],
+    ['2026-11-10 09:29:51', 'ERROR', 'spotify', 'ValueError al crear cliente Spotify en /api/analizar_spotify', 'spotify_credentials'],
     ['2026-11-10 09:28:13', 'INFO', 'skills', 'Skill sk2 habilitada para plan PRO'],
     ['2026-11-10 09:25:57', 'DEBUG', 'map', 'Render 412 nodos en 38ms'],
     ['2026-11-10 09:22:30', 'INFO', 'auth', 'Registro nuevo u_1043 (ES)'],

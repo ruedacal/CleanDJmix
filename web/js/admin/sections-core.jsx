@@ -1,5 +1,6 @@
 import { SectionHeader, Card, Stat, Badge, Button, Icon, LineChart, Bars, Chips, eur, num } from './ui.jsx';
 import { DAYS, REVENUE, REVENUE_PREV, LOGS, DB_TABLES, ACTIVE_USERS } from './data.js';
+import { getLogDetail } from './log-details.js';
 
 const { useState, useMemo } = React;
 
@@ -110,9 +111,62 @@ export function Database({ toast }) {
     );
 }
 
+function LogDetail({ id, detail }) {
+    if (!detail) return null;
+    const s = detail.snippet;
+    return (
+        <div id={id} className="log-detail">
+            <dl className="log-meta">
+                <div><dt>Excepción</dt><dd className="lvl-ERROR">{detail.exception}</dd></div>
+                <div><dt>{s ? 'Fichero' : 'Origen'}</dt><dd>{s ? `${s.file}:${s.errLine}` : detail.external}</dd></div>
+                <div><dt>Función</dt><dd>{detail.fn}</dd></div>
+            </dl>
+            <p className="log-text">{detail.message}</p>
+            {s && (
+                <div className="code-view" role="region" aria-label={`Código de ${s.file}, líneas ${s.start} a ${s.start + s.lines.length - 1}`}>
+                    <div className="code-head">
+                        <span>{s.file}</span>
+                        <span className="faint">{`L${s.start}–${s.start + s.lines.length - 1} · ${s.lines.length} líneas`}</span>
+                    </div>
+                    <pre><code>
+                        {s.lines.map((line, i) => {
+                            const n = s.start + i;
+                            const isErr = n === s.errLine;
+                            return (
+                                <span key={n} className={isErr ? 'code-ln is-err' : 'code-ln'}>
+                                    <span className="code-no" aria-hidden="true">{n}</span>
+                                    <span className="code-src">{line || ' '}</span>
+                                    {isErr && <span className="sr-only"> (línea del error)</span>}
+                                </span>
+                            );
+                        })}
+                    </code></pre>
+                </div>
+            )}
+            {detail.stack.length > 0 && (
+                <div className="log-block">
+                    <h4>Traza</h4>
+                    <ol className="log-stack">{detail.stack.map((f) => <li key={f}>{f}</li>)}</ol>
+                </div>
+            )}
+            <div className="log-grid">
+                <div className="log-block">
+                    <h4>Motivo probable</h4>
+                    <p>{detail.cause}</p>
+                </div>
+                <div className="log-block">
+                    <h4>Solución sugerida</h4>
+                    <p>{detail.fix}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function Logs() {
     const [level, setLevel] = useState('Todos');
     const [q, setQ] = useState('');
+    const [openId, setOpenId] = useState(null);
     const rows = LOGS.filter((l) => (level === 'Todos' || l[1] === level) && l.join(' ').toLowerCase().includes(q.toLowerCase()));
     return (
         <>
@@ -129,14 +183,29 @@ export function Logs() {
                 </div>
             </div>
             <Card bodyClass="log">
-                {rows.map((l, i) => (
-                    <div key={i} className="log-line">
-                        <span className="faint">{l[0]}</span>
-                        <span className={`lvl-${l[1]}`}>{l[1]}</span>
-                        <span className="muted">{l[2]}</span>
-                        <span>{l[3]}</span>
-                    </div>
-                ))}
+                {rows.map((l) => {
+                    const id = l[0] + l[2];
+                    const hasDetail = Boolean(l[4]);
+                    const open = openId === id;
+                    const cells = (
+                        <>
+                            <span className="faint">{l[0]}</span>
+                            <span className={`lvl-${l[1]}`}>{l[1]}</span>
+                            <span className="muted">{l[2]}</span>
+                            <span className="log-msg">{l[3]}{hasDetail && <Icon name={open ? 'up' : 'down'} size={14} className="log-chev" />}</span>
+                        </>
+                    );
+                    return (
+                        <div key={id} className={open ? 'log-item is-open' : 'log-item'}>
+                            {hasDetail ? (
+                                <button type="button" className="log-line is-clickable" aria-expanded={open} aria-controls={`log-d-${id}`} onClick={() => setOpenId(open ? null : id)}>{cells}</button>
+                            ) : (
+                                <div className="log-line">{cells}</div>
+                            )}
+                            {open && <LogDetail id={`log-d-${id}`} detail={getLogDetail(l[4])} />}
+                        </div>
+                    );
+                })}
                 {!rows.length && <div className="empty">No hay eventos con estos filtros.</div>}
             </Card>
         </>
