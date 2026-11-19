@@ -339,7 +339,8 @@ class CopilotEngine:
                 self._apply_library_tracks(tracks)
             elif platform_id == "serato":
                 tracks = LibraryReader.leer_serato_tracks(rutas.get("serato_dir"))
-                self._apply_library_tracks(tracks)
+                self.loaded_library_tracks = tracks
+                self._sync_serato_live_state()
             elif platform_id == "traktor":
                 tracks = LibraryReader.leer_traktor_tracks(rutas.get("traktor_nml"))
                 self._apply_library_tracks(tracks)
@@ -361,36 +362,6 @@ class CopilotEngine:
                 for d_id, deck in self.state.decks.items():
                     deck.is_master = (d_id == target_id)
                 self.state.global_bpm = self.state.decks[target_id].effective_bpm
-        return self.get_live_state()
-
-    def toggle_play(self, deck_id: Any) -> Dict[str, Any]:
-        """Alterna el estado Play/Pausa de un deck."""
-        with self._lock:
-            try:
-                target_id = int(deck_id)
-            except Exception:
-                target_id = 1
-            if target_id in self.state.decks:
-                d = self.state.decks[target_id]
-                if d.title and d.bpm > 0:
-                    d.is_playing = not d.is_playing
-        return self.get_live_state()
-
-    def cue_deck(self, deck_id: Any) -> Dict[str, Any]:
-        """Rebobina un deck a CUE (00:00.0) y detiene la reproducción."""
-        with self._lock:
-            try:
-                target_id = int(deck_id)
-            except Exception:
-                target_id = 1
-            if target_id in self.state.decks:
-                d = self.state.decks[target_id]
-                d.is_playing = False
-                d.elapsed_sec = 0.0
-                d.remaining_sec = d.duration_sec
-                d.beat_number = 1
-                d.bar_number = 1
-                d.phrase_progress = 0.0
         return self.get_live_state()
 
     def _generate_recommendations(self) -> List[Dict[str, Any]]:
@@ -453,7 +424,7 @@ class CopilotEngine:
 
             # 2. Obtener pistas activas en los decks en esta sesión (EXCLUSIVAMENTE end_time = -1: cargadas actualmente en cabina)
             cur.execute("""
-                SELECT id, deck, name, artist, bpm, key, length_ms, portable_id, start_time, end_time, dj_play_count
+                SELECT id, deck, name, artist, bpm, key, length_ms, portable_id, start_time, end_time, played
                 FROM history_entry
                 WHERE session_id = ? AND end_time = -1
                 ORDER BY id DESC;
@@ -473,90 +444,74 @@ class CopilotEngine:
                         "key": r[5] or "",
                         "length_ms": int(r[6] or 240000),
                         "portable_id": r[7] or "",
-                        "start_time": r[8],
-                        "end_time": r[9]
+                        "start_time": int(r[8] or time.time()),
+                        "end_time": int(r[9] or -1),
+                        "played": int(r[10] or 0)
                     }
 
+            now = time.time()
             with self._lock:
-                # Sincronizar Deck 1
-                d1 = self.state.decks.get(1)
-                if d1:
-                    if '1' in active_decks:
-                        t1 = active_decks['1']
-                        if d1.title != t1["title"] or d1.bpm <= 0.0:
-                            # Nueva pista cargada en Deck 1 desde Serato: inicializar a 00:00 CUE en pausa
-                            d1.title = t1["title"]
-                            d1.artist = t1["artist"]
-                            d1.bpm = t1["bpm"]
-                            d1.effective_bpm = t1["bpm"]
-                            d1.key = t1["key"]
-                            d1.key_name = t1["key"]
-                            d1.duration_sec = (t1["length_ms"] / 1000.0) if t1["length_ms"] > 0 else 240.0
-                            d1.elapsed_sec = 0.0
-                            d1.remaining_sec = d1.duration_sec
-                            d1.is_playing = False
-                            d1.is_master = True
-                            full_p1 = "/" + t1["portable_id"].lstrip("/")
-                            if os.path.exists(full_p1):
-                                extracted = self._extract_serato_markers_cues(full_p1)
-                                if extracted:
-                                    d1.hot_cues = extracted
-                    else:
-                        # Deck 1 sin pista en Serato -> Standby Vacío
-                        d1.title = ""
-                        d1.artist = ""
-                        d1.bpm = 0.0
-                        d1.effective_bpm = 0.0
-                        d1.key = ""
-                        d1.key_name = ""
-                        d1.duration_sec = 0.0
-                        d1.elapsed_sec = 0.0
-                        d1.remaining_sec = 0.0
-                        d1.is_playing = False
-                        d1.is_master = False
-                        d1.hot_cues = []
+                for deck_id, deck_key in [(1, '1'), (2, '2')]:
+                    d = self.state.decks.get(deck_id)
+                    if not d:
+                        continue
+                    if deck_key in active_decks:
+                        t = active_decks[deck_key]
+                        dur = (t["length_ms"] / 1000.0) if t["length_ms"] > 0 else 240.0
+                        is_playing = (t["played"] == 1)
 
-                # Sincronizar Deck 2
-                d2 = self.state.decks.get(2)
-                if d2:
-                    if '2' in active_decks:
-                        t2 = active_decks['2']
-                        if d2.title != t2["title"] or d2.bpm <= 0.0:
-                            # Nueva pista cargada en Deck 2 desde Serato: inicializar a 00:00 CUE en pausa
-                            d2.title = t2["title"]
-                            d2.artist = t2["artist"]
-                            d2.bpm = t2["bpm"]
-                            d2.effective_bpm = t2["bpm"]
-                            d2.key = t2["key"]
-                            d2.key_name = t2["key"]
-                            d2.duration_sec = (t2["length_ms"] / 1000.0) if t2["length_ms"] > 0 else 240.0
-                            d2.elapsed_sec = 0.0
-                            d2.remaining_sec = d2.duration_sec
-                            d2.is_playing = False
-                            d2.is_master = False
-                            full_p2 = "/" + t2["portable_id"].lstrip("/")
-                            if os.path.exists(full_p2):
-                                extracted2 = self._extract_serato_markers_cues(full_p2)
-                                if extracted2:
-                                    d2.hot_cues = extracted2
+                        if d.title != t["title"] or abs(d.bpm - t["bpm"]) > 0.05:
+                            d.title = t["title"]
+                            d.artist = t["artist"]
+                            d.bpm = t["bpm"]
+                            d.effective_bpm = t["bpm"]
+                            d.key = t["key"]
+                            d.key_name = t["key"]
+                            d.duration_sec = dur
+                            full_p = "/" + t["portable_id"].lstrip("/")
+                            if os.path.exists(full_p):
+                                cues = self._extract_serato_markers_cues(full_p)
+                                if cues:
+                                    d.hot_cues = cues
+
+                        d.is_playing = is_playing
+                        if is_playing:
+                            elapsed = max(0.0, min(dur, now - t["start_time"]))
+                            d.elapsed_sec = elapsed
+                            d.remaining_sec = max(0.0, dur - elapsed)
+                            d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
+                            beats_per_sec = d.effective_bpm / 60.0 if d.effective_bpm > 0 else 2.0
+                            total_beats = d.elapsed_sec * beats_per_sec
+                            d.beat_number = int(total_beats % 4) + 1
+                            d.bar_number = int((total_beats / 4) % 32) + 1
+                            d.phrase_progress = round(((total_beats % 128) / 128.0), 3)
+                        else:
+                            d.elapsed_sec = 0.0
+                            d.remaining_sec = dur
+                            d.status = "CUE (PREPARADO)"
+                            d.beat_number = 1
+                            d.bar_number = 1
+                            d.phrase_progress = 0.0
                     else:
-                        # Deck 2 sin pista en Serato -> Standby Vacío
-                        d2.title = ""
-                        d2.artist = ""
-                        d2.bpm = 0.0
-                        d2.effective_bpm = 0.0
-                        d2.key = ""
-                        d2.key_name = ""
-                        d2.duration_sec = 0.0
-                        d2.elapsed_sec = 0.0
-                        d2.remaining_sec = 0.0
-                        d2.is_playing = False
-                        d2.is_master = False
-                        d2.hot_cues = []
-                        d2.genre = ""
-                        d2.subgenre = ""
+                        d.title = ""
+                        d.artist = ""
+                        d.bpm = 0.0
+                        d.effective_bpm = 0.0
+                        d.key = ""
+                        d.key_name = ""
+                        d.duration_sec = 0.0
+                        d.elapsed_sec = 0.0
+                        d.remaining_sec = 0.0
+                        d.is_playing = False
+                        d.is_master = False
+                        d.status = "STANDBY (VACÍO)"
+                        d.hot_cues = []
+                        d.genre = ""
+                        d.subgenre = ""
 
                 # Actualizar global_bpm si hay un deck activo
+                d1 = self.state.decks.get(1)
+                d2 = self.state.decks.get(2)
                 if d1 and d1.bpm > 0:
                     self.state.global_bpm = d1.effective_bpm
                 elif d2 and d2.bpm > 0:
@@ -814,7 +769,7 @@ class CopilotEngine:
             last_tick = now
             tick_count += 1
 
-            if tick_count % 20 == 0:
+            if tick_count % 5 == 0:
                 try:
                     dj_app = self._check_running_dj_apps()
                     if dj_app.get("is_open") and dj_app.get("app_id") == "serato":

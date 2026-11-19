@@ -457,7 +457,7 @@ const DEFAULT_COPILOT_STATE = {
     "is_simulating": true
 };
 
-export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, onCue = null, isAppOpen = true }) => {
+export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, isAppOpen = true }) => {
     if (!deck) return null;
 
     if (!isAppOpen) {
@@ -469,12 +469,6 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                         <span className="font-orbitron font-black text-sm sm:text-base text-zinc-500">DECK {side}</span>
                         <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300">
                             STANDBY • SIN CONEXIÓN
-                        </span>
-                        <span className="px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed">
-                            ⏸ PAUSA
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed">
-                            ⏮ CUE
                         </span>
                     </div>
                     <div className="flex items-center gap-2 font-mono text-[11px] text-zinc-600 uppercase">
@@ -629,44 +623,6 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                             {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
                         </button>
                     )}
-
-                    {/* BOTONES TÁCTICOS DE TRANSPORTE CABINA: PLAY/PAUSA & CUE */}
-                    <button
-                        type="button"
-                        disabled={isEmptyDeck}
-                        onClick={(e) => {
-                            if (isEmptyDeck) return;
-                            e.stopPropagation();
-                            onTogglePlay && onTogglePlay(side);
-                        }}
-                        className={`px-3 py-1 rounded-full font-mono text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 border shadow-sm ${
-                            isEmptyDeck
-                            ? 'bg-zinc-900 text-zinc-600 border-zinc-800 cursor-not-allowed opacity-50'
-                            : deck.is_playing
-                            ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse cursor-pointer'
-                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-600 hover:text-white cursor-pointer'
-                        }`}
-                        title={isEmptyDeck ? 'Deck vacío' : `Alternar Play/Pausa en Deck ${side} (Atajo de teclado: '${side}')`}
-                    >
-                        <span>{deck.is_playing ? '⏸ PAUSA' : '▶ PLAY'}</span>
-                    </button>
-                    <button
-                        type="button"
-                        disabled={isEmptyDeck}
-                        onClick={(e) => {
-                            if (isEmptyDeck) return;
-                            e.stopPropagation();
-                            onCue && onCue(side);
-                        }}
-                        className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider transition-all border ${
-                            isEmptyDeck
-                            ? 'bg-zinc-900 text-zinc-600 border-zinc-800 cursor-not-allowed opacity-50'
-                            : 'bg-zinc-900 hover:bg-zinc-800 text-indigo-300 border-indigo-500/50 hover:text-white cursor-pointer'
-                        }`}
-                        title={isEmptyDeck ? 'Deck vacío' : `Rebobinar a CUE Bar 1 (Atajo: tecla 'C')`}
-                    >
-                        <span>⏮ CUE</span>
-                    </button>
 
                     {(deck.mood || deck.phase) && !isEmptyDeck && (
                         <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase">
@@ -933,77 +889,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     const [manualSearchQuery, setManualSearchQuery] = useState('');
     const wsRef = useRef(null);
 
-    const togglePlayDeck = async (targetSide) => {
-        const sideStr = targetSide === '2' ? '2' : '1';
-        // 1. Optimistic UI update inmediato para 0ms de respuesta táctica
-        setState(prev => {
-            if (!prev) return prev;
-            const curDeck = sideStr === '1' ? prev.deck_1 : prev.deck_2;
-            if (!curDeck) return prev;
-            const newIsPlaying = !curDeck.is_playing;
-            return {
-                ...prev,
-                [`deck_${sideStr}`]: {
-                    ...curDeck,
-                    is_playing: newIsPlaying,
-                    status: newIsPlaying ? (curDeck.is_master ? 'ON AIR (MASTER)' : 'REPRODUCIENDO') : 'CUE / PREPARADO'
-                }
-            };
-        });
-
-        // 2. Transmitir comando a 0ms vía WebSocket o REST
-        try {
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({ action: 'toggle_play', deck: sideStr }));
-            } else {
-                const res = await fetch('/api/copilot/toggle_play', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deck: sideStr })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setState(data);
-                }
-            }
-        } catch (_) {}
-    };
-
-    const cueDeck = async (targetSide) => {
-        const sideStr = targetSide === '2' ? '2' : '1';
-        setState(prev => {
-            if (!prev) return prev;
-            const curDeck = sideStr === '1' ? prev.deck_1 : prev.deck_2;
-            if (!curDeck) return prev;
-            return {
-                ...prev,
-                [`deck_${sideStr}`]: {
-                    ...curDeck,
-                    is_playing: false,
-                    play_progress: 0.0,
-                    elapsed_sec: 0.0,
-                    status: 'CUE / PREPARADO'
-                }
-            };
-        });
-
-        try {
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({ action: 'cue_deck', deck: sideStr }));
-            } else {
-                const res = await fetch('/api/copilot/cue_deck', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ deck: sideStr })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setState(data);
-                }
-            }
-        } catch (_) {}
-    };
-
     const handleApplyCorrection = () => {
         setLowEqApplied(prev => {
             const next = !prev;
@@ -1093,38 +978,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 status: 'SIN CONEXIÓN'
                             });
                         }
-
-                        // Escuchar mensajes MIDI en vivo para transporte DJ (Play/Pause, Cue)
-                        inputs.forEach(input => {
-                            input.onmidimessage = (msg) => {
-                                if (!msg || !msg.data || msg.data.length < 2) return;
-                                const status = msg.data[0];
-                                const note = msg.data[1];
-                                const vel = msg.data.length > 2 ? msg.data[2] : 0;
-                                const isNoteOn = ((status & 0xf0) === 0x90 && vel > 0) || ((status & 0xf0) === 0xb0 && vel > 0);
-                                const channel = status & 0x0f;
-
-                                if (isNoteOn) {
-                                    // Numark NV / NV II / Pioneer / Traktor transport:
-                                    // Ch 0 o Ch 2 (Deck 1 / 3):
-                                    if ((channel === 0 || channel === 2) && (note === 0 || note === 8 || note === 11 || note === 39 || note === 64 || note === 67 || note === 71 || note === 75)) {
-                                        togglePlayDeck('1');
-                                    } else if ((channel === 1 || channel === 3) && (note === 0 || note === 8 || note === 12 || note === 39 || note === 64 || note === 67 || note === 72 || note === 75)) {
-                                        togglePlayDeck('2');
-                                    } else if (note === 11 || note === 71) {
-                                        togglePlayDeck('1');
-                                    } else if (note === 12 || note === 72) {
-                                        togglePlayDeck('2');
-                                    } else if (note === 1 || note === 9 || note === 51 || note === 68) {
-                                        if (channel === 1 || channel === 3) {
-                                            cueDeck('2');
-                                        } else {
-                                            cueDeck('1');
-                                        }
-                                    }
-                                }
-                            };
-                        });
                     };
                     checkDevices();
                     access.onstatechange = checkDevices;
@@ -1288,27 +1141,13 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         });
     };
 
-    // Atajos de teclado para cabina DJ: '1' Play D1, '2' Play D2, Espacio Play Master, 'C' Cue, 'M' Master
+    // Atajo de teclado para cabina DJ: 'M' Master Toggle
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
             if (e.key === 'm' || e.key === 'M') {
                 e.preventDefault();
                 setMasterDeck('toggle');
-            } else if (e.key === '1') {
-                e.preventDefault();
-                togglePlayDeck('1');
-            } else if (e.key === '2') {
-                e.preventDefault();
-                togglePlayDeck('2');
-            } else if (e.code === 'Space') {
-                e.preventDefault();
-                const masterTarget = state?.deck_1?.is_master ? '1' : '2';
-                togglePlayDeck(masterTarget);
-            } else if (e.key === 'c' || e.key === 'C') {
-                e.preventDefault();
-                const cueTarget = state?.deck_1?.is_master ? '2' : '1';
-                cueDeck(cueTarget);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -1464,24 +1303,8 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 
     return (
         <div className="flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200">
-            {/* Cabecera de la Pantalla Táctica: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
-            <div className="relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 min-h-[114px] px-1 select-none">
-                {/* IMAGEN DE LA CONTROLADORA DE 930*114px O PROPORCIÓN SIMILAR EN %, SOLO EN DESKTOP WEB Y TABLET >= 10" CON ALPHA AL 40% (Z-0) */}
-                {controllerState.detected && (
-                    <div className="hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0">
-                        <img 
-                            src={`/api/copilot/controller_image?name=${encodeURIComponent((controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_'))}`}
-                            alt={controllerState.name || 'Controladora DJ'}
-                            onError={(e) => {
-                                e.currentTarget.src = `/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`;
-                            }}
-                            className="w-[930px] max-w-full h-[114px] object-cover object-right ml-auto"
-                            style={{ opacity: 0.4 }}
-                        />
-                    </div>
-                )}
-
-                {/* CONTENIDO SUPERIOR (Z-10) POR ENCIMA DE LA IMAGEN */}
+            {/* Cabecera de la Pantalla Táctica */}
+            <div className="relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 px-1 select-none">
                 <div className="relative z-10 flex items-center justify-between gap-3 w-full">
                     {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
                     <div className="flex flex-col gap-1.5 shrink-0">
@@ -1744,8 +1567,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     antiMuddy={anti_muddy} 
                     partnerDeck={deck_2} 
                     onSetMaster={setMasterDeck} 
-                    onTogglePlay={togglePlayDeck}
-                    onCue={cueDeck}
                     isAppOpen={isAppOpen}
                 />
                 <CopilotDeckCard 
@@ -1755,8 +1576,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     antiMuddy={anti_muddy} 
                     partnerDeck={deck_1} 
                     onSetMaster={setMasterDeck} 
-                    onTogglePlay={togglePlayDeck}
-                    onCue={cueDeck}
                     isAppOpen={isAppOpen}
                 />
             </div>

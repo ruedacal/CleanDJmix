@@ -721,8 +721,26 @@ def api_cancelar_procesos():
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()
     media_svc.cancelar_busqueda()
+    global _GLOBAL_BATCH_PROGRESS
+    _GLOBAL_BATCH_PROGRESS["pct"] = 0
+    _GLOBAL_BATCH_PROGRESS["active"] = False
+    _GLOBAL_BATCH_PROGRESS["msg"] = "Cancelado"
     print("[SERVER] Cancelación solicitada y ejecutada vía HTTP /api/cancelar_procesos")
     return {"status": "ok", "msg": "Procesos cancelados"}
+
+@bottle.route('/api/metadata/save_batch', method=['POST', 'OPTIONS'])
+def api_metadata_save_batch():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    err = _verificar_token_remoto()
+    if err is not None:
+        return err
+    data = bottle.request.json or {}
+    tracks = data.get("tracks", [])
+    res = audit_svc.inyectar_lote_metadatos(tracks, _emitir_progreso_batch)
+    return {"status": "ok", "result": res}
 
 @bottle.route('/api/analizar_spotify', method=['GET', 'POST', 'OPTIONS'])
 def api_analizar_spotify():
@@ -879,6 +897,10 @@ def cancelar_procesos_activos():
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()
     media_svc.cancelar_busqueda()
+    global _GLOBAL_BATCH_PROGRESS
+    _GLOBAL_BATCH_PROGRESS["pct"] = 0
+    _GLOBAL_BATCH_PROGRESS["active"] = False
+    _GLOBAL_BATCH_PROGRESS["msg"] = "Cancelado"
     print("[SERVER] Cancelación solicitada y ejecutada vía Eel cancelar_procesos_activos")
     return {"status": "ok", "msg": "Procesos cancelados"}
 
@@ -1403,16 +1425,22 @@ if wbs:
                         })
                     elif action == "set_master":
                         copilot_service.set_manual_master(data.get("master", 1))
-                    elif action == "toggle_play":
-                        copilot_service.toggle_play(data.get("deck", 1))
-                    elif action == "cue_deck":
-                        copilot_service.cue_deck(data.get("deck", 1))
                     elif action == "set_platform":
                         copilot_service.set_platform(data.get("platform", "simulation"))
                 except Exception:
                     pass
         finally:
             streamer_worker.kill(block=False)
+
+@bottle.route('/api/copilot/midi_debug')
+def api_copilot_midi_debug():
+    devs = bottle.request.params.get('devices')
+    data = bottle.request.params.get('data')
+    if devs:
+        print(f"[MIDI DEBUG] WebMIDI Devices detected in browser: {devs}", flush=True)
+    if data:
+        print(f"[MIDI DEBUG] Incoming MIDI bytes: {data}", flush=True)
+    return "ok"
 
 @bottle.route('/api/copilot/status', method=['GET', 'OPTIONS'])
 def api_copilot_status():
@@ -1466,25 +1494,6 @@ def api_copilot_platforms():
         "platforms": copilot_service.get_available_platforms()
     })
 
-@bottle.route('/api/copilot/controller_image', method=['GET', 'OPTIONS'])
-def api_copilot_controller_image():
-    """Sirve la imagen transparente (PNG máx 190x70) de la controladora DJ detectada."""
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
-    if bottle.request.method == 'OPTIONS':
-        return ""
-    name = bottle.request.params.get('name') or 'numark_nv_ii'
-    from services.copilot.controller_image_service import ControllerImageService
-    img_path = ControllerImageService.get_image_path(name)
-    if img_path and os.path.exists(img_path):
-        bottle.response.content_type = 'image/png'
-        bottle.response.set_header('Cache-Control', 'public, max-age=86400')
-        with open(img_path, 'rb') as f:
-            return f.read()
-    bottle.response.status = 404
-    return ""
-
 @bottle.route('/api/copilot/set_platform', method=['POST', 'OPTIONS'])
 def api_copilot_set_platform():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
@@ -1514,38 +1523,6 @@ def api_copilot_set_master():
     master_val = data.get('master') or bottle.request.params.get('master', 'toggle')
     import json
     return json.dumps(copilot_service.set_manual_master(master_val))
-
-@bottle.route('/api/copilot/toggle_play', method=['POST', 'OPTIONS'])
-def api_copilot_toggle_play():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
-    if bottle.request.method == 'OPTIONS':
-        return ""
-    bottle.response.content_type = 'application/json'
-    try:
-        data = bottle.request.json or {}
-    except Exception:
-        data = {}
-    deck_val = data.get('deck') or bottle.request.params.get('deck', 'master')
-    import json
-    return json.dumps(copilot_service.toggle_play(deck_val))
-
-@bottle.route('/api/copilot/cue_deck', method=['POST', 'OPTIONS'])
-def api_copilot_cue_deck():
-    bottle.response.set_header("Access-Control-Allow-Origin", "*")
-    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-    bottle.response.set_header("Access-Control-Allow-Headers", "*")
-    if bottle.request.method == 'OPTIONS':
-        return ""
-    bottle.response.content_type = 'application/json'
-    try:
-        data = bottle.request.json or {}
-    except Exception:
-        data = {}
-    deck_val = data.get('deck') or bottle.request.params.get('deck', '1')
-    import json
-    return json.dumps(copilot_service.cue_deck(deck_val))
 
 @bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
 def api_copilot_toggle_simulation():

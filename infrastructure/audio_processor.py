@@ -781,26 +781,34 @@ class AudioProcessorService:
             tactical_comment = f"[{bpm:.1f} BPM | {key}] Intro limpia 32b • Drop contundente • Outro 64b"
 
         # Resolución y normalización canónica de Género y Subgénero
-        try:
-            from services.discogs_service import DiscogsService
-            resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
-                artist=artist,
-                title=title,
-                raw_genre=genre_val if genre_val and genre_val != "Desconocido" else None,
-                raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
-                bpm=bpm
-            )
-            genre_val = resolved_g
-            subgenre_val = resolved_sub
-        except Exception:
-            from domain.music_taxonomy import MusicTaxonomy
-            genre_val, subgenre_val = MusicTaxonomy.normalizar_genero_y_subgenero(
-                raw_genre=genre_val if genre_val and genre_val != "Desconocido" else None,
-                raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
-                artist=artist,
-                title=title,
-                bpm=bpm
-            )
+        if genre_val and " / " in genre_val:
+            parts = [p.strip() for p in genre_val.split(" / ") if p.strip()]
+            if parts:
+                genre_val = parts[0]
+                if not subgenre_val and len(parts) > 1:
+                    subgenre_val = parts[1]
+
+        if not genre_val or genre_val == "Desconocido":
+            try:
+                from services.discogs_service import DiscogsService
+                resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
+                    artist=artist,
+                    title=title,
+                    raw_genre=None,
+                    raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
+                    bpm=bpm
+                )
+                genre_val = resolved_g
+                subgenre_val = resolved_sub
+            except Exception:
+                from domain.music_taxonomy import MusicTaxonomy
+                genre_val, subgenre_val = MusicTaxonomy.normalizar_genero_y_subgenero(
+                    raw_genre=None,
+                    raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
+                    artist=artist,
+                    title=title,
+                    bpm=bpm
+                )
 
         return {
             "title": title,
@@ -1621,7 +1629,7 @@ class AudioProcessorService:
         return ""
 
     @staticmethod
-    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None, modo_serato: bool = False) -> bool:
+    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None, modo_serato: bool = False, modo_rapido: bool = False) -> bool:
         """Inyecta metadatos profesionales para DJs (BPM exacto, Camelot TKEY, Comentario Táctico COMM,
         Serato Markers2 Cues, Serato BeatGrid, Carátula 1:1, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV.
         Preserva de forma estricta los tags originales del archivo para evitar pérdida de información."""
@@ -1630,6 +1638,7 @@ class AudioProcessorService:
 
         ext = os.path.splitext(ruta)[1].lower()
         real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
+        es_rapido = modo_rapido or bool(meta_track.get("modo_rapido")) or bool(meta_track.get("skip_acoustic_bpm"))
 
         # 0. Lectura previa no destructiva de tags existentes en el contenedor de audio
         existing_tags = {}
@@ -1671,13 +1680,13 @@ class AudioProcessorService:
         except Exception:
             bpm_float = 128.0
 
-        # Verificación acústica estricta de BPM: Si el BPM previo difiere > 0.8 del tempo real acústico,
-        # prevalece el tempo acústico real físico del audio para evitar beatgrids desfasados
-        bpm_acustico_real = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm_float)
-        if abs(bpm_acustico_real - bpm_float) > 0.8:
-            print(f"[TEMPO CORRECCIÓN] '{os.path.basename(ruta)}': BPM tag ({bpm_float:.2f}) discrepante con tempo acústico real ({bpm_acustico_real:.2f}). Corrigiendo a {bpm_acustico_real:.2f}.")
-            bpm_float = bpm_acustico_real
-            meta_track["recalcular_grid"] = True
+        # Verificación acústica estricta de BPM: Solo cuando no es guardado rápido y se solicita verificación explícita
+        if not es_rapido and meta_track.get("verificar_acustica"):
+            bpm_acustico_real = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm_float)
+            if abs(bpm_acustico_real - bpm_float) > 0.8:
+                print(f"[TEMPO CORRECCIÓN] '{os.path.basename(ruta)}': BPM tag ({bpm_float:.2f}) discrepante con tempo acústico real ({bpm_acustico_real:.2f}). Corrigiendo a {bpm_acustico_real:.2f}.")
+                bpm_float = bpm_acustico_real
+                meta_track["recalcular_grid"] = True
 
         bpm_str = f"{bpm_float:.2f}"
 
@@ -1688,18 +1697,22 @@ class AudioProcessorService:
         raw_genre = str(meta_track.get("genre") or existing_tags.get("GENRE") or existing_tags.get("TCON") or meta_track.get("mood") or "Desconocido").strip()
         subgenre_val = str(meta_track.get("subgenre") or existing_tags.get("SUBGENRE") or "").strip()
         if not raw_genre or raw_genre == "Desconocido":
-            try:
-                from services.discogs_service import DiscogsService
-                resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
-                    artist=artist,
-                    title=title,
-                    raw_genre=raw_genre,
-                    raw_subgenre=subgenre_val,
-                    bpm=bpm_float
-                )
-                genre_val = resolved_g
-                subgenre_val = resolved_sub
-            except Exception:
+            if not es_rapido and not meta_track.get("skip_online_lookup"):
+                try:
+                    from services.discogs_service import DiscogsService
+                    resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
+                        artist=artist,
+                        title=title,
+                        raw_genre=raw_genre,
+                        raw_subgenre=subgenre_val,
+                        bpm=bpm_float
+                    )
+                    genre_val = resolved_g
+                    subgenre_val = resolved_sub
+                except Exception:
+                    genre_val = "Desconocido"
+                    subgenre_val = "Desconocido"
+            else:
                 genre_val = "Desconocido"
                 subgenre_val = "Desconocido"
             genre_full = f"{genre_val} / {subgenre_val}" if subgenre_val and subgenre_val != "Desconocido" and subgenre_val != genre_val else genre_val
@@ -1725,12 +1738,11 @@ class AudioProcessorService:
         trim_ms = float(meta_track.get("trim_start_ms") or existing_tags.get("TRIM_START_MS") or 0.0)
         trim_end_ms = float(meta_track.get("trim_end_ms") or existing_tags.get("TRIM_END_MS") or 0.0)
 
-        # REGLA ESTRICTA REDTEAM: El BeatGrid y Downbeat se deben recalcular
-        # si no existe downbeat válido, si se solicita explícitamente recalcular o si el BPM ha cambiado
+        # Recalcular grid/downbeat solo si se solicita explícitamente y no estamos en modo rápido
         bpm_previo = float(meta_track.get("bpm_previo") or meta_track.get("old_bpm") or 0.0)
         bpm_cambio = (bpm_previo > 20.0 and abs(bpm_previo - bpm_float) > 0.05)
-        recalcular = meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid") or bpm_cambio
-        if downbeat_ms <= 0.0 or recalcular:
+        recalcular = (meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid") or bpm_cambio) and not es_rapido
+        if not es_rapido and (downbeat_ms <= 0.0 or recalcular):
             try:
                 t_start, d_down, t_end = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm_float, incluir_cola=True)
                 trim_ms = t_start
@@ -1898,7 +1910,7 @@ class AudioProcessorService:
         flac_autotags_str = "\n".join(flac_autotags_b64[i:i+72] for i in range(0, len(flac_autotags_b64), 72)) + "\n"
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
-        if not cover_source and not has_existing_cover:
+        if not cover_source and not has_existing_cover and not es_rapido and not meta_track.get("skip_remote_covers"):
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 

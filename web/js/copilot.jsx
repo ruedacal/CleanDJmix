@@ -1553,24 +1553,8 @@ function LiveCopilotApp() {
 
     return (
         <div className="flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200">
-            {/* BARRA SUPERIOR DE CABINA HUD: 930x114px, imagen a la derecha debajo de los botones, texto encima con primera palabra blanca, resto azul y sombra clara desvaneciéndose */}
-            <header className="relative flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 min-h-[114px] px-1 select-none">
-                {/* IMAGEN DE LA CONTROLADORA DE 930*114px O PROPORCIÓN SIMILAR EN %, SOLO EN DESKTOP WEB Y TABLET >= 10" CON ALPHA AL 40% (Z-0) */}
-                {controllerState.detected && (
-                    <div className="hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0">
-                        <img 
-                            src={`/api/copilot/controller_image?name=${encodeURIComponent((controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_'))}`}
-                            alt={controllerState.name || 'Controladora DJ'}
-                            onError={(e) => {
-                                e.currentTarget.src = `/assets/controllers/${(controllerState.name || 'numark_nv_ii').toLowerCase().replace(/\s*\(usb\)\s*/gi, '').replace(/[^a-z0-9]+/g, '_')}.png`;
-                            }}
-                            className="w-[930px] max-w-full h-[114px] object-cover object-right ml-auto"
-                            style={{ opacity: 0.4 }}
-                        />
-                    </div>
-                )}
-
-                {/* CONTENIDO SUPERIOR (Z-10) POR ENCIMA DE LA IMAGEN */}
+            {/* BARRA SUPERIOR DE CABINA HUD */}
+            <header className="relative flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 px-1 select-none">
                 <div className="relative z-10 flex items-center justify-between gap-3 w-full">
                     {/* IZQUIERDA: BADGES DE CABINA Y LATENCIA */}
                     <div className="flex flex-col gap-1.5 shrink-0">
@@ -2061,9 +2045,6 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                         <span className="font-orbitron font-black text-base sm:text-lg text-zinc-500">DECK {side}</span>
                         <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300">
                             STANDBY • SIN CONEXIÓN
-                        </span>
-                        <span className="px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed">
-                            ⏸ PAUSA
                         </span>
                     </div>
                     <div className="flex items-center gap-2 font-mono text-xs text-zinc-600 uppercase">

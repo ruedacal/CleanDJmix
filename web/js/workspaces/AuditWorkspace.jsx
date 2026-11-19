@@ -2354,27 +2354,70 @@ export const AuditWorkspace = ({
         setIsInjecting(true);
         setBatchProgress(5);
         setBatchStatusMsg(`Guardando todos los metadatos en ${tracks.length} archivos físicos...`);
+        startProgressPolling();
         try {
+            // Sanitizar carga útil para transferencias HTTP ultraligeras y seguras (sin buffers de audio pesados)
+            const sanitizedTracks = tracks.map(t => ({
+                id: t.id,
+                path: t.path || t.filepath || t.f || '',
+                filename: t.filename || t.f || '',
+                title: t.title || t.t || '',
+                artist: t.artist || t.a || '',
+                album: t.album || '',
+                bpm: t.bpm || t.b || 128.0,
+                key: t.key || t.k || t.initialkey || '',
+                genre: t.genre || '',
+                subgenre: t.subgenre || '',
+                energy: t.energy || 80,
+                danceability: t.danceability || 80,
+                comment: t.comment || '',
+                grouping: t.grouping || t.mood || '',
+                label: t.label || '',
+                remixer: t.remixer || '',
+                composer: t.composer || '',
+                year: t.year || '',
+                cues: t.cues || [],
+                first_downbeat_ms: t.first_downbeat_ms || t.downbeat_ms || 0,
+                trim_start_ms: t.trim_start_ms || 0,
+                trim_end_ms: t.trim_end_ms || 0,
+                recalcular_grid: false,
+                modo_rapido: true
+            }));
+
+            let res = null;
             if (window.eel && window.eel.inyectar_lote_metadatos) {
-                const res = await window.eel.inyectar_lote_metadatos(tracks)();
-                setBatchProgress(100);
-                if (res && res.status === 'ok') {
-                    setBatchStatusMsg(`✓ Guardado completo: ${res.inyectados} archivos actualizados en disco con éxito.`);
-                    setSaveFeedback(`✓ ${res.inyectados} archivos guardados con metadatos completos`);
-                    setTimeout(() => setSaveFeedback(''), 4000);
-                } else {
-                    setBatchStatusMsg("Error durante el guardado de archivos.");
-                }
+                res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
+            } else {
+                const response = await fetch('/api/metadata/save_batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tracks: sanitizedTracks })
+                });
+                const data = await response.json();
+                res = data.result || data;
+            }
+
+            stopProgressPolling();
+            setBatchProgress(100);
+            if (res && (res.status === 'ok' || res.inyectados > 0)) {
+                setBatchStatusMsg(`✓ Guardado completo: ${res.inyectados} archivos actualizados en disco con éxito.`);
+                setSaveFeedback(`✓ ${res.inyectados} archivos guardados con metadatos completos`);
+                setTimeout(() => setSaveFeedback(''), 4000);
+            } else if (res && res.status === 'cancelled') {
+                setBatchStatusMsg("Proceso cancelado por el usuario.");
+            } else {
+                setBatchStatusMsg("Error durante el guardado de archivos.");
             }
         } catch (e) {
             console.error("Error al guardar todo en ficheros:", e);
             setBatchStatusMsg("Error al guardar metadatos.");
         } finally {
+            stopProgressPolling();
             setTimeout(() => {
                 setIsInjecting(false);
                 setBatchProgress(0);
                 setBatchStatusMsg('');
-            }, 1000);
+            }, 1200);
         }
     };
 
@@ -2401,9 +2444,10 @@ export const AuditWorkspace = ({
     };
 
     const handleCancelarProceso = async () => {
+        stopProgressPolling();
         setIsAuditPaused(false);
         try {
-            fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
+            await fetch('/api/cancelar_procesos', { method: 'POST' });
         } catch (e) {}
         if (window.eel && window.eel.cancelar_procesos_activos) {
             try {

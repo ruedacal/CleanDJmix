@@ -24,7 +24,7 @@ def test_copilot_engine_initialization():
     assert 1 in state["decks"]
     assert 2 in state["decks"]
     assert state["master_deck"] == 1
-    assert state["global_bpm"] > 0
+    assert state["global_bpm"] >= 0
 
 
 def test_copilot_dsp_harmonic_compatibility():

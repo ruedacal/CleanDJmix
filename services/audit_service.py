@@ -2523,7 +2523,7 @@ return folderPath'''
             return {"status": "ok", "total": 0, "inyectados": 0, "errores": 0}
 
         if progreso_cb:
-            progreso_cb(5, f"Iniciando inyección profunda de metadatos ({total} pistas)...")
+            progreso_cb(5, f"Iniciando guardado de metadatos ({total} pistas)...")
 
         import concurrent.futures
         from threading import Lock
@@ -2539,7 +2539,7 @@ return folderPath'''
             if self._cancelar_proceso:
                 return False
 
-            target_path = t.get("path")
+            target_path = t.get("path") or t.get("filepath")
             filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
             if not target_path or not os.path.exists(target_path):
                 real = self.directorio_actual and os.path.join(self.directorio_actual, filename)
@@ -2549,9 +2549,11 @@ return folderPath'''
             ok = False
             if target_path and os.path.exists(target_path):
                 t_in = dict(t)
-                if "recalcular_grid" not in t_in:
-                    t_in["recalcular_grid"] = True
-                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t_in)
+                t_in["modo_rapido"] = True
+                t_in["skip_acoustic_bpm"] = True
+                t_in["skip_remote_covers"] = True
+                t_in["recalcular_grid"] = False
+                ok = AudioProcessorService.escribir_metadatos_pro(target_path, t_in, modo_rapido=True)
 
             with lock:
                 completados[0] += 1
@@ -2563,19 +2565,37 @@ return folderPath'''
 
                 if progreso_cb and (c % max(1, total // 50) == 0 or c == total):
                     pct = int(5 + (c / total) * 90)
-                    progreso_cb(pct, f"Inyectando ID3v2.4 / Serato ({c}/{total}): {filename}")
+                    progreso_cb(pct, f"Guardando ID3v2.4 / Serato ({c}/{total}): {filename}")
 
             return ok
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
+        try:
             futures = [executor.submit(_procesar_meta, (i, t)) for i, t in enumerate(tracks, 1)]
             for future in concurrent.futures.as_completed(futures):
                 if self._cancelar_proceso:
                     for f in futures:
                         f.cancel()
-                    executor.shutdown(wait=False)
                     break
                 _cooperative_yield()
+        finally:
+            if self._cancelar_proceso:
+                try:
+                    executor.shutdown(wait=False, cancel_futures=True)
+                except Exception:
+                    pass
+            else:
+                executor.shutdown(wait=True)
+
+        if self._cancelar_proceso:
+            if progreso_cb:
+                progreso_cb(0, "Proceso de guardado cancelado por el usuario.")
+            return {
+                "status": "cancelled",
+                "total": total,
+                "inyectados": inyectados_list[0],
+                "errores": errores_list[0]
+            }
 
         inyectados = inyectados_list[0]
         errores = errores_list[0]

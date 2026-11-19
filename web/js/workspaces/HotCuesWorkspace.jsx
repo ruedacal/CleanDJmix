@@ -710,25 +710,62 @@ export const HotCuesWorkspace = ({
         setIsSavingBatch(true);
         setSaveStatus("Inyectando marcas en todas las pistas...");
         try {
+            const sanitizedTracks = tracks.map(t => ({
+                id: t.id,
+                path: t.path || t.filepath || t.f || '',
+                filename: t.filename || t.f || '',
+                title: t.title || t.t || '',
+                artist: t.artist || t.a || '',
+                album: t.album || '',
+                bpm: t.bpm || t.b || 128.0,
+                key: t.key || t.k || t.initialkey || '',
+                genre: t.genre || '',
+                subgenre: t.subgenre || '',
+                energy: t.energy || 80,
+                danceability: t.danceability || 80,
+                comment: t.comment || '',
+                grouping: t.grouping || t.mood || '',
+                label: t.label || '',
+                remixer: t.remixer || '',
+                composer: t.composer || '',
+                year: t.year || '',
+                cues: t.cues || [],
+                first_downbeat_ms: t.first_downbeat_ms || t.downbeat_ms || 0,
+                trim_start_ms: t.trim_start_ms || 0,
+                trim_end_ms: t.trim_end_ms || 0,
+                recalcular_grid: false,
+                modo_rapido: true
+            }));
+
+            let res = null;
             if (window.eel && window.eel.inyectar_lote_metadatos) {
-                const res = await window.eel.inyectar_lote_metadatos(tracks)();
-                if (res && res.status === "ok") {
-                    setSaveStatus(`✓ ${tracks.length} pistas guardadas e inyectadas`);
-                    if (typeof registrarEnBitacora === 'function') {
-                        registrarEnBitacora({
-                            action: "Inyección de Lote Cues & Grid",
-                            category: "cues",
-                            trackTitle: `Lote ${tracks.length} pistas`,
-                            filePath: currentFolder || "Biblioteca activa",
-                            detailsBefore: `${tracks.length} pistas en memoria`,
-                            detailsAfter: `Marcas y Beatgrids inyectados en ${tracks.length} archivos`,
-                            status: "✓ Lote Guardado",
-                            fullLog: `=== INYECCIÓN DE METADATOS Y HOT CUES EN LOTE ===\nTotal de pistas inyectadas: ${tracks.length}\nCarpeta: ${currentFolder || "Biblioteca"}\nPads generados: Plantilla Club Extended 8 Pads Fraseados (32 compases)\nCompatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
-                        });
-                    }
-                } else {
-                    setSaveStatus("Guardado de lote completado con advertencias");
+                res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
+            } else {
+                const response = await fetch('/api/metadata/save_batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tracks: sanitizedTracks })
+                });
+                const data = await response.json();
+                res = data.result || data;
+            }
+
+            if (res && (res.status === "ok" || res.inyectados > 0)) {
+                setSaveStatus(`✓ ${tracks.length} pistas guardadas e inyectadas`);
+                if (typeof registrarEnBitacora === 'function') {
+                    registrarEnBitacora({
+                        action: "Inyección de Lote Cues & Grid",
+                        category: "cues",
+                        trackTitle: `Lote ${tracks.length} pistas`,
+                        filePath: currentFolder || "Biblioteca activa",
+                        detailsBefore: `${tracks.length} pistas en memoria`,
+                        detailsAfter: `Marcas y Beatgrids inyectados en ${tracks.length} archivos`,
+                        status: "✓ Lote Guardado",
+                        fullLog: `=== INYECCIÓN DE METADATOS Y HOT CUES EN LOTE ===\nTotal de pistas inyectadas: ${tracks.length}\nCarpeta: ${currentFolder || "Biblioteca"}\nPads generados: Plantilla Club Extended 8 Pads Fraseados (32 compases)\nCompatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
+                    });
                 }
+            } else {
+                setSaveStatus("Guardado de lote completado con advertencias");
             }
         } catch (e) {
             setSaveStatus("Error en guardado masivo");

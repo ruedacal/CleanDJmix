@@ -12378,27 +12378,67 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setIsInjecting(true);
       setBatchProgress(5);
       setBatchStatusMsg(`Guardando todos los metadatos en ${tracks.length} archivos f\xEDsicos...`);
+      startProgressPolling();
       try {
+        const sanitizedTracks = tracks.map((t2) => ({
+          id: t2.id,
+          path: t2.path || t2.filepath || t2.f || "",
+          filename: t2.filename || t2.f || "",
+          title: t2.title || t2.t || "",
+          artist: t2.artist || t2.a || "",
+          album: t2.album || "",
+          bpm: t2.bpm || t2.b || 128,
+          key: t2.key || t2.k || t2.initialkey || "",
+          genre: t2.genre || "",
+          subgenre: t2.subgenre || "",
+          energy: t2.energy || 80,
+          danceability: t2.danceability || 80,
+          comment: t2.comment || "",
+          grouping: t2.grouping || t2.mood || "",
+          label: t2.label || "",
+          remixer: t2.remixer || "",
+          composer: t2.composer || "",
+          year: t2.year || "",
+          cues: t2.cues || [],
+          first_downbeat_ms: t2.first_downbeat_ms || t2.downbeat_ms || 0,
+          trim_start_ms: t2.trim_start_ms || 0,
+          trim_end_ms: t2.trim_end_ms || 0,
+          recalcular_grid: false,
+          modo_rapido: true
+        }));
+        let res = null;
         if (window.eel && window.eel.inyectar_lote_metadatos) {
-          const res = await window.eel.inyectar_lote_metadatos(tracks)();
-          setBatchProgress(100);
-          if (res && res.status === "ok") {
-            setBatchStatusMsg(`\u2713 Guardado completo: ${res.inyectados} archivos actualizados en disco con \xE9xito.`);
-            setSaveFeedback(`\u2713 ${res.inyectados} archivos guardados con metadatos completos`);
-            setTimeout(() => setSaveFeedback(""), 4e3);
-          } else {
-            setBatchStatusMsg("Error durante el guardado de archivos.");
-          }
+          res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
+        } else {
+          const response = await fetch("/api/metadata/save_batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tracks: sanitizedTracks })
+          });
+          const data = await response.json();
+          res = data.result || data;
+        }
+        stopProgressPolling();
+        setBatchProgress(100);
+        if (res && (res.status === "ok" || res.inyectados > 0)) {
+          setBatchStatusMsg(`\u2713 Guardado completo: ${res.inyectados} archivos actualizados en disco con \xE9xito.`);
+          setSaveFeedback(`\u2713 ${res.inyectados} archivos guardados con metadatos completos`);
+          setTimeout(() => setSaveFeedback(""), 4e3);
+        } else if (res && res.status === "cancelled") {
+          setBatchStatusMsg("Proceso cancelado por el usuario.");
+        } else {
+          setBatchStatusMsg("Error durante el guardado de archivos.");
         }
       } catch (e) {
         console.error("Error al guardar todo en ficheros:", e);
         setBatchStatusMsg("Error al guardar metadatos.");
       } finally {
+        stopProgressPolling();
         setTimeout(() => {
           setIsInjecting(false);
           setBatchProgress(0);
           setBatchStatusMsg("");
-        }, 1e3);
+        }, 1200);
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
@@ -12422,10 +12462,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
     };
     const handleCancelarProceso = async () => {
+      stopProgressPolling();
       setIsAuditPaused(false);
       try {
-        fetch("/api/cancelar_procesos", { method: "POST" }).catch(() => {
-        });
+        await fetch("/api/cancelar_procesos", { method: "POST" });
       } catch (e) {
       }
       if (window.eel && window.eel.cancelar_procesos_activos) {
@@ -15736,29 +15776,64 @@ Inyecci\xF3n: GEOB:Serato BeatGrid, GEOB:Serato Markers2, ID3v2.4 / Vorbis Comme
       setIsSavingBatch(true);
       setSaveStatus("Inyectando marcas en todas las pistas...");
       try {
+        const sanitizedTracks = tracks.map((t2) => ({
+          id: t2.id,
+          path: t2.path || t2.filepath || t2.f || "",
+          filename: t2.filename || t2.f || "",
+          title: t2.title || t2.t || "",
+          artist: t2.artist || t2.a || "",
+          album: t2.album || "",
+          bpm: t2.bpm || t2.b || 128,
+          key: t2.key || t2.k || t2.initialkey || "",
+          genre: t2.genre || "",
+          subgenre: t2.subgenre || "",
+          energy: t2.energy || 80,
+          danceability: t2.danceability || 80,
+          comment: t2.comment || "",
+          grouping: t2.grouping || t2.mood || "",
+          label: t2.label || "",
+          remixer: t2.remixer || "",
+          composer: t2.composer || "",
+          year: t2.year || "",
+          cues: t2.cues || [],
+          first_downbeat_ms: t2.first_downbeat_ms || t2.downbeat_ms || 0,
+          trim_start_ms: t2.trim_start_ms || 0,
+          trim_end_ms: t2.trim_end_ms || 0,
+          recalcular_grid: false,
+          modo_rapido: true
+        }));
+        let res = null;
         if (window.eel && window.eel.inyectar_lote_metadatos) {
-          const res = await window.eel.inyectar_lote_metadatos(tracks)();
-          if (res && res.status === "ok") {
-            setSaveStatus(`\u2713 ${tracks.length} pistas guardadas e inyectadas`);
-            if (typeof registrarEnBitacora === "function") {
-              registrarEnBitacora({
-                action: "Inyecci\xF3n de Lote Cues & Grid",
-                category: "cues",
-                trackTitle: `Lote ${tracks.length} pistas`,
-                filePath: currentFolder || "Biblioteca activa",
-                detailsBefore: `${tracks.length} pistas en memoria`,
-                detailsAfter: `Marcas y Beatgrids inyectados en ${tracks.length} archivos`,
-                status: "\u2713 Lote Guardado",
-                fullLog: `=== INYECCI\xD3N DE METADATOS Y HOT CUES EN LOTE ===
+          res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
+        } else {
+          const response = await fetch("/api/metadata/save_batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tracks: sanitizedTracks })
+          });
+          const data = await response.json();
+          res = data.result || data;
+        }
+        if (res && (res.status === "ok" || res.inyectados > 0)) {
+          setSaveStatus(`\u2713 ${tracks.length} pistas guardadas e inyectadas`);
+          if (typeof registrarEnBitacora === "function") {
+            registrarEnBitacora({
+              action: "Inyecci\xF3n de Lote Cues & Grid",
+              category: "cues",
+              trackTitle: `Lote ${tracks.length} pistas`,
+              filePath: currentFolder || "Biblioteca activa",
+              detailsBefore: `${tracks.length} pistas en memoria`,
+              detailsAfter: `Marcas y Beatgrids inyectados en ${tracks.length} archivos`,
+              status: "\u2713 Lote Guardado",
+              fullLog: `=== INYECCI\xD3N DE METADATOS Y HOT CUES EN LOTE ===
 Total de pistas inyectadas: ${tracks.length}
 Carpeta: ${currentFolder || "Biblioteca"}
 Pads generados: Plantilla Club Extended 8 Pads Fraseados (32 compases)
 Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
-              });
-            }
-          } else {
-            setSaveStatus("Guardado de lote completado con advertencias");
+            });
           }
+        } else {
+          setSaveStatus("Guardado de lote completado con advertencias");
         }
       } catch (e) {
         setSaveStatus("Error en guardado masivo");
@@ -26428,10 +26503,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     "last_updated": "12:24:07",
     "is_simulating": true
   };
-  var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, onCue = null, isAppOpen = true }) => {
+  var CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, isAppOpen = true }) => {
     if (!deck) return null;
     if (!isAppOpen) {
-      return /* @__PURE__ */ React.createElement("div", { className: "p-3.5 sm:p-4 rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-sm sm:text-base text-zinc-500" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300" }, "STANDBY \u2022 SIN CONEXI\xD3N"), /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed" }, "\u23F8 PAUSA"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed" }, "\u23EE CUE")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-600 uppercase" }, /* @__PURE__ */ React.createElement("span", null, "STANDBY SKIN"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/60 items-stretch opacity-60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { className: "p-3.5 sm:p-4 rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-sm sm:text-base text-zinc-500" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300" }, "STANDBY \u2022 SIN CONEXI\xD3N")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-600 uppercase" }, /* @__PURE__ */ React.createElement("span", null, "STANDBY SKIN"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/60 items-stretch opacity-60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
         "div",
         {
           className: "relative rounded-xl overflow-hidden shrink-0 border border-zinc-800 bg-zinc-950 flex items-center justify-center",
@@ -26451,34 +26526,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
         title: `Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`
       },
       isMaster ? "\u{1F50A} MASTER (ON AIR)" : "\u{1F3A7} EN CUE (PREPARADO)"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: isEmptyDeck,
-        onClick: (e) => {
-          if (isEmptyDeck) return;
-          e.stopPropagation();
-          onTogglePlay && onTogglePlay(side);
-        },
-        className: `px-3 py-1 rounded-full font-mono text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 border shadow-sm ${isEmptyDeck ? "bg-zinc-900 text-zinc-600 border-zinc-800 cursor-not-allowed opacity-50" : deck.is_playing ? "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse cursor-pointer" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-600 hover:text-white cursor-pointer"}`,
-        title: isEmptyDeck ? "Deck vac\xEDo" : `Alternar Play/Pausa en Deck ${side} (Atajo de teclado: '${side}')`
-      },
-      /* @__PURE__ */ React.createElement("span", null, deck.is_playing ? "\u23F8 PAUSA" : "\u25B6 PLAY")
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        disabled: isEmptyDeck,
-        onClick: (e) => {
-          if (isEmptyDeck) return;
-          e.stopPropagation();
-          onCue && onCue(side);
-        },
-        className: `px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider transition-all border ${isEmptyDeck ? "bg-zinc-900 text-zinc-600 border-zinc-800 cursor-not-allowed opacity-50" : "bg-zinc-900 hover:bg-zinc-800 text-indigo-300 border-indigo-500/50 hover:text-white cursor-pointer"}`,
-        title: isEmptyDeck ? "Deck vac\xEDo" : `Rebobinar a CUE Bar 1 (Atajo: tecla 'C')`
-      },
-      /* @__PURE__ */ React.createElement("span", null, "\u23EE CUE")
     ), (deck.mood || deck.phase) && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 12, className: "inline-block align-[-1px] mr-1" }), " ", deck.mood || deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase" }, deck.format && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, isEmptyDeck ? "STANDBY" : deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -26556,73 +26603,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [manualPickerOpen, setManualPickerOpen] = useState30(false);
     const [manualSearchQuery, setManualSearchQuery] = useState30("");
     const wsRef = useRef25(null);
-    const togglePlayDeck = async (targetSide) => {
-      const sideStr = targetSide === "2" ? "2" : "1";
-      setState((prev) => {
-        if (!prev) return prev;
-        const curDeck = sideStr === "1" ? prev.deck_1 : prev.deck_2;
-        if (!curDeck) return prev;
-        const newIsPlaying = !curDeck.is_playing;
-        return {
-          ...prev,
-          [`deck_${sideStr}`]: {
-            ...curDeck,
-            is_playing: newIsPlaying,
-            status: newIsPlaying ? curDeck.is_master ? "ON AIR (MASTER)" : "REPRODUCIENDO" : "CUE / PREPARADO"
-          }
-        };
-      });
-      try {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ action: "toggle_play", deck: sideStr }));
-        } else {
-          const res = await fetch("/api/copilot/toggle_play", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deck: sideStr })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setState(data);
-          }
-        }
-      } catch (_) {
-      }
-    };
-    const cueDeck = async (targetSide) => {
-      const sideStr = targetSide === "2" ? "2" : "1";
-      setState((prev) => {
-        if (!prev) return prev;
-        const curDeck = sideStr === "1" ? prev.deck_1 : prev.deck_2;
-        if (!curDeck) return prev;
-        return {
-          ...prev,
-          [`deck_${sideStr}`]: {
-            ...curDeck,
-            is_playing: false,
-            play_progress: 0,
-            elapsed_sec: 0,
-            status: "CUE / PREPARADO"
-          }
-        };
-      });
-      try {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ action: "cue_deck", deck: sideStr }));
-        } else {
-          const res = await fetch("/api/copilot/cue_deck", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ deck: sideStr })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setState(data);
-          }
-        }
-      } catch (_) {
-      }
-    };
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -26704,33 +26684,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
                 status: "SIN CONEXI\xD3N"
               });
             }
-            inputs.forEach((input) => {
-              input.onmidimessage = (msg) => {
-                if (!msg || !msg.data || msg.data.length < 2) return;
-                const status = msg.data[0];
-                const note = msg.data[1];
-                const vel = msg.data.length > 2 ? msg.data[2] : 0;
-                const isNoteOn = (status & 240) === 144 && vel > 0 || (status & 240) === 176 && vel > 0;
-                const channel = status & 15;
-                if (isNoteOn) {
-                  if ((channel === 0 || channel === 2) && (note === 0 || note === 8 || note === 11 || note === 39 || note === 64 || note === 67 || note === 71 || note === 75)) {
-                    togglePlayDeck("1");
-                  } else if ((channel === 1 || channel === 3) && (note === 0 || note === 8 || note === 12 || note === 39 || note === 64 || note === 67 || note === 72 || note === 75)) {
-                    togglePlayDeck("2");
-                  } else if (note === 11 || note === 71) {
-                    togglePlayDeck("1");
-                  } else if (note === 12 || note === 72) {
-                    togglePlayDeck("2");
-                  } else if (note === 1 || note === 9 || note === 51 || note === 68) {
-                    if (channel === 1 || channel === 3) {
-                      cueDeck("2");
-                    } else {
-                      cueDeck("1");
-                    }
-                  }
-                }
-              };
-            });
           };
           checkDevices();
           access.onstatechange = checkDevices;
@@ -26885,25 +26838,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     useEffect30(() => {
       const handleKeyDown = (e) => {
-        var _a2, _b;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
           e.preventDefault();
           setMasterDeck("toggle");
-        } else if (e.key === "1") {
-          e.preventDefault();
-          togglePlayDeck("1");
-        } else if (e.key === "2") {
-          e.preventDefault();
-          togglePlayDeck("2");
-        } else if (e.code === "Space") {
-          e.preventDefault();
-          const masterTarget = ((_a2 = state == null ? void 0 : state.deck_1) == null ? void 0 : _a2.is_master) ? "1" : "2";
-          togglePlayDeck(masterTarget);
-        } else if (e.key === "c" || e.key === "C") {
-          e.preventDefault();
-          const cueTarget = ((_b = state == null ? void 0 : state.deck_1) == null ? void 0 : _b.is_master) ? "2" : "1";
-          cueDeck(cueTarget);
         }
       };
       window.addEventListener("keydown", handleKeyDown);
@@ -27033,18 +26971,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       { id: "virtualdj", label: "VirtualDJ", color: "#f97316" },
       { id: "traktor", label: "Traktor", color: "#facc15" }
     ];
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 min-h-[114px] px-1 select-none" }, controllerState.detected && /* @__PURE__ */ React.createElement("div", { className: "hidden md:block absolute right-0 top-0 bottom-0 w-[930px] max-w-[50%] lg:max-w-[60%] xl:max-w-[70%] 2xl:w-[930px] 2xl:max-w-none overflow-hidden pointer-events-none select-none z-0" }, /* @__PURE__ */ React.createElement(
-      "img",
-      {
-        src: `/api/copilot/controller_image?name=${encodeURIComponent((controllerState.name || "numark_nv_ii").toLowerCase().replace(/\s*\(usb\)\s*/gi, "").replace(/[^a-z0-9]+/g, "_"))}`,
-        alt: controllerState.name || "Controladora DJ",
-        onError: (e) => {
-          e.currentTarget.src = `/assets/controllers/${(controllerState.name || "numark_nv_ii").toLowerCase().replace(/\s*\(usb\)\s*/gi, "").replace(/[^a-z0-9]+/g, "_")}.png`;
-        },
-        className: "w-[930px] max-w-full h-[114px] object-cover object-right ml-auto",
-        style: { opacity: 0.4 }
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between gap-3 w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3.5 h-3.5 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 17 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "Serato DJ Pro"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : "text-cyan-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY")))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col w-full h-full p-3 sm:p-5 pb-32 md:pb-6 overflow-y-auto select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-between pb-2.5 border-b border-zinc-800 mb-3 px-1 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between gap-3 w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3.5 h-3.5 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement(Icons.Turntable, { size: 17 })), /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-sm sm:text-base leading-none text-white tracking-wide uppercase whitespace-nowrap flex items-center gap-1.5" }, "Copilot ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "Cabina DJ"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]" }, renderPlatformLogo(state.platform || "serato", 13), /* @__PURE__ */ React.createElement("strong", { style: { color: state.platform_color || "#00d1e8" } }, state.platform_name || "Serato DJ Pro"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : "text-cyan-400 font-bold" }, state.platform_status || (isLive ? "LIVE" : "STANDBY")))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -27140,8 +27067,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
         antiMuddy: anti_muddy,
         partnerDeck: deck_2,
         onSetMaster: setMasterDeck,
-        onTogglePlay: togglePlayDeck,
-        onCue: cueDeck,
         isAppOpen
       }
     ), /* @__PURE__ */ React.createElement(
@@ -27153,8 +27078,6 @@ Respuesta: ${qa.a}`).join("\n\n"),
         antiMuddy: anti_muddy,
         partnerDeck: deck_1,
         onSetMaster: setMasterDeck,
-        onTogglePlay: togglePlayDeck,
-        onCue: cueDeck,
         isAppOpen
       }
     )), /* @__PURE__ */ React.createElement("section", { className: `mt-auto transition-all ${!isAppOpen ? "p-3 rounded-2xl bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-zinc-300 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Bulb, { size: 14, className: "text-amber-400 inline-block" }), /* @__PURE__ */ React.createElement("span", null, "PR\xD3XIMAS PISTAS SUGERIDAS (", isAppOpen ? displayRecommendations.length : 0, ")")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, isAppOpen ? "\u2022 Arrastra para reordenar la secuencia" : "\u2022 Modo Standby Skin")), isAppOpen && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
