@@ -4,6 +4,7 @@ import { Promotions, Codes, Skills, Banners } from './admin/sections-growth.jsx'
 import { Analytics, Seo, Billing, Notices, Settings } from './admin/sections-insights.jsx';
 import { QueryConsole, Behavior } from './admin/sections-data.jsx';
 import { Social, ContentStudio } from './admin/sections-content.jsx';
+import { Costs } from './admin/sections-costs.jsx';
 
 const { useState, useEffect } = React;
 
@@ -30,6 +31,7 @@ const NAV = [
     ] },
     { group: 'Negocio', items: [
         { id: 'billing', label: 'Facturación', icon: 'card', C: Billing },
+        { id: 'costs', label: 'Costes', icon: 'wallet', C: Costs, count: 4 },
     ] },
     { group: 'Sistema', items: [
         { id: 'notices', label: 'Avisos', icon: 'bell', C: Notices, count: 1 },

@@ -30,6 +30,8 @@ const ICON_PATHS = {
     play: 'M7 5l12 7-12 7z',
     up: 'M12 19V5m-6 6l6-6 6 6',
     down: 'M12 5v14m-6-6l6 6 6-6',
+    wallet: 'M4 7a2 2 0 0 1 2-2h12v4M4 7v11a2 2 0 0 0 2 2h14V9H6a2 2 0 0 1-2-2zm12 7h.01',
+    alert: 'M12 4l9 16H3zM12 10v4m0 3h.01',
 };
 
 export function Icon({ name, size = 16, className = '' }) {

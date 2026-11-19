@@ -30,7 +30,9 @@
     pen: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
     play: "M7 5l12 7-12 7z",
     up: "M12 19V5m-6 6l6-6 6 6",
-    down: "M12 5v14m-6-6l6 6 6-6"
+    down: "M12 5v14m-6-6l6 6 6-6",
+    wallet: "M4 7a2 2 0 0 1 2-2h12v4M4 7v11a2 2 0 0 0 2 2h14V9H6a2 2 0 0 1-2-2zm12 7h.01",
+    alert: "M12 4l9 16H3zM12 10v4m0 3h.01"
   };
   function Icon({ name, size = 16, className = "" }) {
     return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.7", strokeLinecap: "round", strokeLinejoin: "round", className, "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: ICON_PATHS[name] || "" }));
@@ -83,9 +85,9 @@
     return raw.map((r) => round2(value * r / total));
   }
   function LineChart({ data, labels, compare, aggregate: aggregate2 = "sum", ...rest }) {
-    const { useMemo: useMemo3 } = React;
+    const { useMemo: useMemo4 } = React;
     const n = data.length;
-    const isoDates = useMemo3(() => (labels || data.map((_, i) => i)).map(labelToIso), [labels, n]);
+    const isoDates = useMemo4(() => (labels || data.map((_, i) => i)).map(labelToIso), [labels, n]);
     const [hourDay, setHourDay] = useState(null);
     const [initialHours, setInitialHours] = useState(null);
     const openHours = (dayIdx, hours = null) => {
@@ -118,12 +120,12 @@
     );
   }
   function ChartCore({ points, unit, hasCompare, onHours, onDays, day, initialRange, height = 220, format = (v) => num(v), seriesLabel = "Periodo actual", compareLabel = "Periodo anterior" }) {
-    const { useMemo: useMemo3, useRef } = React;
+    const { useMemo: useMemo4, useRef } = React;
     const isHour = unit === "hour";
     const n = points.length;
     const data = points.map((p) => p.value);
     const compare = hasCompare ? points.map((p) => p.cmp) : null;
-    const gradId = useMemo3(() => `lc-fill-${++chartSeq}`, []);
+    const gradId = useMemo4(() => `lc-fill-${++chartSeq}`, []);
     const [range, setRange] = useState(initialRange || [0, n - 1]);
     const [hover, setHover] = useState(null);
     const [pinned, setPinned] = useState(null);
@@ -1212,8 +1214,161 @@
     return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Contenido", title: "Estudio de contenido", desc: "Crea publicaciones para redes, art\xEDculos para el blog y lecciones internas para las secciones de aprendizaje." }, /* @__PURE__ */ React.createElement(Chips, { label: "Tipo de contenido", options: ["Redes", "Blog", "Academia"], value: tab, onChange: setTab })), tab === "Redes" && /* @__PURE__ */ React.createElement(SocialComposer, { onCreate }), tab === "Blog" && /* @__PURE__ */ React.createElement(BlogEditor, { onCreate }), tab === "Academia" && /* @__PURE__ */ React.createElement(LessonBuilder, { onCreate }), /* @__PURE__ */ React.createElement(Card, { title: "Biblioteca de contenido", action: /* @__PURE__ */ React.createElement(Chips, { label: "Filtrar biblioteca", options: ["Todo", "Redes", "Blog", "Academia"], value: filter, onChange: setFilter }), bodyClass: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { scope: "col" }, "T\xEDtulo"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Tipo"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Estado"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Autor"), /* @__PURE__ */ React.createElement("th", { scope: "col" }, "Fecha"), /* @__PURE__ */ React.createElement("th", { scope: "col", className: "num" }, "Vistas"))), /* @__PURE__ */ React.createElement("tbody", null, rows.map((c) => /* @__PURE__ */ React.createElement("tr", { key: c.id }, /* @__PURE__ */ React.createElement("td", null, c.title), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("span", { className: "code-tag" }, c.type)), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(Badge, { tone: statusTone[c.status] }, c.status)), /* @__PURE__ */ React.createElement("td", { className: "muted" }, c.author), /* @__PURE__ */ React.createElement("td", { className: "mono muted" }, c.date), /* @__PURE__ */ React.createElement("td", { className: "num mono" }, c.views ? num(c.views) : "\u2014")))))));
   }
 
+  // web/js/admin/costs-data.js
+  var COST_CATEGORIES = [
+    "Dominios",
+    "Hosting",
+    "Servidores",
+    "Publicidad",
+    "Campa\xF1as",
+    "APIs e IA",
+    "Almacenamiento y CDN",
+    "Email y comunicaciones",
+    "Herramientas SaaS",
+    "Pagos y comisiones",
+    "Tiendas de apps",
+    "Licencias",
+    "Seguridad y monitorizaci\xF3n",
+    "Legal y gestor\xEDa"
+  ];
+  var CYCLES = { mensual: 1, trimestral: 3, anual: 12 };
+  var COSTS = [
+    { id: "c01", name: "beatwave.pro", provider: "Namecheap", category: "Dominios", amount: 32.9, cycle: "anual", renews: "2026-11-24", auto: false, alertDays: 30 },
+    { id: "c02", name: "beatwave.app", provider: "Google Domains", category: "Dominios", amount: 16, cycle: "anual", renews: "2027-03-02", auto: true, alertDays: 30 },
+    { id: "c03", name: "beatwave.es", provider: "Dinahosting", category: "Dominios", amount: 12.5, cycle: "anual", renews: "2026-12-08", auto: false, alertDays: 30 },
+    { id: "c04", name: "Vercel Pro (web + panel)", provider: "Vercel", category: "Hosting", amount: 20, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c05", name: "Servidor de an\xE1lisis GPU", provider: "Hetzner", category: "Servidores", amount: 184, cycle: "mensual", renews: "2026-11-28", auto: true, alertDays: 7 },
+    { id: "c06", name: "Base de datos Postgres", provider: "Neon", category: "Servidores", amount: 69, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c07", name: "Workers de cola (Redis)", provider: "Upstash", category: "Servidores", amount: 18, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c08", name: "Meta Ads \xB7 captaci\xF3n", provider: "Meta", category: "Publicidad", amount: 900, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 5 },
+    { id: "c09", name: "Google Ads \xB7 b\xFAsqueda", provider: "Google", category: "Publicidad", amount: 650, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 5 },
+    { id: "c10", name: "TikTok Ads \xB7 DJs", provider: "TikTok", category: "Publicidad", amount: 400, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 5 },
+    { id: "c11", name: "Black Friday 2026", provider: "Interno", category: "Campa\xF1as", amount: 1500, cycle: "mensual", renews: "2026-11-30", auto: false, alertDays: 10 },
+    { id: "c12", name: "Patrocinio ADE Amsterdam", provider: "ADE", category: "Campa\xF1as", amount: 3600, cycle: "anual", renews: "2027-06-15", auto: false, alertDays: 60 },
+    { id: "c13", name: "AI Gateway (res\xFAmenes y tags)", provider: "Vercel", category: "APIs e IA", amount: 120, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c14", name: "Reconocimiento de pistas", provider: "ACRCloud", category: "APIs e IA", amount: 89, cycle: "mensual", renews: "2026-11-22", auto: true, alertDays: 7 },
+    { id: "c15", name: "Almacenamiento de car\xE1tulas", provider: "Vercel Blob", category: "Almacenamiento y CDN", amount: 24, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c16", name: "Backups S3", provider: "AWS", category: "Almacenamiento y CDN", amount: 31, cycle: "mensual", renews: "2026-12-03", auto: true, alertDays: 7 },
+    { id: "c17", name: "Email transaccional", provider: "Resend", category: "Email y comunicaciones", amount: 20, cycle: "mensual", renews: "2026-12-05", auto: true, alertDays: 7 },
+    { id: "c18", name: "Newsletter", provider: "Mailchimp", category: "Email y comunicaciones", amount: 45, cycle: "mensual", renews: "2026-12-10", auto: true, alertDays: 7 },
+    { id: "c19", name: "Figma Professional", provider: "Figma", category: "Herramientas SaaS", amount: 180, cycle: "anual", renews: "2027-01-20", auto: true, alertDays: 30 },
+    { id: "c20", name: "GitHub Team", provider: "GitHub", category: "Herramientas SaaS", amount: 16, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c21", name: "Notion Plus", provider: "Notion", category: "Herramientas SaaS", amount: 96, cycle: "anual", renews: "2026-12-14", auto: true, alertDays: 30 },
+    { id: "c22", name: "Comisiones de cobro (est.)", provider: "Stripe", category: "Pagos y comisiones", amount: 540, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 3 },
+    { id: "c23", name: "Apple Developer Program", provider: "Apple", category: "Tiendas de apps", amount: 99, cycle: "anual", renews: "2026-12-02", auto: false, alertDays: 45 },
+    { id: "c24", name: "Google Play Console", provider: "Google", category: "Tiendas de apps", amount: 25, cycle: "anual", renews: "2027-08-11", auto: false, alertDays: 30 },
+    { id: "c25", name: "Licencia c\xF3dec AAC/FLAC", provider: "Via LA", category: "Licencias", amount: 450, cycle: "anual", renews: "2027-02-01", auto: false, alertDays: 60 },
+    { id: "c26", name: "Fuentes tipogr\xE1ficas", provider: "Monotype", category: "Licencias", amount: 120, cycle: "anual", renews: "2027-04-18", auto: false, alertDays: 30 },
+    { id: "c27", name: "Monitorizaci\xF3n de errores", provider: "Sentry", category: "Seguridad y monitorizaci\xF3n", amount: 26, cycle: "mensual", renews: "2026-12-01", auto: true, alertDays: 7 },
+    { id: "c28", name: "Certificado firma de c\xF3digo", provider: "DigiCert", category: "Seguridad y monitorizaci\xF3n", amount: 389, cycle: "anual", renews: "2026-11-21", auto: false, alertDays: 30 },
+    { id: "c29", name: "Gestor\xEDa y contabilidad", provider: "Gestor\xEDa Ruiz", category: "Legal y gestor\xEDa", amount: 180, cycle: "trimestral", renews: "2026-12-31", auto: true, alertDays: 15 },
+    { id: "c30", name: "Registro de marca UE", provider: "EUIPO", category: "Legal y gestor\xEDa", amount: 850, cycle: "anual", renews: "2027-09-30", auto: false, alertDays: 90 }
+  ];
+
+  // web/js/admin/sections-costs.jsx
+  var { useState: useState7, useMemo: useMemo3 } = React;
+  var DAY_MS = 864e5;
+  var startOfToday = () => {
+    const d = /* @__PURE__ */ new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+  var daysUntil = (iso) => Math.round((/* @__PURE__ */ new Date(`${iso}T00:00:00`) - startOfToday()) / DAY_MS);
+  var monthly = (c) => c.amount / CYCLES[c.cycle];
+  var eur2 = (n) => n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+  var shortDate = (iso) => (/* @__PURE__ */ new Date(`${iso}T00:00:00`)).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  var addMonths = (iso, months) => {
+    const d = /* @__PURE__ */ new Date(`${iso}T00:00:00`);
+    d.setMonth(d.getMonth() + months);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  function renewalState(c) {
+    const d = daysUntil(c.renews);
+    if (d < 0) return { tone: "err", label: `Vencido hace ${-d} d`, alert: true, urgent: true };
+    if (d <= Math.min(7, c.alertDays)) return { tone: "err", label: d === 0 ? "Hoy" : `En ${d} d`, alert: true, urgent: true };
+    if (d <= c.alertDays) return { tone: "on", label: `En ${d} d`, alert: true, urgent: false };
+    return { tone: "off", label: `En ${d} d`, alert: false, urgent: false };
+  }
+  var EMPTY = { name: "", provider: "", category: "Dominios", amount: "", cycle: "mensual", renews: "", auto: true, alertDays: 30 };
+  function Costs({ toast }) {
+    const [items, setItems] = useState7(COSTS);
+    const [cat, setCat] = useState7("Todas");
+    const [period, setPeriod] = useState7("Mensual");
+    const [q, setQ] = useState7("");
+    const [form, setForm] = useState7(EMPTY);
+    const totalMonthly = useMemo3(() => items.reduce((s, c) => s + monthly(c), 0), [items]);
+    const alerts = useMemo3(
+      () => items.map((c) => ({ ...c, st: renewalState(c), days: daysUntil(c.renews) })).filter((c) => c.st.alert).sort((a, b) => a.days - b.days),
+      [items]
+    );
+    const due30 = useMemo3(() => items.filter((c) => {
+      const d = daysUntil(c.renews);
+      return d >= 0 && d <= 30;
+    }), [items]);
+    const byCategory = useMemo3(() => {
+      const map = {};
+      items.forEach((c) => {
+        map[c.category] = (map[c.category] || 0) + monthly(c);
+      });
+      return Object.entries(map).map(([label, value]) => ({ label, value: period === "Mensual" ? value : value * 12 })).sort((a, b) => b.value - a.value);
+    }, [items, period]);
+    const usedCats = ["Todas", ...COST_CATEGORIES.filter((c) => items.some((i) => i.category === c))];
+    const list = items.filter((c) => cat === "Todas" || c.category === cat).filter((c) => !q || `${c.name} ${c.provider}`.toLowerCase().includes(q.toLowerCase())).sort((a, b) => daysUntil(a.renews) - daysUntil(b.renews));
+    const update = (id, patch) => setItems((prev) => prev.map((c) => c.id === id ? { ...c, ...patch } : c));
+    const renew = (c) => {
+      update(c.id, { renews: addMonths(c.renews, CYCLES[c.cycle]) });
+      toast(`${c.name} renovado hasta ${shortDate(addMonths(c.renews, CYCLES[c.cycle]))}`);
+    };
+    const remove = (c) => {
+      setItems((prev) => prev.filter((i) => i.id !== c.id));
+      toast(`${c.name} eliminado`);
+    };
+    const add = (e) => {
+      e.preventDefault();
+      const amount = Number(String(form.amount).replace(",", "."));
+      if (!form.name.trim() || !form.renews || !(amount > 0)) return;
+      setItems((prev) => [...prev, { ...form, id: `c${Date.now()}`, amount, alertDays: Math.max(1, Number(form.alertDays) || 30) }]);
+      setForm(EMPTY);
+      toast("Coste a\xF1adido");
+    };
+    const exportCsv = () => {
+      const rows = [["Concepto", "Proveedor", "Categor\xEDa", "Ciclo", "Importe", "Mensual", "Anual", "Renovaci\xF3n", "Auto"]];
+      items.forEach((c) => rows.push([c.name, c.provider, c.category, c.cycle, c.amount, monthly(c).toFixed(2), (monthly(c) * 12).toFixed(2), c.renews, c.auto ? "s\xED" : "no"]));
+      const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      a.download = "costes-beatwave.csv";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+    const mrr = 18640;
+    const urgent = alerts.filter((a) => a.st.urgent).length;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SectionHeader, { eyebrow: "Negocio", title: "Costes", desc: "Gastos fijos y variables de la plataforma, equivalentes mensuales y anuales, y avisos antes de cada renovaci\xF3n." }, /* @__PURE__ */ React.createElement(Button, { icon: "download", onClick: exportCsv }, "Exportar CSV")), /* @__PURE__ */ React.createElement("div", { className: "grid g-4" }, /* @__PURE__ */ React.createElement(Stat, { label: "Coste mensual", value: eur(totalMonthly) }), /* @__PURE__ */ React.createElement(Stat, { label: "Coste anual", value: eur(totalMonthly * 12) }), /* @__PURE__ */ React.createElement(Stat, { label: "Renovaciones en 30 d\xEDas", value: `${due30.length} \xB7 ${eur(due30.reduce((s, c) => s + c.amount, 0))}` }), /* @__PURE__ */ React.createElement(Stat, { label: "Margen sobre MRR", value: `${Math.round((mrr - totalMonthly) / mrr * 100)} %` })), /* @__PURE__ */ React.createElement("div", { className: "grid g-main" }, /* @__PURE__ */ React.createElement(
+      Card,
+      {
+        title: "Alertas de renovaci\xF3n",
+        action: /* @__PURE__ */ React.createElement("span", { className: urgent ? "danger mono" : "faint mono", style: { fontSize: 12 } }, alerts.length, " activas \xB7 ", urgent, " urgentes"),
+        bodyClass: "list"
+      },
+      alerts.length === 0 && /* @__PURE__ */ React.createElement("p", { className: "empty" }, "No hay renovaciones dentro de su ventana de aviso."),
+      alerts.map((c) => /* @__PURE__ */ React.createElement("div", { key: c.id, className: `list-item cost-alert ${c.st.urgent ? "is-urgent" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "ico-box" }, /* @__PURE__ */ React.createElement(Icon, { name: c.st.urgent ? "alert" : "bell" })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { className: "row between wrap" }, /* @__PURE__ */ React.createElement("strong", { style: { fontWeight: 600 } }, c.name), /* @__PURE__ */ React.createElement(Badge, { tone: c.st.tone }, c.st.label)), /* @__PURE__ */ React.createElement("span", { className: "faint", style: { fontSize: 12 } }, c.provider, " \xB7 ", eur2(c.amount), " / ", c.cycle, " \xB7 ", /* @__PURE__ */ React.createElement("span", { className: "mono" }, shortDate(c.renews)), " \xB7 ", c.auto ? "renovaci\xF3n autom\xE1tica" : "renovaci\xF3n manual")), !c.auto && /* @__PURE__ */ React.createElement(Button, { size: "sm", onClick: () => renew(c) }, "Marcar renovado")))
+    ), /* @__PURE__ */ React.createElement(Card, { title: "Por categor\xEDa", action: /* @__PURE__ */ React.createElement(Chips, { label: "Periodo", options: ["Mensual", "Anual"], value: period, onChange: setPeriod }) }, /* @__PURE__ */ React.createElement(Bars, { items: byCategory, format: eur }))), /* @__PURE__ */ React.createElement(
+      Card,
+      {
+        title: "Todos los costes",
+        bodyClass: "",
+        action: /* @__PURE__ */ React.createElement("div", { className: "cost-search" }, /* @__PURE__ */ React.createElement(Icon, { name: "search", size: 14 }), /* @__PURE__ */ React.createElement("label", { htmlFor: "cost-q", className: "sr-only" }, "Buscar coste"), /* @__PURE__ */ React.createElement("input", { id: "cost-q", className: "input", placeholder: "Concepto o proveedor", value: q, onChange: (e) => setQ(e.target.value) }))
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "cost-cats" }, /* @__PURE__ */ React.createElement(Chips, { label: "Categor\xEDa", options: usedCats, value: cat, onChange: setCat })),
+      /* @__PURE__ */ React.createElement("div", { className: "tbl-wrap" }, /* @__PURE__ */ React.createElement("table", { className: "tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", null, "Concepto"), /* @__PURE__ */ React.createElement("th", null, "Categor\xEDa"), /* @__PURE__ */ React.createElement("th", null, "Ciclo"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Importe"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Mensual"), /* @__PURE__ */ React.createElement("th", { className: "num" }, "Anual"), /* @__PURE__ */ React.createElement("th", null, "Renovaci\xF3n"), /* @__PURE__ */ React.createElement("th", null, "Aviso"), /* @__PURE__ */ React.createElement("th", null, "Auto"), /* @__PURE__ */ React.createElement("th", null, /* @__PURE__ */ React.createElement("span", { className: "sr-only" }, "Acciones")))), /* @__PURE__ */ React.createElement("tbody", null, list.map((c) => {
+        const st = renewalState(c);
+        return /* @__PURE__ */ React.createElement("tr", { key: c.id }, /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 500 } }, c.name), /* @__PURE__ */ React.createElement("div", { className: "faint", style: { fontSize: 12 } }, c.provider)), /* @__PURE__ */ React.createElement("td", { className: "muted" }, c.category), /* @__PURE__ */ React.createElement("td", { className: "muted" }, c.cycle), /* @__PURE__ */ React.createElement("td", { className: "num" }, eur2(c.amount)), /* @__PURE__ */ React.createElement("td", { className: "num" }, eur2(monthly(c))), /* @__PURE__ */ React.createElement("td", { className: "num" }, eur2(monthly(c) * 12)), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("div", { className: "mono", style: { fontSize: 12 } }, shortDate(c.renews)), /* @__PURE__ */ React.createElement(Badge, { tone: st.tone, plain: true }, st.label)), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement("label", { className: "sr-only", htmlFor: `ad-${c.id}` }, "D\xEDas de aviso para ", c.name), /* @__PURE__ */ React.createElement("select", { id: `ad-${c.id}`, className: "select cost-days", value: c.alertDays, onChange: (e) => update(c.id, { alertDays: Number(e.target.value) }) }, [3, 5, 7, 10, 15, 30, 45, 60, 90].map((d) => /* @__PURE__ */ React.createElement("option", { key: d, value: d }, d, " d")))), /* @__PURE__ */ React.createElement("td", null, /* @__PURE__ */ React.createElement(Toggle, { checked: c.auto, label: `Renovaci\xF3n autom\xE1tica de ${c.name}`, onChange: (v) => update(c.id, { auto: v }) })), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", whiteSpace: "nowrap" } }, /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", icon: "refresh", "aria-label": `Renovar ${c.name}`, onClick: () => renew(c) }), /* @__PURE__ */ React.createElement(Button, { size: "sm", variant: "ghost", icon: "trash", "aria-label": `Eliminar ${c.name}`, onClick: () => remove(c) })));
+      }), list.length === 0 && /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("td", { colSpan: 10, className: "empty" }, "Sin resultados.")))))
+    ), /* @__PURE__ */ React.createElement(Card, { title: "A\xF1adir coste" }, /* @__PURE__ */ React.createElement("form", { className: "cost-form", onSubmit: add }, /* @__PURE__ */ React.createElement(Field, { label: "Concepto", id: "cf-n" }, /* @__PURE__ */ React.createElement("input", { id: "cf-n", className: "input", maxLength: 80, value: form.name, onChange: (e) => setForm({ ...form, name: e.target.value }), required: true })), /* @__PURE__ */ React.createElement(Field, { label: "Proveedor", id: "cf-p" }, /* @__PURE__ */ React.createElement("input", { id: "cf-p", className: "input", maxLength: 60, value: form.provider, onChange: (e) => setForm({ ...form, provider: e.target.value }) })), /* @__PURE__ */ React.createElement(Field, { label: "Categor\xEDa", id: "cf-c" }, /* @__PURE__ */ React.createElement("select", { id: "cf-c", className: "select", value: form.category, onChange: (e) => setForm({ ...form, category: e.target.value }) }, COST_CATEGORIES.map((c) => /* @__PURE__ */ React.createElement("option", { key: c }, c)))), /* @__PURE__ */ React.createElement(Field, { label: "Importe (\u20AC)", id: "cf-a" }, /* @__PURE__ */ React.createElement("input", { id: "cf-a", className: "input", inputMode: "decimal", value: form.amount, onChange: (e) => setForm({ ...form, amount: e.target.value }), required: true })), /* @__PURE__ */ React.createElement(Field, { label: "Ciclo", id: "cf-y" }, /* @__PURE__ */ React.createElement("select", { id: "cf-y", className: "select", value: form.cycle, onChange: (e) => setForm({ ...form, cycle: e.target.value }) }, Object.keys(CYCLES).map((c) => /* @__PURE__ */ React.createElement("option", { key: c }, c)))), /* @__PURE__ */ React.createElement(Field, { label: "Pr\xF3xima renovaci\xF3n", id: "cf-r" }, /* @__PURE__ */ React.createElement("input", { id: "cf-r", type: "date", className: "input", value: form.renews, onChange: (e) => setForm({ ...form, renews: e.target.value }), required: true })), /* @__PURE__ */ React.createElement(Field, { label: "Avisar con (d\xEDas)", id: "cf-d" }, /* @__PURE__ */ React.createElement("input", { id: "cf-d", type: "number", min: "1", max: "365", className: "input", value: form.alertDays, onChange: (e) => setForm({ ...form, alertDays: e.target.value }) })), /* @__PURE__ */ React.createElement("div", { className: "row cost-form-actions" }, /* @__PURE__ */ React.createElement(Toggle, { checked: form.auto, label: "Renovaci\xF3n autom\xE1tica", onChange: (v) => setForm({ ...form, auto: v }) }), /* @__PURE__ */ React.createElement("span", { className: "muted" }, "Renovaci\xF3n autom\xE1tica"), /* @__PURE__ */ React.createElement("button", { type: "submit", className: "btn btn-primary" }, /* @__PURE__ */ React.createElement(Icon, { name: "plus" }), " A\xF1adir")))));
+  }
+
   // web/js/admin.jsx
-  var { useState: useState7, useEffect } = React;
+  var { useState: useState8, useEffect } = React;
   var NAV = [
     { group: "Operaci\xF3n", items: [
       { id: "overview", label: "Resumen", icon: "home", C: Overview },
@@ -1236,7 +1391,8 @@
       { id: "content", label: "Estudio de contenido", icon: "pen", C: ContentStudio }
     ] },
     { group: "Negocio", items: [
-      { id: "billing", label: "Facturaci\xF3n", icon: "card", C: Billing }
+      { id: "billing", label: "Facturaci\xF3n", icon: "card", C: Billing },
+      { id: "costs", label: "Costes", icon: "wallet", C: Costs, count: 4 }
     ] },
     { group: "Sistema", items: [
       { id: "notices", label: "Avisos", icon: "bell", C: Notices, count: 1 },
@@ -1247,8 +1403,8 @@
   var ALL = NAV.flatMap((g) => g.items);
   var fromHash = () => ALL.some((i) => i.id === location.hash.slice(1)) ? location.hash.slice(1) : "overview";
   function AdminApp() {
-    const [active, setActive] = useState7(fromHash);
-    const [menuOpen, setMenuOpen] = useState7(false);
+    const [active, setActive] = useState8(fromHash);
+    const [menuOpen, setMenuOpen] = useState8(false);
     const [toastNode, toast] = useToast();
     useEffect(() => {
       const onHash = () => setActive(fromHash());

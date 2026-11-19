@@ -127,3 +127,16 @@ button.log-line:focus-visible { outline: 2px solid var(--bw-cyan); outline-offse
 .log-block p { margin: 0; line-height: 1.55; color: var(--bw-text-2); }
 .log-stack { margin: 0; padding-left: 18px; font-family: var(--font-mono); font-size: 12px; color: var(--bw-text-2); line-height: 1.6; }
 @media (max-width: 760px) { .log-grid { grid-template-columns: 1fr; } }
+
+/* Costes */
+.cost-alert.is-urgent .ico-box { color: var(--bw-danger); border-color: rgba(248, 113, 113, 0.35); }
+.cost-search { position: relative; display: flex; align-items: center; color: var(--bw-text-3); }
+.cost-search svg { position: absolute; left: 10px; pointer-events: none; }
+.cost-search .input { padding-left: 30px; width: 220px; height: 32px; }
+.cost-cats { padding: 12px 16px; border-bottom: 1px solid var(--bw-line); overflow-x: auto; }
+.cost-cats .chips { flex-wrap: nowrap; }
+.cost-days { height: 30px; padding: 0 8px; width: auto; }
+.cost-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
+.cost-form-actions { grid-column: 1 / -1; }
+.cost-form-actions .btn { margin-left: auto; }
+@media (max-width: 900px) { .cost-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cost-search .input { width: 160px; } }
