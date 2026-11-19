@@ -64,11 +64,8 @@ function AdminApp() {
         <div className="adm">
             <aside className={`adm-side ${menuOpen ? 'open' : ''}`} aria-label="Navegación del panel">
                 <div className="adm-brand">
-                    <div className="adm-brand-mark">BW</div>
-                    <div>
-                        <div className="adm-brand-name">BEATWAVE</div>
-                        <div className="adm-brand-sub">Admin Console</div>
-                    </div>
+                    <img className="adm-brand-logo" src="/assets/beatwave_logo_full.png" alt="BEATWAVE PRO" width="1281" height="220" />
+                    <div className="adm-brand-sub">Admin Console</div>
                 </div>
                 <nav className="adm-nav">
                     {NAV.map((g) => (

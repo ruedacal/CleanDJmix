@@ -135,7 +135,7 @@ function SocialComposer({ onCreate }) {
             <Card title="Vista previa">
                 <div className="post-preview">
                     <div className="row">
-                        <div className="adm-brand-mark">BW</div>
+                        <img className="adm-brand-avatar" src="/assets/beatwave_mascot.png" alt="" width="596" height="404" />
                         <div className="stack-tight">
                             <span className="social-name">beatwave.app</span>
                             <span className="faint">{nets.map(netName).join(' · ') || 'Selecciona una red'}</span>

@@ -34,7 +34,9 @@ a { color: inherit; }
 /* ── Shell ─────────────────────────────────────────── */
 .adm { display: flex; min-height: 100vh; }
 .adm-side { width: 236px; flex-shrink: 0; border-right: 1px solid var(--bw-line); background: var(--bw-surface-1); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
-.adm-brand { display: flex; align-items: center; gap: 10px; padding: 18px 18px 14px; border-bottom: 1px solid var(--bw-line); }
+.adm-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px 18px 14px; border-bottom: 1px solid var(--bw-line); }
+.adm-brand-logo { display: block; width: 100%; max-width: 196px; height: auto; }
+.adm-brand-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--bw-surface-3); border: 1px solid var(--bw-line); flex-shrink: 0; }
 .adm-brand-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--bw-cyan); color: var(--bw-cyan-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
 .adm-brand-name { font-weight: 700; letter-spacing: 0.08em; font-size: 12px; }
 .adm-brand-sub { font-size: 10px; letter-spacing: 0.14em; color: var(--bw-text-3); text-transform: uppercase; }
