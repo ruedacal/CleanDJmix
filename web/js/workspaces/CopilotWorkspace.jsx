@@ -457,7 +457,7 @@ const DEFAULT_COPILOT_STATE = {
     "is_simulating": true
 };
 
-export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, isAppOpen = true }) => {
+export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true }) => {
     if (!deck) return null;
 
     if (!isAppOpen) {
@@ -612,16 +612,31 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                             STANDBY (VACÍO)
                         </span>
                     ) : (
-                        <button
-                            type="button"
-                            onClick={() => onSetMaster && onSetMaster(side)}
-                            className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
-                                isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                            }`}
-                            title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
-                        >
-                            {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => onSetMaster && onSetMaster(side)}
+                                className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                                    isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                                }`}
+                                title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
+                            >
+                                {isMaster ? '🔊 MASTER' : '🎧 EN CUE'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onTogglePlay && onTogglePlay(side)}
+                                className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1 hover:scale-105 active:scale-95 ${
+                                    deck.is_playing 
+                                        ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
+                                        : 'bg-amber-950/80 border border-amber-500/60 text-amber-300 hover:bg-amber-900'
+                                }`}
+                                title={`Pausar / Reproducir Deck ${side} (o pulsa tecla '${side}')`}
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                                {deck.is_playing ? 'EN VIVO' : 'PAUSA'}
+                            </button>
+                        </div>
                     )}
 
                     {(deck.mood || deck.phase) && !isEmptyDeck && (
@@ -1141,18 +1156,137 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         });
     };
 
-    // Atajo de teclado para cabina DJ: 'M' Master Toggle
+    const toggleDeckPlay = useCallback(async (deckTarget) => {
+        const deckNum = deckTarget === '2' || deckTarget === 2 ? 2 : 1;
+        const dKey = deckNum === 1 ? 'deck_1' : 'deck_2';
+
+        setState(prev => {
+            if (!prev || !prev.decks) return prev;
+            const cur = prev.decks[dKey];
+            if (!cur || !cur.title) return prev;
+            const nextPlaying = !cur.is_playing;
+            return {
+                ...prev,
+                decks: {
+                    ...prev.decks,
+                    [dKey]: {
+                        ...cur,
+                        is_playing: nextPlaying,
+                        status: nextPlaying ? (cur.is_master ? 'ON AIR (MASTER)' : 'REPRODUCIENDO') : 'PAUSA'
+                    }
+                }
+            };
+        });
+
+        try {
+            const res = await fetch(`/api/copilot/deck/${deckNum}/toggle_play`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                setState(data);
+            }
+        } catch (_) {}
+    }, []);
+
+    const cueDeck = useCallback(async (deckTarget) => {
+        const deckNum = deckTarget === '2' || deckTarget === 2 ? 2 : 1;
+        const dKey = deckNum === 1 ? 'deck_1' : 'deck_2';
+
+        setState(prev => {
+            if (!prev || !prev.decks) return prev;
+            const cur = prev.decks[dKey];
+            if (!cur || !cur.title) return prev;
+            return {
+                ...prev,
+                decks: {
+                    ...prev.decks,
+                    [dKey]: {
+                        ...cur,
+                        is_playing: false,
+                        elapsed_sec: 0.0,
+                        play_progress: 0.0,
+                        status: 'CUE (PREPARADO)'
+                    }
+                }
+            };
+        });
+
+        try {
+            const res = await fetch(`/api/copilot/deck/${deckNum}/cue`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                setState(data);
+            }
+        } catch (_) {}
+    }, []);
+
+    // Atajos de teclado para cabina DJ: 'M' Master Toggle, '1' y '2' Play/Pausa, 'Q' y 'W' Cue
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
             if (e.key === 'm' || e.key === 'M') {
                 e.preventDefault();
                 setMasterDeck('toggle');
+            } else if (e.key === '1') {
+                e.preventDefault();
+                toggleDeckPlay(1);
+            } else if (e.key === '2') {
+                e.preventDefault();
+                toggleDeckPlay(2);
+            } else if (e.key === 'q' || e.key === 'Q') {
+                e.preventDefault();
+                cueDeck(1);
+            } else if (e.key === 'w' || e.key === 'W') {
+                e.preventDefault();
+                cueDeck(2);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [state]);
+    }, [setMasterDeck, toggleDeckPlay, cueDeck]);
+
+    // Enlace Web MIDI nativo con Numark NV II y controladoras de cabina
+    useEffect(() => {
+        if (typeof navigator === 'undefined' || !navigator.requestMIDIAccess) return;
+        let midiAccess = null;
+
+        const onMidiMessage = (e) => {
+            if (!e.data || e.data.length < 2) return;
+            const [status, note, velocity = 0] = e.data;
+            const cmd = status & 0xF0;
+            const ch = status & 0x0F;
+            const targetDeck = (ch === 0 || ch === 2) ? 1 : ((ch === 1 || ch === 3) ? 2 : null);
+            if (!targetDeck) return;
+
+            // Note On o CC con velocidad > 0
+            if ((cmd === 0x90 || cmd === 0xB0) && velocity > 0) {
+                if ([59, 0, 11, 64, 66].includes(note)) {
+                    toggleDeckPlay(targetDeck);
+                } else if ([51, 1, 12, 65, 67].includes(note)) {
+                    cueDeck(targetDeck);
+                }
+            }
+        };
+
+        navigator.requestMIDIAccess().then(access => {
+            midiAccess = access;
+            for (const input of midiAccess.inputs.values()) {
+                input.onmidimessage = onMidiMessage;
+            }
+            midiAccess.onstatechange = (ev) => {
+                if (ev.port && ev.port.type === 'input' && ev.port.state === 'connected') {
+                    ev.port.onmidimessage = onMidiMessage;
+                }
+            };
+        }).catch(() => {});
+
+        return () => {
+            if (midiAccess) {
+                for (const input of midiAccess.inputs.values()) {
+                    input.onmidimessage = null;
+                }
+            }
+        };
+    }, [toggleDeckPlay, cueDeck]);
 
     const toggleSimulation = async () => {
         const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -1567,6 +1701,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     antiMuddy={anti_muddy} 
                     partnerDeck={deck_2} 
                     onSetMaster={setMasterDeck} 
+                    onTogglePlay={toggleDeckPlay}
                     isAppOpen={isAppOpen}
                 />
                 <CopilotDeckCard 
@@ -1576,6 +1711,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     antiMuddy={anti_muddy} 
                     partnerDeck={deck_1} 
                     onSetMaster={setMasterDeck} 
+                    onTogglePlay={toggleDeckPlay}
                     isAppOpen={isAppOpen}
                 />
             </div>

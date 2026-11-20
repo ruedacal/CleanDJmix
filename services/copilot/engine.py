@@ -85,7 +85,7 @@ class CopilotEngine:
 
     def __init__(self):
         self.state = LiveSessionState()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.simulation_mode = False
         self.platform_mode = "serato"
         self.state.platform = "serato"
@@ -154,6 +154,10 @@ class CopilotEngine:
         self._running = True
         self._ticker_thread = threading.Thread(target=self._engine_ticker, name="Copilot-Engine-Ticker", daemon=True)
         self._ticker_thread.start()
+
+        # Iniciar escuchador MIDI de baja latencia para controladora física (Numark NV II, etc.)
+        self._midi_thread = threading.Thread(target=self._midi_listener_worker, name="Copilot-Midi-Listener", daemon=True)
+        self._midi_thread.start()
 
         # Iniciar receptores pasivos
         try:
@@ -364,6 +368,40 @@ class CopilotEngine:
                 self.state.global_bpm = self.state.decks[target_id].effective_bpm
         return self.get_live_state()
 
+    def toggle_deck_play(self, deck_id: Any) -> Dict[str, Any]:
+        """Alterna el estado de reproducción (Play / Pausa) de un deck con sincronización en cabina."""
+        with self._lock:
+            try:
+                target_id = int(deck_id)
+            except Exception:
+                target_id = 1
+            d = self.state.decks.get(target_id)
+            if d and d.title and d.bpm > 0:
+                d.is_playing = not d.is_playing
+                if d.is_playing:
+                    d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
+                else:
+                    d.status = "PAUSA"
+        return self.get_live_state()
+
+    def cue_deck(self, deck_id: Any) -> Dict[str, Any]:
+        """Detiene y posiciona el deck en el Cue inicial (0:00)."""
+        with self._lock:
+            try:
+                target_id = int(deck_id)
+            except Exception:
+                target_id = 1
+            d = self.state.decks.get(target_id)
+            if d and d.title and d.bpm > 0:
+                d.is_playing = False
+                d.elapsed_sec = 0.0
+                d.remaining_sec = d.duration_sec
+                d.status = "CUE (PREPARADO)"
+                d.beat_number = 1
+                d.bar_number = 1
+                d.phrase_progress = 0.0
+        return self.get_live_state()
+
     def _generate_recommendations(self) -> List[Dict[str, Any]]:
         """Genera recomendaciones armónicas y de tempo a partir de la biblioteca cargada."""
         master_id = self.state.master_deck
@@ -458,9 +496,9 @@ class CopilotEngine:
                     if deck_key in active_decks:
                         t = active_decks[deck_key]
                         dur = (t["length_ms"] / 1000.0) if t["length_ms"] > 0 else 240.0
-                        is_playing = (t["played"] == 1)
 
-                        if d.title != t["title"] or abs(d.bpm - t["bpm"]) > 0.05:
+                        is_new_track = (d.title != t["title"] or abs(d.bpm - t["bpm"]) > 0.05 or getattr(d, '_serato_entry_id', None) != t["id"])
+                        if is_new_track:
                             d.title = t["title"]
                             d.artist = t["artist"]
                             d.bpm = t["bpm"]
@@ -468,30 +506,29 @@ class CopilotEngine:
                             d.key = t["key"]
                             d.key_name = t["key"]
                             d.duration_sec = dur
+                            d._serato_entry_id = t["id"]
+                            d._last_serato_played = t["played"]
                             full_p = "/" + t["portable_id"].lstrip("/")
                             if os.path.exists(full_p):
                                 cues = self._extract_serato_markers_cues(full_p)
                                 if cues:
                                     d.hot_cues = cues
-
-                        d.is_playing = is_playing
-                        if is_playing:
-                            elapsed = max(0.0, min(dur, now - t["start_time"]))
-                            d.elapsed_sec = elapsed
-                            d.remaining_sec = max(0.0, dur - elapsed)
-                            d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
-                            beats_per_sec = d.effective_bpm / 60.0 if d.effective_bpm > 0 else 2.0
-                            total_beats = d.elapsed_sec * beats_per_sec
-                            d.beat_number = int(total_beats % 4) + 1
-                            d.bar_number = int((total_beats / 4) % 32) + 1
-                            d.phrase_progress = round(((total_beats % 128) / 128.0), 3)
-                        else:
                             d.elapsed_sec = 0.0
                             d.remaining_sec = dur
+                            d.is_playing = False
                             d.status = "CUE (PREPARADO)"
                             d.beat_number = 1
                             d.bar_number = 1
                             d.phrase_progress = 0.0
+                        else:
+                            # Misma pista: detectar si Serato pasa de played 0 a 1 para iniciar sincronización
+                            if t["played"] == 1 and getattr(d, '_last_serato_played', 0) == 0:
+                                d._last_serato_played = 1
+                                if not d.is_playing:
+                                    d.is_playing = True
+                                    d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
+                                    if d.elapsed_sec < 5.0:
+                                        d.elapsed_sec = 20.0
                     else:
                         d.title = ""
                         d.artist = ""
@@ -508,6 +545,8 @@ class CopilotEngine:
                         d.hot_cues = []
                         d.genre = ""
                         d.subgenre = ""
+                        d._serato_entry_id = None
+                        d._last_serato_played = 0
 
                 # Actualizar global_bpm si hay un deck activo
                 d1 = self.state.decks.get(1)
@@ -585,7 +624,12 @@ class CopilotEngine:
             }
 
         prog = round(deck.elapsed_sec / deck.duration_sec, 4) if deck.duration_sec > 0 else 0.25
-        status_label = "ON AIR (MASTER)" if deck.is_master and deck.is_playing else ("CUE (PREPARADO)" if not deck.is_playing else ("ON AIR" if deck.is_playing else "STANDBY"))
+        if deck.status:
+            status_label = deck.status
+        elif deck.is_playing:
+            status_label = "ON AIR (MASTER)" if deck.is_master else "REPRODUCIENDO"
+        else:
+            status_label = "PAUSA" if deck.elapsed_sec > 0 else "CUE (PREPARADO)"
         
         # Cues oficiales de Serato Markers si están disponibles, o cuantizados
         if deck.hot_cues and len(deck.hot_cues) > 0:
@@ -692,14 +736,17 @@ class CopilotEngine:
             dj_app = self._check_running_dj_apps()
             is_serato_running = dj_app.get("is_open") and dj_app.get("app_id") == "serato"
 
+            active_plat = self.platform_mode or ("serato" if is_serato_running else "simulation")
+            active_name = self.state.platform_name or ("Serato DJ Pro" if is_serato_running else "Simulación")
+
             return {
                 "connected": True,
-                "source": "SERATO_LIVE" if is_serato_running else ("DJLINK_LIVE" if dj_app.get("is_open") else "DJLINK_STANDBY"),
-                "platform": "serato" if is_serato_running else self.platform_mode,
-                "platform_mode": "serato" if is_serato_running else self.platform_mode,
-                "platform_name": "Serato DJ Pro" if is_serato_running else self.state.platform_name,
-                "platform_icon": "⚡" if is_serato_running else ("🎛️" if self.platform_mode == "prodjlink" else "🎧"),
-                "platform_color": "#00d1e8" if is_serato_running else "#3b82f6",
+                "source": "SERATO_LIVE" if (active_plat == "serato" and is_serato_running) else ("DJLINK_LIVE" if dj_app.get("is_open") else "DJLINK_STANDBY"),
+                "platform": active_plat,
+                "platform_mode": active_plat,
+                "platform_name": active_name,
+                "platform_icon": "⚡" if active_plat == "serato" else ("🎛️" if active_plat == "prodjlink" else "🎧"),
+                "platform_color": "#00d1e8" if active_plat == "serato" else "#3b82f6",
                 "dj_app": dj_app,
                 "is_app_open": dj_app.get("is_open", False),
                 "is_simulating": False,
@@ -793,6 +840,83 @@ class CopilotEngine:
                         d.phrase_progress = round(((total_beats % 128) / 128.0), 3)
 
             time.sleep(0.05)
+
+    def _midi_listener_worker(self):
+        """Monitorea puertos MIDI de la controladora (Numark NV II, etc.) en segundo plano sin bloquear."""
+        try:
+            import mido
+        except ImportError:
+            return
+
+        inport = None
+        last_scan = 0.0
+
+        while self._running:
+            try:
+                now = time.time()
+                # Escaneo periódico de puertos hardware si no está conectado
+                if inport is None and (now - last_scan) > 2.0:
+                    last_scan = now
+                    try:
+                        available = mido.get_input_names()
+                    except Exception:
+                        available = []
+
+                    target_port = None
+                    for name in available:
+                        if "NV mkII Control" in name or "NV" in name:
+                            target_port = name
+                            break
+                    if not target_port:
+                        for name in available:
+                            if any(k in name.lower() for k in ["numark", "control", "dj", "pioneer", "ddj", "traktor"]):
+                                target_port = name
+                                break
+                    if target_port:
+                        try:
+                            inport = mido.open_input(target_port)
+                        except Exception:
+                            inport = None
+
+                if inport:
+                    for msg in inport.iter_pending():
+                        self._process_midi_message(msg)
+
+                time.sleep(0.01)
+            except Exception:
+                if inport:
+                    try:
+                        inport.close()
+                    except Exception:
+                        pass
+                inport = None
+                time.sleep(1.0)
+
+    def _process_midi_message(self, msg: Any):
+        """Procesa mensajes de transporte (Play/Pausa, Cue) procedentes de la controladora física."""
+        try:
+            channel = getattr(msg, 'channel', 0)
+            target_deck = 1 if channel in (0, 2) else (2 if channel in (1, 3) else None)
+            if not target_deck:
+                return
+
+            msg_type = getattr(msg, 'type', '')
+            if msg_type == 'note_on' and getattr(msg, 'velocity', 0) > 0:
+                note = getattr(msg, 'note', -1)
+                # Notas estándar de transporte DJ: 59 (0x3B), 0, 11 (0x0B), 64, 66
+                if note in (59, 0, 11, 64, 66):
+                    self.toggle_deck_play(target_deck)
+                # Cue estándar: 51 (0x33), 1, 12 (0x0C), 65, 67
+                elif note in (51, 1, 12, 65, 67):
+                    self.cue_deck(target_deck)
+            elif msg_type == 'control_change' and getattr(msg, 'value', 0) > 0:
+                ctrl = getattr(msg, 'control', -1)
+                if ctrl in (59, 0, 11, 64, 66):
+                    self.toggle_deck_play(target_deck)
+                elif ctrl in (51, 1, 12, 65, 67):
+                    self.cue_deck(target_deck)
+        except Exception:
+            pass
 
 
 # Instancia Singleton compartida

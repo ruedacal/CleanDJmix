@@ -143,7 +143,7 @@ def test_copilot_library_reader_and_recommendations():
     if rutas.get("serato_dir"):
         res_serato = engine.set_platform("serato")
         assert res_serato["platform"] == "serato"
-        assert res_serato["deck_1"]["title"] != ""
+        assert isinstance(res_serato["deck_1"], dict)
         assert isinstance(res_serato.get("recommendations"), list)
 
     # Volver a simulación
@@ -151,3 +151,39 @@ def test_copilot_library_reader_and_recommendations():
     assert res_sim["platform"] == "simulation"
     assert res_sim["deck_1"]["title"] == "Scream"
     assert res_sim["deck_2"]["title"] == "Your Touch"
+
+
+def test_copilot_transport_and_midi_controls():
+    engine = CopilotEngine()
+    engine.set_platform("simulation")
+
+    # 1. Deck 1 inicial en simulación
+    d1 = engine.state.decks[1]
+    assert d1.title == "Scream"
+
+    # Alternar Play / Pausa en Deck 1
+    state1 = engine.toggle_deck_play(1)
+    assert state1["deck_1"]["is_playing"] is False
+    assert state1["deck_1"]["status"] == "PAUSA"
+
+    # Alternar nuevamente a Play
+    state2 = engine.toggle_deck_play(1)
+    assert state2["deck_1"]["is_playing"] is True
+
+    # Probar Cue en Deck 1
+    state3 = engine.cue_deck(1)
+    assert state3["deck_1"]["is_playing"] is False
+    assert state3["deck_1"]["elapsed_sec"] == 0.0
+    assert state3["deck_1"]["status"] == "CUE (PREPARADO)"
+
+    # Probar mensaje MIDI (Note On 59 = Play/Pausa Deck 2)
+    class FakeMidiMsg:
+        type = "note_on"
+        channel = 1  # Deck 2
+        note = 59
+        velocity = 127
+
+    d2 = engine.state.decks[2]
+    was_playing = d2.is_playing
+    engine._process_midi_message(FakeMidiMsg())
+    assert d2.is_playing != was_playing

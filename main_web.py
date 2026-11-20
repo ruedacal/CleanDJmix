@@ -1533,8 +1533,34 @@ def api_copilot_toggle_simulation():
         return ""
     bottle.response.content_type = 'application/json'
     copilot_service.simulation_mode = not copilot_service.simulation_mode
+    if copilot_service.simulation_mode:
+        copilot_service._restore_simulation_tracks()
+    else:
+        copilot_service._sync_serato_live_state()
     import json
     return json.dumps(copilot_service.get_live_state())
+
+@bottle.route('/api/copilot/deck/<deck_id:int>/toggle_play', method=['POST', 'OPTIONS'])
+def api_copilot_deck_toggle_play(deck_id):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps(copilot_service.toggle_deck_play(deck_id))
+
+@bottle.route('/api/copilot/deck/<deck_id:int>/cue', method=['POST', 'OPTIONS'])
+def api_copilot_deck_cue(deck_id):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps(copilot_service.cue_deck(deck_id))
 
 @bottle.route('/api/copilot/info', method=['GET', 'OPTIONS'])
 def api_copilot_info():
