@@ -2348,6 +2348,7 @@
   };
 
   // web/js/modules/Phase1FastRecognizer.ts
+  var PROBATION_TTL_MS = 1e4;
   var Phase1FastRecognizer = class {
     constructor(config) {
       __publicField(this, "workerGatewayUrl");
@@ -2356,11 +2357,10 @@
       __publicField(this, "minScoreStudio");
       __publicField(this, "minScoreClub");
       __publicField(this, "probationMinScore");
+      __publicField(this, "allowSimulationFallback");
       __publicField(this, "onStateChange");
-      // Cliente de Rescate Neuronal GPU (Fase 2)
       __publicField(this, "rescueClient");
       __publicField(this, "autoRescuePhase2");
-      // Buffer de probación para confirmación en el siguiente stride de 2.0s
       __publicField(this, "probationBuffer", /* @__PURE__ */ new Map());
       __publicField(this, "lastConfirmedTrack", null);
       __publicField(this, "isBusy", false);
@@ -2370,6 +2370,7 @@
       this.minScoreStudio = config.minScoreStudio || 88;
       this.minScoreClub = config.minScoreClub || 92;
       this.probationMinScore = config.probationMinScore || 76;
+      this.allowSimulationFallback = config.allowSimulationFallback === true;
       this.onStateChange = config.onStateChange;
       this.autoRescuePhase2 = config.autoRescuePhase2 !== false;
       this.rescueClient = new Phase2RescueClient({
@@ -2395,6 +2396,33 @@
     getEnvironment() {
       return this.environment;
     }
+    /**
+     * Comprueba si existe un puente DSP nativo real en el runtime actual
+     * (JSI en iOS/Android, N-API en shell de escritorio o addon Node compilado).
+     */
+    isNativeDspAvailable() {
+      const globalJsi = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
+      if (globalJsi && typeof globalJsi.processAudioBuffer === "function") {
+        return true;
+      }
+      if (typeof window !== "undefined" && window.beatwaveCore && typeof window.beatwaveCore.processAudioBuffer === "function") {
+        return true;
+      }
+      try {
+        if (typeof process !== "undefined" && process.versions && process.versions.node) {
+          const nodeRequire = typeof __require === "function" ? __require : typeof module !== "undefined" && module.require ? module.require : null;
+          if (nodeRequire) {
+            const fsMod = nodeRequire("fs");
+            const pathMod = nodeRequire("path");
+            const nodeAddonPath = pathMod.resolve("native/build/beatwave_core.node");
+            return Boolean(fsMod.existsSync(nodeAddonPath));
+          }
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    }
     reset() {
       this.probationBuffer.clear();
       this.lastConfirmedTrack = null;
@@ -2402,8 +2430,8 @@
       this.emitState("IDLE", null, 1, false, null, "Motor reseteado");
     }
     /**
-     * Orquesta el reconocimiento de un buffer Float32Array entrante de 10.0s (stride 2.0s).
-     * Aplica Promise.race con un presupuesto estricto de 1,750 ms y ejecución concurrente.
+     * Orquesta el reconocimiento de un buffer Float32Array entrante de hasta 10.0s (stride 2.0s).
+     * Aplica Promise.race + AbortController con presupuesto estricto de 1,750 ms.
      */
     async recognizeBuffer(audioPcm, sampleRate = 44100) {
       var _a;
@@ -2419,21 +2447,27 @@
       }
       this.isBusy = true;
       const startTime = Date.now();
+      const budgetController = new AbortController();
+      let timeoutId = null;
       try {
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => {
+          timeoutId = setTimeout(() => {
+            budgetController.abort();
             reject(new Error(`ABSOLUTE_TIMEOUT_EXCEEDED: Operaci\xF3n super\xF3 el l\xEDmite de ${this.totalBudgetMs} ms`));
           }, this.totalBudgetMs);
         });
-        const recognitionPromise = this.executePipeline(audioPcm, sampleRate, startTime);
+        const recognitionPromise = this.executePipeline(
+          audioPcm,
+          sampleRate,
+          startTime,
+          budgetController.signal
+        );
         const result = await Promise.race([recognitionPromise, timeoutPromise]);
-        this.isBusy = false;
         return result;
       } catch (err) {
-        this.isBusy = false;
         const error = err;
         const elapsed = Date.now() - startTime;
-        if ((_a = error.message) == null ? void 0 : _a.includes("ABSOLUTE_TIMEOUT_EXCEEDED")) {
+        if (((_a = error.message) == null ? void 0 : _a.includes("ABSOLUTE_TIMEOUT_EXCEEDED")) || error.name === "AbortError") {
           const event = this.buildEvent(
             "TIMEOUT_FALLBACK",
             null,
@@ -2463,23 +2497,39 @@
         );
         this.notifyListener(errorEvent);
         return errorEvent;
+      } finally {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
+        this.isBusy = false;
       }
     }
     /**
      * Pipeline de ejecución concurrente C++ Native DSP + Parallel Local/Remote matching
      */
-    async executePipeline(audioPcm, sampleRate, startTime) {
+    async executePipeline(audioPcm, sampleRate, captureTimestampMs, signal) {
       const dspResult = await this.invokeNativeDsp(audioPcm, this.environment, sampleRate);
-      const dspDuration = Date.now() - startTime;
+      const dspDuration = Date.now() - captureTimestampMs;
       if (!dspResult || !dspResult.isValid) {
-        return this.buildEvent(
+        const reason = (dspResult == null ? void 0 : dspResult.nativeAvailable) === false ? "Bridge nativo C++ DSP no disponible en este runtime (requiere enrutamiento REST omnichannel)" : "El buffer procesado no contiene suficiente energ\xEDa o huellas v\xE1lidas";
+        const noMatchEv = this.buildEvent(
           "NO_MATCH",
           null,
           1,
           false,
-          null,
-          "El buffer procesado no contiene suficiente energ\xEDa o huellas v\xE1lidas"
+          dspResult ? {
+            rmsDbfs: dspResult.telemetry.rmsDbfs,
+            peakDbfs: dspResult.telemetry.peakDbfs,
+            isClipping: dspResult.telemetry.isClipping,
+            durationMs: dspResult.telemetry.durationMs,
+            sampleRate: dspResult.telemetry.sampleRate,
+            environment: this.environment,
+            latencyMs: dspDuration
+          } : null,
+          reason
         );
+        this.notifyListener(noMatchEv);
+        return noMatchEv;
       }
       const telemetry = {
         rmsDbfs: dspResult.telemetry.rmsDbfs,
@@ -2490,13 +2540,21 @@
         environment: this.environment,
         latencyMs: dspDuration
       };
-      const localPromise = this.queryLocalOlaf(dspResult.olafFingerprint, dspResult.landmarksCount);
-      const remotePromise = this.queryRemoteGateway(dspResult.acrcloudFingerprint);
+      const localPromise = this.queryLocalOlaf(
+        dspResult.olafFingerprint,
+        dspResult.landmarksCount,
+        captureTimestampMs
+      );
+      const remotePromise = this.queryRemoteGateway(
+        dspResult.acrcloudFingerprint,
+        captureTimestampMs,
+        signal
+      );
       const [localSettled, remoteSettled] = await Promise.allSettled([localPromise, remotePromise]);
       const localMatch = localSettled.status === "fulfilled" ? localSettled.value : null;
       const remoteMatch = remoteSettled.status === "fulfilled" ? remoteSettled.value : null;
       const bestCandidate = this.selectBestCandidate(localMatch, remoteMatch);
-      telemetry.latencyMs = Date.now() - startTime;
+      telemetry.latencyMs = Date.now() - captureTimestampMs;
       if (!bestCandidate) {
         const event2 = this.buildEvent(
           "NO_MATCH",
@@ -2509,8 +2567,9 @@
         this.notifyListener(event2);
         return event2;
       }
+      this.pruneStaleProbation(captureTimestampMs);
       const { rho, pitchShiftSuspected } = this.calculateTemporalCoherence(bestCandidate);
-      const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry);
+      const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry, captureTimestampMs);
       this.notifyListener(event);
       if (event.state === "ESCALATE_PHASE2" && this.autoRescuePhase2) {
         this.triggerPhase2Rescue(event, audioPcm).catch((err) => {
@@ -2521,9 +2580,8 @@
     }
     /**
      * Orquesta el Rescate Neuronal de Fase 2 (GPU Cloud)
-     * Puede invocarse de manera automática ante ESCALATE_PHASE2 o explícitamente desde la UI.
      */
-    async triggerPhase2Rescue(escalationEvent, fallbackAudio) {
+    async triggerPhase2Rescue(escalationEvent, _fallbackAudio) {
       var _a, _b, _c, _d, _e, _f;
       const startTime = Date.now();
       let reason = "TIME_DRIFT_SUSPECTED_PITCH";
@@ -2571,7 +2629,7 @@
           label: rescueResult.match.label,
           score: rescueResult.match.score,
           playOffsetMs: rescueResult.match.playOffsetMs || 0,
-          timestampQueryMs: Date.now(),
+          timestampQueryMs: escalationEvent.timestamp,
           source: rescueResult.match.source,
           genres: rescueResult.match.genres,
           stemIsolated: rescueResult.match.stemIsolated,
@@ -2600,40 +2658,38 @@
       this.notifyListener(unidentifiedEvent);
       return unidentifiedEvent;
     }
+    pruneStaleProbation(nowMs) {
+      for (const [key, record] of this.probationBuffer.entries()) {
+        if (nowMs - record.observedAtMs > PROBATION_TTL_MS) {
+          this.probationBuffer.delete(key);
+        }
+      }
+    }
     /**
-     * Cálculo de Coherencia Temporal rho:
-     * rho = delta_db / delta_sample
-     * Si el DJ varió el pitch/fader de tempo (ej. +/- 5%), delta_db se estira o comprime
-     * respecto a delta_sample, provocando que rho quede fuera de [0.96, 1.04].
+     * Cálculo de Coherencia Temporal rho = delta_db / delta_sample.
+     * Utiliza timestamps de captura para evitar distorsión por latencia de red.
+     * Descarta saltos negativos (cue/loop rewind) para no falsificar pitch-shift.
      */
     calculateTemporalCoherence(candidate) {
       const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
       const existingRecord = this.probationBuffer.get(candidateKey);
-      if (!existingRecord) {
-        if (this.lastConfirmedTrack && `${this.lastConfirmedTrack.artist} - ${this.lastConfirmedTrack.title}`.toLowerCase() === candidateKey) {
-          const deltaSample2 = candidate.timestampQueryMs - this.lastConfirmedTrack.timestampQueryMs;
-          const deltaDb2 = candidate.playOffsetMs - this.lastConfirmedTrack.playOffsetMs;
-          if (deltaSample2 > 100) {
-            const rho2 = Math.abs(deltaDb2 / deltaSample2);
-            const pitchShiftSuspected2 = rho2 < 0.96 || rho2 > 1.04;
-            return { rho: Number(rho2.toFixed(4)), pitchShiftSuspected: pitchShiftSuspected2 };
-          }
-        }
+      const referenceMatch = existingRecord ? existingRecord.candidate : this.lastConfirmedTrack && `${this.lastConfirmedTrack.artist} - ${this.lastConfirmedTrack.title}`.toLowerCase() === candidateKey ? this.lastConfirmedTrack : null;
+      if (!referenceMatch) {
         return { rho: 1, pitchShiftSuspected: false };
       }
-      const deltaSample = candidate.timestampQueryMs - existingRecord.candidate.timestampQueryMs;
-      const deltaDb = candidate.playOffsetMs - existingRecord.candidate.playOffsetMs;
-      if (deltaSample <= 0) {
+      const deltaSample = candidate.timestampQueryMs - referenceMatch.timestampQueryMs;
+      const deltaDb = candidate.playOffsetMs - referenceMatch.playOffsetMs;
+      if (deltaSample < 500 || deltaDb <= 0) {
         return { rho: 1, pitchShiftSuspected: false };
       }
-      const rho = Math.abs(deltaDb / deltaSample);
+      const rho = deltaDb / deltaSample;
       const pitchShiftSuspected = rho < 0.96 || rho > 1.04;
       return { rho: Number(rho.toFixed(4)), pitchShiftSuspected };
     }
     /**
      * Máquina de Estados de Reconocimiento y Escalado
      */
-    evaluateStateMachine(candidate, rho, pitchShiftSuspected, telemetry) {
+    evaluateStateMachine(candidate, rho, pitchShiftSuspected, telemetry, nowMs) {
       const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
       const minConfirmedScore = this.environment === "club" ? this.minScoreClub : this.minScoreStudio;
       if (pitchShiftSuspected) {
@@ -2675,7 +2731,7 @@
         }
         this.probationBuffer.set(candidateKey, {
           candidate,
-          observedAtMs: Date.now(),
+          observedAtMs: nowMs,
           strideCount: existing ? existing.strideCount + 1 : 1
         });
         return this.buildEvent(
@@ -2697,88 +2753,138 @@
       );
     }
     /**
-     * Invocación del bridge nativo Zero-Copy JSI / N-API
+     * Cálculo real de telemetría PCM (RMS/Peak dBFS) en JS para diagnósticos sin nativo
+     */
+    computePcmTelemetry(audio, sampleRate, profile) {
+      if (!audio || audio.length === 0) {
+        return {
+          rmsDbfs: -96,
+          peakDbfs: -96,
+          isClipping: false,
+          durationMs: 0,
+          sampleRate,
+          environment: profile
+        };
+      }
+      let sumSq = 0;
+      let peak = 0;
+      const step = Math.max(1, Math.floor(audio.length / 32768));
+      let count = 0;
+      for (let i = 0; i < audio.length; i += step) {
+        const v = Math.abs(audio[i]);
+        sumSq += v * v;
+        if (v > peak) peak = v;
+        count++;
+      }
+      const rms = count > 0 ? Math.sqrt(sumSq / count) : 0;
+      const rmsDbfs = rms > 1e-6 ? 20 * Math.log10(rms) : -96;
+      const peakDbfs = peak > 1e-6 ? 20 * Math.log10(peak) : -96;
+      return {
+        rmsDbfs: Number(rmsDbfs.toFixed(1)),
+        peakDbfs: Number(peakDbfs.toFixed(1)),
+        isClipping: peak >= 0.99,
+        durationMs: Math.round(audio.length / Math.max(1, sampleRate) * 1e3),
+        sampleRate,
+        environment: profile
+      };
+    }
+    /**
+     * Invocación del bridge nativo Zero-Copy JSI (iOS/Android) / N-API (Desktop)
      */
     async invokeNativeDsp(audio, profile, sampleRate) {
       const globalJsi = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
       if (globalJsi && typeof globalJsi.processAudioBuffer === "function") {
-        return globalJsi.processAudioBuffer(audio, profile, sampleRate);
+        const res = await globalJsi.processAudioBuffer(audio, profile, sampleRate);
+        return { ...res, nativeAvailable: true };
       }
-      if (typeof window !== "undefined" && window.beatwaveCore) {
-        return window.beatwaveCore.processAudioBuffer(audio, profile, sampleRate);
+      if (typeof window !== "undefined" && window.beatwaveCore && typeof window.beatwaveCore.processAudioBuffer === "function") {
+        const res = await window.beatwaveCore.processAudioBuffer(audio, profile, sampleRate);
+        return { ...res, nativeAvailable: true };
       }
       try {
         if (typeof process !== "undefined" && process.versions && process.versions.node) {
           const nodeRequire = typeof __require === "function" ? __require : typeof module !== "undefined" && module.require ? module.require : null;
           if (nodeRequire) {
-            const nodePath = "path";
-            const pathMod = nodeRequire(nodePath);
+            const pathMod = nodeRequire("path");
             const nodeAddonPath = pathMod.resolve("native/build/beatwave_core.node");
             const napiModule = nodeRequire(nodeAddonPath);
-            return napiModule.processAudioBuffer(audio, profile, sampleRate);
+            const res = await napiModule.processAudioBuffer(audio, profile, sampleRate);
+            return { ...res, nativeAvailable: true };
           }
         }
       } catch {
       }
+      const realTelemetry = this.computePcmTelemetry(audio, sampleRate, profile);
+      if (this.allowSimulationFallback) {
+        return {
+          telemetry: realTelemetry,
+          acrcloudFingerprint: new Uint8Array(2532).fill(170),
+          olafFingerprint: new Uint8Array(4096).fill(85),
+          landmarksCount: 512,
+          isValid: true,
+          nativeAvailable: false
+        };
+      }
       return {
-        telemetry: {
-          rmsDbfs: -16,
-          peakDbfs: -2.5,
-          isClipping: false,
-          durationMs: 1e4,
-          sampleRate: 8e3,
-          environment: profile
-        },
-        acrcloudFingerprint: new Uint8Array(2532).fill(170),
-        olafFingerprint: new Uint8Array(4096).fill(85),
-        landmarksCount: 512,
-        isValid: true
+        telemetry: realTelemetry,
+        acrcloudFingerprint: null,
+        olafFingerprint: null,
+        landmarksCount: 0,
+        isValid: false,
+        nativeAvailable: false
       };
     }
     /**
      * Búsqueda en catálogo local Olaf LMDB
      */
-    async queryLocalOlaf(olafFingerprint, landmarksCount) {
+    async queryLocalOlaf(olafFingerprint, landmarksCount, captureTimestampMs) {
       if (!olafFingerprint || landmarksCount === 0) return null;
       const globalCore = typeof globalThis !== "undefined" ? globalThis.BeatWaveCore : null;
       if (globalCore && typeof globalCore.matchOlafLandmarks === "function") {
-        return globalCore.matchOlafLandmarks(olafFingerprint);
+        const match = await globalCore.matchOlafLandmarks(olafFingerprint);
+        if (match) {
+          return { ...match, timestampQueryMs: captureTimestampMs };
+        }
       }
       return null;
     }
     /**
      * Búsqueda en catálogo remoto vía Cloudflare Worker Gateway
      */
-    async queryRemoteGateway(acrcloudFingerprint) {
-      var _a, _b, _c, _d, _e, _f;
+    async queryRemoteGateway(acrcloudFingerprint, captureTimestampMs, signal) {
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i;
       if (!acrcloudFingerprint || acrcloudFingerprint.byteLength === 0) return null;
       const response = await fetch(this.workerGatewayUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/octet-stream",
-          "X-Client-Platform": "BeatWave-Hybrid-TS"
+          "X-Client-Platform": "BeatWave-Omnichannel-TS"
         },
-        body: acrcloudFingerprint
+        body: acrcloudFingerprint,
+        signal
       });
       if (!response.ok) {
         return null;
       }
       const data = await response.json();
-      const music = (_b = (_a = data == null ? void 0 : data.metadata) == null ? void 0 : _a.music) == null ? void 0 : _b[0];
+      if (((_a = data == null ? void 0 : data.status) == null ? void 0 : _a.code) !== void 0 && data.status.code !== 0) {
+        return null;
+      }
+      const music = (_c = (_b = data == null ? void 0 : data.metadata) == null ? void 0 : _b.music) == null ? void 0 : _c[0];
       if (!music) {
         return null;
       }
       return {
         title: music.title || "Desconocido",
-        artist: ((_d = (_c = music.artists) == null ? void 0 : _c[0]) == null ? void 0 : _d.name) || "Artista Desconocido",
-        album: (_e = music.album) == null ? void 0 : _e.name,
+        artist: ((_e = (_d = music.artists) == null ? void 0 : _d[0]) == null ? void 0 : _e.name) || "Artista Desconocido",
+        album: (_f = music.album) == null ? void 0 : _f.name,
         acrid: music.acrid,
-        score: Number(music.score || 85),
-        playOffsetMs: Number(music.play_offset_ms || 3e4),
-        timestampQueryMs: Date.now(),
+        score: Number((_g = music.score) != null ? _g : 85),
+        playOffsetMs: Number((_h = music.play_offset_ms) != null ? _h : 0),
+        timestampQueryMs: captureTimestampMs,
         source: "remote_acrcloud",
         label: music.label,
-        genres: ((_f = music.genres) == null ? void 0 : _f.map((g) => g.name)) || []
+        genres: ((_i = music.genres) == null ? void 0 : _i.map((g) => g.name)) || []
       };
     }
     /**
@@ -21061,7 +21167,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/ShazamWorkspace.jsx
-  var { useState: useState24, useEffect: useEffect25, useRef: useRef21 } = React;
+  var { useState: useState24, useEffect: useEffect25, useRef: useRef21, useCallback: useCallback12 } = React;
+  var MAX_UPLOAD_BYTES = 45 * 1024 * 1024;
   var ShazamWorkspace = ({
     onSendToSpotify,
     onSendToAudit,
@@ -21088,56 +21195,11 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     const animFrameRef = useRef21(null);
     const audioCtxRef = useRef21(null);
     const [dragOver, setDragOver] = useState24(false);
-    const handleSelectFileFromModal = async (filePath) => {
-      setFsBrowserOpen(false);
-      if (!filePath) return;
-      try {
-        setStatusMsg(`Cargando audio desde ${filePath.split("/").pop()}...`);
-        setIsAnalyzing(true);
-        const resp = await fetch(`/api/stream_audio?path=${encodeURIComponent(filePath)}`);
-        if (resp.ok) {
-          const blob = await resp.blob();
-          const fileName = filePath.split("/").pop() || "audio_file.mp3";
-          const file = new File([blob], fileName, { type: blob.type || "audio/mpeg" });
-          handleFileSelect(file);
-        } else {
-          setStatusMsg("Error accediendo al archivo seleccionado.");
-          setIsAnalyzing(false);
-        }
-      } catch (e) {
-        console.error("Error al cargar archivo en Radar:", e);
-        setStatusMsg("Error al leer archivo de audio.");
-        setIsAnalyzing(false);
-      }
-    };
-    const handleImportarColeccionRadar = async (targetLibId = null) => {
-      setFsBrowserOpen(false);
-      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
-      let foundTrack = null;
-      if (activeLib && activeLib.folders) {
-        for (const f of activeLib.folders) {
-          if (f.tracks && f.tracks.length > 0) {
-            foundTrack = f.tracks[0];
-            break;
-          }
-        }
-      }
-      if (foundTrack) {
-        const trackPath = foundTrack.path || foundTrack.filepath || foundTrack.f;
-        if (trackPath) {
-          handleSelectFileFromModal(trackPath);
-        } else {
-          setStatusMsg(`Pista "${foundTrack.title || "Track"}" seleccionada sin ruta en disco.`);
-        }
-      } else {
-        setStatusMsg("La colecci\xF3n seleccionada no tiene pistas.");
-      }
-    };
     const [selectedEngine, setSelectedEngine] = useState24(() => {
       try {
-        return localStorage.getItem("bw_radar_engine") || "radar_edge";
+        return localStorage.getItem("bw_radar_engine") || "hybrid";
       } catch (e) {
-        return "radar_edge";
+        return "hybrid";
       }
     });
     const [radarEnvironment, setRadarEnvironment] = useState24(() => {
@@ -21185,6 +21247,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         rescueEndpoint: "/v1/rescue",
         rescueTimeoutMs: 8e3,
         autoRescuePhase2: true,
+        allowSimulationFallback: false,
         onStateChange: (ev) => {
           var _a2, _b2;
           setRadarEvent(ev);
@@ -21284,21 +21347,20 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         setTimeout(() => setNotebookFeedback(""), 2500);
       }
     };
-    const handleExportarNotebookXLS = async () => {
+    const triggerBlobDownload = (blob, filename) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1e3);
+    };
+    const handleExportarNotebookXLS = () => {
       if (notebookTracks.length === 0) {
         alert("No hay pistas en la libreta para exportar.");
         return;
-      }
-      if (window.eel && window.eel.exportar_apuntes_shazam) {
-        try {
-          const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "xls")();
-          if (res && res.status === "ok") {
-            setNotebookFeedback(`\u2713 Archivo Excel generado: ${res.filename}`);
-            setTimeout(() => setNotebookFeedback(""), 4e3);
-          }
-        } catch (e) {
-          console.error("Fallo exportando a disco:", e);
-        }
       }
       const headers = ["#", "Artista", "T\xEDtulo", "\xC1lbum", "G\xE9nero", "A\xF1o", "ISRC", "Comentario / Nota DJ", "Fecha de Apunte"];
       const rows = notebookTracks.map((t, idx) => [
@@ -21313,30 +21375,16 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         `"${(t.added_at || "").replace(/"/g, '""')}"`
       ]);
       const csvContent = "\uFEFF" + [headers.join("	"), ...rows.map((r) => r.join("	"))].join("\n");
+      const filename = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
       const blob = new Blob([csvContent], { type: "application/vnd.ms-excel;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, filename);
+      setNotebookFeedback(`\u2713 Archivo Excel descargado: ${filename}`);
+      setTimeout(() => setNotebookFeedback(""), 4e3);
     };
-    const handleExportarNotebookTXT = async () => {
+    const handleExportarNotebookTXT = () => {
       if (notebookTracks.length === 0) {
         alert("No hay pistas en la libreta para exportar.");
         return;
-      }
-      if (window.eel && window.eel.exportar_apuntes_shazam) {
-        try {
-          const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "txt")();
-          if (res && res.status === "ok") {
-            setNotebookFeedback(`\u2713 Archivo TXT guardado: ${res.filename}`);
-            setTimeout(() => setNotebookFeedback(""), 4e3);
-          }
-        } catch (e) {
-        }
       }
       let txt = "====================================================\n";
       txt += "BEATWAVE PRO \u2022 LIBRETA DIGITAL DE APUNTES RADAR\n";
@@ -21354,15 +21402,11 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
 `;
         }
       });
+      const filename = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
       const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, filename);
+      setNotebookFeedback(`\u2713 Archivo TXT descargado: ${filename}`);
+      setTimeout(() => setNotebookFeedback(""), 4e3);
     };
     useEffect25(() => {
       const audio = audioRef.current;
@@ -21404,7 +21448,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       };
     }, []);
-    const togglePlayPreview = (url) => {
+    const togglePlayPreview = useCallback12((url) => {
       if (!url) return;
       const audio = audioRef.current;
       if (previewPlaying && audio.src === url) {
@@ -21414,7 +21458,69 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         audio.src = url;
         audio.play().then(() => setPreviewPlaying(true)).catch((e) => console.error("Error reproduciendo preview:", e));
       }
-    };
+    }, [previewPlaying]);
+    const handleRecognitionResponse = useCallback12((res, elapsedMs = null) => {
+      setIsAnalyzing(false);
+      if (res && res.status === "ok") {
+        const engineTag = res.motor_usado ? ` [v\xEDa ${res.motor_usado}]` : "";
+        const cacheTag = res.de_cache ? " \u26A1(Cach\xE9)" : "";
+        const msg = `\u2713 Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`;
+        setStatusMsg(msg);
+        setIdentifiedTrack(res);
+        setRadarEvent((prev) => {
+          var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j;
+          return {
+            state: "MATCH_CONFIRMED",
+            match: {
+              title: res.title,
+              artist: res.artist,
+              score: res.score || 96
+            },
+            rho: (prev == null ? void 0 : prev.rho) || 1,
+            pitchShiftSuspected: false,
+            telemetry: {
+              rmsDbfs: (_b2 = (_a2 = prev == null ? void 0 : prev.telemetry) == null ? void 0 : _a2.rmsDbfs) != null ? _b2 : -16,
+              peakDbfs: (_d = (_c = prev == null ? void 0 : prev.telemetry) == null ? void 0 : _c.peakDbfs) != null ? _d : -1.5,
+              isClipping: (_f = (_e = prev == null ? void 0 : prev.telemetry) == null ? void 0 : _e.isClipping) != null ? _f : false,
+              durationMs: (_h = (_g = prev == null ? void 0 : prev.telemetry) == null ? void 0 : _g.durationMs) != null ? _h : 1e4,
+              sampleRate: 16e3,
+              environment: radarEnvironment,
+              latencyMs: (_j = elapsedMs != null ? elapsedMs : (_i = prev == null ? void 0 : prev.telemetry) == null ? void 0 : _i.latencyMs) != null ? _j : 0
+            },
+            message: msg,
+            timestamp: Date.now()
+          };
+        });
+        setHistory((prev) => [res, ...prev.filter((item) => item.title !== res.title || item.artist !== res.artist)]);
+        if (res.preview_url) {
+          togglePlayPreview(res.preview_url);
+        }
+      } else if (res && res.status === "silence") {
+        const msg = res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa permisos de micr\xF3fono.";
+        setStatusMsg(msg);
+        setRadarEvent((prev) => ({
+          ...prev || {},
+          state: "NO_MATCH",
+          match: null,
+          rho: 1,
+          pitchShiftSuspected: false,
+          message: msg,
+          timestamp: Date.now()
+        }));
+      } else {
+        const msg = (res == null ? void 0 : res.msg) || "No se encontraron coincidencias para este fragmento de audio.";
+        setStatusMsg(msg);
+        setRadarEvent((prev) => ({
+          ...prev || {},
+          state: "NO_MATCH",
+          match: null,
+          rho: 1,
+          pitchShiftSuspected: false,
+          message: msg,
+          timestamp: Date.now()
+        }));
+      }
+    }, [radarEnvironment, togglePlayPreview]);
     const cancelListening = () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -21463,7 +21569,9 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     };
     const executeRecognition = async (base64Data, filename) => {
       setIsAnalyzing(true);
-      if (selectedEngine === "radar_edge" && recognizerRef.current) {
+      const startTime = Date.now();
+      const hasNativeDsp = Boolean(recognizerRef.current && recognizerRef.current.isNativeDspAvailable());
+      if (selectedEngine === "radar_edge" && hasNativeDsp) {
         setStatusMsg("Analizando huellas Zero-Copy en motor C++ y Edge Gateway (<1.75s)...");
         try {
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -21474,46 +21582,128 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           const decodedBuffer = await tempCtx.decodeAudioData(bytes.buffer);
           const channelData = decodedBuffer.getChannelData(0);
           tempCtx.close();
-          await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
-          setIsAnalyzing(false);
-          return;
+          const ev = await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+          if (ev && ev.state === "MATCH_CONFIRMED") {
+            setIsAnalyzing(false);
+            return;
+          }
         } catch (errDec) {
-          console.warn("Fallo decodificaci\xF3n local en WebAudio, recurriendo a API:", errDec);
+          console.warn("Decodificaci\xF3n WebAudio local fall\xF3, enrutando a REST omnichannel:", errDec);
         }
       }
-      const engineLabel = selectedEngine === "radar_edge" ? "Radar Edge C++" : selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
-      setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel}]...`);
+      const effectiveMotor = selectedEngine === "radar_edge" && !hasNativeDsp ? "hybrid" : selectedEngine;
+      const engineLabel = selectedEngine === "radar_edge" ? hasNativeDsp ? "Radar Edge C++ -> Respaldo H\xEDbrido" : "Radar Omnichannel (H\xEDbrido DSP)" : selectedEngine === "hybrid" ? "Modo H\xEDbrido" : selectedEngine === "audd" ? "Identificaci\xF3n Pro" : "Escaneo Espectral Smart";
+      setStatusMsg(`Consultando huella ac\xFAstica en [${engineLabel} \u2022 ${radarEnvironment.toUpperCase()}]...`);
       try {
-        let res = null;
-        try {
-          const response = await fetch("/api/identificar_audio", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audio_b64: base64Data,
-              motor: selectedEngine,
-              audd_token: auddToken,
-              filename
-            })
-          });
-          if (response.ok) {
-            res = await response.json();
-          }
-        } catch (httpErr) {
-          console.warn("HTTP /api/identificar_audio fall\xF3, recurriendo a Eel:", httpErr);
+        const response = await fetch("/api/identificar_audio", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audio_b64: base64Data,
+            motor: effectiveMotor,
+            audd_token: auddToken,
+            filename,
+            environment: radarEnvironment
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} al consultar /api/identificar_audio`);
         }
-        if (!res && window.eel && window.eel.identificar_audio_base64) {
-          try {
-            res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
-          } catch (eelErr) {
-            console.warn("Eel RPC tambi\xE9n fall\xF3:", eelErr);
-          }
-        }
-        handleRecognitionResponse(res);
+        const res = await response.json();
+        handleRecognitionResponse(res, Date.now() - startTime);
       } catch (err) {
-        console.error("Error en reconocimiento ac\xFAstico:", err);
+        console.error("Error en reconocimiento ac\xFAstico REST:", err);
         setStatusMsg("Error de comunicaci\xF3n con el motor de reconocimiento ac\xFAstico: " + (err.message || String(err)));
         setIsAnalyzing(false);
+      }
+    };
+    const handleFileSelect = (file) => {
+      if (!file) return;
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setStatusMsg(`\u26A0\uFE0F Archivo demasiado grande (${(file.size / (1024 * 1024)).toFixed(1)} MB). L\xEDmite seguro: 45 MB.`);
+        return;
+      }
+      setIsAnalyzing(true);
+      const hasNativeDsp = Boolean(recognizerRef.current && recognizerRef.current.isNativeDspAvailable());
+      if (selectedEngine === "radar_edge" && hasNativeDsp) {
+        setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
+        const reader2 = new FileReader();
+        reader2.onload = async (e) => {
+          try {
+            const arrayBuf = e.target.result;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const tempCtx = new AudioCtx();
+            const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf.slice(0));
+            const channelData = decodedBuffer.getChannelData(0);
+            tempCtx.close();
+            const ev = await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+            if (ev && ev.state === "MATCH_CONFIRMED") {
+              setIsAnalyzing(false);
+              return;
+            }
+            const r2 = new FileReader();
+            r2.onloadend = () => executeRecognition(r2.result, file.name);
+            r2.readAsDataURL(file);
+          } catch (fileErr) {
+            console.warn("Error decodificando archivo para Radar C++, enrutando a REST:", fileErr);
+            const r2 = new FileReader();
+            r2.onloadend = () => executeRecognition(r2.result, file.name);
+            r2.readAsDataURL(file);
+          }
+        };
+        reader2.readAsArrayBuffer(file);
+        return;
+      }
+      setStatusMsg(`Leyendo "${file.name}"...`);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        executeRecognition(reader.result, file.name);
+      };
+      reader.readAsDataURL(file);
+    };
+    const handleSelectFileFromModal = async (filePath) => {
+      setFsBrowserOpen(false);
+      if (!filePath) return;
+      try {
+        setStatusMsg(`Cargando audio desde ${filePath.split("/").pop()}...`);
+        setIsAnalyzing(true);
+        const resp = await fetch(`/api/stream_audio?path=${encodeURIComponent(filePath)}`);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const fileName = filePath.split("/").pop() || "audio_file.mp3";
+          const file = new File([blob], fileName, { type: blob.type || "audio/mpeg" });
+          handleFileSelect(file);
+        } else {
+          setStatusMsg("Error accediendo al archivo seleccionado.");
+          setIsAnalyzing(false);
+        }
+      } catch (e) {
+        console.error("Error al cargar archivo en Radar:", e);
+        setStatusMsg("Error al leer archivo de audio.");
+        setIsAnalyzing(false);
+      }
+    };
+    const handleImportarColeccionRadar = async (targetLibId = null) => {
+      setFsBrowserOpen(false);
+      const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
+      let foundTrack = null;
+      if (activeLib && activeLib.folders) {
+        for (const f of activeLib.folders) {
+          if (f.tracks && f.tracks.length > 0) {
+            foundTrack = f.tracks[0];
+            break;
+          }
+        }
+      }
+      if (foundTrack) {
+        const trackPath = foundTrack.path || foundTrack.filepath || foundTrack.f;
+        if (trackPath) {
+          handleSelectFileFromModal(trackPath);
+        } else {
+          setStatusMsg(`Pista "${foundTrack.title || "Track"}" seleccionada sin ruta en disco.`);
+        }
+      } else {
+        setStatusMsg("La colecci\xF3n seleccionada no tiene pistas.");
       }
     };
     const startMicrophoneListening = async () => {
@@ -21521,12 +21711,11 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setMicPermissionError(null);
       const hasBrowserMic = typeof navigator !== "undefined" && Boolean(navigator.mediaDevices) && typeof navigator.mediaDevices.getUserMedia === "function";
       if (micCaptureMode === "hardware" || !hasBrowserMic) {
-        console.log("Iniciando captura de micr\xF3fono de hardware...");
         startHardwareMicrophoneListening();
         return;
       }
       cancelListening();
-      setStatusMsg("Solicitando acceso al micr\xF3fono...");
+      setStatusMsg("Solicitando acceso al micr\xF3fono (se\xF1al pura sin filtros de voz)...");
       try {
         let stream;
         try {
@@ -21534,9 +21723,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             audio: {
               echoCancellation: false,
               noiseSuppression: false,
-              autoGainControl: true,
-              channelCount: 2,
-              sampleRate: 44100
+              autoGainControl: false
             }
           });
         } catch (errStrict) {
@@ -21548,7 +21735,6 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         setCountdown(10);
         setStatusMsg("Escuchando audio ambiental (10s)...");
         let maxRecordedLevel = 0;
-        let sumRecordedLevel = 0;
         let samplesRecordedCount = 0;
         try {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -21556,46 +21742,82 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           audioCtxRef.current = audioCtx;
           const source = audioCtx.createMediaStreamSource(stream);
           const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 64;
+          analyser.fftSize = 1024;
           source.connect(analyser);
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          const timeData = new Uint8Array(analyser.fftSize);
           const updateMeter = () => {
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-              sum += dataArray[i];
+            analyser.getByteTimeDomainData(timeData);
+            let sumSq = 0;
+            let peak = 0;
+            for (let i = 0; i < timeData.length; i++) {
+              const norm = (timeData[i] - 128) / 128;
+              sumSq += norm * norm;
+              const absVal = Math.abs(norm);
+              if (absVal > peak) peak = absVal;
             }
-            const avg = sum / dataArray.length;
-            const curLvl = Math.min(100, Math.round(avg / 128 * 100));
+            const rms = Math.sqrt(sumSq / timeData.length);
+            const rmsDbfs = rms > 1e-5 ? 20 * Math.log10(rms) : -96;
+            const peakDbfs = peak > 1e-5 ? 20 * Math.log10(peak) : -96;
+            const curLvl = Math.max(0, Math.min(100, Math.round((rmsDbfs + 60) / 60 * 100)));
             setMicLevel(curLvl);
             if (curLvl > maxRecordedLevel) maxRecordedLevel = curLvl;
-            sumRecordedLevel += curLvl;
             samplesRecordedCount += 1;
+            if (samplesRecordedCount % 8 === 0) {
+              setRadarEvent((prev) => {
+                var _a2;
+                return {
+                  ...prev || {},
+                  state: "CAPTURING",
+                  match: (prev == null ? void 0 : prev.match) || null,
+                  rho: (prev == null ? void 0 : prev.rho) || 1,
+                  pitchShiftSuspected: false,
+                  telemetry: {
+                    rmsDbfs: Number(rmsDbfs.toFixed(1)),
+                    peakDbfs: Number(peakDbfs.toFixed(1)),
+                    isClipping: peak >= 0.98,
+                    durationMs: 1e4,
+                    sampleRate: audioCtx.sampleRate || 44100,
+                    environment: radarEnvironment,
+                    latencyMs: ((_a2 = prev == null ? void 0 : prev.telemetry) == null ? void 0 : _a2.latencyMs) || 0
+                  },
+                  message: "Capturando se\xF1al ambiental sin compresi\xF3n de voz...",
+                  timestamp: Date.now()
+                };
+              });
+            }
             animFrameRef.current = requestAnimationFrame(updateMeter);
           };
           updateMeter();
         } catch (e) {
           console.warn("Web Audio VU meter no disponible:", e);
         }
-        let recorderOptions = { audioBitsPerSecond: 128e3 };
-        let selectedMime = "audio/webm";
-        if (typeof MediaRecorder.isTypeSupported === "function") {
-          if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-            selectedMime = "audio/webm;codecs=opus";
-          } else if (MediaRecorder.isTypeSupported("audio/webm")) {
-            selectedMime = "audio/webm";
-          } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
-            selectedMime = "audio/mp4";
-          } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
-            selectedMime = "audio/ogg";
+        let recorderOptions = {};
+        let selectedMime = "";
+        const mimeCandidates = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4;codecs=mp4a.40.2",
+          "audio/mp4",
+          "audio/ogg;codecs=opus",
+          "audio/ogg"
+        ];
+        if (typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function") {
+          for (const candidate of mimeCandidates) {
+            if (MediaRecorder.isTypeSupported(candidate)) {
+              selectedMime = candidate;
+              break;
+            }
           }
         }
-        try {
-          recorderOptions.mimeType = selectedMime;
-        } catch (e) {
-          console.warn("No se pudo fijar mimeType estricto:", e);
+        if (selectedMime) {
+          recorderOptions = { mimeType: selectedMime, audioBitsPerSecond: 192e3 };
         }
-        const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+        let mediaRecorder;
+        try {
+          mediaRecorder = new MediaRecorder(stream, recorderOptions);
+        } catch {
+          mediaRecorder = new MediaRecorder(stream);
+        }
         mediaRecorderRef.current = mediaRecorder;
         const chunks = [];
         mediaRecorder.ondataavailable = (e) => {
@@ -21624,14 +21846,14 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           }
           setIsListening(false);
           if (chunks.length === 0) {
-            setStatusMsg("\u26A0\uFE0F El micr\xF3fono web no captur\xF3 se\xF1al. Activando captura de hardware...");
+            setStatusMsg("\u26A0\uFE0F El micr\xF3fono web no captur\xF3 se\xF1al. Activando captura v\xEDa API de hardware...");
             startHardwareMicrophoneListening();
             return;
           }
           if (maxRecordedLevel < 3 && samplesRecordedCount > 5) {
             console.warn("Nivel de micro ambiental pr\xE1cticamente nulo");
           }
-          const actualMime = ((_a2 = chunks[0]) == null ? void 0 : _a2.type) || selectedMime || "audio/webm";
+          const actualMime = ((_a2 = chunks[0]) == null ? void 0 : _a2.type) || mediaRecorder.mimeType || selectedMime || "audio/webm";
           const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
           const audioBlob = new Blob(chunks, { type: actualMime });
           const reader = new FileReader();
@@ -21658,7 +21880,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       } catch (err) {
         console.error("Error acceso micr\xF3fono navegador:", err);
         setMicPermissionError(err.message || "Permiso denegado");
-        setStatusMsg("Micr\xF3fono del navegador bloqueado. Cambiando a captura por hardware de cabina...");
+        setStatusMsg("Micr\xF3fono del navegador bloqueado. Cambiando a captura por API de hardware...");
         setTimeout(() => {
           startHardwareMicrophoneListening();
         }, 600);
@@ -21669,8 +21891,9 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       cancelListening();
       setIsListening(true);
       setCountdown(7);
-      setStatusMsg("\u{1F399}\uFE0F Grabando desde el micr\xF3fono del sistema (Hardware 7s)...");
-      let fakeMeterInterval = setInterval(() => {
+      setStatusMsg("\u{1F399}\uFE0F Grabando desde el micr\xF3fono de hardware v\xEDa REST API (7s)...");
+      const startTime = Date.now();
+      const fakeMeterInterval = setInterval(() => {
         const fakeLvl = Math.floor(Math.random() * 45) + 30;
         setMicLevel(fakeLvl);
       }, 150);
@@ -21689,21 +21912,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       }, 1e3);
       try {
-        let res = null;
-        if (window.eel && typeof window.eel.grabar_microfono_shazam === "function") {
-          res = await window.eel.grabar_microfono_shazam(7, selectedEngine, auddToken)();
-        } else {
-          const resp = await fetch("/api/shazam/record_mic", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ duration: 7, motor: selectedEngine, audd_token: auddToken })
-          });
-          if (resp.ok) {
-            res = await resp.json();
-          } else {
-            throw new Error(`HTTP ${resp.status}`);
-          }
+        const effectiveMotor = selectedEngine === "radar_edge" ? "hybrid" : selectedEngine;
+        const resp = await fetch("/api/shazam/record_mic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            duration: 7,
+            motor: effectiveMotor,
+            audd_token: auddToken,
+            environment: radarEnvironment
+          })
+        });
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
         }
+        const res = await resp.json();
         clearInterval(fakeMeterInterval);
         setMicLevel(0);
         setIsListening(false);
@@ -21716,7 +21939,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           setStatusMsg("\u26A0\uFE0F " + (res.msg || "Error en captura de audio."));
         } else {
           setMicPermissionError(null);
-          handleRecognitionResponse(res);
+          handleRecognitionResponse(res, Date.now() - startTime);
         }
       } catch (hwErr) {
         clearInterval(fakeMeterInterval);
@@ -21726,60 +21949,9 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
-        console.error("Error en captura por hardware:", hwErr);
+        console.error("Error en captura por hardware REST:", hwErr);
         setMicPermissionError("Permiso de micr\xF3fono no disponible");
-        setStatusMsg("\u26A0\uFE0F No se pudo acceder al micr\xF3fono. Revisa Ajustes de macOS > Privacidad > Micr\xF3fono o arrastra un archivo de audio.");
-      }
-    };
-    const handleFileSelect = (file) => {
-      if (!file) return;
-      setIsAnalyzing(true);
-      if (selectedEngine === "radar_edge" && recognizerRef.current) {
-        setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
-        const reader2 = new FileReader();
-        reader2.onload = async (e) => {
-          try {
-            const arrayBuf = e.target.result;
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            const tempCtx = new AudioCtx();
-            const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf);
-            const channelData = decodedBuffer.getChannelData(0);
-            tempCtx.close();
-            await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
-            setIsAnalyzing(false);
-          } catch (fileErr) {
-            console.error("Error decodificando archivo para Radar C++:", fileErr);
-            const r2 = new FileReader();
-            r2.onloadend = () => executeRecognition(r2.result, file.name);
-            r2.readAsDataURL(file);
-          }
-        };
-        reader2.readAsArrayBuffer(file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file);
-        return;
-      }
-      setStatusMsg(`Leyendo "${file.name}"...`);
-      const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        executeRecognition(reader.result, file.name);
-      };
-      reader.readAsDataURL(fileToRead);
-    };
-    const handleRecognitionResponse = (res) => {
-      setIsAnalyzing(false);
-      if (res && res.status === "ok") {
-        const engineTag = res.motor_usado ? ` [v\xEDa ${res.motor_usado}]` : "";
-        const cacheTag = res.de_cache ? " \u26A1(Cach\xE9)" : "";
-        setStatusMsg(`\u2713 Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`);
-        setIdentifiedTrack(res);
-        setHistory((prev) => [res, ...prev.filter((item) => item.title !== res.title || item.artist !== res.artist)]);
-        if (res.preview_url) {
-          togglePlayPreview(res.preview_url);
-        }
-      } else if (res && res.status === "silence") {
-        setStatusMsg(res.msg || "\u26A0\uFE0F Micr\xF3fono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micr\xF3fono.");
-      } else {
-        setStatusMsg((res == null ? void 0 : res.msg) || "No se encontraron coincidencias para este fragmento de audio.");
+        setStatusMsg("\u26A0\uFE0F No se pudo acceder al micr\xF3fono de hardware. Revisa los permisos del sistema o arrastra un archivo de audio.");
       }
     };
     const handleSendToAuditInternal = (trk) => {
@@ -21820,14 +21992,14 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       alert(`Copiado al portapapeles:
 ${text}`);
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Radar, title: "Radar Ac\xFAstico", accent: "Drop Scanner" }), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "radar_edge" ? "Radar Edge C++ (<1.75s)" : selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral"), /* @__PURE__ */ React.createElement("p", { className: "hidden md:inline text-xs text-zinc-400 font-sans" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio.")), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "ws-module ws-mod-shazam flex flex-col h-full w-full bg-[#09090b] overflow-y-auto p-4 sm:p-6 text-zinc-300 space-y-5 select-none font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Radar, title: "Radar Ac\xFAstico", accent: "Drop Scanner" }), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded" }, selectedEngine === "radar_edge" ? "Radar Edge C++ / Auto-REST" : selectedEngine === "hybrid" ? "H\xEDbrido Pro (Smart Drop)" : selectedEngine === "audd" ? "Identificaci\xF3n Ac\xFAstica Pro" : "Escaneo Espectral"), /* @__PURE__ */ React.createElement("p", { className: "hidden md:inline text-xs text-zinc-400 font-sans" }, "Identifica pistas desconocidas al instante escuchando con el micr\xF3fono o cargando archivos de audio.")), statusMsg && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 rounded-lg bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] text-xs font-mono flex items-center gap-2 shadow" }, /* @__PURE__ */ React.createElement("span", { className: `w-2 h-2 rounded-full ${isAnalyzing || isListening ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300" }, statusMsg))), /* @__PURE__ */ React.createElement("div", { className: "bg-[var(--bw-surface-1)] border border-[var(--bw-line)] rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "bw-eyebrow text-[10.5px]" }, "Motor Activo:"), /* @__PURE__ */ React.createElement("div", { className: "ws-seg", role: "group", "aria-label": "Motor activo" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => setSelectedEngine("radar_edge"),
         className: `ws-seg-btn ${selectedEngine === "radar_edge" ? "ws-seg-on" : ""}`,
         "aria-pressed": selectedEngine === "radar_edge",
-        title: "Motor C++ Nativo (Zero-Copy) + Cloudflare Edge Gateway (<1.75s)"
+        title: "Motor C++ Nativo (JSI/N-API) + Cloudflare Edge Gateway con respaldo omnichannel REST autom\xE1tico"
       },
       /* @__PURE__ */ React.createElement(Icons.Zap, { size: 13, className: "text-pink-400" }),
       /* @__PURE__ */ React.createElement("span", null, "Radar Edge C++")
@@ -21910,7 +22082,7 @@ ${text}`);
         },
         className: `ws-seg-btn ${micCaptureMode === "auto" ? "ws-seg-on" : ""}`,
         "aria-pressed": micCaptureMode === "auto",
-        title: "Auto: prueba primero el micr\xF3fono del navegador y si falla conmuta al hardware de sistema autom\xE1ticamente"
+        title: "Auto: usa captura omnichannel WebAudio y conmuta a API de hardware si no est\xE1 disponible"
       },
       "Auto"
     ), /* @__PURE__ */ React.createElement(
@@ -21923,7 +22095,7 @@ ${text}`);
         },
         className: `ws-seg-btn ${micCaptureMode === "browser" ? "ws-seg-on" : ""}`,
         "aria-pressed": micCaptureMode === "browser",
-        title: "Micr\xF3fono Web (Navegador HTML5)"
+        title: "Micr\xF3fono Web Omnichannel (Web / iOS / Android / Desktop)"
       },
       "Navegador"
     ), /* @__PURE__ */ React.createElement(
@@ -21936,9 +22108,9 @@ ${text}`);
         },
         className: `ws-seg-btn ${micCaptureMode === "hardware" ? "ws-seg-on" : ""}`,
         "aria-pressed": micCaptureMode === "hardware",
-        title: "Micr\xF3fono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
+        title: "Micr\xF3fono de Hardware en servidor local v\xEDa REST API"
       },
-      "Hardware (macOS)"
+      "Hardware (API)"
     )), /* @__PURE__ */ React.createElement("div", { className: "my-4 relative flex flex-col items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center" }, /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement("span", { className: `ws-radar-ring ws-radar-ring-2 ${isListening ? "ws-radar-ring-live" : ""}`, "aria-hidden": "true" }), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -21950,7 +22122,7 @@ ${text}`);
       },
       /* @__PURE__ */ React.createElement(Icons.Mic, null),
       /* @__PURE__ */ React.createElement("span", { className: "ws-radar-label" }, isListening ? `${countdown}s` : "ESCUCHAR")
-    )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/60 border border-amber-600/40 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "\u2022 En macOS: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes del Sistema > Privacidad > Micr\xF3fono"), "."), /* @__PURE__ */ React.createElement(
+    )), micPermissionError && !isListening && /* @__PURE__ */ React.createElement("div", { className: "mt-3 p-3 bg-amber-950/60 border border-amber-600/40 rounded-xl text-left text-xs font-mono text-amber-200 flex flex-col gap-1.5 shadow-xl max-w-xs animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-amber-300" }, /* @__PURE__ */ React.createElement(Icons.Lock, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Micr\xF3fono de navegador restringido")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "En la barra del navegador, haz clic en el ", /* @__PURE__ */ React.createElement("strong", null, "icono del candado"), " y cambia Micr\xF3fono a ", /* @__PURE__ */ React.createElement("strong", null, "Permitir"), "."), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-zinc-300 leading-tight" }, "En tu dispositivo: ", /* @__PURE__ */ React.createElement("strong", null, "Ajustes > Privacidad > Micr\xF3fono"), "."), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -21958,7 +22130,7 @@ ${text}`);
         className: "ws-btn ws-btn-primary w-full justify-center mt-1"
       },
       /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14 }),
-      " Usar Captura Hardware de Sistema"
+      " Usar Captura Hardware (REST API)"
     )), isListening && /* @__PURE__ */ React.createElement("div", { className: "w-60 mt-3.5 flex flex-col gap-1.5 animate-fadeIn", role: "meter", "aria-label": "Se\xF1al de micr\xF3fono", "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": micLevel }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full" }, /* @__PURE__ */ React.createElement("span", { className: "ws-glass-kicker flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "ws-dot ws-dot-live" }), "Input"), /* @__PURE__ */ React.createElement("span", { className: `font-mono text-[11px] font-semibold tabular-nums ${micLevel > 85 ? "text-rose-400" : micLevel > 15 ? "text-[var(--bw-cyan)]" : "text-amber-400"}` }, micLevel, "%")), /* @__PURE__ */ React.createElement("div", { className: "ws-vu", "aria-hidden": "true" }, Array.from({ length: 24 }, (_, i) => {
       const thr = (i + 1) / 24 * 100;
       const on = micLevel >= thr - 2;
@@ -22165,7 +22337,7 @@ ${text}`);
         onClick: handleExportarNotebookXLS,
         disabled: notebookTracks.length === 0,
         className: "ws-btn ws-btn-outline",
-        title: "Descargar listado en formato Excel (.xls / .xlsx)"
+        title: "Descargar listado en formato Excel (.xls)"
       },
       /* @__PURE__ */ React.createElement(Icons.Excel, { size: 14 }),
       /* @__PURE__ */ React.createElement("span", null, "Descargar XLS")
@@ -22754,7 +22926,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/SetBuilderWorkspace.jsx
-  var { useState: useState27, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo11, useCallback: useCallback12 } = React;
+  var { useState: useState27, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo11, useCallback: useCallback13 } = React;
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
@@ -24368,7 +24540,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/MapWorkspace.jsx
-  var { useState: useState28, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback13 } = React;
+  var { useState: useState28, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback14 } = React;
   var MAP_CAMELOT_COLORS2 = {
     "1A": "#00e5ff",
     "1B": "#00b4d8",
@@ -24572,7 +24744,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [filterMinIntensity, setFilterMinIntensity] = useState28(0);
     const [filterMinValence, setFilterMinValence] = useState28(0);
     const [filterQualityMode, setFilterQualityMode] = useState28("ALL");
-    const handleResetAcousticFilters = useCallback13(() => {
+    const handleResetAcousticFilters = useCallback14(() => {
       setFilterMinEnergy(0);
       setFilterMinDance(0);
       setFilterMinIntensity(0);
@@ -24711,7 +24883,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
-    const handleAutoFrame = useCallback13((targetZoom = null) => {
+    const handleAutoFrame = useCallback14((targetZoom = null) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -25463,7 +25635,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         selectionRef.current.boxStart = null;
       }
     };
-    const handleWheel = useCallback13((e) => {
+    const handleWheel = useCallback14((e) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -26244,7 +26416,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/CopilotWorkspace.jsx
-  var { useState: useState30, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo14, useCallback: useCallback14 } = React;
+  var { useState: useState30, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo14, useCallback: useCallback15 } = React;
   var MASTER_TRACKS_POOL = [
     {
       id: "rec_1",
@@ -27037,7 +27209,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         };
       });
     };
-    const toggleDeckPlay = useCallback14(async (deckTarget) => {
+    const toggleDeckPlay = useCallback15(async (deckTarget) => {
       const deckNum = deckTarget === "2" || deckTarget === 2 ? 2 : 1;
       const dKey = deckNum === 1 ? "deck_1" : "deck_2";
       setState((prev) => {
@@ -27066,7 +27238,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (_) {
       }
     }, []);
-    const cueDeck = useCallback14(async (deckTarget) => {
+    const cueDeck = useCallback15(async (deckTarget) => {
       const deckNum = deckTarget === "2" || deckTarget === 2 ? 2 : 1;
       const dKey = deckNum === 1 ? "deck_1" : "deck_2";
       setState((prev) => {
@@ -28200,7 +28372,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/app.jsx
-  var { useState: useState31, useEffect: useEffect31, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback15, createContext, useContext } = React;
+  var { useState: useState31, useEffect: useEffect31, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback16, createContext, useContext } = React;
   var PlayerContext = createContext({
     playProgressRef: { current: 0 },
     isPlaying: false,
@@ -28332,7 +28504,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setLoadTrackMenuOpen(false);
     };
     const playProgressRef = useRef26(0);
-    const setPlayProgress = useCallback15((pct) => {
+    const setPlayProgress = useCallback16((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));

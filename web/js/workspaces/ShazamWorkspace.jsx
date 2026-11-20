@@ -1,14 +1,16 @@
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
 import { UnifiedLibraryBrowserModal } from '../modals/index.js';
 import { getValidCover } from '../data/constants.js';
 import { Phase1FastRecognizer } from '../modules/Phase1FastRecognizer.ts';
 
-// Espacio de Trabajo: Shazam Audio Intelligence (Reconocimiento por Micrófono y Subida de Archivos)
-export const ShazamWorkspace = ({ 
-    onSendToSpotify, 
-    onSendToAudit, 
+const MAX_UPLOAD_BYTES = 45 * 1024 * 1024; // 45 MB íntegros sin truncado destructivo de contenedores
+
+// Espacio de Trabajo Omnichannel: Radar Acústico (Web, macOS, Windows, iOS, Android, iPad)
+export const ShazamWorkspace = ({
+    onSendToSpotify,
+    onSendToAudit,
     onNavigateTab,
     customLibraries = [],
     activeCustomLibId = null,
@@ -32,77 +34,28 @@ export const ShazamWorkspace = ({
     const audioCtxRef = useRef(null);
     const [dragOver, setDragOver] = useState(false);
 
-    const handleSelectFileFromModal = async (filePath) => {
-        setFsBrowserOpen(false);
-        if (!filePath) return;
-        try {
-            setStatusMsg(`Cargando audio desde ${filePath.split('/').pop()}...`);
-            setIsAnalyzing(true);
-            const resp = await fetch(`/api/stream_audio?path=${encodeURIComponent(filePath)}`);
-            if (resp.ok) {
-                const blob = await resp.blob();
-                const fileName = filePath.split('/').pop() || 'audio_file.mp3';
-                const file = new File([blob], fileName, { type: blob.type || 'audio/mpeg' });
-                handleFileSelect(file);
-            } else {
-                setStatusMsg("Error accediendo al archivo seleccionado.");
-                setIsAnalyzing(false);
-            }
-        } catch (e) {
-            console.error("Error al cargar archivo en Radar:", e);
-            setStatusMsg("Error al leer archivo de audio.");
-            setIsAnalyzing(false);
-        }
-    };
-
-    const handleImportarColeccionRadar = async (targetLibId = null) => {
-        setFsBrowserOpen(false);
-        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
-            || (customLibraries || []).find(l => l.id === activeCustomLibId) 
-            || (customLibraries && customLibraries[0]);
-        let foundTrack = null;
-        if (activeLib && activeLib.folders) {
-            for (const f of activeLib.folders) {
-                if (f.tracks && f.tracks.length > 0) {
-                    foundTrack = f.tracks[0];
-                    break;
-                }
-            }
-        }
-        if (foundTrack) {
-            const trackPath = foundTrack.path || foundTrack.filepath || foundTrack.f;
-            if (trackPath) {
-                handleSelectFileFromModal(trackPath);
-            } else {
-                setStatusMsg(`Pista "${foundTrack.title || 'Track'}" seleccionada sin ruta en disco.`);
-            }
-        } else {
-            setStatusMsg("La colección seleccionada no tiene pistas.");
-        }
-    };
-
-    // Selector de motor acústico: 'radar_edge' (C++ Nativo / Edge), 'hybrid', 'shazamio', 'audd'
+    // Selector de motor acústico: 'radar_edge' (Nativo C++/Edge con fallback REST), 'hybrid', 'shazamio', 'audd'
     const [selectedEngine, setSelectedEngine] = useState(() => {
-        try { return localStorage.getItem('bw_radar_engine') || 'radar_edge'; } catch(e) { return 'radar_edge'; }
+        try { return localStorage.getItem('bw_radar_engine') || 'hybrid'; } catch (e) { return 'hybrid'; }
     });
     const [radarEnvironment, setRadarEnvironment] = useState(() => {
-        try { return localStorage.getItem('bw_radar_env') || 'club'; } catch(e) { return 'club'; }
+        try { return localStorage.getItem('bw_radar_env') || 'club'; } catch (e) { return 'club'; }
     });
     const [radarEvent, setRadarEvent] = useState(null);
     const recognizerRef = useRef(null);
     const [auddToken, setAuddToken] = useState(() => {
-        try { return localStorage.getItem('bw_audd_token') || ''; } catch(e) { return ''; }
+        try { return localStorage.getItem('bw_audd_token') || ''; } catch (e) { return ''; }
     });
     const [showConfig, setShowConfig] = useState(false);
     const [micCaptureMode, setMicCaptureMode] = useState('auto'); // 'auto' | 'browser' | 'hardware'
     const [micPermissionError, setMicPermissionError] = useState(null);
 
     useEffect(() => {
-        try { localStorage.setItem('bw_radar_engine', selectedEngine); } catch(e) {}
+        try { localStorage.setItem('bw_radar_engine', selectedEngine); } catch (e) {}
     }, [selectedEngine]);
 
     useEffect(() => {
-        try { localStorage.setItem('bw_radar_env', radarEnvironment); } catch(e) {}
+        try { localStorage.setItem('bw_radar_env', radarEnvironment); } catch (e) {}
         if (recognizerRef.current) {
             recognizerRef.current.setEnvironment(radarEnvironment);
         }
@@ -119,11 +72,12 @@ export const ShazamWorkspace = ({
             rescueEndpoint: '/v1/rescue',
             rescueTimeoutMs: 8000,
             autoRescuePhase2: true,
+            allowSimulationFallback: false,
             onStateChange: (ev) => {
                 setRadarEvent(ev);
                 if (ev.state === 'MATCH_CONFIRMED' && ev.match) {
-                    const sourceLabel = ev.match.source === 'local_olaf' 
-                        ? 'Olaf LMDB' 
+                    const sourceLabel = ev.match.source === 'local_olaf'
+                        ? 'Olaf LMDB'
                         : (ev.match.source?.startsWith('gpu_') ? 'GPU Neural Rescue' : 'ACRCloud Edge');
                     const matchItem = {
                         title: ev.match.title,
@@ -158,10 +112,10 @@ export const ShazamWorkspace = ({
     }, []);
 
     useEffect(() => {
-        try { localStorage.setItem('bw_audd_token', auddToken); } catch(e) {}
+        try { localStorage.setItem('bw_audd_token', auddToken); } catch (e) {}
     }, [auddToken]);
 
-    // Libreta Digital de Apuntes DJ (Persistida en LocalStorage)
+    // Libreta Digital de Apuntes DJ (Persistida en LocalStorage omnichannel)
     const [notebookTracks, setNotebookTracks] = useState(() => {
         try {
             const saved = localStorage.getItem('beatwave_shazam_notebook');
@@ -224,23 +178,22 @@ export const ShazamWorkspace = ({
         }
     };
 
-    const handleExportarNotebookXLS = async () => {
+    const triggerBlobDownload = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    const handleExportarNotebookXLS = () => {
         if (notebookTracks.length === 0) {
             alert("No hay pistas en la libreta para exportar.");
             return;
         }
-        if (window.eel && window.eel.exportar_apuntes_shazam) {
-            try {
-                const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "xls")();
-                if (res && res.status === 'ok') {
-                    setNotebookFeedback(`✓ Archivo Excel generado: ${res.filename}`);
-                    setTimeout(() => setNotebookFeedback(""), 4000);
-                }
-            } catch (e) {
-                console.error("Fallo exportando a disco:", e);
-            }
-        }
-        // Descarga directa en navegador para compatibilidad instantánea
         const headers = ["#", "Artista", "Título", "Álbum", "Género", "Año", "ISRC", "Comentario / Nota DJ", "Fecha de Apunte"];
         const rows = notebookTracks.map((t, idx) => [
             idx + 1,
@@ -254,30 +207,17 @@ export const ShazamWorkspace = ({
             `"${(t.added_at || '').replace(/"/g, '""')}"`
         ]);
         const csvContent = "\uFEFF" + [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
+        const filename = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
         const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `BeatWave_Radar_Apuntes_${Date.now()}.xls`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        triggerBlobDownload(blob, filename);
+        setNotebookFeedback(`✓ Archivo Excel descargado: ${filename}`);
+        setTimeout(() => setNotebookFeedback(""), 4000);
     };
 
-    const handleExportarNotebookTXT = async () => {
+    const handleExportarNotebookTXT = () => {
         if (notebookTracks.length === 0) {
             alert("No hay pistas en la libreta para exportar.");
             return;
-        }
-        if (window.eel && window.eel.exportar_apuntes_shazam) {
-            try {
-                const res = await window.eel.exportar_apuntes_shazam(notebookTracks, "txt")();
-                if (res && res.status === 'ok') {
-                    setNotebookFeedback(`✓ Archivo TXT guardado: ${res.filename}`);
-                    setTimeout(() => setNotebookFeedback(""), 4000);
-                }
-            } catch (e) {}
         }
         let txt = "====================================================\n";
         txt += "BEATWAVE PRO • LIBRETA DIGITAL DE APUNTES RADAR\n";
@@ -291,15 +231,11 @@ export const ShazamWorkspace = ({
                 txt += `    💬 Comentario DJ: ${comm}\n`;
             }
         });
+        const filename = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
         const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `BeatWave_Radar_Tracklist_${Date.now()}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        triggerBlobDownload(blob, filename);
+        setNotebookFeedback(`✓ Archivo TXT descargado: ${filename}`);
+        setTimeout(() => setNotebookFeedback(""), 4000);
     };
 
     useEffect(() => {
@@ -315,20 +251,20 @@ export const ShazamWorkspace = ({
             if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
             if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
             if (audioCtxRef.current) {
-                try { audioCtxRef.current.close(); } catch(e) {}
+                try { audioCtxRef.current.close(); } catch (e) {}
                 audioCtxRef.current = null;
             }
             if (audioStreamRef.current) {
-                try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch(e) {}
+                try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch (e) {}
                 audioStreamRef.current = null;
             }
             if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                try { mediaRecorderRef.current.stop(); } catch(e) {}
+                try { mediaRecorderRef.current.stop(); } catch (e) {}
             }
         };
     }, []);
 
-    const togglePlayPreview = (url) => {
+    const togglePlayPreview = useCallback((url) => {
         if (!url) return;
         const audio = audioRef.current;
         if (previewPlaying && audio.src === url) {
@@ -338,7 +274,67 @@ export const ShazamWorkspace = ({
             audio.src = url;
             audio.play().then(() => setPreviewPlaying(true)).catch(e => console.error("Error reproduciendo preview:", e));
         }
-    };
+    }, [previewPlaying]);
+
+    const handleRecognitionResponse = useCallback((res, elapsedMs = null) => {
+        setIsAnalyzing(false);
+        if (res && res.status === 'ok') {
+            const engineTag = res.motor_usado ? ` [vía ${res.motor_usado}]` : '';
+            const cacheTag = res.de_cache ? ' ⚡(Caché)' : '';
+            const msg = `✓ Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`;
+            setStatusMsg(msg);
+            setIdentifiedTrack(res);
+            setRadarEvent(prev => ({
+                state: 'MATCH_CONFIRMED',
+                match: {
+                    title: res.title,
+                    artist: res.artist,
+                    score: res.score || 96
+                },
+                rho: prev?.rho || 1.0,
+                pitchShiftSuspected: false,
+                telemetry: {
+                    rmsDbfs: prev?.telemetry?.rmsDbfs ?? -16.0,
+                    peakDbfs: prev?.telemetry?.peakDbfs ?? -1.5,
+                    isClipping: prev?.telemetry?.isClipping ?? false,
+                    durationMs: prev?.telemetry?.durationMs ?? 10000,
+                    sampleRate: 16000,
+                    environment: radarEnvironment,
+                    latencyMs: elapsedMs ?? prev?.telemetry?.latencyMs ?? 0
+                },
+                message: msg,
+                timestamp: Date.now()
+            }));
+            setHistory(prev => [res, ...prev.filter(item => item.title !== res.title || item.artist !== res.artist)]);
+            if (res.preview_url) {
+                togglePlayPreview(res.preview_url);
+            }
+        } else if (res && res.status === 'silence') {
+            const msg = res.msg || "⚠️ Micrófono en silencio o inaudible. Acerca la fuente de sonido y revisa permisos de micrófono.";
+            setStatusMsg(msg);
+            setRadarEvent(prev => ({
+                ...(prev || {}),
+                state: 'NO_MATCH',
+                match: null,
+                rho: 1.0,
+                pitchShiftSuspected: false,
+                message: msg,
+                timestamp: Date.now()
+            }));
+        } else {
+            const msg = res?.msg || "No se encontraron coincidencias para este fragmento de audio.";
+            setStatusMsg(msg);
+            setRadarEvent(prev => ({
+                ...(prev || {}),
+                state: 'NO_MATCH',
+                match: null,
+                rho: 1.0,
+                pitchShiftSuspected: false,
+                message: msg,
+                timestamp: Date.now()
+            }));
+        }
+    }, [radarEnvironment, togglePlayPreview]);
 
     const cancelListening = () => {
         if (timerRef.current) {
@@ -350,17 +346,17 @@ export const ShazamWorkspace = ({
             animFrameRef.current = null;
         }
         if (audioCtxRef.current) {
-            try { audioCtxRef.current.close(); } catch(e) {}
+            try { audioCtxRef.current.close(); } catch (e) {}
             audioCtxRef.current = null;
         }
         if (audioStreamRef.current) {
-            try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch(e) {}
+            try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch (e) {}
             audioStreamRef.current = null;
         }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.ondataavailable = null;
             mediaRecorderRef.current.onstop = null;
-            try { mediaRecorderRef.current.stop(); } catch(e) {}
+            try { mediaRecorderRef.current.stop(); } catch (e) {}
         }
         setIsListening(false);
         setIsAnalyzing(false);
@@ -381,7 +377,11 @@ export const ShazamWorkspace = ({
 
     const executeRecognition = async (base64Data, filename) => {
         setIsAnalyzing(true);
-        if (selectedEngine === 'radar_edge' && recognizerRef.current) {
+        const startTime = Date.now();
+
+        // Fase 1 Nativa C++ + Edge solo si el bridge JSI/N-API está realmente montado en el dispositivo
+        const hasNativeDsp = Boolean(recognizerRef.current && recognizerRef.current.isNativeDspAvailable());
+        if (selectedEngine === 'radar_edge' && hasNativeDsp) {
             setStatusMsg("Analizando huellas Zero-Copy en motor C++ y Edge Gateway (<1.75s)...");
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -389,56 +389,155 @@ export const ShazamWorkspace = ({
                 const binaryStr = atob(base64Data.split(',')[1] || base64Data);
                 const bytes = new Uint8Array(binaryStr.length);
                 for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                
+
                 const decodedBuffer = await tempCtx.decodeAudioData(bytes.buffer);
                 const channelData = decodedBuffer.getChannelData(0);
                 tempCtx.close();
 
-                await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
-                setIsAnalyzing(false);
-                return;
+                const ev = await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+                if (ev && ev.state === 'MATCH_CONFIRMED') {
+                    setIsAnalyzing(false);
+                    return;
+                }
+                // Si Fase 1 no confirma, continuar al pipeline REST omnichannel sin bloquear al DJ
             } catch (errDec) {
-                console.warn("Fallo decodificación local en WebAudio, recurriendo a API:", errDec);
+                console.warn("Decodificación WebAudio local falló, enrutando a REST omnichannel:", errDec);
             }
         }
-        const engineLabel = selectedEngine === 'radar_edge' ? 'Radar Edge C++' : selectedEngine === 'hybrid' ? 'Modo Híbrido' : selectedEngine === 'audd' ? 'Identificación Pro' : 'Escaneo Espectral Smart';
-        setStatusMsg(`Consultando huella acústica en [${engineLabel}]...`);
+
+        const effectiveMotor = (selectedEngine === 'radar_edge' && !hasNativeDsp) ? 'hybrid' : selectedEngine;
+        const engineLabel = selectedEngine === 'radar_edge'
+            ? (hasNativeDsp ? 'Radar Edge C++ -> Respaldo Híbrido' : 'Radar Omnichannel (Híbrido DSP)')
+            : selectedEngine === 'hybrid'
+                ? 'Modo Híbrido'
+                : selectedEngine === 'audd'
+                    ? 'Identificación Pro'
+                    : 'Escaneo Espectral Smart';
+
+        setStatusMsg(`Consultando huella acústica en [${engineLabel} • ${radarEnvironment.toUpperCase()}]...`);
 
         try {
-            let res = null;
-            // 1. Intento primario vía API HTTP directa (soporta hasta 50MB sin límites de WebSocket)
-            try {
-                const response = await fetch('/api/identificar_audio', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        audio_b64: base64Data,
-                        motor: selectedEngine,
-                        audd_token: auddToken,
-                        filename: filename
-                    })
-                });
-                if (response.ok) {
-                    res = await response.json();
-                }
-            } catch (httpErr) {
-                console.warn("HTTP /api/identificar_audio falló, recurriendo a Eel:", httpErr);
+            const response = await fetch('/api/identificar_audio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audio_b64: base64Data,
+                    motor: effectiveMotor,
+                    audd_token: auddToken,
+                    filename: filename,
+                    environment: radarEnvironment
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} al consultar /api/identificar_audio`);
             }
 
-            // 2. Respaldo vía puente Eel WebSockets
-            if (!res && window.eel && window.eel.identificar_audio_base64) {
-                try {
-                    res = await window.eel.identificar_audio_base64(base64Data, selectedEngine, auddToken, filename)();
-                } catch (eelErr) {
-                    console.warn("Eel RPC también falló:", eelErr);
-                }
-            }
-
-            handleRecognitionResponse(res);
+            const res = await response.json();
+            handleRecognitionResponse(res, Date.now() - startTime);
         } catch (err) {
-            console.error("Error en reconocimiento acústico:", err);
+            console.error("Error en reconocimiento acústico REST:", err);
             setStatusMsg("Error de comunicación con el motor de reconocimiento acústico: " + (err.message || String(err)));
             setIsAnalyzing(false);
+        }
+    };
+
+    const handleFileSelect = (file) => {
+        if (!file) return;
+        if (file.size > MAX_UPLOAD_BYTES) {
+            setStatusMsg(`⚠️ Archivo demasiado grande (${(file.size / (1024 * 1024)).toFixed(1)} MB). Límite seguro: 45 MB.`);
+            return;
+        }
+
+        setIsAnalyzing(true);
+        const hasNativeDsp = Boolean(recognizerRef.current && recognizerRef.current.isNativeDspAvailable());
+
+        if (selectedEngine === 'radar_edge' && hasNativeDsp) {
+            setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const arrayBuf = e.target.result;
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    const tempCtx = new AudioCtx();
+                    const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf.slice(0));
+                    const channelData = decodedBuffer.getChannelData(0);
+                    tempCtx.close();
+
+                    const ev = await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
+                    if (ev && ev.state === 'MATCH_CONFIRMED') {
+                        setIsAnalyzing(false);
+                        return;
+                    }
+                    // Respaldo automático al pipeline REST con el archivo íntegro
+                    const r2 = new FileReader();
+                    r2.onloadend = () => executeRecognition(r2.result, file.name);
+                    r2.readAsDataURL(file);
+                } catch (fileErr) {
+                    console.warn("Error decodificando archivo para Radar C++, enrutando a REST:", fileErr);
+                    const r2 = new FileReader();
+                    r2.onloadend = () => executeRecognition(r2.result, file.name);
+                    r2.readAsDataURL(file);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            return;
+        }
+
+        setStatusMsg(`Leyendo "${file.name}"...`);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            executeRecognition(reader.result, file.name);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleSelectFileFromModal = async (filePath) => {
+        setFsBrowserOpen(false);
+        if (!filePath) return;
+        try {
+            setStatusMsg(`Cargando audio desde ${filePath.split('/').pop()}...`);
+            setIsAnalyzing(true);
+            const resp = await fetch(`/api/stream_audio?path=${encodeURIComponent(filePath)}`);
+            if (resp.ok) {
+                const blob = await resp.blob();
+                const fileName = filePath.split('/').pop() || 'audio_file.mp3';
+                const file = new File([blob], fileName, { type: blob.type || 'audio/mpeg' });
+                handleFileSelect(file);
+            } else {
+                setStatusMsg("Error accediendo al archivo seleccionado.");
+                setIsAnalyzing(false);
+            }
+        } catch (e) {
+            console.error("Error al cargar archivo en Radar:", e);
+            setStatusMsg("Error al leer archivo de audio.");
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleImportarColeccionRadar = async (targetLibId = null) => {
+        setFsBrowserOpen(false);
+        const activeLib = (targetLibId && (customLibraries || []).find(l => l.id === targetLibId))
+            || (customLibraries || []).find(l => l.id === activeCustomLibId)
+            || (customLibraries && customLibraries[0]);
+        let foundTrack = null;
+        if (activeLib && activeLib.folders) {
+            for (const f of activeLib.folders) {
+                if (f.tracks && f.tracks.length > 0) {
+                    foundTrack = f.tracks[0];
+                    break;
+                }
+            }
+        }
+        if (foundTrack) {
+            const trackPath = foundTrack.path || foundTrack.filepath || foundTrack.f;
+            if (trackPath) {
+                handleSelectFileFromModal(trackPath);
+            } else {
+                setStatusMsg(`Pista "${foundTrack.title || 'Track'}" seleccionada sin ruta en disco.`);
+            }
+        } else {
+            setStatusMsg("La colección seleccionada no tiene pistas.");
         }
     };
 
@@ -446,32 +545,27 @@ export const ShazamWorkspace = ({
         if (isListening || isAnalyzing) return;
         setMicPermissionError(null);
 
-        // Si el usuario seleccionó modo hardware o si el navegador no tiene getUserMedia (origen HTTP IP, etc.)
-        const hasBrowserMic = typeof navigator !== 'undefined' && 
-                              Boolean(navigator.mediaDevices) && 
+        const hasBrowserMic = typeof navigator !== 'undefined' &&
+                              Boolean(navigator.mediaDevices) &&
                               typeof navigator.mediaDevices.getUserMedia === 'function';
 
         if (micCaptureMode === 'hardware' || !hasBrowserMic) {
-            console.log("Iniciando captura de micrófono de hardware...");
             startHardwareMicrophoneListening();
             return;
         }
 
         cancelListening();
-        setStatusMsg("Solicitando acceso al micrófono...");
+        setStatusMsg("Solicitando acceso al micrófono (señal pura sin filtros de voz)...");
 
         try {
-            // macOS / Safari / Chrome: autoGainControl en true para asegurar captación de música ambiental
-            // desactivando cancelación de eco y supresión de ruido para que no recorte frecuencias musicales.
+            // Desactivar DSP de voz WebRTC sin forzar channelCount:2 para compatibilidad total iOS/Android/macOS/Windows
             let stream;
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: false,
                         noiseSuppression: false,
-                        autoGainControl: true,
-                        channelCount: 2,
-                        sampleRate: 44100
+                        autoGainControl: false
                     }
                 });
             } catch (errStrict) {
@@ -485,32 +579,59 @@ export const ShazamWorkspace = ({
             setStatusMsg("Escuchando audio ambiental (10s)...");
 
             let maxRecordedLevel = 0;
-            let sumRecordedLevel = 0;
             let samplesRecordedCount = 0;
 
-            // Web Audio API para VU Meter en vivo
+            // Web Audio API: VU Meter RMS real en dominio temporal (compatible con Safari/iOS/Chrome/Firefox)
             try {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                 const audioCtx = new AudioContextClass();
                 audioCtxRef.current = audioCtx;
                 const source = audioCtx.createMediaStreamSource(stream);
                 const analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 64;
+                analyser.fftSize = 1024;
                 source.connect(analyser);
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const timeData = new Uint8Array(analyser.fftSize);
 
                 const updateMeter = () => {
-                    analyser.getByteFrequencyData(dataArray);
-                    let sum = 0;
-                    for (let i = 0; i < dataArray.length; i++) {
-                        sum += dataArray[i];
+                    analyser.getByteTimeDomainData(timeData);
+                    let sumSq = 0;
+                    let peak = 0;
+                    for (let i = 0; i < timeData.length; i++) {
+                        const norm = (timeData[i] - 128) / 128;
+                        sumSq += norm * norm;
+                        const absVal = Math.abs(norm);
+                        if (absVal > peak) peak = absVal;
                     }
-                    const avg = sum / dataArray.length;
-                    const curLvl = Math.min(100, Math.round((avg / 128) * 100));
+                    const rms = Math.sqrt(sumSq / timeData.length);
+                    const rmsDbfs = rms > 1e-5 ? 20 * Math.log10(rms) : -96.0;
+                    const peakDbfs = peak > 1e-5 ? 20 * Math.log10(peak) : -96.0;
+                    // Mapeo logarítmico -60 dBFS..0 dBFS -> 0..100%
+                    const curLvl = Math.max(0, Math.min(100, Math.round(((rmsDbfs + 60) / 60) * 100)));
                     setMicLevel(curLvl);
                     if (curLvl > maxRecordedLevel) maxRecordedLevel = curLvl;
-                    sumRecordedLevel += curLvl;
                     samplesRecordedCount += 1;
+
+                    if (samplesRecordedCount % 8 === 0) {
+                        setRadarEvent(prev => ({
+                            ...(prev || {}),
+                            state: 'CAPTURING',
+                            match: prev?.match || null,
+                            rho: prev?.rho || 1.0,
+                            pitchShiftSuspected: false,
+                            telemetry: {
+                                rmsDbfs: Number(rmsDbfs.toFixed(1)),
+                                peakDbfs: Number(peakDbfs.toFixed(1)),
+                                isClipping: peak >= 0.98,
+                                durationMs: 10000,
+                                sampleRate: audioCtx.sampleRate || 44100,
+                                environment: radarEnvironment,
+                                latencyMs: prev?.telemetry?.latencyMs || 0
+                            },
+                            message: 'Capturando señal ambiental sin compresión de voz...',
+                            timestamp: Date.now()
+                        }));
+                    }
+
                     animFrameRef.current = requestAnimationFrame(updateMeter);
                 };
                 updateMeter();
@@ -518,26 +639,35 @@ export const ShazamWorkspace = ({
                 console.warn("Web Audio VU meter no disponible:", e);
             }
 
-            let recorderOptions = { audioBitsPerSecond: 128000 };
-            let selectedMime = 'audio/webm';
-            if (typeof MediaRecorder.isTypeSupported === 'function') {
-                if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-                    selectedMime = 'audio/webm;codecs=opus';
-                } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-                    selectedMime = 'audio/webm';
-                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-                    selectedMime = 'audio/mp4';
-                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-                    selectedMime = 'audio/ogg';
+            // Selección de codec omnichannel (Chrome/Android WebM, iOS/macOS Safari MP4/AAC, Firefox OGG)
+            let recorderOptions = {};
+            let selectedMime = '';
+            const mimeCandidates = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/mp4;codecs=mp4a.40.2',
+                'audio/mp4',
+                'audio/ogg;codecs=opus',
+                'audio/ogg'
+            ];
+            if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+                for (const candidate of mimeCandidates) {
+                    if (MediaRecorder.isTypeSupported(candidate)) {
+                        selectedMime = candidate;
+                        break;
+                    }
                 }
             }
-            try {
-                recorderOptions.mimeType = selectedMime;
-            } catch (e) {
-                console.warn("No se pudo fijar mimeType estricto:", e);
+            if (selectedMime) {
+                recorderOptions = { mimeType: selectedMime, audioBitsPerSecond: 192000 };
             }
 
-            const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+            let mediaRecorder;
+            try {
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
+            } catch {
+                mediaRecorder = new MediaRecorder(stream);
+            }
             mediaRecorderRef.current = mediaRecorder;
             const chunks = [];
 
@@ -551,18 +681,18 @@ export const ShazamWorkspace = ({
                     animFrameRef.current = null;
                 }
                 if (audioCtxRef.current) {
-                    try { audioCtxRef.current.close(); } catch(e) {}
+                    try { audioCtxRef.current.close(); } catch (e) {}
                     audioCtxRef.current = null;
                 }
                 setMicLevel(0);
                 if (audioStreamRef.current) {
-                    try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch(e) {}
+                    try { audioStreamRef.current.getTracks().forEach(t => t.stop()); } catch (e) {}
                     audioStreamRef.current = null;
                 }
                 setIsListening(false);
 
                 if (chunks.length === 0) {
-                    setStatusMsg("⚠️ El micrófono web no capturó señal. Activando captura de hardware...");
+                    setStatusMsg("⚠️ El micrófono web no capturó señal. Activando captura vía API de hardware...");
                     startHardwareMicrophoneListening();
                     return;
                 }
@@ -571,7 +701,7 @@ export const ShazamWorkspace = ({
                     console.warn("Nivel de micro ambiental prácticamente nulo");
                 }
 
-                const actualMime = chunks[0]?.type || selectedMime || 'audio/webm';
+                const actualMime = chunks[0]?.type || mediaRecorder.mimeType || selectedMime || 'audio/webm';
                 const ext = actualMime.includes('mp4') ? 'm4a' : actualMime.includes('ogg') ? 'ogg' : 'webm';
                 const audioBlob = new Blob(chunks, { type: actualMime });
                 const reader = new FileReader();
@@ -581,7 +711,6 @@ export const ShazamWorkspace = ({
                 reader.readAsDataURL(audioBlob);
             };
 
-            // Transmitir paquetes cada 1.0s para asegurar que los chunks se acumulen limpiamente
             mediaRecorder.start(1000);
 
             let timeLeft = 10;
@@ -602,7 +731,7 @@ export const ShazamWorkspace = ({
         } catch (err) {
             console.error("Error acceso micrófono navegador:", err);
             setMicPermissionError(err.message || "Permiso denegado");
-            setStatusMsg("Micrófono del navegador bloqueado. Cambiando a captura por hardware de cabina...");
+            setStatusMsg("Micrófono del navegador bloqueado. Cambiando a captura por API de hardware...");
             setTimeout(() => {
                 startHardwareMicrophoneListening();
             }, 600);
@@ -614,9 +743,10 @@ export const ShazamWorkspace = ({
         cancelListening();
         setIsListening(true);
         setCountdown(7);
-        setStatusMsg("🎙️ Grabando desde el micrófono del sistema (Hardware 7s)...");
+        setStatusMsg("🎙️ Grabando desde el micrófono de hardware vía REST API (7s)...");
+        const startTime = Date.now();
 
-        let fakeMeterInterval = setInterval(() => {
+        const fakeMeterInterval = setInterval(() => {
             const fakeLvl = Math.floor(Math.random() * 45) + 30;
             setMicLevel(fakeLvl);
         }, 150);
@@ -637,21 +767,23 @@ export const ShazamWorkspace = ({
         }, 1000);
 
         try {
-            let res = null;
-            if (window.eel && typeof window.eel.grabar_microfono_shazam === 'function') {
-                res = await window.eel.grabar_microfono_shazam(7, selectedEngine, auddToken)();
-            } else {
-                const resp = await fetch('/api/shazam/record_mic', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ duration: 7, motor: selectedEngine, audd_token: auddToken })
-                });
-                if (resp.ok) {
-                    res = await resp.json();
-                } else {
-                    throw new Error(`HTTP ${resp.status}`);
-                }
+            const effectiveMotor = selectedEngine === 'radar_edge' ? 'hybrid' : selectedEngine;
+            const resp = await fetch('/api/shazam/record_mic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    duration: 7,
+                    motor: effectiveMotor,
+                    audd_token: auddToken,
+                    environment: radarEnvironment
+                })
+            });
+
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}`);
             }
+            const res = await resp.json();
+
             clearInterval(fakeMeterInterval);
             setMicLevel(0);
             setIsListening(false);
@@ -664,7 +796,7 @@ export const ShazamWorkspace = ({
                 setStatusMsg("⚠️ " + (res.msg || "Error en captura de audio."));
             } else {
                 setMicPermissionError(null);
-                handleRecognitionResponse(res);
+                handleRecognitionResponse(res, Date.now() - startTime);
             }
         } catch (hwErr) {
             clearInterval(fakeMeterInterval);
@@ -674,64 +806,9 @@ export const ShazamWorkspace = ({
                 clearInterval(timerRef.current);
                 timerRef.current = null;
             }
-            console.error("Error en captura por hardware:", hwErr);
+            console.error("Error en captura por hardware REST:", hwErr);
             setMicPermissionError("Permiso de micrófono no disponible");
-            setStatusMsg("⚠️ No se pudo acceder al micrófono. Revisa Ajustes de macOS > Privacidad > Micrófono o arrastra un archivo de audio.");
-        }
-    };
-
-    const handleFileSelect = (file) => {
-        if (!file) return;
-        setIsAnalyzing(true);
-        if (selectedEngine === 'radar_edge' && recognizerRef.current) {
-            setStatusMsg(`Analizando "${file.name}" en motor nativo BeatWave C++...`);
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const arrayBuf = e.target.result;
-                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                    const tempCtx = new AudioCtx();
-                    const decodedBuffer = await tempCtx.decodeAudioData(arrayBuf);
-                    const channelData = decodedBuffer.getChannelData(0);
-                    tempCtx.close();
-
-                    await recognizerRef.current.recognizeBuffer(channelData, decodedBuffer.sampleRate);
-                    setIsAnalyzing(false);
-                } catch (fileErr) {
-                    console.error("Error decodificando archivo para Radar C++:", fileErr);
-                    const r2 = new FileReader();
-                    r2.onloadend = () => executeRecognition(r2.result, file.name);
-                    r2.readAsDataURL(file);
-                }
-            };
-            reader.readAsArrayBuffer(file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file);
-            return;
-        }
-
-        setStatusMsg(`Leyendo "${file.name}"...`);
-        const fileToRead = file.size > 8 * 1024 * 1024 ? file.slice(0, 8 * 1024 * 1024) : file;
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            executeRecognition(reader.result, file.name);
-        };
-        reader.readAsDataURL(fileToRead);
-    };
-
-    const handleRecognitionResponse = (res) => {
-        setIsAnalyzing(false);
-        if (res && res.status === 'ok') {
-            const engineTag = res.motor_usado ? ` [vía ${res.motor_usado}]` : '';
-            const cacheTag = res.de_cache ? ' ⚡(Caché)' : '';
-            setStatusMsg(`✓ Identificado${engineTag}${cacheTag}: "${res.title}" por ${res.artist}`);
-            setIdentifiedTrack(res);
-            setHistory(prev => [res, ...prev.filter(item => item.title !== res.title || item.artist !== res.artist)]);
-            if (res.preview_url) {
-                togglePlayPreview(res.preview_url);
-            }
-        } else if (res && res.status === 'silence') {
-            setStatusMsg(res.msg || "⚠️ Micrófono en silencio o inaudible. Acerca la fuente de sonido y revisa Ajustes de macOS > Privacidad > Micrófono.");
-        } else {
-            setStatusMsg(res?.msg || "No se encontraron coincidencias para este fragmento de audio.");
+            setStatusMsg("⚠️ No se pudo acceder al micrófono de hardware. Revisa los permisos del sistema o arrastra un archivo de audio.");
         }
     };
 
@@ -782,7 +859,7 @@ export const ShazamWorkspace = ({
                 <div className="flex items-center gap-3">
                     <SectionTitle icon={Icons.Radar} title="Radar Acústico" accent="Drop Scanner" />
                     <span className="hidden sm:inline-flex px-2 py-0.5 text-[9.5px] font-mono font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 rounded">
-                        {selectedEngine === 'radar_edge' ? 'Radar Edge C++ (<1.75s)' : selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
+                        {selectedEngine === 'radar_edge' ? 'Radar Edge C++ / Auto-REST' : selectedEngine === 'hybrid' ? 'Híbrido Pro (Smart Drop)' : selectedEngine === 'audd' ? 'Identificación Acústica Pro' : 'Escaneo Espectral'}
                     </span>
                     <p className="hidden md:inline text-xs text-zinc-400 font-sans">
                         Identifica pistas desconocidas al instante escuchando con el micrófono o cargando archivos de audio.
@@ -807,7 +884,7 @@ export const ShazamWorkspace = ({
                             onClick={() => setSelectedEngine('radar_edge')}
                             className={`ws-seg-btn ${selectedEngine === 'radar_edge' ? 'ws-seg-on' : ''}`}
                             aria-pressed={selectedEngine === 'radar_edge'}
-                            title="Motor C++ Nativo (Zero-Copy) + Cloudflare Edge Gateway (<1.75s)"
+                            title="Motor C++ Nativo (JSI/N-API) + Cloudflare Edge Gateway con respaldo omnichannel REST automático"
                         >
                             <Icons.Zap size={13} className="text-pink-400" />
                             <span>Radar Edge C++</span>
@@ -980,7 +1057,7 @@ export const ShazamWorkspace = ({
                             onClick={() => { setMicCaptureMode('auto'); setMicPermissionError(null); }}
                             className={`ws-seg-btn ${micCaptureMode === 'auto' ? 'ws-seg-on' : ''}`}
                             aria-pressed={micCaptureMode === 'auto'}
-                            title="Auto: prueba primero el micrófono del navegador y si falla conmuta al hardware de sistema automáticamente"
+                            title="Auto: usa captura omnichannel WebAudio y conmuta a API de hardware si no está disponible"
                         >
                             Auto
                         </button>
@@ -989,7 +1066,7 @@ export const ShazamWorkspace = ({
                             onClick={() => { setMicCaptureMode('browser'); setMicPermissionError(null); }}
                             className={`ws-seg-btn ${micCaptureMode === 'browser' ? 'ws-seg-on' : ''}`}
                             aria-pressed={micCaptureMode === 'browser'}
-                            title="Micrófono Web (Navegador HTML5)"
+                            title="Micrófono Web Omnichannel (Web / iOS / Android / Desktop)"
                         >
                             Navegador
                         </button>
@@ -998,9 +1075,9 @@ export const ShazamWorkspace = ({
                             onClick={() => { setMicCaptureMode('hardware'); setMicPermissionError(null); }}
                             className={`ws-seg-btn ${micCaptureMode === 'hardware' ? 'ws-seg-on' : ''}`}
                             aria-pressed={micCaptureMode === 'hardware'}
-                            title="Micrófono de Hardware (macOS / FFmpeg directo sin restricciones de navegador)"
+                            title="Micrófono de Hardware en servidor local vía REST API"
                         >
-                            Hardware (macOS)
+                            Hardware (API)
                         </button>
                     </div>
 
@@ -1029,17 +1106,17 @@ export const ShazamWorkspace = ({
                                     <span>Micrófono de navegador restringido</span>
                                 </div>
                                 <p className="text-[10px] text-zinc-300 leading-tight">
-                                    • En la barra del navegador, haz clic en el <strong>icono del candado</strong> y cambia Micrófono a <strong>Permitir</strong>.
+                                    En la barra del navegador, haz clic en el <strong>icono del candado</strong> y cambia Micrófono a <strong>Permitir</strong>.
                                 </p>
                                 <p className="text-[10px] text-zinc-300 leading-tight">
-                                    • En macOS: <strong>Ajustes del Sistema &gt; Privacidad &gt; Micrófono</strong>.
+                                    En tu dispositivo: <strong>Ajustes &gt; Privacidad &gt; Micrófono</strong>.
                                 </p>
                                 <button
                                     type="button"
                                     onClick={startHardwareMicrophoneListening}
                                     className="ws-btn ws-btn-primary w-full justify-center mt-1"
                                 >
-                                    <Icons.Sliders size={14} /> Usar Captura Hardware de Sistema
+                                    <Icons.Sliders size={14} /> Usar Captura Hardware (REST API)
                                 </button>
                             </div>
                         )}
@@ -1099,7 +1176,7 @@ export const ShazamWorkspace = ({
                 </div>
 
                 {/* Módulo 2: Carga / Arrastre de Archivos */}
-                <div 
+                <div
                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={(e) => {
@@ -1124,18 +1201,18 @@ export const ShazamWorkspace = ({
                         </p>
                     </div>
 
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
+                    <input
+                        type="file"
+                        ref={fileInputRef}
                         onChange={(e) => {
                             if (e.target.files && e.target.files.length > 0) {
                                 const selected = e.target.files[0];
-                                e.target.value = ''; // Permite volver a seleccionar el mismo archivo en consultas consecutivas
+                                e.target.value = '';
                                 handleFileSelect(selected);
                             }
-                        }} 
-                        accept="audio/*" 
-                        className="hidden" 
+                        }}
+                        accept="audio/*"
+                        className="hidden"
                     />
 
                     <div className="my-3 w-32 h-28 rounded-xl border-2 border-dashed border-[var(--bw-line-strong)] group-hover:border-[var(--bw-cyan)] flex flex-col items-center justify-center transition-colors bg-[var(--bw-surface-2)]">
@@ -1221,9 +1298,9 @@ export const ShazamWorkspace = ({
                     <div className="flex flex-col md:flex-row items-center gap-6">
                         {/* Artwork con Reproductor DJ Integrado */}
                         <div className="relative group shrink-0">
-                            <img 
-                                src={getValidCover(identifiedTrack.cover)} 
-                                alt="Track Artwork" 
+                            <img
+                                src={getValidCover(identifiedTrack.cover)}
+                                alt="Track Artwork"
                                 className="w-40 h-40 rounded-xl object-cover border border-[var(--bw-line-strong)] shadow-xl"
                             />
                             {identifiedTrack.preview_url && (
@@ -1231,8 +1308,8 @@ export const ShazamWorkspace = ({
                                     type="button"
                                     onClick={() => togglePlayPreview(identifiedTrack.preview_url)}
                                     className={`absolute inset-0 m-auto w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer font-black text-base ${
-                                        previewPlaying 
-                                            ? 'bg-emerald-400 text-black scale-105' 
+                                        previewPlaying
+                                            ? 'bg-emerald-400 text-black scale-105'
                                             : 'bg-[var(--bw-cyan)] text-black hover:scale-105 shadow-[0_0_16px_rgba(34,211,238,0.45)]'
                                     }`}
                                     title="Reproducir pre-escucha de audio oficial"
@@ -1293,13 +1370,13 @@ export const ShazamWorkspace = ({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Icons.MessageSquare size={14} className="text-zinc-400 shrink-0" />
-                                    <input 
-                                        type="text" 
-                                        value={identifiedTrack.comment || identifiedTrack.comentario || ''} 
+                                    <input
+                                        type="text"
+                                        value={identifiedTrack.comment || identifiedTrack.comentario || ''}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             setIdentifiedTrack(prev => ({ ...prev, comment: val, comentario: val }));
-                                        }} 
+                                        }}
                                         placeholder="Escribe aquí el comentario estratégico para cabina..."
                                         className="flex-1 bg-[var(--bw-surface-2)] border border-[var(--bw-line-strong)] focus:border-cyan-400 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-200 outline-none transition-colors"
                                     />
@@ -1414,7 +1491,7 @@ export const ShazamWorkspace = ({
                             onClick={handleExportarNotebookXLS}
                             disabled={notebookTracks.length === 0}
                             className="ws-btn ws-btn-outline"
-                            title="Descargar listado en formato Excel (.xls / .xlsx)"
+                            title="Descargar listado en formato Excel (.xls)"
                         >
                             <Icons.Excel size={14} />
                             <span>Descargar XLS</span>
@@ -1515,9 +1592,9 @@ export const ShazamWorkspace = ({
                                             <td className="text-center ws-num">{row.year || '--'}</td>
                                             <td>
                                                 <div className="flex items-center gap-1.5 max-w-[260px]">
-                                                    <input 
-                                                        type="text" 
-                                                        value={row.comment || row.comentario || ''} 
+                                                    <input
+                                                        type="text"
+                                                        value={row.comment || row.comentario || ''}
                                                         onChange={(e) => {
                                                             const val = e.target.value;
                                                             setNotebookTracks(prev => prev.map((t, i) => i === idx ? { ...t, comment: val, comentario: val } : t));
@@ -1576,13 +1653,13 @@ export const ShazamWorkspace = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {history.map((trk, hIdx) => (
-                            <div 
-                                key={hIdx} 
+                            <div
+                                key={hIdx}
                                 className="ws-card p-3 flex items-center gap-3"
                             >
-                                <img 
-                                    src={getValidCover(trk.cover)} 
-                                    alt="" 
+                                <img
+                                    src={getValidCover(trk.cover)}
+                                    alt=""
                                     className="w-12 h-12 rounded-lg object-cover border border-[var(--bw-line-strong)] shrink-0"
                                 />
                                 <div className="min-w-0 flex-1">
@@ -1621,6 +1698,7 @@ export const ShazamWorkspace = ({
                     </div>
                 </div>
             )}
+
             {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
             <UnifiedLibraryBrowserModal
                 isOpen={fsBrowserOpen}
@@ -1635,4 +1713,3 @@ export const ShazamWorkspace = ({
         </div>
     );
 };
-
