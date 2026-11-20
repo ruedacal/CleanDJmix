@@ -13490,7 +13490,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         disabled: tracks.length === 0,
         busy: isExporting || isInjecting,
         onSyncAll: handleSincronizarPasaporteUniversal,
-        onSaveTags: handleGuardarTodoEnFicheros,
+        onSaveTags: handleSolicitarGuardarTodo,
         targets: [
           { id: "rekordbox", label: "Rekordbox", ext: ".XML", desc: "Hot Cues A\u2013H y beatgrid", Logo: PlatformRekordboxLogo, onClick: handleExportarRekordboxXml },
           { id: "serato", label: "Serato DJ Pro", ext: "CRATES", desc: "Markers2, BPM y key en tags", Logo: PlatformSeratoLogo, onClick: handleExportarSerato },
@@ -14776,7 +14776,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         "button",
         {
           type: "button",
-          onClick: handleGuardarTodoEnFicheros,
+          onClick: () => handleSolicitarGuardarTodo(),
           disabled: isInjecting,
           className: "px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95",
           title: "Persistir cambios f\xEDsicamente en disco"
@@ -14929,6 +14929,123 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           setSidebarOpen(true);
         }
       }
+    ), saveModalState.open && /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn",
+        onClick: () => setSaveModalState((prev) => ({ ...prev, open: false }))
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bg-[#0f0f18] border border-emerald-500/40 rounded-2xl w-full max-w-xl shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col",
+          onClick: (e) => e.stopPropagation()
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-gradient-to-r from-emerald-950 via-[#0a1810] to-zinc-950 border-b border-emerald-800/40 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center text-emerald-300 shadow-md" }, /* @__PURE__ */ React.createElement(Icons.Save, { size: 18 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-white text-base tracking-wide flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", null, "GUARDAR METADATOS EN DISCO"), /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700" }, saveModalState.tracks.length, " ", saveModalState.tracks.length === 1 ? "pista" : "pistas")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-emerald-300/80 font-mono mt-0.5" }, "Revisa los campos ID3v2.3 / Vorbis que se escribir\xE1n directamente en los archivos f\xEDsicos"))), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setSaveModalState((prev) => ({ ...prev, open: false })),
+            className: "w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer transition-colors"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Close, { size: 14 })
+        )),
+        /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-[#0a0a12] border-b border-zinc-800 space-y-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 font-mono" }, /* @__PURE__ */ React.createElement("span", null, "CAMPOS A SOBREESCRIBIR EN DISCO:"), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              const allOn = Object.values(saveModalState.fields).every(Boolean);
+              setSaveModalState((prev) => ({
+                ...prev,
+                fields: {
+                  bpm: !allOn,
+                  key: !allOn,
+                  cues: !allOn,
+                  comment: !allOn,
+                  genre_mood: !allOn,
+                  cover: !allOn
+                }
+              }));
+            },
+            className: "text-emerald-400 hover:underline cursor-pointer"
+          },
+          Object.values(saveModalState.fields).every(Boolean) ? "Deseleccionar todos" : "Seleccionar todos"
+        )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("label", { className: `p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.bpm ? "bg-emerald-950/30 border-emerald-500/50 text-white" : "bg-zinc-900/50 border-zinc-800 text-gray-400"}` }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: saveModalState.fields.bpm,
+            onChange: (e) => setSaveModalState((p) => ({ ...p, fields: { ...p.fields, bpm: e.target.checked } })),
+            className: "accent-emerald-500 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Activity, { size: 13, className: "text-emerald-400" }), " BPM & Beatgrid"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 font-sans truncate" }, "Tempo cuantizado y BeatGrid Serato"))), /* @__PURE__ */ React.createElement("label", { className: `p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.key ? "bg-emerald-950/30 border-emerald-500/50 text-white" : "bg-zinc-900/50 border-zinc-800 text-gray-400"}` }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: saveModalState.fields.key,
+            onChange: (e) => setSaveModalState((p) => ({ ...p, fields: { ...p.fields, key: e.target.checked } })),
+            className: "accent-emerald-500 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 13, className: "text-purple-400" }), " Tonalidad Arm\xF3nica"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 font-sans truncate" }, "Notaci\xF3n Camelot (TKEY / INITIALKEY)"))), /* @__PURE__ */ React.createElement("label", { className: `p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.cues ? "bg-emerald-950/30 border-emerald-500/50 text-white" : "bg-zinc-900/50 border-zinc-800 text-gray-400"}` }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: saveModalState.fields.cues,
+            onChange: (e) => setSaveModalState((p) => ({ ...p, fields: { ...p.fields, cues: e.target.checked } })),
+            className: "accent-emerald-500 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Play, { size: 13, className: "text-amber-400" }), " Hot Cues (1\u20138)"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 font-sans truncate" }, "Serato Markers2 oficial y colores"))), /* @__PURE__ */ React.createElement("label", { className: `p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.comment ? "bg-emerald-950/30 border-emerald-500/50 text-white" : "bg-zinc-900/50 border-zinc-800 text-gray-400"}` }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: saveModalState.fields.comment,
+            onChange: (e) => setSaveModalState((p) => ({ ...p, fields: { ...p.fields, comment: e.target.checked } })),
+            className: "accent-emerald-500 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.FileText, { size: 13, className: "text-cyan-400" }), " Comentario T\xE1ctico"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 font-sans truncate" }, "Mix arm\xF3nico y estructura (COMM)"))), /* @__PURE__ */ React.createElement("label", { className: `p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.genre_mood ? "bg-emerald-950/30 border-emerald-500/50 text-white" : "bg-zinc-900/50 border-zinc-800 text-gray-400"}` }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: saveModalState.fields.genre_mood,
+            onChange: (e) => setSaveModalState((p) => ({ ...p, fields: { ...p.fields, genre_mood: e.target.checked } })),
+            className: "accent-emerald-500 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 13, className: "text-pink-400" }), " Taxonom\xEDa & Mood"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 font-sans truncate" }, "Genre, Grouping (Mood) y Subg\xE9nero"))), /* @__PURE__ */ React.createElement("label", { className: `p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.cover ? "bg-emerald-950/30 border-emerald-500/50 text-white" : "bg-zinc-900/50 border-zinc-800 text-gray-400"}` }, /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: saveModalState.fields.cover,
+            onChange: (e) => setSaveModalState((p) => ({ ...p, fields: { ...p.fields, cover: e.target.checked } })),
+            className: "accent-emerald-500 rounded"
+          }
+        ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Image, { size: 13, className: "text-blue-400" }), " Car\xE1tula 1:1 HD"), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 font-sans truncate" }, "Incrustar Artwork cuadrado en tags"))))),
+        /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-[#0d0d16] border-b border-zinc-800 max-h-40 overflow-y-auto space-y-1.5 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex justify-between" }, /* @__PURE__ */ React.createElement("span", null, "MUESTRA DE ARCHIVOS OBJETIVO:"), /* @__PURE__ */ React.createElement("span", null, "Mostrando ", Math.min(5, saveModalState.tracks.length), " de ", saveModalState.tracks.length)), saveModalState.tracks.slice(0, 5).map((t2, idx) => /* @__PURE__ */ React.createElement("div", { key: t2.id || idx, className: "flex items-center justify-between p-2 rounded bg-zinc-900/70 border border-zinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 pr-2" }, /* @__PURE__ */ React.createElement("div", { className: "text-white font-bold truncate" }, t2.title || t2.t || t2.f), /* @__PURE__ */ React.createElement("div", { className: "text-[11px] text-gray-400 truncate" }, t2.artist || t2.a, " \u2022 ", t2.format || "FLAC")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 shrink-0 text-[11px]" }, t2.bpm && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-800 text-emerald-400 font-bold" }, t2.bpm, " BPM"), t2.key && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-800 text-purple-300 font-bold" }, t2.key))))),
+        /* @__PURE__ */ React.createElement("div", { className: "px-4 py-3 bg-[#0a120e] border-b border-emerald-950/60 flex items-center gap-2.5 text-xs text-emerald-300/90 font-mono" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "text-emerald-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", null, "Escritura segura no destructiva. El audio PCM original permanece intacto y la cach\xE9 SQLite se sincroniza autom\xE1ticamente.")),
+        /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-[#0f0f18] flex items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => setSaveModalState((prev) => ({ ...prev, open: false })),
+            className: "px-4 py-2 rounded-xl text-xs font-bold font-mono bg-zinc-800 hover:bg-zinc-700 text-gray-300 cursor-pointer transition-colors"
+          },
+          "Cancelar"
+        ), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              const targetTracks = saveModalState.tracks;
+              const targetFields = saveModalState.fields;
+              setSaveModalState((prev) => ({ ...prev, open: false }));
+              handleGuardarTodoEnFicheros(targetTracks, targetFields);
+            },
+            className: "px-5 py-2 rounded-xl text-xs font-black font-sans bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+          },
+          /* @__PURE__ */ React.createElement(Icons.Save, { size: 14 }),
+          /* @__PURE__ */ React.createElement("span", null, "Confirmar y Guardar (", saveModalState.tracks.length, " pistas)")
+        ))
+      )
     ), deleteModalState.open && /* @__PURE__ */ React.createElement(
       "div",
       {

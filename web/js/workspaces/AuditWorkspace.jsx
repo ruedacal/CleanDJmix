@@ -3619,7 +3619,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                             disabled={tracks.length === 0}
                             busy={isExporting || isInjecting}
                             onSyncAll={handleSincronizarPasaporteUniversal}
-                            onSaveTags={handleGuardarTodoEnFicheros}
+                            onSaveTags={handleSolicitarGuardarTodo}
                             targets={[
                                 { id: 'rekordbox', label: 'Rekordbox', ext: '.XML', desc: 'Hot Cues A–H y beatgrid', Logo: PlatformRekordboxLogo, onClick: handleExportarRekordboxXml },
                                 { id: 'serato', label: 'Serato DJ Pro', ext: 'CRATES', desc: 'Markers2, BPM y key en tags', Logo: PlatformSeratoLogo, onClick: handleExportarSerato },
@@ -5948,7 +5948,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         {/* Guardar en Disco */}
                         <button 
                             type="button"
-                            onClick={handleGuardarTodoEnFicheros}
+                            onClick={() => handleSolicitarGuardarTodo()}
                             disabled={isInjecting}
                             className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95"
                             title="Persistir cambios físicamente en disco"
@@ -6198,6 +6198,211 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         setSidebarOpen(true);
                     }}
                 />
+            )}
+
+            {/* 💾 Modal de Diálogo Previo de Confirmación para Guardado de Metadatos */}
+            {saveModalState.open && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn"
+                    onClick={() => setSaveModalState(prev => ({ ...prev, open: false }))}
+                >
+                    <div 
+                        className="bg-[#0f0f18] border border-emerald-500/40 rounded-2xl w-full max-w-xl shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Cabecera */}
+                        <div className="p-4 bg-gradient-to-r from-emerald-950 via-[#0a1810] to-zinc-950 border-b border-emerald-800/40 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center text-emerald-300 shadow-md">
+                                    <Icons.Save size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="font-syne font-black text-white text-base tracking-wide flex items-center gap-2">
+                                        <span>GUARDAR METADATOS EN DISCO</span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
+                                            {saveModalState.tracks.length} {saveModalState.tracks.length === 1 ? 'pista' : 'pistas'}
+                                        </span>
+                                    </h3>
+                                    <p className="text-xs text-emerald-300/80 font-mono mt-0.5">
+                                        Revisa los campos ID3v2.3 / Vorbis que se escribirán directamente en los archivos físicos
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setSaveModalState(prev => ({ ...prev, open: false }))}
+                                className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer transition-colors"
+                            >
+                                <Icons.Close size={14} />
+                            </button>
+                        </div>
+
+                        {/* Checklist de Campos a Persistir */}
+                        <div className="p-4 bg-[#0a0a12] border-b border-zinc-800 space-y-2">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 font-mono">
+                                <span>CAMPOS A SOBREESCRIBIR EN DISCO:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const allOn = Object.values(saveModalState.fields).every(Boolean);
+                                        setSaveModalState(prev => ({
+                                            ...prev,
+                                            fields: {
+                                                bpm: !allOn,
+                                                key: !allOn,
+                                                cues: !allOn,
+                                                comment: !allOn,
+                                                genre_mood: !allOn,
+                                                cover: !allOn
+                                            }
+                                        }));
+                                    }}
+                                    className="text-emerald-400 hover:underline cursor-pointer"
+                                >
+                                    {Object.values(saveModalState.fields).every(Boolean) ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                                {/* BPM */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.bpm ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.bpm} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, bpm: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Activity size={13} className="text-emerald-400" /> BPM & Beatgrid</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Tempo cuantizado y BeatGrid Serato</p>
+                                    </div>
+                                </label>
+
+                                {/* Key Camelot */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.key ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.key} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, key: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Music size={13} className="text-purple-400" /> Tonalidad Armónica</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Notación Camelot (TKEY / INITIALKEY)</p>
+                                    </div>
+                                </label>
+
+                                {/* Hot Cues */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.cues ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.cues} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, cues: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Play size={13} className="text-amber-400" /> Hot Cues (1–8)</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Serato Markers2 oficial y colores</p>
+                                    </div>
+                                </label>
+
+                                {/* Comentario */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.comment ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.comment} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, comment: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.FileText size={13} className="text-cyan-400" /> Comentario Táctico</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Mix armónico y estructura (COMM)</p>
+                                    </div>
+                                </label>
+
+                                {/* Género & Mood */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.genre_mood ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.genre_mood} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, genre_mood: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Sliders size={13} className="text-pink-400" /> Taxonomía & Mood</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Genre, Grouping (Mood) y Subgénero</p>
+                                    </div>
+                                </label>
+
+                                {/* Carátula */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.cover ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.cover} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, cover: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Image size={13} className="text-blue-400" /> Carátula 1:1 HD</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Incrustar Artwork cuadrado en tags</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Muestra previa de pistas afectadas */}
+                        <div className="p-4 bg-[#0d0d16] border-b border-zinc-800 max-h-40 overflow-y-auto space-y-1.5 font-mono text-xs">
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex justify-between">
+                                <span>MUESTRA DE ARCHIVOS OBJETIVO:</span>
+                                <span>Mostrando {Math.min(5, saveModalState.tracks.length)} de {saveModalState.tracks.length}</span>
+                            </div>
+                            {saveModalState.tracks.slice(0, 5).map((t, idx) => (
+                                <div key={t.id || idx} className="flex items-center justify-between p-2 rounded bg-zinc-900/70 border border-zinc-800/80">
+                                    <div className="min-w-0 flex-1 pr-2">
+                                        <div className="text-white font-bold truncate">{t.title || t.t || t.f}</div>
+                                        <div className="text-[11px] text-gray-400 truncate">{t.artist || t.a} • {t.format || 'FLAC'}</div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0 text-[11px]">
+                                        {t.bpm && <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-emerald-400 font-bold">{t.bpm} BPM</span>}
+                                        {t.key && <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-purple-300 font-bold">{t.key}</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Aviso de Seguridad No Destructiva */}
+                        <div className="px-4 py-3 bg-[#0a120e] border-b border-emerald-950/60 flex items-center gap-2.5 text-xs text-emerald-300/90 font-mono">
+                            <Icons.Check size={14} className="text-emerald-400 shrink-0" />
+                            <span>
+                                Escritura segura no destructiva. El audio PCM original permanece intacto y la caché SQLite se sincroniza automáticamente.
+                            </span>
+                        </div>
+
+                        {/* Botones de Acción */}
+                        <div className="p-4 bg-[#0f0f18] flex items-center justify-between gap-3">
+                            <button 
+                                type="button"
+                                onClick={() => setSaveModalState(prev => ({ ...prev, open: false }))}
+                                className="px-4 py-2 rounded-xl text-xs font-bold font-mono bg-zinc-800 hover:bg-zinc-700 text-gray-300 cursor-pointer transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    const targetTracks = saveModalState.tracks;
+                                    const targetFields = saveModalState.fields;
+                                    setSaveModalState(prev => ({ ...prev, open: false }));
+                                    handleGuardarTodoEnFicheros(targetTracks, targetFields);
+                                }}
+                                className="px-5 py-2 rounded-xl text-xs font-black font-sans bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+                            >
+                                <Icons.Save size={14} />
+                                <span>Confirmar y Guardar ({saveModalState.tracks.length} pistas)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* 🗑️ Modal de Confirmación de Eliminación de Pistas (Seguridad DJ de Cabina) */}
