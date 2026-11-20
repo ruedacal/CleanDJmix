@@ -687,6 +687,8 @@ export const AuditWorkspace = ({
     const tapTimesRef = useRef([]);
     // PERF: ref del contenedor scrollable de la tabla para virtualización de filas
     const tableScrollRef = useRef(null);
+    const isProcessCancelledRef = useRef(false);
+    const activeAbortControllerRef = useRef(null);
 
     // UX CABINA: Estado de colapso de las 8 tarjetas de métricas (maximiza espacio vertical para ver más pistas y waveforms)
     const [metricsCollapsed, setMetricsCollapsed] = useState(() => {
@@ -804,18 +806,26 @@ export const AuditWorkspace = ({
     // Polling redundante de alta precisión para barra de progreso (/api/audit/progress)
     const startProgressPolling = () => {
         if (window._bw_audit_poll) clearInterval(window._bw_audit_poll);
+        isProcessCancelledRef.current = false;
         window._bw_audit_poll = setInterval(async () => {
+            if (isProcessCancelledRef.current) return;
             try {
                 const res = await fetch('/api/audit/progress');
+                if (isProcessCancelledRef.current) return;
                 if (res.ok) {
                     const data = await res.json();
+                    if (isProcessCancelledRef.current) return;
                     if (data && typeof data.pct === 'number') {
                         if (data.pct > 0) {
                             setBatchProgress(data.pct);
                             if (data.msg) setBatchStatusMsg(data.msg);
                             if (data.pct >= 100) {
-                                clearInterval(window._bw_audit_poll);
-                                window._bw_audit_poll = null;
+                                stopProgressPolling();
+                            }
+                        } else if (data.pct === 0 && !data.active) {
+                            if (isProcessCancelledRef.current) {
+                                stopProgressPolling();
+                                setBatchProgress(0);
                             }
                         }
                     }
@@ -2347,17 +2357,27 @@ export const AuditWorkspace = ({
     };
 
     const handleGuardarTodoEnFicheros = async () => {
-        if (!tracks || tracks.length === 0) {
+        const targetTracks = (selectedAuditIds && selectedAuditIds.size > 0)
+            ? tracks.filter(t => selectedAuditIds.has(t.id))
+            : tracks;
+
+        if (!targetTracks || targetTracks.length === 0) {
             alert("No hay pistas cargadas para guardar.");
             return;
         }
+
+        isProcessCancelledRef.current = false;
+        activeAbortControllerRef.current = new AbortController();
+        const signal = activeAbortControllerRef.current.signal;
+
         setIsInjecting(true);
         setBatchProgress(5);
-        setBatchStatusMsg(`Guardando todos los metadatos en ${tracks.length} archivos físicos...`);
+        setBatchStatusMsg(`Guardando todos los metadatos en ${targetTracks.length} archivos físicos...`);
         startProgressPolling();
+
         try {
             // Sanitizar carga útil para transferencias HTTP ultraligeras y seguras (sin buffers de audio pesados)
-            const sanitizedTracks = tracks.map(t => ({
+            const sanitizedTracks = targetTracks.map(t => ({
                 id: t.id,
                 path: t.path || t.filepath || t.f || '',
                 filename: t.filename || t.f || '',
@@ -2384,20 +2404,22 @@ export const AuditWorkspace = ({
                 modo_rapido: true
             }));
 
-            let res = null;
-            if (window.eel && window.eel.inyectar_lote_metadatos) {
-                res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
-            } else {
-                const response = await fetch('/api/metadata/save_batch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tracks: sanitizedTracks })
-                });
-                const data = await response.json();
-                res = data.result || data;
-            }
+            // REST API con soporte nativo de AbortSignal y sin límite de tamaño de websocket (cross-platform compatible)
+            const response = await fetch('/api/metadata/save_batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tracks: sanitizedTracks }),
+                signal
+            });
+
+            if (isProcessCancelledRef.current) return;
+
+            const data = await response.json();
+            const res = data.result || data;
 
             stopProgressPolling();
+            if (isProcessCancelledRef.current) return;
+
             setBatchProgress(100);
             if (res && (res.status === 'ok' || res.inyectados > 0)) {
                 setBatchStatusMsg(`✓ Guardado completo: ${res.inyectados} archivos actualizados en disco con éxito.`);
@@ -2409,9 +2431,15 @@ export const AuditWorkspace = ({
                 setBatchStatusMsg("Error durante el guardado de archivos.");
             }
         } catch (e) {
-            console.error("Error al guardar todo en ficheros:", e);
-            setBatchStatusMsg("Error al guardar metadatos.");
+            if (e.name === 'AbortError' || isProcessCancelledRef.current) {
+                console.log("Guardado abortado por el usuario.");
+                setBatchStatusMsg("Proceso cancelado por el usuario.");
+            } else {
+                console.error("Error al guardar todo en ficheros:", e);
+                setBatchStatusMsg("Error al guardar metadatos.");
+            }
         } finally {
+            activeAbortControllerRef.current = null;
             stopProgressPolling();
             setTimeout(() => {
                 setIsInjecting(false);
@@ -2444,7 +2472,12 @@ export const AuditWorkspace = ({
     };
 
     const handleCancelarProceso = async () => {
+        isProcessCancelledRef.current = true;
         stopProgressPolling();
+        if (activeAbortControllerRef.current) {
+            try { activeAbortControllerRef.current.abort(); } catch (_) {}
+            activeAbortControllerRef.current = null;
+        }
         setIsAuditPaused(false);
         setIsAuditing(false);
         setIsLoadingDir(false);
@@ -2456,16 +2489,18 @@ export const AuditWorkspace = ({
             onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
         }
         try {
-            await fetch('/api/cancelar_procesos', { method: 'POST' });
+            fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
         } catch (e) {}
         if (window.eel && window.eel.cancelar_procesos_activos) {
             try {
-                await window.eel.cancelar_procesos_activos()();
-            } catch (e) {
-                console.error("Error al cancelar procesos:", e);
-            }
+                window.eel.cancelar_procesos_activos()();
+            } catch (e) {}
         }
-        setTimeout(() => setBatchStatusMsg(''), 2000);
+        setTimeout(() => {
+            if (isProcessCancelledRef.current) {
+                setBatchStatusMsg('');
+            }
+        }, 2000);
     };
 
     // Estado de Ordenación y Filtros por Cabecera de Tabla

@@ -5,17 +5,23 @@ y el análisis DSP Clean-Room (Anti-Muddy, Armonía y Sonoridad).
 Formatea el estado para compatibilidad con la UI de CopilotWorkspace (Desktop & PWA).
 """
 
+
+import base64
+import io
+import os
+import re
 import socket
+import struct
 import threading
 import time
-import os
-from typing import Dict, List, Optional, Any
+import unicodedata
+from typing import Any, Dict, List, Optional
 
-from services.copilot.models import DeckState, LiveSessionState, ClashAlert
-from services.copilot.prodjlink import ProDJLinkReceiver
-from services.copilot.os2l import OS2LReceiver
-from services.copilot.library_reader import LibraryReader
 from services.copilot.dsp_cleanroom import DSPCleanRoomEngine
+from services.copilot.library_reader import LibraryReader
+from services.copilot.models import ClashAlert, DeckState, LiveSessionState
+from services.copilot.os2l import OS2LReceiver
+from services.copilot.prodjlink import ProDJLinkReceiver
 
 
 CAMELOT_PALETTE = {
@@ -26,6 +32,13 @@ CAMELOT_PALETTE = {
     "5B": "#a5b4fc", "6B": "#c4b5fd", "7B": "#ddd6fe", "8B": "#f0abfc",
     "9B": "#f43f5e", "10B": "#fb923c", "11B": "#facc15", "12B": "#a3e635"
 }
+
+# Mapa verificado por captura CoreMIDI real sobre Numark NV II (NV mkII Control)
+NV2_CHANNEL_TO_DECK: Dict[int, int] = {1: 1, 2: 2, 3: 3, 4: 4}
+NV2_NOTE_CUE: int = 32           # 0x20
+NV2_NOTE_PLAY: int = 33          # 0x21
+NV2_HOT_CUE_BASE_NOTE: int = 71  # 0x47 (Pads 1..8 -> notas 71..78)
+NV2_HOT_CUE_COUNT: int = 8
 
 
 class CopilotEngine:
@@ -38,67 +51,280 @@ class CopilotEngine:
     ]
 
     @staticmethod
-    def _extract_serato_markers_cues(fpath: str) -> List[Dict[str, Any]]:
-        """Extrae los hot cues oficiales con sus nombres, marcas temporales exactas (ms) y colores de Serato Markers v2."""
-        cues = []
-        if not fpath or not os.path.exists(fpath):
+    def _resolve_audio_path(raw_path: str) -> Optional[str]:
+        """Resuelve rutas absolutas y normalización Unicode NFC/NFD en macOS APFS."""
+        if not raw_path:
+            return None
+        normalized_abs = "/" + raw_path.lstrip("/")
+        candidates = (
+            raw_path,
+            normalized_abs,
+            unicodedata.normalize("NFC", normalized_abs),
+            unicodedata.normalize("NFD", normalized_abs),
+        )
+        for candidate in candidates:
+            if os.path.isfile(candidate):
+                return candidate
+        return None
+
+    @staticmethod
+    def _decode_base64_clean(raw: bytes) -> bytes:
+        """Limpia saltos de línea, espacios y nulos antes de calcular el padding Base64."""
+        trimmed = raw.split(b"\x00", 1)[0]
+        cleaned = re.sub(rb"[^A-Za-z0-9+/=]", b"", trimmed).rstrip(b"=")
+        if not cleaned:
+            return b""
+        pad = (-len(cleaned)) % 4
+        return base64.b64decode(cleaned + (b"=" * pad))
+
+    @staticmethod
+    def _parse_serato_markers2_tlv(payload: bytes) -> List[Dict[str, Any]]:
+        """Parsea secuencialmente registros TLV binarios de Serato Markers2."""
+        cues: List[Dict[str, Any]] = []
+        if not payload:
             return cues
-        try:
-            import mutagen, base64, struct
-            f = mutagen.File(fpath)
-            if not f:
-                return cues
-            val = f.get('serato_markers_v2') or f.get('Serato Markers2')
-            if not val and hasattr(f, 'tags') and f.tags:
-                for k in f.tags.keys():
-                    if 'marker' in k.lower():
-                        val = f.tags.get(k)
-                        break
-            if not val:
-                return cues
 
-            s = val[0] if isinstance(val, list) else (val.data if hasattr(val, 'data') else val)
-            if isinstance(s, bytes):
-                if b'application/octet-stream' in s:
-                    s = s.split(b'\x00')[-1].decode('latin1', errors='ignore')
-                else:
-                    s = s.decode('latin1', errors='ignore')
-            s = s.replace('\n', '').strip()
-            s += '=' * ((4 - len(s) % 4) % 4)
-            dec1 = base64.b64decode(s)
-            b64_start = dec1.find(b'AQF')
-            if b64_start == -1:
-                return cues
-            inner = dec1[b64_start:]
-            dec2 = base64.b64decode(inner + b'=' * ((4 - len(inner) % 4) % 4))
+        data = payload[2:] if payload.startswith(b"\x01\x01") else payload
+        offset = 0
+        total = len(data)
 
-            idx = 0
-            while True:
-                pos = dec2.find(b'CUE\x00', idx)
-                if pos == -1 or pos + 8 > len(dec2):
-                    break
-                cdata_len = struct.unpack('>I', dec2[pos+4:pos+8])[0]
-                cdata = dec2[pos+8:pos+8+cdata_len]
-                if len(cdata) >= 12:
-                    cid = cdata[1]
-                    pos_ms = struct.unpack('>I', cdata[2:6])[0]
-                    r, g, b = cdata[7], cdata[8], cdata[9]
-                    color = f'#{r:02x}{g:02x}{b:02x}'
-                    name = cdata[12:].split(b'\x00')[0].decode('utf-8', errors='ignore').strip()
-                    pos_sec = round(pos_ms / 1000.0, 3)
-                    cues.append({
-                        'id': cid + 1,
-                        'cid': cid,
-                        'name': name or f"Cue {cid + 1}",
-                        'color': color,
-                        'pos_ms': pos_ms,
-                        'pos_sec': pos_sec,
-                        'time': f"{int(pos_ms // 60000):02d}:{(pos_ms % 60000) / 1000.0:05.2f}"
-                    })
-                idx = pos + 8 + cdata_len
-        except Exception:
-            pass
+        while offset < total:
+            null_idx = data.find(b"\x00", offset)
+            if null_idx <= offset:
+                break
+            entry_type = data[offset:null_idx].decode("ascii", errors="ignore")
+            offset = null_idx + 1
+            if offset + 4 > total:
+                break
+            entry_len = struct.unpack(">I", data[offset : offset + 4])[0]
+            offset += 4
+            if offset + entry_len > total:
+                break
+            cdata = data[offset : offset + entry_len]
+            offset += entry_len
+
+            if entry_type == "CUE" and len(cdata) >= 12:
+                cid = cdata[1]
+                pos_ms = struct.unpack(">I", cdata[2:6])[0]
+                r, g, b = cdata[7], cdata[8], cdata[9]
+                color = f"#{r:02x}{g:02x}{b:02x}"
+                name = cdata[12:].split(b"\x00", 1)[0].decode("utf-8", errors="ignore").strip()
+                pos_sec = round(pos_ms / 1000.0, 3)
+                cues.append({
+                    "id": cid + 1,
+                    "cid": cid,
+                    "name": name or f"Cue {cid + 1}",
+                    "color": color,
+                    "pos_ms": pos_ms,
+                    "pos_sec": pos_sec,
+                    "time": f"{int(pos_ms // 60000):02d}:{(pos_ms % 60000) / 1000.0:05.2f}"
+                })
+
+        cues.sort(key=lambda item: item["cid"])
         return cues
+
+    @classmethod
+    def _extract_serato_markers_cues(cls, fpath: str) -> List[Dict[str, Any]]:
+        """Extrae los hot cues oficiales (FLAC, MP3 ID3 GEOB y MP4) ordenados por slot CUE 1..8."""
+        resolved = cls._resolve_audio_path(fpath)
+        if not resolved:
+            return []
+
+        try:
+            import mutagen
+            from mutagen.id3 import ID3
+            from mutagen.mp4 import MP4
+
+            audio = mutagen.File(resolved)
+            if not audio:
+                return []
+
+            raw_blob: Optional[bytes] = None
+            is_outer_b64 = False
+
+            tags = getattr(audio, "tags", None)
+            if isinstance(tags, ID3):
+                for key, frame in tags.items():
+                    if key.startswith("GEOB:") and getattr(frame, "desc", "") == "Serato Markers2":
+                        raw_blob = bytes(frame.data)
+                        is_outer_b64 = False
+                        break
+            elif isinstance(audio, MP4) and tags is not None:
+                m_key = "----:com.serato.dj:markersv2"
+                if m_key in tags and tags[m_key]:
+                    raw_blob = bytes(tags[m_key][0])
+                    is_outer_b64 = True
+            else:
+                val = None
+                if tags is not None:
+                    for key in tags.keys():
+                        if key.lower() in ("serato_markers_v2", "serato markers2"):
+                            val = tags.get(key)
+                            break
+                if val:
+                    first = val[0] if isinstance(val, list) else val
+                    raw_blob = first.encode("latin1") if isinstance(first, str) else bytes(first)
+                    is_outer_b64 = True
+
+            if not raw_blob:
+                return []
+
+            stage = cls._decode_base64_clean(raw_blob) if is_outer_b64 else raw_blob
+            marker_sig = b"Serato Markers2\x00"
+            if marker_sig in stage:
+                stage = stage.split(marker_sig, 1)[1]
+            if stage.startswith(b"\x01\x01"):
+                stage = stage[2:]
+
+            if b"CUE\x00" in stage:
+                payload = stage
+            else:
+                payload = cls._decode_base64_clean(stage)
+                if b"CUE\x00" not in payload:
+                    for prefix in (b"AQE", b"AQF", b"AQG", b"AQH"):
+                        idx = stage.find(prefix)
+                        if idx != -1:
+                            payload = cls._decode_base64_clean(stage[idx:])
+                            if b"CUE\x00" in payload:
+                                break
+
+            return cls._parse_serato_markers2_tlv(payload)
+        except Exception:
+            return []
+
+    @classmethod
+    def _extract_track_artwork(cls, fpath: str) -> str:
+        """Extrae y cachea la carátula incrustada (FLAC, MP3, MP4) como Data URI ligera."""
+        resolved = cls._resolve_audio_path(fpath)
+        if not resolved:
+            return ""
+
+        try:
+            import mutagen
+            from mutagen.flac import FLAC
+            from mutagen.id3 import ID3
+            from mutagen.mp4 import MP4, MP4Cover
+
+            audio = mutagen.File(resolved)
+            if not audio:
+                return ""
+
+            img_bytes: Optional[bytes] = None
+            mime = "image/jpeg"
+
+            if isinstance(audio, FLAC) and audio.pictures:
+                pic = audio.pictures[0]
+                img_bytes = bytes(pic.data)
+                mime = pic.mime or "image/jpeg"
+            elif isinstance(getattr(audio, "tags", None), ID3):
+                for key, frame in audio.tags.items():
+                    if key.startswith("APIC:") and getattr(frame, "data", None):
+                        img_bytes = bytes(frame.data)
+                        mime = getattr(frame, "mime", "image/jpeg") or "image/jpeg"
+                        break
+            elif isinstance(audio, MP4) and audio.tags and "covr" in audio.tags and audio.tags["covr"]:
+                cover = audio.tags["covr"][0]
+                img_bytes = bytes(cover)
+                if getattr(cover, "imageformat", None) == MP4Cover.FORMAT_PNG:
+                    mime = "image/png"
+                else:
+                    mime = "image/jpeg"
+
+            if not img_bytes:
+                return ""
+
+            try:
+                from PIL import Image
+
+                with Image.open(io.BytesIO(img_bytes)) as im:
+                    im = im.convert("RGB")
+                    im.thumbnail((240, 240), Image.Resampling.LANCZOS)
+                    out = io.BytesIO()
+                    im.save(out, format="JPEG", quality=78, optimize=True)
+                    img_bytes = out.getvalue()
+                    mime = "image/jpeg"
+            except Exception:
+                pass
+
+            b64_img = base64.b64encode(img_bytes).decode("ascii")
+            return f"data:{mime};base64,{b64_img}"
+        except Exception:
+            return ""
+
+    @staticmethod
+    def _get_primary_cue_sec(deck: DeckState) -> float:
+        """Devuelve el punto CUE 1 oficial en segundos, acotado a la duración de la pista."""
+        cue_sec = 0.0
+        if deck.hot_cues:
+            cue_sec = float(deck.hot_cues[0].get("pos_sec", 0.0))
+        if deck.duration_sec > 0:
+            return max(0.0, min(deck.duration_sec, cue_sec))
+        return max(0.0, cue_sec)
+
+    @staticmethod
+    def _sync_deck_metrics(deck: DeckState) -> None:
+        """Recalcula beat (1-4), compás (1-32) y frase (128 compases) desde elapsed_sec."""
+        if deck.effective_bpm > 0:
+            beats_per_sec = deck.effective_bpm / 60.0
+            total_beats = max(0.0, deck.elapsed_sec * beats_per_sec)
+            deck.beat_number = int(total_beats % 4) + 1
+            deck.bar_number = int((total_beats / 4) % 32) + 1
+            deck.phrase_progress = round(((total_beats % 128) / 128.0), 3)
+        else:
+            deck.beat_number = 1
+            deck.bar_number = 1
+            deck.phrase_progress = 0.0
+
+    @classmethod
+    def _reset_deck_clock(cls, deck: DeckState, elapsed_sec: float) -> None:
+        """Ancla el reloj monotónico de alta precisión para evitar deriva de playhead."""
+        clamped = max(0.0, elapsed_sec)
+        if deck.duration_sec > 0:
+            clamped = min(deck.duration_sec, clamped)
+        deck.elapsed_sec = clamped
+        deck.remaining_sec = max(0.0, deck.duration_sec - clamped)
+        deck._anchor_perf_ts = time.perf_counter()
+        deck._anchor_elapsed_sec = clamped
+        cls._sync_deck_metrics(deck)
+
+    def _update_master_deck_auto(self, preferred_deck_id: Optional[int] = None) -> None:
+        """Gestiona la asignación y relevo automático del Deck Maestro entre Deck 1 y Deck 2."""
+        d1 = self.state.decks.get(1)
+        d2 = self.state.decks.get(2)
+        if not d1 or not d2:
+            return
+
+        current_master = self.state.decks.get(self.state.master_deck)
+        current_master_playing = bool(current_master and current_master.is_playing and current_master.bpm > 0)
+
+        new_master_id: Optional[int] = None
+        if preferred_deck_id in (1, 2):
+            pref = self.state.decks[preferred_deck_id]
+            if pref.is_playing and pref.bpm > 0 and not current_master_playing:
+                new_master_id = preferred_deck_id
+        if new_master_id is None and not current_master_playing:
+            if d1.is_playing and d1.bpm > 0:
+                new_master_id = 1
+            elif d2.is_playing and d2.bpm > 0:
+                new_master_id = 2
+            elif d1.bpm > 0 and d2.bpm == 0.0:
+                new_master_id = 1
+            elif d2.bpm > 0 and d1.bpm == 0.0:
+                new_master_id = 2
+
+        if new_master_id is not None:
+            self.state.master_deck = new_master_id
+            for d_id, deck in self.state.decks.items():
+                deck.is_master = (d_id == new_master_id)
+                if deck.is_playing:
+                    if getattr(deck, "_cue_hold_active", False):
+                        deck.status = "CUE (PREVIEW)"
+                    elif getattr(deck, "_hot_cue_hold_index", None) is not None:
+                        hc_idx = int(getattr(deck, "_hot_cue_hold_index", 0))
+                        deck.status = f"HOT CUE {hc_idx + 1}"
+                    else:
+                        deck.status = "ON AIR (MASTER)" if deck.is_master else "REPRODUCIENDO"
+            self.state.global_bpm = self.state.decks[new_master_id].effective_bpm
 
     def __init__(self):
         self.state = LiveSessionState()
@@ -109,8 +335,9 @@ class CopilotEngine:
         self.state.platform_name = "Serato DJ Pro"
         self.serato_db_path = os.path.expanduser("~/Music/_Serato_")
         self.loaded_library_tracks: List[Dict[str, Any]] = []
+        self._active_midi_port_name: str = ""
+        self._last_midi_trigger: Dict[str, float] = {}
 
-        # Inicializar ambos decks en STANDBY limpio (sin pistas fantasma en inicio ni desincronización)
         self.state.decks = {
             1: DeckState(
                 deck_id=1,
@@ -157,26 +384,21 @@ class CopilotEngine:
         }
         self.state.global_bpm = 0.0
 
-        # Sincronización en vivo inicial con Serato DJ Pro
         try:
             self._sync_serato_live_state()
         except Exception:
             pass
 
-        # Inicializar Receptores de Red
         self.prodjlink_receiver = ProDJLinkReceiver(on_packet_callback=self._on_prodjlink_packet)
         self.os2l_receiver = OS2LReceiver(on_event_callback=self._on_os2l_event)
 
-        # Hilo de simulación y refresco continuo
         self._running = True
         self._ticker_thread = threading.Thread(target=self._engine_ticker, name="Copilot-Engine-Ticker", daemon=True)
         self._ticker_thread.start()
 
-        # Iniciar escuchador MIDI de baja latencia para controladora física (Numark NV II, etc.)
         self._midi_thread = threading.Thread(target=self._midi_listener_worker, name="Copilot-Midi-Listener", daemon=True)
         self._midi_thread.start()
 
-        # Iniciar receptores pasivos
         try:
             self.prodjlink_receiver.start()
         except Exception:
@@ -207,7 +429,6 @@ class CopilotEngine:
         active_app_id = None
         active_app_name = None
 
-        # 1. Chequeo de red (Pro DJ Link o OS2L)
         if self.prodjlink_receiver and (now - self.prodjlink_receiver.last_packet_time) < 3.0:
             active_app_id = "prodjlink"
             active_app_name = "Pioneer Pro DJ Link"
@@ -215,7 +436,6 @@ class CopilotEngine:
             active_app_id = "os2l"
             active_app_name = "VirtualDJ / OS2L"
         else:
-            # 2. Chequeo de procesos locales
             app_signatures = {
                 "serato": ("Serato DJ Pro", ["Serato DJ Pro", "SeratoDJ", "Serato DJ"]),
                 "rekordbox": ("Pioneer Rekordbox", ["rekordbox", "rekordboxAgent"]),
@@ -223,7 +443,9 @@ class CopilotEngine:
                 "virtualdj": ("VirtualDJ Pro", ["virtualdj", "VirtualDJ"])
             }
             try:
-                import sys, subprocess
+                import subprocess
+                import sys
+
                 if sys.platform == "win32":
                     out = subprocess.check_output(["tasklist", "/NH", "/FO", "CSV"], text=True, errors="ignore")
                 else:
@@ -286,7 +508,7 @@ class CopilotEngine:
             d1.genre = t1.get("genre", "Desconocido")
             d1.subgenre = t1.get("subgenre", "Desconocido")
             d1.duration_sec = float(t1.get("duration", 240))
-            d1.elapsed_sec = 24.0
+            self._reset_deck_clock(d1, 24.0)
             d1.is_playing = True
             d1.is_master = True
 
@@ -301,7 +523,7 @@ class CopilotEngine:
             d2.genre = t2.get("genre", "Desconocido")
             d2.subgenre = t2.get("subgenre", "Desconocido")
             d2.duration_sec = float(t2.get("duration", 240))
-            d2.elapsed_sec = 0.0
+            self._reset_deck_clock(d2, 0.0)
             d2.is_playing = False
             d2.is_master = False
 
@@ -321,7 +543,7 @@ class CopilotEngine:
             d1.genre = "Pop"
             d1.subgenre = "Desconocido"
             d1.duration_sec = 278.0
-            d1.elapsed_sec = 84.0
+            self._reset_deck_clock(d1, 84.0)
             d1.is_master = True
             d1.is_playing = True
 
@@ -336,7 +558,7 @@ class CopilotEngine:
             d2.genre = "Pop"
             d2.subgenre = "Desconocido"
             d2.duration_sec = 255.0
-            d2.elapsed_sec = 32.0
+            self._reset_deck_clock(d2, 32.0)
             d2.is_master = False
             d2.is_playing = False
 
@@ -382,6 +604,8 @@ class CopilotEngine:
                 self.state.master_deck = target_id
                 for d_id, deck in self.state.decks.items():
                     deck.is_master = (d_id == target_id)
+                    if deck.is_playing:
+                        deck.status = "ON AIR (MASTER)" if deck.is_master else "REPRODUCIENDO"
                 self.state.global_bpm = self.state.decks[target_id].effective_bpm
         return self.get_live_state()
 
@@ -394,11 +618,32 @@ class CopilotEngine:
                 target_id = 1
             d = self.state.decks.get(target_id)
             if d and d.title and d.bpm > 0:
+                if os.environ.get("COPILOT_MIDI_DEBUG") == "1":
+                    import inspect
+                    _caller = inspect.stack()[1].function
+                    print(f"[COPILOT-TRACE] toggle_deck_play(deck={target_id}) caller={_caller} prev={d.is_playing}", flush=True)
+                d._manual_transport_override = True
+                # Combo Serato: pulsar Play manteniendo CUE o un Pad Hot Cue bloquea reproducción continua
+                if getattr(d, "_cue_hold_active", False) or getattr(d, "_hot_cue_hold_index", None) is not None:
+                    d._cue_hold_active = False
+                    d._hot_cue_hold_index = None
+                    d.is_playing = True
+                    self._reset_deck_clock(d, d.elapsed_sec)
+                    self._update_master_deck_auto(preferred_deck_id=target_id)
+                    d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
+                    return self.get_live_state()
+
                 d.is_playing = not d.is_playing
                 if d.is_playing:
+                    if d.duration_sec > 0 and d.elapsed_sec >= (d.duration_sec - 0.05):
+                        d.elapsed_sec = self._get_primary_cue_sec(d)
+                    self._reset_deck_clock(d, d.elapsed_sec)
+                    self._update_master_deck_auto(preferred_deck_id=target_id)
                     d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
                 else:
+                    d._anchor_perf_ts = None
                     d.status = "PAUSA"
+                    self._update_master_deck_auto()
         return self.get_live_state()
 
     def cue_deck(self, deck_id: Any) -> Dict[str, Any]:
@@ -410,23 +655,112 @@ class CopilotEngine:
                 target_id = 1
             d = self.state.decks.get(target_id)
             if d and d.title and d.bpm > 0:
+                d._manual_transport_override = True
+                d._cue_hold_active = False
+                d._hot_cue_hold_index = None
                 d.is_playing = False
-                # En Serato, Cue salta al Cue 1 / Downbeat oficial de la pista si existe, o a 0:00
-                cue_sec = 0.0
-                if d.hot_cues and len(d.hot_cues) > 0:
-                    cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0))
-                d.elapsed_sec = min(d.duration_sec, cue_sec)
-                d.remaining_sec = max(0.0, d.duration_sec - d.elapsed_sec)
+                d._anchor_perf_ts = None
+                cue_sec = self._get_primary_cue_sec(d)
+                d.elapsed_sec = cue_sec
+                d.remaining_sec = max(0.0, d.duration_sec - cue_sec)
                 d.status = "CUE (PREPARADO)"
-                d.beat_number = 1
-                d.bar_number = 1
-                d.phrase_progress = 0.0
+                self._sync_deck_metrics(d)
+                self._update_master_deck_auto()
+        return self.get_live_state()
+
+    def _cue_hold_start(self, deck_id: int) -> None:
+        """Inicia reproducción momentánea (Cue-Hold) desde el CUE 1 mientras se mantiene pulsado CUE."""
+        with self._lock:
+            d = self.state.decks.get(deck_id)
+            if d and d.title and d.bpm > 0:
+                d._manual_transport_override = True
+                d._cue_hold_active = True
+                d._hot_cue_hold_index = None
+                cue_sec = self._get_primary_cue_sec(d)
+                self._reset_deck_clock(d, cue_sec)
+                d.is_playing = True
+                d.status = "CUE (PREVIEW)"
+
+    def _handle_nv2_hot_cue_press(self, deck_id: int, cue_index: int) -> None:
+        """Gestiona pulsación de Pad Hot Cue 1..8 con paridad exacta respecto a Serato DJ Pro."""
+        with self._lock:
+            d = self.state.decks.get(deck_id)
+            if not d or not d.title or d.bpm <= 0 or not d.hot_cues:
+                return
+            target_cue = next(
+                (c for c in d.hot_cues if int(c.get("cid", -1)) == cue_index),
+                None
+            )
+            if target_cue is None:
+                return
+
+            pos_sec = float(target_cue.get("pos_sec", 0.0))
+            d._manual_transport_override = True
+            in_continuous_play = (
+                d.is_playing
+                and not getattr(d, "_cue_hold_active", False)
+                and getattr(d, "_hot_cue_hold_index", None) is None
+            )
+
+            if in_continuous_play:
+                # Reproduciendo: salto inmediato al Hot Cue sin interrumpir reproducción
+                self._reset_deck_clock(d, pos_sec)
+            else:
+                # Detenido/en CUE: reproducción momentánea mientras el Pad sigue pulsado
+                d._cue_hold_active = False
+                d._hot_cue_hold_index = cue_index
+                d._hot_cue_hold_pos_sec = pos_sec
+                self._reset_deck_clock(d, pos_sec)
+                d.is_playing = True
+                d.status = f"HOT CUE {cue_index + 1}"
+
+    def _handle_nv2_hot_cue_release(self, deck_id: int, cue_index: int) -> None:
+        """Al soltar un Pad en modo Hot-Cue Hold, detiene y retorna exactamente a ese Hot Cue."""
+        with self._lock:
+            d = self.state.decks.get(deck_id)
+            if not d or getattr(d, "_hot_cue_hold_index", None) != cue_index:
+                return
+            snap_pos = float(getattr(d, "_hot_cue_hold_pos_sec", self._get_primary_cue_sec(d)))
+            d._hot_cue_hold_index = None
+            d.is_playing = False
+            d._anchor_perf_ts = None
+            if d.duration_sec > 0:
+                snap_pos = max(0.0, min(d.duration_sec, snap_pos))
+            else:
+                snap_pos = max(0.0, snap_pos)
+            d.elapsed_sec = snap_pos
+            d.remaining_sec = max(0.0, d.duration_sec - snap_pos)
+            d.status = "CUE (PREPARADO)"
+            self._sync_deck_metrics(d)
+            self._update_master_deck_auto()
+
+    def jump_to_cue(self, deck_id: Any, cue_index: int = 0) -> Dict[str, Any]:
+        """Salta milimétricamente al Hot Cue indicado (0..7) desde UI o API preservando reproducción."""
+        with self._lock:
+            try:
+                target_id = int(deck_id)
+            except Exception:
+                target_id = 1
+            d = self.state.decks.get(target_id)
+            if d and d.title and d.bpm > 0 and d.hot_cues:
+                target_cue = next(
+                    (c for c in d.hot_cues if int(c.get("cid", -1)) == cue_index),
+                    d.hot_cues[cue_index] if 0 <= cue_index < len(d.hot_cues) else None
+                )
+                if target_cue:
+                    d._manual_transport_override = True
+                    pos_sec = float(target_cue.get("pos_sec", 0.0))
+                    self._reset_deck_clock(d, pos_sec)
+                    if not d.is_playing:
+                        d._anchor_perf_ts = None
         return self.get_live_state()
 
     def _generate_recommendations(self) -> List[Dict[str, Any]]:
         """Genera recomendaciones armónicas y de tempo a partir de la biblioteca cargada."""
         master_id = self.state.master_deck
         master_deck = self.state.decks.get(master_id)
+        if not master_deck or master_deck.bpm <= 0:
+            master_deck = self.state.decks.get(1) or self.state.decks.get(2)
         if not master_deck:
             return []
 
@@ -469,10 +803,10 @@ class CopilotEngine:
 
         try:
             import sqlite3
+
             conn = sqlite3.connect(f"file:{serato_db}?mode=ro", uri=True, timeout=0.5)
             cur = conn.cursor()
 
-            # 1. Obtener la sesión activa de Serato (end_time = -1)
             cur.execute("SELECT id FROM history_session WHERE end_time = -1 ORDER BY id DESC LIMIT 1;")
             s_row = cur.fetchone()
             if not s_row:
@@ -481,16 +815,16 @@ class CopilotEngine:
 
             active_session_id = s_row[0]
 
-            # 2. Obtener pistas activas en los decks en esta sesión (EXCLUSIVAMENTE end_time = -1: cargadas actualmente en cabina)
             cur.execute("""
-                SELECT id, deck, name, artist, bpm, key, length_ms, portable_id, start_time, end_time, played
+                SELECT id, deck, name, artist, bpm, key, length_ms, portable_id,
+                       start_time, end_time, played, genre, format, comments
                 FROM history_entry
                 WHERE session_id = ? AND end_time = -1
                 ORDER BY id DESC;
             """, (active_session_id,))
             rows = cur.fetchall()
 
-            active_decks = {}
+            active_decks: Dict[str, Dict[str, Any]] = {}
             for r in rows:
                 d_key = str(r[1])
                 if d_key not in active_decks:
@@ -505,12 +839,14 @@ class CopilotEngine:
                         "portable_id": r[7] or "",
                         "start_time": int(r[8] or time.time()),
                         "end_time": int(r[9] or -1),
-                        "played": int(r[10] or 0)
+                        "played": int(r[10] or 0),
+                        "genre": r[11] or "",
+                        "format": (r[12] or "").upper(),
+                        "comments": r[13] or "",
                     }
 
-            now = time.time()
             with self._lock:
-                for deck_id, deck_key in [(1, '1'), (2, '2')]:
+                for deck_id, deck_key in [(1, "1"), (2, "2")]:
                     d = self.state.decks.get(deck_id)
                     if not d:
                         continue
@@ -518,7 +854,11 @@ class CopilotEngine:
                         t = active_decks[deck_key]
                         dur = (t["length_ms"] / 1000.0) if t["length_ms"] > 0 else 240.0
 
-                        is_new_track = (d.title != t["title"] or abs(d.bpm - t["bpm"]) > 0.05 or getattr(d, '_serato_entry_id', None) != t["id"])
+                        is_new_track = (
+                            d.title != t["title"]
+                            or abs(d.bpm - t["bpm"]) > 0.05
+                            or getattr(d, "_serato_entry_id", None) != t["id"]
+                        )
                         if is_new_track:
                             d.title = t["title"]
                             d.artist = t["artist"]
@@ -526,44 +866,36 @@ class CopilotEngine:
                             d.effective_bpm = t["bpm"]
                             d.key = t["key"]
                             d.key_name = t["key"]
+                            d.genre = t["genre"]
                             d.duration_sec = dur
                             d._serato_entry_id = t["id"]
                             d._last_serato_played = t["played"]
-                            full_p = "/" + t["portable_id"].lstrip("/")
-                            if os.path.exists(full_p):
-                                cues = self._extract_serato_markers_cues(full_p)
-                                if cues:
-                                    d.hot_cues = cues
-                            # En Serato, la pista recién cargada se sitúa en el Cue 1 / Downbeat inicial
-                            cue_sec = 0.0
-                            if d.hot_cues and len(d.hot_cues) > 0:
-                                cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0))
+                            d._manual_transport_override = False
+                            d._cue_hold_active = False
+                            d._hot_cue_hold_index = None
+                            d._hot_cue_hold_pos_sec = 0.0
+                            d._audio_format = t["format"] or "AUDIO"
+                            d._serato_comments = t["comments"]
 
-                            # Si la pista ya venía sonando activamente antes de abrir/conectar Copilot
-                            was_already_playing = (t["played"] == 1 and (now - t["start_time"]) > 3.0)
-                            if was_already_playing:
-                                d.is_playing = True
-                                d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
-                                d.elapsed_sec = min(dur, max(cue_sec, now - t["start_time"]))
-                            else:
-                                d.elapsed_sec = min(dur, cue_sec)
-                                d.is_playing = False
-                                d.status = "CUE (PREPARADO)"
+                            resolved_path = self._resolve_audio_path(t["portable_id"])
+                            d._filepath = resolved_path or ("/" + t["portable_id"].lstrip("/"))
 
-                            d.remaining_sec = max(0.0, dur - d.elapsed_sec)
-                            d.beat_number = 1
-                            d.bar_number = 1
-                            d.phrase_progress = 0.0
+                            # Limpiar SIEMPRE los cues previos y extraer los del archivo físico real
+                            d.hot_cues = self._extract_serato_markers_cues(resolved_path) if resolved_path else []
+                            d._artwork_data_uri = self._extract_track_artwork(resolved_path) if resolved_path else ""
+
+                            cue_sec = self._get_primary_cue_sec(d)
+
+                            # Arrancar siempre posicionado en CUE 1 (sin extrapolar desde start_time)
+                            d.is_playing = False
+                            d._anchor_perf_ts = None
+                            d.elapsed_sec = cue_sec
+                            d.remaining_sec = max(0.0, dur - cue_sec)
+                            d.status = "CUE (PREPARADO)"
+                            self._sync_deck_metrics(d)
                         else:
-                            # Misma pista cargada: si Serato pasa de played 0 a 1 y el deck no fue pausado expresamente
-                            if t["played"] == 1 and getattr(d, '_last_serato_played', 0) == 0:
-                                d._last_serato_played = 1
-                                if not d.is_playing and getattr(d, 'status', '') != 'PAUSA':
-                                    d.is_playing = True
-                                    d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
-                                    if d.elapsed_sec < 5.0:
-                                        cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0)) if d.hot_cues else 0.0
-                                        d.elapsed_sec = min(dur, max(cue_sec, now - t["start_time"]))
+                            # SQLite nunca fuerza is_playing=True; solo actualiza estado informativo
+                            d._last_serato_played = t["played"]
                     else:
                         d.title = ""
                         d.artist = ""
@@ -582,25 +914,39 @@ class CopilotEngine:
                         d.subgenre = ""
                         d._serato_entry_id = None
                         d._last_serato_played = 0
+                        d._manual_transport_override = False
+                        d._cue_hold_active = False
+                        d._hot_cue_hold_index = None
+                        d._hot_cue_hold_pos_sec = 0.0
+                        d._anchor_perf_ts = None
+                        d._filepath = ""
+                        d._artwork_data_uri = ""
+                        d._audio_format = ""
+                        d._serato_comments = ""
+                        self._sync_deck_metrics(d)
 
-                # Actualizar global_bpm si hay un deck activo
+                self._update_master_deck_auto()
+
                 d1 = self.state.decks.get(1)
                 d2 = self.state.decks.get(2)
-                if d1 and d1.bpm > 0:
+                master_d = self.state.decks.get(self.state.master_deck)
+                if master_d and master_d.bpm > 0:
+                    self.state.global_bpm = master_d.effective_bpm
+                elif d1 and d1.bpm > 0:
                     self.state.global_bpm = d1.effective_bpm
                 elif d2 and d2.bpm > 0:
                     self.state.global_bpm = d2.effective_bpm
                 else:
                     self.state.global_bpm = 0.0
 
-                # Generar recomendaciones desde la biblioteca Serato para mezclar con Deck 1
-                if d1 and d1.bpm > 0 and d1.key:
+                ref_deck = master_d if (master_d and master_d.bpm > 0 and master_d.key) else d1
+                if ref_deck and ref_deck.bpm > 0 and ref_deck.key:
                     cur.execute("""
                         SELECT name, artist, bpm, key, genre, length_ms, portable_id
                         FROM asset
                         WHERE bpm BETWEEN ? AND ?
                         LIMIT 20;
-                    """, (max(60.0, d1.bpm - 10.0), d1.bpm + 10.0))
+                    """, (max(60.0, ref_deck.bpm - 10.0), ref_deck.bpm + 10.0))
                     asset_rows = cur.fetchall()
                     if asset_rows:
                         self.loaded_library_tracks = [
@@ -623,7 +969,6 @@ class CopilotEngine:
 
     def _format_deck_ui(self, deck: DeckState) -> Dict[str, Any]:
         """Formatea un deck con los campos exigidos por CopilotWorkspace en React."""
-        # Manejo limpio de Deck Vacío (como el Deck 2 en Serato / mesa)
         if not deck.title or deck.bpm == 0.0:
             return {
                 "deck_num": str(deck.deck_id),
@@ -652,28 +997,33 @@ class CopilotEngine:
                 "phrase_progress": 0.0,
                 "cues": [],
                 "format": "",
+                "filepath": "",
+                "cover": "",
+                "artwork": "",
+                "artwork_url": "",
+                "cover_url": "",
                 "tactical_comment": "Deck vacío • Sin pista cargada en Serato ni en la mesa",
                 "low_energy_level": 0.0,
                 "lufs_momentary": -99.0,
                 "lufs_short_term": -99.0
             }
 
-        prog = round(deck.elapsed_sec / deck.duration_sec, 4) if deck.duration_sec > 0 else 0.25
+        prog = round(deck.elapsed_sec / deck.duration_sec, 4) if deck.duration_sec > 0 else 0.0
         if deck.status:
             status_label = deck.status
         elif deck.is_playing:
             status_label = "ON AIR (MASTER)" if deck.is_master else "REPRODUCIENDO"
         else:
             status_label = "PAUSA" if deck.elapsed_sec > 0 else "CUE (PREPARADO)"
-        
-        # Cues oficiales de Serato Markers si están disponibles, o cuantizados
+
         dur = deck.duration_sec if deck.duration_sec > 0 else 240.0
-        if deck.hot_cues and len(deck.hot_cues) > 0:
-            cues = []
+        cues: List[Dict[str, Any]] = []
+        if deck.hot_cues:
             for c in deck.hot_cues:
                 pos_sec = float(c.get("pos_sec", c.get("position_ms", 0) / 1000.0))
                 cues.append({
                     "id": c.get("id", 1),
+                    "cid": c.get("cid", int(c.get("id", 1)) - 1),
                     "name": c.get("name", "Cue"),
                     "color": c.get("color", "#06b6d4"),
                     "pos_ms": int(pos_sec * 1000),
@@ -681,21 +1031,16 @@ class CopilotEngine:
                     "pct": round(pos_sec / dur, 4) if dur > 0 else 0.0,
                     "time": c.get("time", f"{int(pos_sec // 60):02d}:{pos_sec % 60:05.2f}")
                 })
-        else:
-            dur_ms = int(dur * 1000)
-            step_ms = dur_ms // 9
-            cues = [
-                {
-                    "id": i,
-                    "name": f"Cue {i} ({i*16}b)",
-                    "pos_ms": i * step_ms,
-                    "pos_sec": round((i * step_ms) / 1000.0, 3),
-                    "pct": round(i / 9.0, 4),
-                    "color": "#00f0ff" if i % 2 == 1 else "#f472b6",
-                    "time": f"{int((i * step_ms) // 60000):02d}:{((i * step_ms) % 60000) / 1000.0:05.2f}"
-                }
-                for i in range(1, 9)
-            ]
+
+        artwork_uri = getattr(deck, "_artwork_data_uri", "") or ""
+        filepath = getattr(deck, "_filepath", "") or ""
+        audio_fmt = getattr(deck, "_audio_format", "") or "FLAC"
+        serato_comments = getattr(deck, "_serato_comments", "") or ""
+        tactical_comment = (
+            serato_comments
+            if serato_comments
+            else f"[{deck.effective_bpm:.1f} BPM | {deck.key}] Intro limpia 32b • Fraseo cuantizado"
+        )
 
         return {
             "deck_num": str(deck.deck_id),
@@ -723,8 +1068,13 @@ class CopilotEngine:
             "bar_number": deck.bar_number,
             "phrase_progress": deck.phrase_progress,
             "cues": cues,
-            "format": "FLAC 24-bit",
-            "tactical_comment": f"[{deck.effective_bpm:.1f} BPM | {deck.key}] Intro limpia 32b • Fraseo cuantizado",
+            "format": audio_fmt,
+            "filepath": filepath,
+            "cover": artwork_uri,
+            "artwork": artwork_uri,
+            "artwork_url": artwork_uri,
+            "cover_url": artwork_uri,
+            "tactical_comment": tactical_comment,
             "low_energy_level": deck.low_energy_level,
             "lufs_momentary": deck.lufs_momentary,
             "lufs_short_term": deck.lufs_short_term
@@ -736,7 +1086,6 @@ class CopilotEngine:
             d1 = self.state.decks.get(1)
             d2 = self.state.decks.get(2)
 
-            # Verificar si Deck 2 está vacío
             is_deck_2_empty = (not d2 or not d2.title or d2.bpm == 0.0)
 
             alerts = []
@@ -745,7 +1094,6 @@ class CopilotEngine:
                 self.state.active_alerts = alerts
                 self.state.harmonic_relation = DSPCleanRoomEngine.evaluar_compatibilidad_armonica(d1.key, d2.key)
 
-            # Estructurar módulo Anti-Muddy para la barra de alerta del frontend
             if is_deck_2_empty:
                 anti_muddy_data = {
                     "status": "safe",
@@ -786,7 +1134,6 @@ class CopilotEngine:
                         "controller_knobs": {"filter_knob": "Centrado (12h)", "eq_low": "0 dB"}
                     }
 
-            # Empaquetado completo compatible con v1 y v2
             formatted_decks = {d_id: self._format_deck_ui(d) for d_id, d in self.state.decks.items()}
             dj_app = self._check_running_dj_apps()
             is_serato_running = dj_app.get("is_open") and dj_app.get("app_id") == "serato"
@@ -862,13 +1209,9 @@ class CopilotEngine:
                     d.is_playing = bool(evt.get("playing", evt_name == "play"))
 
     def _engine_ticker(self):
-        """Ticker continuo de alta frecuencia (20 Hz / 50ms) para avance de frase y sincronización live."""
-        last_tick = time.time()
+        """Ticker continuo de alta frecuencia (20 Hz / 50ms) con reloj monotónico sin deriva."""
         tick_count = 0
         while self._running:
-            now = time.time()
-            dt = now - last_tick
-            last_tick = now
             tick_count += 1
 
             if tick_count % 5 == 0:
@@ -879,20 +1222,23 @@ class CopilotEngine:
                 except Exception:
                     pass
 
-            # Avance en tiempo real para cualquier deck en reproducción (Deck 1 o Deck 2, tanto en vivo como en simulación)
+            now_perf = time.perf_counter()
             with self._lock:
-                for d_id, d in self.state.decks.items():
+                for _, d in self.state.decks.items():
                     if d.is_playing and d.title and d.bpm > 0 and d.duration_sec > 0:
-                        d.elapsed_sec += dt
+                        if getattr(d, "_anchor_perf_ts", None) is None:
+                            d._anchor_perf_ts = now_perf
+                            d._anchor_elapsed_sec = d.elapsed_sec
+                        rate = (d.effective_bpm / d.bpm) if d.bpm > 0 else 1.0
+                        d.elapsed_sec = d._anchor_elapsed_sec + (now_perf - d._anchor_perf_ts) * rate
                         if d.elapsed_sec >= d.duration_sec:
                             d.elapsed_sec = d.duration_sec
                             d.is_playing = False
+                            d._anchor_perf_ts = None
+                            d._cue_hold_active = False
+                            d._hot_cue_hold_index = None
                         d.remaining_sec = max(0.0, d.duration_sec - d.elapsed_sec)
-                        beats_per_sec = d.effective_bpm / 60.0
-                        total_beats = d.elapsed_sec * beats_per_sec
-                        d.beat_number = int(total_beats % 4) + 1
-                        d.bar_number = int((total_beats / 4) % 32) + 1
-                        d.phrase_progress = round(((total_beats % 128) / 128.0), 3)
+                        self._sync_deck_metrics(d)
 
             time.sleep(0.05)
 
@@ -909,7 +1255,6 @@ class CopilotEngine:
         while self._running:
             try:
                 now = time.time()
-                # Escaneo periódico de puertos hardware si no está conectado
                 if inport is None and (now - last_scan) > 2.0:
                     last_scan = now
                     try:
@@ -930,14 +1275,18 @@ class CopilotEngine:
                     if target_port:
                         try:
                             inport = mido.open_input(target_port)
+                            self._active_midi_port_name = target_port
+                            if os.environ.get("COPILOT_MIDI_DEBUG") == "1":
+                                print(f"[COPILOT-MIDI] Conectado a puerto: {target_port}", flush=True)
                         except Exception:
                             inport = None
+                            self._active_midi_port_name = ""
 
                 if inport:
                     for msg in inport.iter_pending():
                         self._process_midi_message(msg)
 
-                time.sleep(0.01)
+                time.sleep(0.005)
             except Exception:
                 if inport:
                     try:
@@ -945,51 +1294,98 @@ class CopilotEngine:
                     except Exception:
                         pass
                 inport = None
+                self._active_midi_port_name = ""
                 time.sleep(1.0)
 
     def _process_midi_message(self, msg: Any):
-        """Procesa mensajes de transporte (Play/Pausa, Cue) procedentes de la controladora física (Numark NV II, Pioneer, etc.)."""
+        """Máquina de estados MIDI estricta para Numark NV II (ch1/ch2, Play 33, CUE 32, Pads 71..78)."""
         try:
-            msg_type = getattr(msg, 'type', '')
-            val = getattr(msg, 'velocity', getattr(msg, 'value', 0))
-            # Únicamente procesar pulsaciones activas Note On o Control Change con valor > 0
-            # Evita conmutación doble al soltar el botón físico (note_off o velocity = 0)
-            if msg_type not in ('note_on', 'control_change'):
-                return
-            if val <= 0:
+            msg_type = getattr(msg, "type", "")
+            if msg_type not in ("note_on", "note_off"):
                 return
 
-            note_or_ctrl = getattr(msg, 'note', getattr(msg, 'control', -1))
-            if note_or_ctrl < 0:
+            note = getattr(msg, "note", -1)
+            if note < 0:
                 return
 
-            channel = getattr(msg, 'channel', 0)
-            # En la gran mayoría de controladoras DJ de 2 y 4 canales (Numark NV II, Pioneer, Traktor):
-            # Canal 0 (0x90) / 2 (0x92) => DECK 1
-            # Canal 1 (0x91) / 3 (0x93) => DECK 2
+            val = int(getattr(msg, "velocity", 0))
+            channel = int(getattr(msg, "channel", -1))
+            is_press = (msg_type == "note_on" and val > 0)
+            is_release = (msg_type == "note_off" or (msg_type == "note_on" and val == 0))
+
+            port_lower = self._active_midi_port_name.lower()
+            is_nv2 = ("nv" in port_lower) or ("numark" in port_lower)
+
+            if is_nv2:
+                target_deck = NV2_CHANNEL_TO_DECK.get(channel)
+                if target_deck not in (1, 2):
+                    return
+
+                if os.environ.get("COPILOT_MIDI_DEBUG") == "1":
+                    print(f"[COPILOT-MIDI] deck={target_deck} {msg_type} ch={channel} note={note} vel={val}", flush=True)
+                now = time.perf_counter()
+
+                # 1. PLAY / PAUSE (note 33 / 0x21)
+                if note == NV2_NOTE_PLAY:
+                    if not is_press:
+                        return
+                    k = f"nv2_play_{target_deck}"
+                    if now - self._last_midi_trigger.get(k, 0.0) < 0.06:
+                        return
+                    self._last_midi_trigger[k] = now
+                    self.toggle_deck_play(target_deck)
+                    return
+
+                # 2. CUE (note 32 / 0x20): parada a CUE + cue-hold momentáneo en note_off
+                if note == NV2_NOTE_CUE:
+                    if is_press:
+                        k = f"nv2_cue_{target_deck}"
+                        if now - self._last_midi_trigger.get(k, 0.0) < 0.04:
+                            return
+                        self._last_midi_trigger[k] = now
+                        with self._lock:
+                            d = self.state.decks.get(target_deck)
+                            was_playing = bool(d and d.is_playing)
+                        if was_playing:
+                            self.cue_deck(target_deck)
+                        else:
+                            self._cue_hold_start(target_deck)
+                    elif is_release:
+                        with self._lock:
+                            d = self.state.decks.get(target_deck)
+                            in_cue_hold = bool(d and getattr(d, "_cue_hold_active", False))
+                        if in_cue_hold:
+                            self.cue_deck(target_deck)
+                    return
+
+                # 3. PADS HOT CUE 1..8 (notes 71..78 / 0x47..0x4E)
+                if NV2_HOT_CUE_BASE_NOTE <= note < (NV2_HOT_CUE_BASE_NOTE + NV2_HOT_CUE_COUNT):
+                    cue_index = note - NV2_HOT_CUE_BASE_NOTE
+                    if is_press:
+                        k = f"nv2_hc_{target_deck}_{cue_index}"
+                        if now - self._last_midi_trigger.get(k, 0.0) < 0.025:
+                            return
+                        self._last_midi_trigger[k] = now
+                        self._handle_nv2_hot_cue_press(target_deck, cue_index)
+                    elif is_release:
+                        self._handle_nv2_hot_cue_release(target_deck, cue_index)
+                    return
+
+                return
+
+            # Respaldo estricto solo Note On para otras mesas (Pioneer DDJ / Traktor)
+            if not is_press:
+                return
             target_deck = 2 if channel in (1, 3) else 1
-
-            # Debounce hardware de 150ms por deck
-            now = time.time()
-            if not hasattr(self, '_last_midi_trigger'):
-                self._last_midi_trigger = {}
-            k = f"{target_deck}_{note_or_ctrl}"
-            if now - self._last_midi_trigger.get(k, 0.0) < 0.15:
+            now = time.perf_counter()
+            k = f"gen_{target_deck}_{note}"
+            if now - self._last_midi_trigger.get(k, 0.0) < 0.08:
                 return
             self._last_midi_trigger[k] = now
 
-            PLAY_NOTES = {
-                0, 4, 8, 11, 12, 32, 50, 51, 59, 60, 64, 66, 67, 71,
-                0x00, 0x04, 0x0B, 0x0C, 0x20, 0x32, 0x33, 0x39, 0x3A, 0x3B, 0x40, 0x42, 0x43, 0x47
-            }
-            CUE_NOTES = {
-                1, 5, 9, 12, 33, 34, 51, 65, 67, 72,
-                0x01, 0x05, 0x21, 0x33, 0x34, 0x41, 0x48
-            }
-
-            if note_or_ctrl in PLAY_NOTES:
+            if note in (0x0B, 0x3B):
                 self.toggle_deck_play(target_deck)
-            elif note_or_ctrl in CUE_NOTES:
+            elif note in (0x0C, 0x3C):
                 self.cue_deck(target_deck)
         except Exception:
             pass

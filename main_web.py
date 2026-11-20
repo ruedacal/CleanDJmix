@@ -330,6 +330,10 @@ _GLOBAL_BATCH_PROGRESS = {"pct": 0, "msg": "", "active": False, "ts": time.time(
 def _emitir_progreso_batch(pct: int, msg: str):
     global _GLOBAL_BATCH_PROGRESS
     try:
+        # Si la cancelación ya fue solicitada, no propagar porcentajes residuales > 0
+        if getattr(audit_svc, "_cancelar_proceso", False) and int(pct) > 0:
+            return
+
         clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
         _GLOBAL_BATCH_PROGRESS["pct"] = int(pct)
         _GLOBAL_BATCH_PROGRESS["msg"] = clean_msg

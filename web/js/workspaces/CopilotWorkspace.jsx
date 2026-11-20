@@ -1145,14 +1145,14 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     is_master: new1Master,
                     status: new1Master ? 'ON AIR (MASTER)' : 'CUE / PREPARADO',
                     is_playing: new1Master,
-                    elapsed_sec: new1Master ? prev.deck_1.elapsed_sec : 0.0
+                    elapsed_sec: prev.deck_1.elapsed_sec
                 },
                 deck_2: {
                     ...prev.deck_2,
                     is_master: !new1Master,
                     status: !new1Master ? 'ON AIR (MASTER)' : 'CUE / PREPARADO',
                     is_playing: !new1Master,
-                    elapsed_sec: !new1Master ? prev.deck_2.elapsed_sec : 0.0
+                    elapsed_sec: prev.deck_2.elapsed_sec
                 }
             };
         });
@@ -1252,11 +1252,13 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [setMasterDeck, toggleDeckPlay, cueDeck, state]);
 
-    // Enlace Web MIDI nativo con Numark NV II y controladoras de cabina
+    // Enlace Web MIDI nativo: en host local el backend CoreMIDI (engine.py) es la única autoridad MIDI
     useEffect(() => {
+        const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocalHost) return;
         if (typeof navigator === 'undefined' || !navigator.requestMIDIAccess) return;
         let midiAccess = null;
-        let lastMidiTime = 0;
+        const lastMidiTrigger = {};
 
         const onMidiMessage = (e) => {
             if (!e.data || e.data.length < 2) return;
@@ -1264,29 +1266,21 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             const cmd = status & 0xF0;
             const ch = status & 0x0F;
 
-            // Únicamente procesar Note On o Control Change con velocidad/valor > 0
-            if ((cmd !== 0x90 && cmd !== 0xB0) || velocity <= 0) return;
+            // Solo Note On activo (descartar Control Change para evitar disparos fantasma)
+            if (cmd !== 0x90 || velocity <= 0) return;
 
-            // Debounce de 150ms para evitar disparos dobles por rebote físico
+            // Mapa verificado Numark NV II (ch=1 => Deck 1, ch=2 => Deck 2)
+            const targetDeck = ch === 1 ? 1 : ch === 2 ? 2 : 0;
+            if (!targetDeck) return;
+
             const now = Date.now();
-            if (now - lastMidiTime < 150) return;
-            lastMidiTime = now;
+            const key = `${targetDeck}_${note}`;
+            if (now - (lastMidiTrigger[key] || 0) < 60) return;
+            lastMidiTrigger[key] = now;
 
-            // Mapeo exhaustivo para Numark NV II y controladoras estándar (Ch 0/2 => Deck 1, Ch 1/3 => Deck 2)
-            const targetDeck = (ch === 1 || ch === 3) ? 2 : 1;
-
-            const PLAY_NOTES = [
-                0, 4, 8, 11, 12, 32, 50, 51, 59, 60, 64, 66, 67, 71,
-                0x00, 0x04, 0x0B, 0x0C, 0x20, 0x32, 0x33, 0x39, 0x3A, 0x3B, 0x40, 0x42, 0x43, 0x47
-            ];
-            const CUE_NOTES = [
-                1, 5, 9, 12, 33, 34, 51, 65, 67, 72,
-                0x01, 0x05, 0x21, 0x33, 0x34, 0x41, 0x48
-            ];
-
-            if (PLAY_NOTES.includes(note)) {
+            if (note === 33) {
                 toggleDeckPlay(targetDeck);
-            } else if (CUE_NOTES.includes(note)) {
+            } else if (note === 32) {
                 cueDeck(targetDeck);
             }
         };

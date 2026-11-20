@@ -2451,6 +2451,8 @@ return folderPath'''
 
         def _procesar_caratula(item):
             idx, t = item
+            if getattr(self, "_pausar_proceso", False) and hasattr(self, "_pause_event"):
+                self._pause_event.wait()
             if self._cancelar_proceso:
                 return False
 
@@ -2477,26 +2479,31 @@ return folderPath'''
 
             with lock:
                 completados[0] += 1
-                c = completados[0]
                 if ok:
                     actualizadas_list[0] += 1
                 else:
                     errores_list[0] += 1
 
-                if progreso_cb and (c % max(1, total // 50) == 0 or c == total):
-                    pct = int(5 + (c / total) * 90)
-                    progreso_cb(pct, f"Inyectando carátula ({c}/{total}): {filename}")
-
             return ok
 
+        done_count = 0
+        step = max(1, min(5, total // 50))
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-            futures = [executor.submit(_procesar_caratula, (i, t)) for i, t in enumerate(tracks, 1)]
-            for future in concurrent.futures.as_completed(futures):
+            future_to_track = {executor.submit(_procesar_caratula, (i, t)): t for i, t in enumerate(tracks, 1)}
+            for future in concurrent.futures.as_completed(future_to_track):
+                if getattr(self, "_pausar_proceso", False) and hasattr(self, "_pause_event"):
+                    self._pause_event.wait()
                 if self._cancelar_proceso:
-                    for f in futures:
+                    for f in future_to_track:
                         f.cancel()
                     executor.shutdown(wait=False)
                     break
+                done_count += 1
+                if progreso_cb and (done_count % step == 0 or done_count == total):
+                    pct = int(5 + (done_count / total) * 90)
+                    t_orig = future_to_track.get(future) or {}
+                    fname = t_orig.get("filename") or t_orig.get("f") or f"Pista {done_count}"
+                    progreso_cb(pct, f"Inyectando carátula ({done_count}/{total}): {fname}")
                 _cooperative_yield()
 
         actualizadas = actualizadas_list[0]
@@ -2536,8 +2543,10 @@ return folderPath'''
 
         def _procesar_meta(item):
             idx, t = item
+            if getattr(self, "_pausar_proceso", False) and hasattr(self, "_pause_event"):
+                self._pause_event.wait()
             if self._cancelar_proceso:
-                return False
+                return False, None, 0.0, 0, None
 
             import urllib.parse
             raw_path = t.get("path") or t.get("filepath") or ""
@@ -2575,37 +2584,59 @@ return folderPath'''
                         break
 
             ok = False
+            t_mtime = 0.0
+            t_fsize = 0
+            t_in = dict(t)
             if target_path and os.path.exists(target_path):
-                t_in = dict(t)
                 t_in["modo_rapido"] = True
                 t_in["skip_acoustic_bpm"] = True
                 t_in["skip_remote_covers"] = True
                 t_in["recalcular_grid"] = False
                 ok = AudioProcessorService.escribir_metadatos_pro(target_path, t_in, modo_rapido=True)
+                if ok:
+                    try:
+                        t_mtime = os.path.getmtime(target_path)
+                        t_fsize = os.path.getsize(target_path)
+                    except Exception:
+                        pass
 
             with lock:
                 completados[0] += 1
-                c = completados[0]
                 if ok:
                     inyectados_list[0] += 1
                 else:
                     errores_list[0] += 1
 
-                step = max(1, min(5, total // 50))
-                if progreso_cb and (c % step == 0 or c == total):
-                    pct = int(5 + (c / total) * 90)
-                    progreso_cb(pct, f"Guardando ID3v2.4 / Serato ({c}/{total}): {filename}")
+            return ok, target_path, t_mtime, t_fsize, t_in
 
-            return ok
+        done_count = 0
+        step = max(1, min(5, total // 50))
+        items_to_save_cache = []
 
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
         try:
-            futures = [executor.submit(_procesar_meta, (i, t)) for i, t in enumerate(tracks, 1)]
-            for future in concurrent.futures.as_completed(futures):
+            future_to_track = {executor.submit(_procesar_meta, (i, t)): t for i, t in enumerate(tracks, 1)}
+            for future in concurrent.futures.as_completed(future_to_track):
+                if getattr(self, "_pausar_proceso", False) and hasattr(self, "_pause_event"):
+                    self._pause_event.wait()
                 if self._cancelar_proceso:
-                    for f in futures:
+                    for f in future_to_track:
                         f.cancel()
                     break
+                done_count += 1
+                try:
+                    res_ok, t_path, t_mtime, t_fsize, t_meta = future.result()
+                    if res_ok and t_path and t_mtime > 0 and self.db_cache:
+                        items_to_save_cache.append((t_path, float(t_mtime), int(t_fsize), json.dumps(t_meta)))
+                except Exception:
+                    pass
+
+                if progreso_cb and (done_count % step == 0 or done_count == total):
+                    pct = int(5 + (done_count / total) * 90)
+                    t_orig = future_to_track.get(future) or {}
+                    fname = t_orig.get("filename") or t_orig.get("f") or f"Pista {done_count}"
+                    progreso_cb(pct, f"Guardando ID3v2.4 / Serato ({done_count}/{total}): {fname}")
+
                 _cooperative_yield()
         finally:
             if self._cancelar_proceso:
@@ -2615,6 +2646,12 @@ return folderPath'''
                     pass
             else:
                 executor.shutdown(wait=True)
+
+        if items_to_save_cache and hasattr(self, "db_cache") and self.db_cache and not self._cancelar_proceso:
+            try:
+                self.db_cache.set_metadata_batch(items_to_save_cache)
+            except Exception as e_cache:
+                print(f"[CACHE BATCH ERR] Error actualizando SQLite cache: {e_cache}")
 
         if self._cancelar_proceso:
             if progreso_cb:
