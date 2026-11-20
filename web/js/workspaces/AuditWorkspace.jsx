@@ -654,6 +654,19 @@ export const AuditWorkspace = ({
     const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState(false);
     // Modal de confirmación de eliminación segura de pistas (lista y disco físico)
     const [deleteModalState, setDeleteModalState] = useState({ open: false, tracks: [], mode: 'trash' });
+    // Modal de confirmación previa para guardar metadatos en disco
+    const [saveModalState, setSaveModalState] = useState({
+        open: false,
+        tracks: [],
+        fields: {
+            bpm: true,
+            key: true,
+            cues: true,
+            comment: true,
+            genre_mood: true,
+            cover: true,
+        }
+    });
     const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState(() => {
         try {
             return localStorage.getItem('dj_metatagger_delete_originals') === 'true';
@@ -2356,15 +2369,48 @@ export const AuditWorkspace = ({
         }
     };
 
-    const handleGuardarTodoEnFicheros = async () => {
-        const targetTracks = (selectedAuditIds && selectedAuditIds.size > 0)
+    const handleSolicitarGuardarTodo = (customTracks = null) => {
+        const targetTracks = customTracks || ((selectedAuditIds && selectedAuditIds.size > 0)
             ? tracks.filter(t => selectedAuditIds.has(t.id))
-            : tracks;
+            : tracks);
 
         if (!targetTracks || targetTracks.length === 0) {
-            alert("No hay pistas cargadas para guardar.");
+            alert(lang === 'en' ? "No tracks loaded to save." : "No hay pistas cargadas para guardar.");
             return;
         }
+
+        setSaveModalState({
+            open: true,
+            tracks: targetTracks,
+            fields: {
+                bpm: true,
+                key: true,
+                cues: true,
+                comment: true,
+                genre_mood: true,
+                cover: true,
+            }
+        });
+    };
+
+    const handleGuardarTodoEnFicheros = async (customTracks = null, customFields = null) => {
+        const targetTracks = customTracks || ((selectedAuditIds && selectedAuditIds.size > 0)
+            ? tracks.filter(t => selectedAuditIds.has(t.id))
+            : tracks);
+
+        if (!targetTracks || targetTracks.length === 0) {
+            alert(lang === 'en' ? "No tracks loaded to save." : "No hay pistas cargadas para guardar.");
+            return;
+        }
+
+        const fields = customFields || {
+            bpm: true,
+            key: true,
+            cues: true,
+            comment: true,
+            genre_mood: true,
+            cover: true,
+        };
 
         isProcessCancelledRef.current = false;
         activeAbortControllerRef.current = new AbortController();
@@ -2372,7 +2418,7 @@ export const AuditWorkspace = ({
 
         setIsInjecting(true);
         setBatchProgress(5);
-        setBatchStatusMsg(`Guardando todos los metadatos en ${targetTracks.length} archivos físicos...`);
+        setBatchStatusMsg(`Guardando metadatos seleccionados en ${targetTracks.length} archivos físicos...`);
         startProgressPolling();
 
         try {
@@ -2384,19 +2430,21 @@ export const AuditWorkspace = ({
                 title: t.title || t.t || '',
                 artist: t.artist || t.a || '',
                 album: t.album || '',
-                bpm: t.bpm || t.b || 128.0,
-                key: t.key || t.k || t.initialkey || '',
-                genre: t.genre || '',
-                subgenre: t.subgenre || '',
+                bpm: fields.bpm ? (t.bpm || t.b || 128.0) : null,
+                key: fields.key ? (t.key || t.k || t.initialkey || '') : null,
+                genre: fields.genre_mood ? (t.genre || '') : null,
+                subgenre: fields.genre_mood ? (t.subgenre || '') : null,
                 energy: t.energy || 80,
                 danceability: t.danceability || 80,
-                comment: t.comment || '',
-                grouping: t.grouping || t.mood || '',
+                comment: fields.comment ? (t.comment || '') : null,
+                grouping: fields.genre_mood ? (t.grouping || t.mood || '') : null,
                 label: t.label || '',
                 remixer: t.remixer || '',
                 composer: t.composer || '',
                 year: t.year || '',
-                cues: t.cues || [],
+                cues: fields.cues ? (t.cues || []) : null,
+                skip_cues: !fields.cues,
+                skip_cover: !fields.cover,
                 first_downbeat_ms: t.first_downbeat_ms || t.downbeat_ms || 0,
                 trim_start_ms: t.trim_start_ms || 0,
                 trim_end_ms: t.trim_end_ms || 0,

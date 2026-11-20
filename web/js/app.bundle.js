@@ -10825,6 +10825,18 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const [selectedAuditIds, setSelectedAuditIds] = useState20(/* @__PURE__ */ new Set());
     const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState20(false);
     const [deleteModalState, setDeleteModalState] = useState20({ open: false, tracks: [], mode: "trash" });
+    const [saveModalState, setSaveModalState] = useState20({
+      open: false,
+      tracks: [],
+      fields: {
+        bpm: true,
+        key: true,
+        cues: true,
+        comment: true,
+        genre_mood: true,
+        cover: true
+      }
+    });
     const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState20(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
@@ -12380,18 +12392,45 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         }, 1200);
       }
     };
-    const handleGuardarTodoEnFicheros = async () => {
-      const targetTracks = selectedAuditIds && selectedAuditIds.size > 0 ? tracks.filter((t2) => selectedAuditIds.has(t2.id)) : tracks;
+    const handleSolicitarGuardarTodo = (customTracks = null) => {
+      const targetTracks = customTracks || (selectedAuditIds && selectedAuditIds.size > 0 ? tracks.filter((t2) => selectedAuditIds.has(t2.id)) : tracks);
       if (!targetTracks || targetTracks.length === 0) {
-        alert("No hay pistas cargadas para guardar.");
+        alert(lang === "en" ? "No tracks loaded to save." : "No hay pistas cargadas para guardar.");
         return;
       }
+      setSaveModalState({
+        open: true,
+        tracks: targetTracks,
+        fields: {
+          bpm: true,
+          key: true,
+          cues: true,
+          comment: true,
+          genre_mood: true,
+          cover: true
+        }
+      });
+    };
+    const handleGuardarTodoEnFicheros = async (customTracks = null, customFields = null) => {
+      const targetTracks = customTracks || (selectedAuditIds && selectedAuditIds.size > 0 ? tracks.filter((t2) => selectedAuditIds.has(t2.id)) : tracks);
+      if (!targetTracks || targetTracks.length === 0) {
+        alert(lang === "en" ? "No tracks loaded to save." : "No hay pistas cargadas para guardar.");
+        return;
+      }
+      const fields = customFields || {
+        bpm: true,
+        key: true,
+        cues: true,
+        comment: true,
+        genre_mood: true,
+        cover: true
+      };
       isProcessCancelledRef.current = false;
       activeAbortControllerRef.current = new AbortController();
       const signal = activeAbortControllerRef.current.signal;
       setIsInjecting(true);
       setBatchProgress(5);
-      setBatchStatusMsg(`Guardando todos los metadatos en ${targetTracks.length} archivos f\xEDsicos...`);
+      setBatchStatusMsg(`Guardando metadatos seleccionados en ${targetTracks.length} archivos f\xEDsicos...`);
       startProgressPolling();
       try {
         const sanitizedTracks = targetTracks.map((t2) => ({
@@ -12401,19 +12440,21 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
           title: t2.title || t2.t || "",
           artist: t2.artist || t2.a || "",
           album: t2.album || "",
-          bpm: t2.bpm || t2.b || 128,
-          key: t2.key || t2.k || t2.initialkey || "",
-          genre: t2.genre || "",
-          subgenre: t2.subgenre || "",
+          bpm: fields.bpm ? t2.bpm || t2.b || 128 : null,
+          key: fields.key ? t2.key || t2.k || t2.initialkey || "" : null,
+          genre: fields.genre_mood ? t2.genre || "" : null,
+          subgenre: fields.genre_mood ? t2.subgenre || "" : null,
           energy: t2.energy || 80,
           danceability: t2.danceability || 80,
-          comment: t2.comment || "",
-          grouping: t2.grouping || t2.mood || "",
+          comment: fields.comment ? t2.comment || "" : null,
+          grouping: fields.genre_mood ? t2.grouping || t2.mood || "" : null,
           label: t2.label || "",
           remixer: t2.remixer || "",
           composer: t2.composer || "",
           year: t2.year || "",
-          cues: t2.cues || [],
+          cues: fields.cues ? t2.cues || [] : null,
+          skip_cues: !fields.cues,
+          skip_cover: !fields.cover,
           first_downbeat_ms: t2.first_downbeat_ms || t2.downbeat_ms || 0,
           trim_start_ms: t2.trim_start_ms || 0,
           trim_end_ms: t2.trim_end_ms || 0,

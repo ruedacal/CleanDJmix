@@ -1767,7 +1767,7 @@ class AudioProcessorService:
         mood_val = str(meta_track.get("mood") or existing_tags.get("MOOD") or existing_tags.get("GROUPING") or "Peak Time").strip()
         raw_cues = meta_track.get("cues") or []
         cues_list = [c for c in raw_cues if c and not c.get("is_empty") and (c.get("pos_ms") is not None or c.get("time") or c.get("pct") is not None)] if raw_cues else []
-        if not cues_list or meta_track.get("recalcular_grid") or meta_track.get("recalcular_cues"):
+        if (not cues_list or meta_track.get("recalcular_grid") or meta_track.get("recalcular_cues")) and not meta_track.get("skip_cues"):
             modo_cues = str(meta_track.get("modo_cues") or meta_track.get("cues_mode") or "estandar").lower()
             if modo_cues in ("acustico", "acoustic", "sub_bass"):
                 cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
@@ -1908,9 +1908,11 @@ class AudioProcessorService:
         flac_autotags_str = "\n".join(flac_autotags_b64[i:i+72] for i in range(0, len(flac_autotags_b64), 72)) + "\n"
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
-        if not cover_source and not has_existing_cover and not es_rapido and not meta_track.get("skip_remote_covers"):
+        if meta_track.get("skip_cover"):
+            cover_source = None
+        elif not cover_source and not has_existing_cover and not es_rapido and not meta_track.get("skip_remote_covers"):
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
-        cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
+        cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if (cover_source and not meta_track.get("skip_cover")) else b""
 
         real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
         file_ext = ext.replace(".", "").lower()
@@ -1972,10 +1974,11 @@ class AudioProcessorService:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
 
                 # Metadatos nativos Serato DJ en VORBIS_COMMENT canónico (especificación oficial Serato DJ Pro)
-                audio["SERATO_MARKERS_V2"] = [flac_markers2_str]
-                audio["SERATO_BEATGRID"] = [flac_beatgrid_str]
-                audio["SERATO_ANALYSIS"] = [flac_analysis_str]
-                audio["SERATO_AUTOGAIN"] = [flac_autotags_str]
+                if not meta_track.get("skip_cues"):
+                    audio["SERATO_MARKERS_V2"] = [flac_markers2_str]
+                    audio["SERATO_BEATGRID"] = [flac_beatgrid_str]
+                    audio["SERATO_ANALYSIS"] = [flac_analysis_str]
+                    audio["SERATO_AUTOGAIN"] = [flac_autotags_str]
 
                 # Eliminar tags obsoletos o no conformes que confunden a Serato en contenedores FLAC
                 for obsolete_key in ["SERATO_MARKERS", "SERATO_ANALYSIS_FLAGS", "SERATO_TEMPO_MAP"]:
@@ -2053,33 +2056,34 @@ class AudioProcessorService:
                     id3.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
 
                 # Inyección GEOB Serato Markers2 (Moderna con cabecera binaria oficial \x01\x01 y padding)
-                id3.add(GEOB(
-                    encoding=0,
-                    mime="application/octet-stream",
-                    desc="Serato Markers2",
-                    data=serato_markers2_geob
-                ))
-                # Inyección GEOB Serato Markers_ (Legacy v1 para compatibilidad histórica)
-                id3.add(GEOB(
-                    encoding=0,
-                    mime="application/octet-stream",
-                    desc="Serato Markers_",
-                    data=serato_markers_v1_bin
-                ))
-                # Inyección GEOB Serato BeatGrid
-                id3.add(GEOB(
-                    encoding=0,
-                    mime="application/octet-stream",
-                    desc="Serato BeatGrid",
-                    data=serato_beatgrid_bin
-                ))
-                # Inyección GEOB Serato Tempo Map
-                id3.add(GEOB(
-                    encoding=0,
-                    mime="application/octet-stream",
-                    desc="Serato Tempo Map",
-                    data=serato_tempo_map_bin
-                ))
+                if not meta_track.get("skip_cues"):
+                    id3.add(GEOB(
+                        encoding=0,
+                        mime="application/octet-stream",
+                        desc="Serato Markers2",
+                        data=serato_markers2_geob
+                    ))
+                    # Inyección GEOB Serato Markers_ (Legacy v1 para compatibilidad histórica)
+                    id3.add(GEOB(
+                        encoding=0,
+                        mime="application/octet-stream",
+                        desc="Serato Markers_",
+                        data=serato_markers_v1_bin
+                    ))
+                    # Inyección GEOB Serato BeatGrid
+                    id3.add(GEOB(
+                        encoding=0,
+                        mime="application/octet-stream",
+                        desc="Serato BeatGrid",
+                        data=serato_beatgrid_bin
+                    ))
+                    # Inyección GEOB Serato Tempo Map
+                    id3.add(GEOB(
+                        encoding=0,
+                        mime="application/octet-stream",
+                        desc="Serato Tempo Map",
+                        data=serato_tempo_map_bin
+                    ))
                 # Inyección GEOB Serato Analysis Flags
                 id3.add(GEOB(
                     encoding=0,
