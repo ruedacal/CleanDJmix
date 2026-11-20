@@ -24,7 +24,7 @@ export const CopilotSeratoWaveform = ({
     useEffect(() => {
         if (deck.play_progress !== undefined && deck.play_progress !== null) {
             const diff = Math.abs(progressRef.current - deck.play_progress);
-            if (diff > 0.01 || !deck.is_playing || deck.play_progress === 0) {
+            if (diff > 0.002 || !deck.is_playing || deck.play_progress === 0) {
                 progressRef.current = deck.play_progress;
                 setProgress(deck.play_progress);
             }

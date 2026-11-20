@@ -2539,12 +2539,40 @@ return folderPath'''
             if self._cancelar_proceso:
                 return False
 
-            target_path = t.get("path") or t.get("filepath")
-            filename = t.get("filename") or t.get("f") or os.path.basename(target_path or "")
-            if not target_path or not os.path.exists(target_path):
-                real = self.directorio_actual and os.path.join(self.directorio_actual, filename)
-                if real and os.path.exists(real):
-                    target_path = real
+            import urllib.parse
+            raw_path = t.get("path") or t.get("filepath") or ""
+            if raw_path.startswith("file://"):
+                raw_path = raw_path[7:]
+            raw_path = urllib.parse.unquote(raw_path)
+
+            filename = t.get("filename") or t.get("f") or os.path.basename(raw_path)
+            filename = urllib.parse.unquote(filename)
+
+            target_path = raw_path if (raw_path and os.path.exists(raw_path)) else None
+
+            # Fallback a carpetas conocidas y tolerancia a leading/trailing whitespace en nombres de archivo
+            if not target_path:
+                candidates = []
+                if self.directorio_actual:
+                    candidates.append(self.directorio_actual)
+                candidates.extend([
+                    "/Users/admin/Music/FLAC OK",
+                    "/Users/admin/Music/mi musica",
+                    "/Users/admin/Music"
+                ])
+                for cdir in candidates:
+                    p1 = os.path.join(cdir, filename)
+                    if os.path.exists(p1):
+                        target_path = p1
+                        break
+                    p2 = os.path.join(cdir, " " + filename)
+                    if os.path.exists(p2):
+                        target_path = p2
+                        break
+                    p3 = os.path.join(cdir, filename.lstrip())
+                    if os.path.exists(p3):
+                        target_path = p3
+                        break
 
             ok = False
             if target_path and os.path.exists(target_path):
@@ -2563,7 +2591,8 @@ return folderPath'''
                 else:
                     errores_list[0] += 1
 
-                if progreso_cb and (c % max(1, total // 50) == 0 or c == total):
+                step = max(1, min(5, total // 50))
+                if progreso_cb and (c % step == 0 or c == total):
                     pct = int(5 + (c / total) * 90)
                     progreso_cb(pct, f"Guardando ID3v2.4 / Serato ({c}/{total}): {filename}")
 

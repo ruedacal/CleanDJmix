@@ -5362,7 +5362,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     useEffect10(() => {
       if (deck.play_progress !== void 0 && deck.play_progress !== null) {
         const diff = Math.abs(progressRef.current - deck.play_progress);
-        if (diff > 0.01 || !deck.is_playing || deck.play_progress === 0) {
+        if (diff > 2e-3 || !deck.is_playing || deck.play_progress === 0) {
           progressRef.current = deck.play_progress;
           setProgress(deck.play_progress);
         }
@@ -12419,6 +12419,15 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
     const handleCancelarProceso = async () => {
       stopProgressPolling();
       setIsAuditPaused(false);
+      setIsAuditing(false);
+      setIsLoadingDir(false);
+      setIsInjecting(false);
+      setIsExporting(false);
+      setBatchProgress(0);
+      setBatchStatusMsg("\u2713 Proceso cancelado inmediatamente por el usuario.");
+      if (typeof onAuditProgressChange === "function") {
+        onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
+      }
       try {
         await fetch("/api/cancelar_procesos", { method: "POST" });
       } catch (e) {
@@ -12430,15 +12439,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
           console.error("Error al cancelar procesos:", e);
         }
       }
-      setIsAuditing(false);
-      setIsLoadingDir(false);
-      setIsInjecting(false);
-      setIsExporting(false);
-      setBatchProgress(0);
-      setBatchStatusMsg("");
-      if (typeof onAuditProgressChange === "function") {
-        onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
-      }
+      setTimeout(() => setBatchStatusMsg(""), 2e3);
     };
     const [auditSortField, setAuditSortField] = useState20("id");
     const [auditSortDir, setAuditSortDir] = useState20("asc");
@@ -26433,19 +26434,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
         type: "button",
         onClick: () => onSetMaster && onSetMaster(side),
         className: `px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${isMaster ? "bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`,
-        title: `Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`
+        title: `Haz clic para alternar DECK ${side} como MASTER (o pulsa 'M')`
       },
       isMaster ? "\u{1F50A} MASTER" : "\u{1F3A7} EN CUE"
     ), /* @__PURE__ */ React.createElement(
-      "button",
+      "div",
       {
-        type: "button",
-        onClick: () => onTogglePlay && onTogglePlay(side),
-        className: `px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1 hover:scale-105 active:scale-95 ${deck.is_playing ? "bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-amber-950/80 border border-amber-500/60 text-amber-300 hover:bg-amber-900"}`,
-        title: `Pausar / Reproducir Deck ${side} (o pulsa tecla '${side}')`
+        className: `px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 select-none ${deck.is_playing ? "bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "bg-zinc-900 border border-zinc-700 text-zinc-400"}`,
+        title: deck.is_playing ? `Deck ${side} en reproducci\xF3n (EN VIVO)` : `Deck ${side} en CUE / Pausa`
       },
-      /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${deck.is_playing ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}` }),
-      deck.is_playing ? "EN VIVO" : "PAUSA"
+      /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${deck.is_playing ? "bg-emerald-400 animate-pulse" : "bg-zinc-500"}` }),
+      /* @__PURE__ */ React.createElement("span", null, deck.is_playing ? "EN VIVO" : "CUE")
     )), (deck.mood || deck.phase) && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase" }, /* @__PURE__ */ React.createElement(Icons.Sparkles, { size: 12, className: "inline-block align-[-1px] mr-1" }), " ", deck.mood || deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase" }, deck.format && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, isEmptyDeck ? "STANDBY" : deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -26790,6 +26789,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
         if (!prev || !prev.decks) return prev;
         const cur = prev.decks[dKey];
         if (!cur || !cur.title) return prev;
+        const cueSec = cur.cues && cur.cues.length > 0 && cur.cues[0].pos_sec !== void 0 ? cur.cues[0].pos_sec : 0;
+        const dur = cur.duration_sec || 240;
+        const prog = dur > 0 ? Math.min(1, cueSec / dur) : 0;
         return {
           ...prev,
           decks: {
@@ -26797,8 +26799,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
             [dKey]: {
               ...cur,
               is_playing: false,
-              elapsed_sec: 0,
-              play_progress: 0,
+              elapsed_sec: cueSec,
+              play_progress: prog,
               status: "CUE (PREPARADO)"
             }
           }
@@ -26844,12 +26846,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const [status, note, velocity = 0] = e.data;
         const cmd = status & 240;
         const ch = status & 15;
-        const targetDeck = ch === 0 || ch === 2 ? 1 : ch === 1 || ch === 3 ? 2 : null;
+        let targetDeck = ch === 1 || ch === 3 ? 2 : ch === 0 || ch === 2 ? [8, 9, 10, 60, 67, 32, 33, 34, 70, 71, 72].includes(note) ? 2 : 1 : note < 32 ? 1 : 2;
         if (!targetDeck) return;
+        const PLAY_NOTES = [0, 4, 8, 11, 12, 32, 59, 60, 64, 66, 67, 71, 4, 11, 12, 59];
+        const CUE_NOTES = [1, 5, 9, 12, 33, 34, 51, 65, 67, 72, 1, 51, 65];
         if ((cmd === 144 || cmd === 176) && velocity > 0) {
-          if ([59, 0, 11, 64, 66].includes(note)) {
+          if (PLAY_NOTES.includes(note)) {
             toggleDeckPlay(targetDeck);
-          } else if ([51, 1, 12, 65, 67].includes(note)) {
+          } else if (CUE_NOTES.includes(note)) {
             cueDeck(targetDeck);
           }
         }

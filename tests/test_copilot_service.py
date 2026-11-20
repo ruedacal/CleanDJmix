@@ -187,3 +187,27 @@ def test_copilot_transport_and_midi_controls():
     was_playing = d2.is_playing
     engine._process_midi_message(FakeMidiMsg())
     assert d2.is_playing != was_playing
+
+    # Probar mensaje MIDI Numark NV II Play (Note 4) y Cue (Note 1)
+    class NumarkPlayMsg:
+        type = "note_on"
+        channel = 0  # Deck 1
+        note = 4
+        velocity = 127
+
+    class NumarkCueMsg:
+        type = "note_on"
+        channel = 0  # Deck 1
+        note = 1
+        velocity = 127
+
+    # Inyectar Hot Cue en Deck 1 para validar salto a Serato Downbeat
+    d1 = engine.state.decks[1]
+    d1.hot_cues = [{"id": 1, "pos_sec": 0.267, "name": "Primer Golpe"}]
+    d1.is_playing = True
+    d1.elapsed_sec = 25.0
+
+    engine._process_midi_message(NumarkCueMsg())
+    assert d1.is_playing is False
+    assert abs(d1.elapsed_sec - 0.267) < 0.001
+    assert d1.status == "CUE (PREPARADO)"

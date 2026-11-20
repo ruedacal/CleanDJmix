@@ -2446,6 +2446,15 @@ export const AuditWorkspace = ({
     const handleCancelarProceso = async () => {
         stopProgressPolling();
         setIsAuditPaused(false);
+        setIsAuditing(false);
+        setIsLoadingDir(false);
+        setIsInjecting(false);
+        setIsExporting(false);
+        setBatchProgress(0);
+        setBatchStatusMsg('✓ Proceso cancelado inmediatamente por el usuario.');
+        if (typeof onAuditProgressChange === 'function') {
+            onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
+        }
         try {
             await fetch('/api/cancelar_procesos', { method: 'POST' });
         } catch (e) {}
@@ -2456,15 +2465,7 @@ export const AuditWorkspace = ({
                 console.error("Error al cancelar procesos:", e);
             }
         }
-        setIsAuditing(false);
-        setIsLoadingDir(false);
-        setIsInjecting(false);
-        setIsExporting(false);
-        setBatchProgress(0);
-        setBatchStatusMsg('');
-        if (typeof onAuditProgressChange === 'function') {
-            onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
-        }
+        setTimeout(() => setBatchStatusMsg(''), 2000);
     };
 
     // Estado de Ordenación y Filtros por Cabecera de Tabla

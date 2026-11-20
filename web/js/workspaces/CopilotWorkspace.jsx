@@ -619,23 +619,21 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                 className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
                                     isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
                                 }`}
-                                title={`Haz clic para establecer DECK ${side} como MASTER (o pulsa 'M')`}
+                                title={`Haz clic para alternar DECK ${side} como MASTER (o pulsa 'M')`}
                             >
                                 {isMaster ? '🔊 MASTER' : '🎧 EN CUE'}
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => onTogglePlay && onTogglePlay(side)}
-                                className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-1 hover:scale-105 active:scale-95 ${
+                            <div 
+                                className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 select-none ${
                                     deck.is_playing 
-                                        ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 hover:bg-emerald-900 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
-                                        : 'bg-amber-950/80 border border-amber-500/60 text-amber-300 hover:bg-amber-900'
+                                        ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                                        : 'bg-zinc-900 border border-zinc-700 text-zinc-400'
                                 }`}
-                                title={`Pausar / Reproducir Deck ${side} (o pulsa tecla '${side}')`}
+                                title={deck.is_playing ? `Deck ${side} en reproducción (EN VIVO)` : `Deck ${side} en CUE / Pausa`}
                             >
-                                <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-                                {deck.is_playing ? 'EN VIVO' : 'PAUSA'}
-                            </button>
+                                <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
+                                <span>{deck.is_playing ? 'EN VIVO' : 'CUE'}</span>
+                            </div>
                         </div>
                     )}
 
@@ -1195,6 +1193,9 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             if (!prev || !prev.decks) return prev;
             const cur = prev.decks[dKey];
             if (!cur || !cur.title) return prev;
+            const cueSec = (cur.cues && cur.cues.length > 0 && cur.cues[0].pos_sec !== undefined) ? cur.cues[0].pos_sec : 0.0;
+            const dur = cur.duration_sec || 240.0;
+            const prog = dur > 0 ? Math.min(1.0, cueSec / dur) : 0.0;
             return {
                 ...prev,
                 decks: {
@@ -1202,8 +1203,8 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     [dKey]: {
                         ...cur,
                         is_playing: false,
-                        elapsed_sec: 0.0,
-                        play_progress: 0.0,
+                        elapsed_sec: cueSec,
+                        play_progress: prog,
                         status: 'CUE (PREPARADO)'
                     }
                 }
@@ -1254,14 +1255,19 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             const [status, note, velocity = 0] = e.data;
             const cmd = status & 0xF0;
             const ch = status & 0x0F;
-            const targetDeck = (ch === 0 || ch === 2) ? 1 : ((ch === 1 || ch === 3) ? 2 : null);
+
+            // Mapeo exhaustivo para Numark NV II (ch 0..3 y notas de transporte)
+            let targetDeck = (ch === 1 || ch === 3) ? 2 : ((ch === 0 || ch === 2) ? ([8, 9, 10, 60, 67, 32, 33, 34, 70, 71, 72].includes(note) ? 2 : 1) : (note < 32 ? 1 : 2));
             if (!targetDeck) return;
+
+            const PLAY_NOTES = [0, 4, 8, 11, 12, 32, 59, 60, 64, 66, 67, 71, 0x04, 0x0B, 0x0C, 0x3B];
+            const CUE_NOTES = [1, 5, 9, 12, 33, 34, 51, 65, 67, 72, 0x01, 0x33, 0x41];
 
             // Note On o CC con velocidad > 0
             if ((cmd === 0x90 || cmd === 0xB0) && velocity > 0) {
-                if ([59, 0, 11, 64, 66].includes(note)) {
+                if (PLAY_NOTES.includes(note)) {
                     toggleDeckPlay(targetDeck);
-                } else if ([51, 1, 12, 65, 67].includes(note)) {
+                } else if (CUE_NOTES.includes(note)) {
                     cueDeck(targetDeck);
                 }
             }

@@ -39,19 +39,30 @@ class CopilotEngine:
 
     @staticmethod
     def _extract_serato_markers_cues(fpath: str) -> List[Dict[str, Any]]:
-        """Extrae los hot cues oficiales con sus nombres y colores exactos de Serato Markers v2."""
+        """Extrae los hot cues oficiales con sus nombres, marcas temporales exactas (ms) y colores de Serato Markers v2."""
         cues = []
         if not fpath or not os.path.exists(fpath):
             return cues
         try:
-            import mutagen, base64
+            import mutagen, base64, struct
             f = mutagen.File(fpath)
             if not f:
                 return cues
-            val = f.get('serato_markers_v2')
+            val = f.get('serato_markers_v2') or f.get('Serato Markers2')
+            if not val and hasattr(f, 'tags') and f.tags:
+                for k in f.tags.keys():
+                    if 'marker' in k.lower():
+                        val = f.tags.get(k)
+                        break
             if not val:
                 return cues
-            s = val[0] if isinstance(val, list) else val
+
+            s = val[0] if isinstance(val, list) else (val.data if hasattr(val, 'data') else val)
+            if isinstance(s, bytes):
+                if b'application/octet-stream' in s:
+                    s = s.split(b'\x00')[-1].decode('latin1', errors='ignore')
+                else:
+                    s = s.decode('latin1', errors='ignore')
             s = s.replace('\n', '').strip()
             s += '=' * ((4 - len(s) % 4) % 4)
             dec1 = base64.b64decode(s)
@@ -62,23 +73,29 @@ class CopilotEngine:
             dec2 = base64.b64decode(inner + b'=' * ((4 - len(inner) % 4) % 4))
 
             idx = 0
-            cue_num = 1
-            colors_palette = ['#ef4444', '#f97316', '#eab308', '#10b981', '#38bdf8', '#a855f7', '#ec4899', '#facc15']
             while True:
                 pos = dec2.find(b'CUE\x00', idx)
-                if pos == -1:
+                if pos == -1 or pos + 8 > len(dec2):
                     break
-                next_pos = dec2.find(b'CUE\x00', pos + 4)
-                cue_data = dec2[pos+4:next_pos] if next_pos != -1 else dec2[pos+4:]
-                parts = cue_data.split(b'\x00')
-                non_empty = [p for p in parts if len(p) > 2 and any(32 <= b <= 126 for b in p)]
-                if non_empty:
-                    name_bytes = non_empty[-1]
-                    name = name_bytes.decode('utf-8', errors='ignore').strip()
-                    color = colors_palette[(cue_num - 1) % len(colors_palette)]
-                    cues.append({'id': cue_num, 'name': name, 'color': color})
-                    cue_num += 1
-                idx = pos + 4
+                cdata_len = struct.unpack('>I', dec2[pos+4:pos+8])[0]
+                cdata = dec2[pos+8:pos+8+cdata_len]
+                if len(cdata) >= 12:
+                    cid = cdata[1]
+                    pos_ms = struct.unpack('>I', cdata[2:6])[0]
+                    r, g, b = cdata[7], cdata[8], cdata[9]
+                    color = f'#{r:02x}{g:02x}{b:02x}'
+                    name = cdata[12:].split(b'\x00')[0].decode('utf-8', errors='ignore').strip()
+                    pos_sec = round(pos_ms / 1000.0, 3)
+                    cues.append({
+                        'id': cid + 1,
+                        'cid': cid,
+                        'name': name or f"Cue {cid + 1}",
+                        'color': color,
+                        'pos_ms': pos_ms,
+                        'pos_sec': pos_sec,
+                        'time': f"{int(pos_ms // 60000):02d}:{(pos_ms % 60000) / 1000.0:05.2f}"
+                    })
+                idx = pos + 8 + cdata_len
         except Exception:
             pass
         return cues
@@ -385,7 +402,7 @@ class CopilotEngine:
         return self.get_live_state()
 
     def cue_deck(self, deck_id: Any) -> Dict[str, Any]:
-        """Detiene y posiciona el deck en el Cue inicial (0:00)."""
+        """Detiene y posiciona el deck en el punto Cue de Serato (exactamente como Serato DJ Pro)."""
         with self._lock:
             try:
                 target_id = int(deck_id)
@@ -394,8 +411,12 @@ class CopilotEngine:
             d = self.state.decks.get(target_id)
             if d and d.title and d.bpm > 0:
                 d.is_playing = False
-                d.elapsed_sec = 0.0
-                d.remaining_sec = d.duration_sec
+                # En Serato, Cue salta al Cue 1 / Downbeat oficial de la pista si existe, o a 0:00
+                cue_sec = 0.0
+                if d.hot_cues and len(d.hot_cues) > 0:
+                    cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0))
+                d.elapsed_sec = min(d.duration_sec, cue_sec)
+                d.remaining_sec = max(0.0, d.duration_sec - d.elapsed_sec)
                 d.status = "CUE (PREPARADO)"
                 d.beat_number = 1
                 d.bar_number = 1
@@ -513,8 +534,12 @@ class CopilotEngine:
                                 cues = self._extract_serato_markers_cues(full_p)
                                 if cues:
                                     d.hot_cues = cues
-                            d.elapsed_sec = 0.0
-                            d.remaining_sec = dur
+                            # En Serato, la pista recién cargada se sitúa en el Cue 1 / Downbeat inicial
+                            cue_sec = 0.0
+                            if d.hot_cues and len(d.hot_cues) > 0:
+                                cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0))
+                            d.elapsed_sec = min(dur, cue_sec)
+                            d.remaining_sec = max(0.0, dur - d.elapsed_sec)
                             d.is_playing = False
                             d.status = "CUE (PREPARADO)"
                             d.beat_number = 1
@@ -632,13 +657,33 @@ class CopilotEngine:
             status_label = "PAUSA" if deck.elapsed_sec > 0 else "CUE (PREPARADO)"
         
         # Cues oficiales de Serato Markers si están disponibles, o cuantizados
+        dur = deck.duration_sec if deck.duration_sec > 0 else 240.0
         if deck.hot_cues and len(deck.hot_cues) > 0:
-            cues = deck.hot_cues
+            cues = []
+            for c in deck.hot_cues:
+                pos_sec = float(c.get("pos_sec", c.get("position_ms", 0) / 1000.0))
+                cues.append({
+                    "id": c.get("id", 1),
+                    "name": c.get("name", "Cue"),
+                    "color": c.get("color", "#06b6d4"),
+                    "pos_ms": int(pos_sec * 1000),
+                    "pos_sec": pos_sec,
+                    "pct": round(pos_sec / dur, 4) if dur > 0 else 0.0,
+                    "time": c.get("time", f"{int(pos_sec // 60):02d}:{pos_sec % 60:05.2f}")
+                })
         else:
-            dur_ms = int(deck.duration_sec * 1000) if deck.duration_sec > 0 else 240000
+            dur_ms = int(dur * 1000)
             step_ms = dur_ms // 9
             cues = [
-                {"id": i, "name": f"Cue {i} ({i*16}b)", "position_ms": i * step_ms, "color": "#00f0ff" if i % 2 == 1 else "#f472b6"}
+                {
+                    "id": i,
+                    "name": f"Cue {i} ({i*16}b)",
+                    "pos_ms": i * step_ms,
+                    "pos_sec": round((i * step_ms) / 1000.0, 3),
+                    "pct": round(i / 9.0, 4),
+                    "color": "#00f0ff" if i % 2 == 1 else "#f472b6",
+                    "time": f"{int((i * step_ms) // 60000):02d}:{((i * step_ms) % 60000) / 1000.0:05.2f}"
+                }
                 for i in range(1, 9)
             ]
 
@@ -893,28 +938,37 @@ class CopilotEngine:
                 time.sleep(1.0)
 
     def _process_midi_message(self, msg: Any):
-        """Procesa mensajes de transporte (Play/Pausa, Cue) procedentes de la controladora física."""
+        """Procesa mensajes de transporte (Play/Pausa, Cue) procedentes de la controladora física (Numark NV II, Pioneer, etc.)."""
         try:
             channel = getattr(msg, 'channel', 0)
-            target_deck = 1 if channel in (0, 2) else (2 if channel in (1, 3) else None)
-            if not target_deck:
+            msg_type = getattr(msg, 'type', '')
+            val = getattr(msg, 'velocity', getattr(msg, 'value', 0))
+            if val <= 0 and msg_type != 'note_off':
                 return
 
-            msg_type = getattr(msg, 'type', '')
-            if msg_type == 'note_on' and getattr(msg, 'velocity', 0) > 0:
-                note = getattr(msg, 'note', -1)
-                # Notas estándar de transporte DJ: 59 (0x3B), 0, 11 (0x0B), 64, 66
-                if note in (59, 0, 11, 64, 66):
-                    self.toggle_deck_play(target_deck)
-                # Cue estándar: 51 (0x33), 1, 12 (0x0C), 65, 67
-                elif note in (51, 1, 12, 65, 67):
-                    self.cue_deck(target_deck)
-            elif msg_type == 'control_change' and getattr(msg, 'value', 0) > 0:
-                ctrl = getattr(msg, 'control', -1)
-                if ctrl in (59, 0, 11, 64, 66):
-                    self.toggle_deck_play(target_deck)
-                elif ctrl in (51, 1, 12, 65, 67):
-                    self.cue_deck(target_deck)
+            note_or_ctrl = getattr(msg, 'note', getattr(msg, 'control', -1))
+            if note_or_ctrl < 0:
+                return
+
+            # Mapeo de canal y notas para Numark NV II y controladoras de 2 y 4 decks
+            target_deck = None
+            if channel in (1, 3):
+                target_deck = 2
+            elif channel in (0, 2):
+                if note_or_ctrl in (8, 9, 10, 60, 67, 32, 33, 34, 70, 71, 72):
+                    target_deck = 2
+                else:
+                    target_deck = 1
+            else:
+                target_deck = 1 if note_or_ctrl < 32 else 2
+
+            PLAY_NOTES = {0, 4, 8, 11, 12, 32, 59, 60, 64, 66, 67, 71, 0x04, 0x0B, 0x0C, 0x3B}
+            CUE_NOTES = {1, 5, 9, 12, 33, 34, 51, 65, 67, 72, 0x01, 0x33, 0x41}
+
+            if note_or_ctrl in PLAY_NOTES:
+                self.toggle_deck_play(target_deck)
+            elif note_or_ctrl in CUE_NOTES:
+                self.cue_deck(target_deck)
         except Exception:
             pass
 

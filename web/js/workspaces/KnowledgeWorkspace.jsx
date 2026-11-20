@@ -1458,33 +1458,17 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                         {isMaster ? '🔊 MASTER (ON AIR)' : '🎧 EN CUE (PREPARADO)'}
                     </button>
 
-                    {/* BOTONES TÁCTICOS DE TRANSPORTE CABINA: PLAY/PAUSA & CUE */}
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePlay && onTogglePlay(side);
-                        }}
-                        className={`px-3 py-1 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center gap-1 border shadow-sm ${
-                            deck.is_playing
-                            ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.8)] animate-pulse'
-                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-600 hover:text-white'
+                    <div 
+                        className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 select-none ${
+                            deck.is_playing 
+                                ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                                : 'bg-zinc-900 border border-zinc-700 text-zinc-400'
                         }`}
-                        title={`Alternar Play/Pausa en Deck ${side} (Atajo de teclado: '${side}')`}
+                        title={deck.is_playing ? `Deck ${side} en reproducción (EN VIVO)` : `Deck ${side} en CUE / Pausa`}
                     >
-                        <span>{deck.is_playing ? '⏸ PAUSA' : '▶ PLAY'}</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onCue && onCue(side);
-                        }}
-                        className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all bg-zinc-900 hover:bg-zinc-800 text-indigo-300 border border-indigo-500/50 hover:text-white"
-                        title={`Rebobinar a CUE Bar 1 (Atajo: tecla 'C')`}
-                    >
-                        <span>⏮ CUE</span>
-                    </button>
+                        <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
+                        <span>{deck.is_playing ? 'EN VIVO' : 'CUE'}</span>
+                    </div>
 
                     {(deck.mood || deck.phase) && (
                         <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase">

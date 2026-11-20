@@ -1084,15 +1084,13 @@ class AudioProcessorService:
         except Exception:
             downbeat_clean = 0
 
-        # Blindaje de duración real contra archivos de disco
-        if ruta and os.path.exists(ruta):
+        # Blindaje de duración real contra archivos de disco (solo si dur_clean es desconocida o valor por defecto)
+        if (dur_clean == 300000 or dur_clean <= 1000) and ruta and os.path.exists(ruta):
             try:
                 import soundfile as sf_chk
                 sfi = sf_chk.info(ruta)
                 if sfi.duration > 1.0:
-                    real_ms = int(sfi.duration * 1000)
-                    if dur_clean < real_ms - 2000 or dur_clean == 300000:
-                        dur_clean = real_ms
+                    dur_clean = int(sfi.duration * 1000)
             except Exception:
                 pass
 
