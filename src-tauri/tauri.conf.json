@@ -1,0 +1,50 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
+  "productName": "BEATWAVE PRO",
+  "version": "2.4.0",
+  "identifier": "com.beatwave.pro",
+  "build": {
+    "beforeDevCommand": "python3 scripts/build_offline.py --skip-vendor --skip-fonts --skip-css",
+    "beforeBuildCommand": "python3 scripts/build_offline.py --skip-vendor --skip-fonts --skip-css",
+    "frontendDist": "../web"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "BEATWAVE PRO — Precision Audio Intelligence",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' ws: wss: data: blob: http: https:;"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "../web/assets/favicon.png",
+      "../web/assets/beatwave_wave_icon.png"
+    ],
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.15",
+      "dmg": {
+        "background": null
+      }
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
+  }
+}

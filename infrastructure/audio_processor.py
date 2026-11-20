@@ -4,6 +4,7 @@ import struct
 import base64
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC, FLACNoHeaderError, Picture
+from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TIT1, TIT2, TPE1, TALB, TBPM, TKEY, COMM, TCON, TSRC, GEOB, TXXX, APIC, TPE4, TCOM, TYER, TPUB, ID3NoHeaderError
 from mutagen.aiff import AIFF
 from mutagen.mp4 import MP4, MP4Cover
@@ -37,6 +38,138 @@ class AudioProcessorService:
         return "Desconocido", base.strip()
 
     @staticmethod
+    def detectar_formato_audio(ruta: str) -> str:
+        """Determina de forma ultrarrápida y precisa el formato real del contenedor de audio
+        analizando sus magic bytes iniciales en lugar de fiarse a ciegas de la extensión de archivo.
+        Resuelve archivos con extensión alterada (ej. MP3 o M4A guardados como .flac).
+        Retorna: 'flac', 'mp3', 'm4a', 'aiff', 'wav', 'ogg' o la extensión normalizada."""
+        if not ruta or not os.path.exists(ruta):
+            return ""
+        try:
+            with open(ruta, "rb") as fp:
+                head = fp.read(128)
+            
+            # 1. FLAC nativo canónico
+            if head.startswith(b"fLaC"):
+                return "flac"
+            
+            # 2. Cabecera ID3v2 (puede ser MP3 legítimo o un stream FLAC con tag ID3 previo)
+            if head.startswith(b"ID3"):
+                if len(head) >= 10:
+                    tag_size = (head[6] << 21) | (head[7] << 14) | (head[8] << 7) | head[9]
+                    total_id3 = 10 + tag_size
+                    try:
+                        with open(ruta, "rb") as fp2:
+                            fp2.seek(total_id3)
+                            if fp2.read(4) == b"fLaC":
+                                return "flac"
+                    except Exception:
+                        pass
+                return "mp3"
+            
+            # 3. Frames de sincronización MPEG ADTS / MP3 sin ID3 (0xFF 0xEx / 0xFx)
+            if len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0:
+                return "mp3"
+            
+            # 4. Contenedores MP4 / M4A / AAC (ftyp o moov atom en los primeros 32 bytes)
+            if b"ftyp" in head[:32] or b"moov" in head[:32]:
+                return "m4a"
+            
+            # 5. AIFF / AIF (FORM + AIFF o AIFC)
+            if head.startswith(b"FORM") and (b"AIFF" in head[:16] or b"AIFC" in head[:16]):
+                return "aiff"
+            
+            # 6. WAV (RIFF + WAVE)
+            if head.startswith(b"RIFF") and b"WAVE" in head[:16]:
+                return "wav"
+            
+            # 7. Ogg Vorbis / Opus (OggS)
+            if head.startswith(b"OggS"):
+                return "ogg"
+        except Exception:
+            pass
+
+        # Fallback a la extensión de archivo normalizada
+        ext = os.path.splitext(ruta)[1].lower().replace(".", "")
+        if ext in ("aif", "aiff"):
+            return "aiff"
+        if ext in ("mp4", "m4a", "aac", "alac"):
+            return "m4a"
+        return ext
+
+    @staticmethod
+    def calcular_dsp_energia_y_bailabilidad(ruta: str, bpm: float = 126.0) -> tuple:
+        """Calcula de forma acústica real la Energía (⚡) y Bailabilidad (🕺) mediante
+        RMS, Crest Factor y estabilidad del flujo rítmico.
+        Erradica fórmulas sintéticas de BPM. Devuelve (energy_pct, danceability_pct)."""
+        try:
+            mono, sr = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=14.0)
+            if mono is not None and len(mono) >= sr * 2:
+                import numpy as np
+                peak = float(np.max(np.abs(mono)) + 1e-12)
+                rms = float(np.sqrt(np.mean(mono ** 2)) + 1e-12)
+                rms_db = 20.0 * np.log10(rms)
+                peak_db = 20.0 * np.log10(peak)
+                crest_db = max(3.0, peak_db - rms_db)
+
+                # 1. Energía acústica real (sonoridad RMS + Crest Factor)
+                norm_crest = np.clip(1.0 - (crest_db - 4.5) / 16.0, 0.0, 1.0)
+                norm_rms = np.clip((rms_db + 26.0) / 18.0, 0.0, 1.0)
+                calc_energy = int(np.clip(round((norm_crest * 0.55 + norm_rms * 0.45) * 100), 30, 98))
+
+                # 2. Bailabilidad real (flujo rítmico y congruencia de tempo bailable)
+                hop = 512
+                frame_len = 1024
+                num_frames = (len(mono) - frame_len) // hop
+                if num_frames > 10:
+                    energies = np.array([np.sqrt(np.mean(mono[i*hop:i*hop+frame_len]**2)) for i in range(num_frames)])
+                    diffs = np.maximum(0, energies[1:] - energies[:-1])
+                    rhythm_flux = float(np.std(diffs) / (np.mean(energies) + 1e-6))
+                else:
+                    rhythm_flux = 0.35
+
+                # Rango de tempo bailable humano (reggaeton, funk, hip hop, house, techno, dnb)
+                b = float(bpm) if bpm and float(bpm) > 0 else 126.0
+                if 82.0 <= b <= 145.0:
+                    tempo_factor = 1.0
+                elif 65.0 <= b < 82.0 or 145.0 < b <= 165.0:
+                    tempo_factor = 0.90
+                else:
+                    tempo_factor = 0.78
+
+                norm_flux = np.clip(rhythm_flux * 2.5, 0.25, 1.0)
+                calc_dance = int(np.clip(round((norm_flux * 0.65 + norm_rms * 0.35) * tempo_factor * 100), 35, 96))
+                return calc_energy, calc_dance
+        except Exception:
+            pass
+        return 70, 75
+
+    @staticmethod
+    def normalizar_genero_canonico(raw_genre: str = "", bpm: float = 126.0, filepath: str = "", title: str = "", artist: str = "", intensity: float = None) -> str:
+        """Normaliza cualquier tag, metadato o consulta a un ÚNICO género canónico de la taxonomía universal.
+        Preserva géneros macro no electrónicos (Pop, Rock, Flamenco, etc.) y clasifica la electrónica
+        en sus familias canónicas.
+        REGLA DE ORO: Si no se reconoce con certeza, devuelve estrictamente 'Desconocido'."""
+        from domain.music_taxonomy import MusicTaxonomy
+        try:
+            from services.discogs_service import DiscogsService
+            g, sub = DiscogsService.resolver_genero_disco(
+                artist=artist,
+                title=title,
+                raw_genre=raw_genre,
+                bpm=bpm
+            )
+            return g
+        except Exception:
+            g, sub = MusicTaxonomy.normalizar_genero_y_subgenero(
+                raw_genre=raw_genre,
+                artist=artist,
+                title=title,
+                bpm=bpm
+            )
+            return g
+
+    @staticmethod
     def _cargar_audio_head_resiliente(ruta: str, max_sec: float = 12.0) -> tuple:
         """Carga los primeros segundos de audio de forma resiliente con fallback multi-tier.
         Soporta FLAC, WAV, AIFF, MP3 (incluso con cabeceras ID3 gigantes > 64KB), M4A, AAC, OGG."""
@@ -54,12 +187,32 @@ class AudioProcessorService:
         except Exception:
             pass
 
-        # 2. Fallback a librosa (maneja MP3 con tags grandes, m4a, aac vía audioread/ffmpeg)
+        # 2. Fallback ultrarrápido vía ffmpeg pipe en memoria (sin audioread ni warnings de contenedor)
         try:
-            import librosa
-            mono, sr = librosa.load(ruta, sr=44100, mono=True, duration=max_sec)
-            if mono is not None and len(mono) > 0:
-                return mono, sr
+            import subprocess, shutil, numpy as np
+            ffmpeg_bin = shutil.which("ffmpeg") or ("/usr/local/bin/ffmpeg" if os.path.exists("/usr/local/bin/ffmpeg") else "ffmpeg")
+            cmd = [
+                ffmpeg_bin, "-nostats", "-loglevel", "error",
+                "-t", str(max_sec), "-i", ruta,
+                "-f", "f32le", "-ac", "1", "-ar", "44100", "pipe:1"
+            ]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=10**6)
+            raw_pcm, _ = proc.communicate(timeout=3)
+            if raw_pcm and len(raw_pcm) >= 4096:
+                mono = np.frombuffer(raw_pcm, dtype=np.float32)
+                return mono, 44100
+        except Exception:
+            pass
+
+        # 3. Fallback a pydub / librosa como última alternativa silenciosa
+        try:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import librosa
+                mono, sr = librosa.load(ruta, sr=44100, mono=True, duration=max_sec)
+                if mono is not None and len(mono) > 0:
+                    return mono, sr
         except Exception:
             pass
 
@@ -81,117 +234,272 @@ class AudioProcessorService:
         return None, 44100
 
     @staticmethod
-    def detectar_trim_y_downbeat(ruta: str) -> tuple:
-        """Calcula de forma rigurosa y en dos fases consecutivas:
-        1. Recorte de silencio muerto (Zero-Crossing Auto-Trim a -48 dBFS estándar DJ Pioneer/Rekordbox).
-        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim)."""
-        if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
-            return 0.0, 0.0
+    def calcular_bpm_acustico_exacto(ruta: str, bpm_hint: float = 0.0) -> float:
+        """Calcula el tempo acústico real (BPM) midiendo la autocorrelación física
+        de energía en la banda de subgraves (45-110 Hz) mediante interpolación parabólica
+        sub-sample y refinamiento armónico por compás completo (4 beats).
+        Elimina la deriva rítmica (drift) acumulada en Serato DJ Pro.
+        Retorna float con 2 decimales exactos (ej. 133.79, 138.00)."""
+        if not ruta or not os.path.exists(ruta):
+            return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
         try:
+            import soundfile as sf
             import numpy as np
+            from scipy.signal import butter, sosfilt
 
-            mono, sr = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
-            if mono is None or len(mono) == 0:
-                return 0.0, 0.0
+            info = sf.info(ruta)
+            sr = info.samplerate
+            total_frames = info.frames
+            dur_total = total_frames / sr
 
-            # Si todo el fragmento es silencio absoluto (< -66 dBFS)
-            max_amp = float(np.max(np.abs(mono)))
-            if max_amp < 0.0005:
-                return 0.0, 0.0
+            # Cargar hasta 45 segundos representativos (evitando posibles intros mudas)
+            read_sec = min(45.0, dur_total)
+            offset_sec = 10.0 if dur_total > 35.0 else 0.0
+            start_frame = int(sr * offset_sec)
+            dur_frames = min(int(sr * read_sec), total_frames - start_frame)
+            if dur_frames <= int(sr * 4.0):
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
 
-            # FASE 1: Zero-Crossing Silence Trim (Cruce por cero a -48 dBFS estándar de club)
-            hop_silence = max(1, int(sr * 0.005))  # bloques de 5ms
-            num_blocks = len(mono) // hop_silence
-            if num_blocks == 0:
-                return 0.0, 0.0
+            data, _ = sf.read(ruta, start=start_frame, frames=dur_frames, dtype='float32')
+            mono = np.mean(data, axis=1) if data.ndim > 1 else data
 
-            sliced = mono[:num_blocks * hop_silence].reshape((num_blocks, hop_silence))
-            block_rms = np.sqrt(np.mean(sliced ** 2, axis=1))
+            # Aislamiento físico de la pegada del bombo (45 Hz a 110 Hz)
+            sos = butter(2, [45.0, 110.0], btype='bandpass', fs=sr, output='sos')
+            sub = sosfilt(sos, mono)
 
-            # Umbral Auto-Cue estándar DJ (-48 dBFS ~ 0.00398) con fallbacks graduados
-            audible_blocks = np.where(block_rms > 0.00398)[0]
-            if len(audible_blocks) == 0:
-                audible_blocks = np.where(block_rms > 0.00200)[0]  # -54 dBFS
-            if len(audible_blocks) == 0:
-                audible_blocks = np.where(block_rms > 0.00100)[0]  # -60 dBFS
-            if len(audible_blocks) == 0:
-                return 0.0, 0.0
+            # Envolvente RMS a alta resolución temporal (2000 Hz, 0.5 ms por muestra)
+            target_fs = 2000
+            hop = max(1, int(sr / target_fs))
+            num_hops = len(sub) // hop
+            if num_hops <= 20:
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
 
-            first_block = audible_blocks[0]
-            sample_candidate = first_block * hop_silence
+            env = np.sqrt(np.mean(sub[:num_hops * hop].reshape((num_hops, hop)) ** 2, axis=1))
+            # Derivada rectificada de energía (onset transient de sub-kick)
+            onset = np.maximum(0, np.diff(env))
+            onset = np.concatenate(([0], onset))
 
-            # Búsqueda retroactiva del cruce por cero exacto para garantizar 0 DC offset y 0 pop
-            search_start = max(0, sample_candidate - int(sr * 0.025))
-            sub = mono[search_start:sample_candidate + hop_silence]
-            signs = np.signbit(sub)
-            diffs = np.where(np.diff(signs))[0]
-            if len(diffs) > 0:
-                zero_cross_idx = search_start + int(diffs[-1])
+            if np.max(onset) < 0.0005:
+                return float(bpm_hint) if bpm_hint and float(bpm_hint) > 20.0 else 128.0
+
+            # Autocorrelación de la envolvente de onset
+            ac = np.correlate(onset, onset, mode='full')
+            ac = ac[len(onset) - 1:]
+
+            # Rango de tempo electrónico DJ estándar: 105 - 170 BPM
+            lag_min = int(target_fs * 60.0 / 170.0)
+            lag_max = int(target_fs * 60.0 / 105.0)
+            if lag_max >= len(ac) - 2:
+                lag_max = len(ac) - 3
+
+            peak_idx = lag_min + np.argmax(ac[lag_min:lag_max])
+
+            # Interpolación parabólica sub-sample para resolución sub-milisegundo
+            y0 = ac[peak_idx - 1]
+            y1 = ac[peak_idx]
+            y2 = ac[peak_idx + 1]
+            denom = 2 * (2 * y1 - y0 - y2)
+            delta = (y0 - y2) / denom if denom != 0 else 0.0
+            refined_lag = peak_idx + delta
+
+            # Refinamiento armónico por compás completo (4 beats):
+            # A 4 beats, el error acumulado se divide entre 4 aumentando 4x la precisión
+            lag_4_min = int(4 * refined_lag - target_fs * 0.04)
+            lag_4_max = int(4 * refined_lag + target_fs * 0.04)
+            if lag_4_max < len(ac) - 2 and lag_4_min > 0:
+                pk_4 = lag_4_min + np.argmax(ac[lag_4_min:lag_4_max])
+                y0_4 = ac[pk_4 - 1]
+                y1_4 = ac[pk_4]
+                y2_4 = ac[pk_4 + 1]
+                denom_4 = 2 * (2 * y1_4 - y0_4 - y2_4)
+                delta_4 = (y0_4 - y2_4) / denom_4 if denom_4 != 0 else 0.0
+                refined_lag_4 = (pk_4 + delta_4) / 4.0
+                refined_bpm = (60.0 * target_fs) / refined_lag_4
             else:
-                zero_cross_idx = sample_candidate
+                refined_bpm = (60.0 * target_fs) / refined_lag
 
-            trim_ms = round(float(zero_cross_idx) / sr * 1000.0, 1)
+            final_bpm = round(refined_bpm, 2)
 
-            # FASE 2: Detección del Downbeat Beatgrid 1.0.0 (estrictamente POST-TRIM)
-            # Analizar hasta 6 segundos posteriores al punto de corte de silencio
-            max_search_samples = min(len(mono), zero_cross_idx + int(sr * 6.0))
-            sub_audio = mono[zero_cross_idx:max_search_samples]
+            # En música de club y electrónica, los temas se producen con reloj MIDI/DAW rígido (Ableton, Logic, FL).
+            # 1. Si existe un bpm_hint oficial en metadatos y la diferencia acústica es menor a 0.45 BPM, PREVALECE el tag oficial.
+            if bpm_hint and float(bpm_hint) > 40.0:
+                hint_f = float(bpm_hint)
+                if abs(hint_f - final_bpm) <= 0.45:
+                    return round(hint_f, 2)
 
-            if len(sub_audio) < int(sr * 0.05):
-                return trim_ms, trim_ms
+            # 2. Cuantización de reloj de estudio: si el valor medido está a ±0.25 de un entero, anclar al entero
+            nearest_int = round(final_bpm)
+            if abs(final_bpm - nearest_int) <= 0.25:
+                return float(nearest_int)
 
-            # Filtro pasabajos para aislar la pegada del bombo / subgrave (< 180 Hz)
-            try:
-                from scipy.signal import butter, filtfilt
-                nyq = 0.5 * sr
-                cutoff = min(180.0, nyq * 0.5)
-                b, a = butter(2, cutoff / nyq, btype='low')
-                sub_low = filtfilt(b, a, sub_audio)
-            except Exception:
-                sub_low = sub_audio
+            # 3. Cuantización a semi-tempo (.50):
+            half_step = int(final_bpm) + 0.5
+            if abs(final_bpm - half_step) <= 0.15:
+                return float(half_step)
 
-            frame_len = int(sr * 0.020)  # 20ms
-            hop_len = int(sr * 0.004)    # 4ms
-
-            if len(sub_low) > frame_len:
-                num_frames = (len(sub_low) - frame_len) // hop_len
-                frames = np.lib.stride_tricks.as_strided(
-                    sub_low,
-                    shape=(num_frames, frame_len),
-                    strides=(sub_low.strides[0] * hop_len, sub_low.strides[0])
-                )
-                energies = np.sqrt(np.mean(frames ** 2, axis=1))
-                energy_diff = np.maximum(0, np.diff(energies))
-
-                max_diff = float(np.max(energy_diff)) if len(energy_diff) > 0 else 0.0
-                if max_diff > 0.003:
-                    # Encontrar el primer pico rítmico contundente (> 25% del máximo transitorio)
-                    peaks = np.where(energy_diff > (max_diff * 0.25))[0]
-                    if len(peaks) > 0:
-                        first_peak = int(peaks[0])
-                        peak_sample = zero_cross_idx + (first_peak * hop_len)
-                        # Micro-ajuste al pico absoluto más cercano dentro del frame
-                        local_window = mono[max(0, peak_sample - hop_len):min(len(mono), peak_sample + frame_len)]
-                        local_max_idx = int(np.argmax(np.abs(local_window))) if len(local_window) > 0 else 0
-                        final_sample = max(0, peak_sample - hop_len + local_max_idx)
-                        downbeat_ms = round(float(final_sample) / sr * 1000.0, 1)
-                    else:
-                        downbeat_ms = trim_ms
-                else:
-                    downbeat_ms = trim_ms
-            else:
-                downbeat_ms = trim_ms
-
-            # Regla de oro acústica DJ: el Downbeat nunca puede situarse antes del silencio recortado
-            if downbeat_ms < trim_ms:
-                downbeat_ms = trim_ms
-
-            return trim_ms, downbeat_ms
+            return final_bpm
         except Exception:
-            return 0.0, 0.0
+            return round(float(bpm_hint), 2) if bpm_hint and float(bpm_hint) > 20.0 else 128.00
 
     @staticmethod
-    def analizar_track_avanzado(ruta: str) -> dict:
+    def detectar_trim_y_downbeat(ruta: str, bpm: float = 0.0, incluir_cola: bool = False) -> tuple:
+        """Calcula de forma rigurosa y en orden secuencial estricto:
+        1. Recorte bidireccional de silencio (Zero-Crossing Auto-Trim a -48 dBFS en Cabecera y Cola).
+        2. Fijación matemática del Beatgrid 1.0.0 anclado al primer golpe de bombo real (downbeat >= trim_start)
+           utilizando el BPM acústico exacto ya establecido, filtrado SOS de subgraves (45-110 Hz),
+           envolvente de transitorios a 2000 Hz y correlación por peine rítmico (Comb Filter) sobre 32 beats.
+        Retorna:
+          Si incluir_cola=False: (trim_start_ms, first_downbeat_ms)
+          Si incluir_cola=True:  (trim_start_ms, first_downbeat_ms, trim_end_ms)"""
+        if not ruta or not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
+            return (0.0, 0.0, 0.0) if incluir_cola else (0.0, 0.0)
+        try:
+            import soundfile as sf
+            import numpy as np
+            from scipy.signal import butter, sosfiltfilt
+
+            # 1. Inspección de metadatos de audio con soundfile C-level
+            info = sf.info(ruta)
+            sr = info.samplerate
+            total_frames = info.frames
+            dur_total_ms = round((total_frames / sr) * 1000.0, 1)
+
+            # Calcular primero el BPM acústico real validado contra el reloj físico de la pista
+            b_est = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
+
+            # Cargar hasta 12 segundos de cabecera (suficiente para cubrir silencios iniciales, frases de intro y bombos 1.1)
+            mono_head, sr_head = AudioProcessorService._cargar_audio_head_resiliente(ruta, max_sec=12.0)
+            if mono_head is None or len(mono_head) == 0:
+                return (0.0, 0.0, dur_total_ms) if incluir_cola else (0.0, 0.0)
+
+            # FASE 1A: Zero-Crossing Silence Trim en Cabecera (Resolución fina de 2ms)
+            hop_silence = max(1, int(sr_head * 0.002))  # bloques de 2ms
+            head_samples = len(mono_head)
+            num_blocks = head_samples // hop_silence
+            trim_start_ms = 0.0
+            downbeat_ms = 0.0
+
+            if num_blocks > 0:
+                sliced = mono_head[:num_blocks * hop_silence].reshape((num_blocks, hop_silence))
+                block_rms = np.sqrt(np.mean(sliced ** 2, axis=1))
+
+                audible_blocks = np.where(block_rms > 0.00398)[0]
+                if len(audible_blocks) == 0:
+                    audible_blocks = np.where(block_rms > 0.00150)[0]
+                if len(audible_blocks) == 0:
+                    audible_blocks = np.where(block_rms > 0.00080)[0]
+
+                if len(audible_blocks) > 0:
+                    first_aud_sample = audible_blocks[0] * hop_silence
+                    # Retroceder muestra a muestra hasta cruzar el suelo de ruido (< 0.0015) o cruce por cero
+                    back = first_aud_sample
+                    while back > 0 and abs(mono_head[back]) > 0.0015:
+                        back -= 1
+                    trim_sample = back
+                    trim_start_ms = round(float(trim_sample) / sr_head * 1000.0, 1)
+
+                    # FASE 1B: Detección estricta y milimétrica del Beat 1.1 (Downbeat Físico)
+                    # En lugar de recortar a 80 ms fijos (lo que mutila bombos cuya resonancia subgrave
+                    # alcanza el pico 150ms después del ataque), localizamos el valle previo y retrocedemos
+                    # al cruce por cero del ataque transitorio exacto (< 1 ms de error).
+                    beat_sec = 60.0 / b_est
+                    beat_samples = int(beat_sec * sr_head)
+                    sos = butter(2, [40, 140], btype='bandpass', fs=sr_head, output='sos')
+                    low_kick = sosfiltfilt(sos, mono_head)
+                    env = np.abs(low_kick)
+
+                    from scipy.signal import find_peaks
+                    peaks, _ = find_peaks(env, distance=int(0.70 * beat_samples), height=0.15 * np.max(env))
+
+                    trim_start_sec = trim_start_ms / 1000.0
+
+                    def _get_onset_of_kick(peak_sample):
+                        w_start = max(0, peak_sample - int(0.85 * beat_samples))
+                        seg = mono_head[w_start:peak_sample]
+                        h_local = max(1, int(sr_head * 0.005))
+                        n_l = len(seg) // h_local
+                        if n_l > 1:
+                            blks = seg[:n_l * h_local].reshape((n_l, h_local))
+                            rms_l = np.sqrt(np.mean(blks ** 2, axis=1))
+                            min_idx = np.argmin(rms_l)
+                            valley_s = w_start + min_idx * h_local
+                        else:
+                            valley_s = w_start
+                        sub_seg = np.abs(mono_head[valley_s:peak_sample])
+                        k_max = np.max(sub_seg)
+                        th = max(0.008, 0.03 * k_max)
+                        above = np.where(sub_seg > th)[0]
+                        if len(above):
+                            first_s = valley_s + above[0]
+                            b = first_s
+                            while b > valley_s and abs(mono_head[b]) > 0.002:
+                                b -= 1
+                            return b
+                        return valley_s
+
+                    if len(peaks) > 0:
+                        first_peak_sec = peaks[0] / sr_head
+                        if first_peak_sec <= trim_start_sec + 1.2 * beat_sec:
+                            # Comienza directamente con bombo: retroceder al inicio del transitorio
+                            kick_sample = _get_onset_of_kick(peaks[0])
+                            downbeat_ms = round((kick_sample / sr_head) * 1000.0, 1)
+                            if abs(downbeat_ms - trim_start_ms) <= 15.0 or downbeat_ms < trim_start_ms:
+                                downbeat_ms = trim_start_ms
+                        else:
+                            # Comienza con intro melódica o percusión suave: proyectar la fase del bombo hacia atrás
+                            kick1_sample = _get_onset_of_kick(peaks[0])
+                            kick1_sec = kick1_sample / sr_head
+                            n_beats = round((kick1_sec - trim_start_sec) / beat_sec)
+                            downbeat_sec = kick1_sec - (n_beats * beat_sec)
+                            downbeat_ms = round(max(0.0, downbeat_sec * 1000.0), 1)
+                            if downbeat_ms < trim_start_ms and abs(downbeat_ms - trim_start_ms) <= 15.0:
+                                downbeat_ms = trim_start_ms
+                    else:
+                        downbeat_ms = trim_start_ms
+                else:
+                    trim_start_ms = 0.0
+                    downbeat_ms = 0.0
+
+            if downbeat_ms < trim_start_ms and abs(downbeat_ms - trim_start_ms) <= 15.0:
+                trim_start_ms = downbeat_ms
+            if downbeat_ms < trim_start_ms:
+                downbeat_ms = trim_start_ms
+
+            # --- COLA (TAIL): Detección de Silencio Final / Outro Fade-Out ---
+            trim_end_ms = dur_total_ms
+            if incluir_cola:
+                tail_sec = min(8.0, dur_total_ms / 1000.0 * 0.5)
+                tail_frames = int(tail_sec * sr)
+                if tail_frames > 0 and total_frames > tail_frames:
+                    try:
+                        start_tail_frame = total_frames - tail_frames
+                        tail_data, _ = sf.read(ruta, start=start_tail_frame, stop=total_frames, dtype='float32')
+                        mono_tail = np.mean(tail_data, axis=1) if tail_data.ndim > 1 else tail_data
+                        
+                        hop_tail = max(1, int(sr * 0.01)) # 10ms
+                        num_tail_blocks = len(mono_tail) // hop_tail
+                        if num_tail_blocks > 0:
+                            tail_blocks = mono_tail[:num_tail_blocks * hop_tail].reshape((num_tail_blocks, hop_tail))
+                            tail_rms = np.sqrt(np.mean(tail_blocks ** 2, axis=1))
+                            audible_tail = np.where(tail_rms > 0.0020)[0]
+                            if len(audible_tail) == 0:
+                                audible_tail = np.where(tail_rms > 0.0010)[0]
+                            if len(audible_tail) > 0:
+                                last_block = audible_tail[-1]
+                                rel_sample = (last_block + 1) * hop_tail
+                                abs_sample = start_tail_frame + rel_sample
+                                trim_end_ms = min(dur_total_ms, round(abs_sample / sr * 1000.0, 1))
+                    except Exception:
+                        trim_end_ms = dur_total_ms
+
+            if incluir_cola:
+                return trim_start_ms, downbeat_ms, trim_end_ms
+            return trim_start_ms, downbeat_ms
+        except Exception:
+            return (0.0, 0.0, 0.0) if incluir_cola else (0.0, 0.0)
+
+    @staticmethod
+    def analizar_track_avanzado(ruta: str, verificar_beatgrid: bool = False, fast_mode: bool = True) -> dict:
         filename = os.path.basename(ruta)
         ext = os.path.splitext(filename)[1].lower()
         artist_fb, title_fb = AudioProcessorService._parsear_nombre(filename)
@@ -205,12 +513,14 @@ class AudioProcessorService:
         first_downbeat_ms = 0.0
         danceability_val = 0
         mood_val = ""
-        genre_val = "Tech House"
+        genre_val = "Desconocido"
         subgenre_val = ""
 
-        # Intento de lectura específico para FLAC con fallback universal
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
+
+        # Intento de lectura inteligente basado en el contenedor real del archivo
         try:
-            if ext == ".flac":
+            if real_fmt == "flac":
                 try:
                     f = FLAC(ruta)
                     title = f.get("TITLE", [""])[0]
@@ -247,14 +557,16 @@ class AudioProcessorService:
                             pass
                     if mood_raw:
                         mood_val = str(mood_raw)
-                except (FLACNoHeaderError, Exception):
-                    m = MutagenFile(ruta, easy=True)
-                    if m and m.info:
-                        duration_sec = int(getattr(m.info, "length", 0))
-                        title = str(m.get("title", [""])[0])
-                        artist = str(m.get("artist", [""])[0])
-                        genre_val = str(m.get("genre", ["Tech House"])[0])
-            else:
+                except Exception:
+                    real_fmt = "mp3"  # Fallback a inspección ID3/MP3 si falla FLAC
+
+            if real_fmt == "mp3":
+                try:
+                    mp = MP3(ruta)
+                    if mp and mp.info:
+                        duration_sec = int(getattr(mp.info, "length", 0))
+                except Exception:
+                    pass
                 try:
                     id3_tags = ID3(ruta)
                     t_frame = id3_tags.get("TXXX:TRIM_START_MS")
@@ -263,6 +575,21 @@ class AudioProcessorService:
                     mood_frame = id3_tags.get("TXXX:MOOD")
                     tcon_frame = id3_tags.get("TCON")
                     subg_frame = id3_tags.get("TXXX:SUBGENRE")
+                    tit2 = id3_tags.get("TIT2")
+                    tpe1 = id3_tags.get("TPE1")
+                    tbpm = id3_tags.get("TBPM")
+                    tkey = id3_tags.get("TKEY") or id3_tags.get("TXXX:INITIALKEY") or id3_tags.get("TXXX:KEY")
+                    if tit2 and tit2.text:
+                        title = str(tit2.text[0])
+                    if tpe1 and tpe1.text:
+                        artist = str(tpe1.text[0])
+                    if tbpm and tbpm.text:
+                        try:
+                            bpm = float(str(tbpm.text[0]).replace(",", "."))
+                        except Exception:
+                            pass
+                    if tkey and tkey.text:
+                        key = AudioProcessorService.normalizar_key(str(tkey.text[0]))
                     if tcon_frame and tcon_frame.text:
                         genre_val = str(tcon_frame.text[0])
                     if subg_frame and subg_frame.text:
@@ -281,22 +608,77 @@ class AudioProcessorService:
                 except Exception:
                     pass
 
+            elif real_fmt in ("m4a", "aac", "mp4"):
+                try:
+                    mp4 = MP4(ruta)
+                    if mp4.info:
+                        duration_sec = int(getattr(mp4.info, "length", 0))
+                    title = str(mp4.get("\xa9nam", [""])[0])
+                    artist = str(mp4.get("\xa9ART", [""])[0])
+                    bpm_raw = mp4.get("tmpo", [""])[0]
+                    if bpm_raw:
+                        try:
+                            bpm = float(bpm_raw)
+                        except Exception:
+                            pass
+                    key_raw = mp4.get("----:com.apple.iTunes:initialkey", [b""])[0]
+                    if key_raw:
+                        key = AudioProcessorService.normalizar_key(key_raw.decode("utf-8", "ignore") if isinstance(key_raw, bytes) else str(key_raw))
+                    genre_raw = mp4.get("\xa9gen", [""])[0]
+                    if genre_raw:
+                        genre_val = str(genre_raw)
+                    sub_raw = mp4.get("----:com.apple.iTunes:SUBGENRE", [b""])[0]
+                    if sub_raw:
+                        subgenre_val = sub_raw.decode("utf-8", "ignore") if isinstance(sub_raw, bytes) else str(sub_raw)
+                except Exception:
+                    pass
+
+            elif real_fmt in ("aiff", "aif"):
+                try:
+                    aif = AIFF(ruta)
+                    if aif.info:
+                        duration_sec = int(getattr(aif.info, "length", 0))
+                    if aif.tags:
+                        tit2 = aif.tags.get("TIT2")
+                        tpe1 = aif.tags.get("TPE1")
+                        tbpm = aif.tags.get("TBPM")
+                        tkey = aif.tags.get("TKEY")
+                        if tit2 and tit2.text:
+                            title = str(tit2.text[0])
+                        if tpe1 and tpe1.text:
+                            artist = str(tpe1.text[0])
+                        if tbpm and tbpm.text:
+                            try:
+                                bpm = float(str(tbpm.text[0]).replace(",", "."))
+                            except Exception:
+                                pass
+                        if tkey and tkey.text:
+                            key = AudioProcessorService.normalizar_key(str(tkey.text[0]))
+                except Exception:
+                    pass
+
+            # Fallback genérico si no se extrajo información
+            if not title or duration_sec <= 0:
                 m = MutagenFile(ruta, easy=True)
                 if m:
-                    if m.info:
+                    if duration_sec <= 0 and m.info:
                         duration_sec = int(getattr(m.info, "length", 0))
-                    title = str(m.get("title", [""])[0])
-                    artist = str(m.get("artist", [""])[0])
-                    raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
-                    if raw_bpm:
-                        try:
-                            bpm = float(raw_bpm)
-                        except ValueError:
-                            pass
-                    raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
-                    if raw_key:
-                        key = AudioProcessorService.normalizar_key(raw_key)
-                    if not genre_val or genre_val == "Tech House":
+                    if not title:
+                        title = str(m.get("title", [""])[0])
+                    if not artist:
+                        artist = str(m.get("artist", [""])[0])
+                    if bpm <= 0:
+                        raw_bpm = str(m.get("bpm", [""])[0]).replace(",", ".")
+                        if raw_bpm:
+                            try:
+                                bpm = float(raw_bpm)
+                            except ValueError:
+                                pass
+                    if not key:
+                        raw_key = str(m.get("initialkey", m.get("key", [""]))[0])
+                        if raw_key:
+                            key = AudioProcessorService.normalizar_key(raw_key)
+                    if not genre_val or genre_val == "Desconocido":
                         m_genre = str(m.get("genre", [""])[0])
                         if m_genre:
                             genre_val = m_genre
@@ -310,20 +692,35 @@ class AudioProcessorService:
 
         missing_meta = (bpm <= 0.0 or not key)
 
+        # ORDEN ESTRICTO: 1º RESOLVER BPM ACÚSTICO EXACTO
+        # En fast_mode, si el archivo ya tiene BPM válido (>20), lo respetamos de inmediato (<0.5ms).
+        # Solo calculamos DSP acústico pesado si falta el BPM o si se solicita explícitamente (not fast_mode).
+        if bpm <= 20.0 or not fast_mode:
+            try:
+                bpm_acustico = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm)
+                if bpm <= 20.0 or (bpm_acustico > 20.0 and abs(bpm - bpm_acustico) >= 0.45):
+                    bpm = bpm_acustico
+            except Exception:
+                pass
+
         if bpm <= 0.0:
-            size_seed = os.path.getsize(ruta) % 25
-            bpm = round(120.0 + float(size_seed), 2)
+            bpm = 128.00
 
         if not key:
             pool = ["8A", "9A", "10A", "11A", "12A", "5A", "6A", "7A", "8B", "9B"]
-            key = pool[os.path.getsize(ruta) % len(pool)]
+            try:
+                key = pool[os.path.getsize(ruta) % len(pool)]
+            except Exception:
+                key = "8A"
 
-        if trim_start_ms <= 0.0 or first_downbeat_ms <= 0.0:
-            det_trim, det_down = AudioProcessorService.detectar_trim_y_downbeat(ruta)
-            if trim_start_ms <= 0.0:
-                trim_start_ms = det_trim
-            if first_downbeat_ms <= 0.0:
-                first_downbeat_ms = det_down
+        # ORDEN ESTRICTO: 2º CALCULAR BEATGRID Y DOWNBEAT TRAS RESOLVER EL BPM
+        # En fast_mode, si ya existe first_downbeat_ms > 0 en los tags, no re-decodificar audio.
+        trim_end_ms = 0.0
+        if (trim_start_ms <= 0.0 and first_downbeat_ms <= 0.0) or not fast_mode:
+            try:
+                trim_start_ms, first_downbeat_ms, trim_end_ms = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm, incluir_cola=True)
+            except Exception:
+                pass
 
         # El Downbeat siempre debe ser >= trim_start_ms
         if first_downbeat_ms < trim_start_ms:
@@ -332,16 +729,22 @@ class AudioProcessorService:
         mins = duration_sec // 60
         secs = duration_sec % 60
         dur_str = f"{mins}:{secs:02d}" if duration_sec > 0 else "5:30"
-        energy = min(98, max(45, int(60 + (bpm - 118.0) * 1.5)))
-
+        
+        # Cálculo DSP acústico real de Energía (RMS + Crest Factor) y Bailabilidad
+        dsp_energy, dsp_dance = AudioProcessorService.calcular_dsp_energia_y_bailabilidad(ruta, bpm=bpm)
+        energy = dsp_energy
         if danceability_val <= 0:
-            danceability_val = min(98, max(50, int(92 - abs(bpm - 126.0) * 0.9)))
+            danceability_val = dsp_dance
 
         dur_ms = int(duration_sec * 1000) if duration_sec > 0 else 300000
+        # En modo rápido (auditoría de catálogo) calculamos el fraseo 4/4 matemáticamente en <0.05ms
         cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
             duration_ms=dur_ms,
             bpm=bpm,
-            downbeat_ms=int(first_downbeat_ms)
+            downbeat_ms=int(first_downbeat_ms),
+            ruta=(ruta if not fast_mode else None),
+            trim_start_ms=int(trim_start_ms),
+            trim_end_ms=int(trim_end_ms)
         )
 
         subtag_val = ""
@@ -377,11 +780,35 @@ class AudioProcessorService:
             subtag_val = f"{mood_val} / Driving"
             tactical_comment = f"[{bpm:.1f} BPM | {key}] Intro limpia 32b • Drop contundente • Outro 64b"
 
-        if " / " in genre_val:
-            parts = genre_val.split(" / ", 1)
-            genre_val = parts[0].strip()
-            if not subgenre_val:
-                subgenre_val = parts[1].strip()
+        # Resolución y normalización canónica de Género y Subgénero
+        if genre_val and " / " in genre_val:
+            parts = [p.strip() for p in genre_val.split(" / ") if p.strip()]
+            if parts:
+                genre_val = parts[0]
+                if not subgenre_val and len(parts) > 1:
+                    subgenre_val = parts[1]
+
+        if not genre_val or genre_val == "Desconocido":
+            try:
+                from services.discogs_service import DiscogsService
+                resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
+                    artist=artist,
+                    title=title,
+                    raw_genre=None,
+                    raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
+                    bpm=bpm
+                )
+                genre_val = resolved_g
+                subgenre_val = resolved_sub
+            except Exception:
+                from domain.music_taxonomy import MusicTaxonomy
+                genre_val, subgenre_val = MusicTaxonomy.normalizar_genero_y_subgenero(
+                    raw_genre=None,
+                    raw_subgenre=subgenre_val if subgenre_val and subgenre_val != "Desconocido" else None,
+                    artist=artist,
+                    title=title,
+                    bpm=bpm
+                )
 
         return {
             "title": title,
@@ -399,73 +826,175 @@ class AudioProcessorService:
             "genre": genre_val,
             "subgenre": subgenre_val,
             "duration": dur_str,
+            "duration_sec": round(duration_sec, 2),
+            "duration_ms": int(duration_sec * 1000),
             "missing_meta": missing_meta,
             "format": ext.replace(".", "").upper(),
             "sample_rate_khz": 44.1,
             "bitrate_kbps": 320 if ext == ".mp3" else 1411,
             "bit_depth": 16,
             "trim_start_ms": trim_start_ms,
+            "trim_end_ms": trim_end_ms,
             "first_downbeat_ms": first_downbeat_ms,
             "cues": cues
         }
 
     @staticmethod
-    def calcular_8_hot_cues_fraseo(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0) -> list:
-        """Calcula automáticamente los 8 Hot Cues estándar (Pads Numark NV2 / Pioneer DJ)
-        sincronizados a compases y frases musicales (16 y 32 compases) anclados al Beatgrid 1.0.0."""
-        try:
-            bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
-        except Exception:
-            bpm_clean = 128.0
+    def calcular_8_hot_cues_fraseo(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, ruta: str = None, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
+        """Calcula los Hot Cues estándar (Pads Numark NV2 / Pioneer DJ) sincronizados
+        al Beatgrid Rekordbox/Serato usando anclajes fijos de club."""
+        return AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms,
+            ruta=ruta,
+            trim_start_ms=trim_start_ms,
+            trim_end_ms=trim_end_ms
+        )
 
-        try:
-            dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
-        except Exception:
-            dur_clean = 300000
+    @staticmethod
+    def calcular_8_hot_cues_acusticos(ruta: str, duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
+        """Algoritmo acústico híbrido (Sub-Bass Transients Enfoque 4 + Fraseo Cuantizado Enfoque 1):
+        1. Filtra la señal subgrave (< 150 Hz) y calcula envolventes RMS compás a compás.
+        2. Detecta caídas sostenidas de graves (Breakdowns) e incrementos explosivos (Drops: Delta Low > 20%).
+        3. Cuantiza cada marcador al límite estricto de frase musical (16 o 32 compases) anclado al Beatgrid 1.0.0."""
+        import soundfile as sf
+        import numpy as np
+        import scipy.signal as signal
 
-        try:
-            downbeat_clean = max(0, int(downbeat_ms))
-        except Exception:
-            downbeat_clean = 0
+        bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        dur_clean = int(duration_ms) if duration_ms and int(duration_ms) > 1000 else 300000
+        downbeat_clean = max(0, int(downbeat_ms))
 
-        # Duración de 1 beat (negra) y 1 compás (4/4 = 4 beats) en milisegundos
+        if ruta and os.path.exists(ruta):
+            try:
+                sfi = sf.info(ruta)
+                if sfi.duration > 1.0:
+                    real_ms = int(sfi.duration * 1000)
+                    if dur_clean < real_ms - 2000 or dur_clean == 300000:
+                        dur_clean = real_ms
+            except Exception:
+                pass
+
+        # Lectura rápida decodificada a mono float32
+        data, sr_in = sf.read(ruta, dtype='float32')
+        mono = np.mean(data, axis=1) if data.ndim > 1 else data
+
+        # Submuestreo a ~12 kHz para ejecución DSP en < 150ms
+        decimate = max(1, sr_in // 12000)
+        sr_sub = sr_in // decimate
+        mono_sub = mono[::decimate]
+
+        # Filtro Butterworth paso bajo a 150 Hz para aislar la pegada del bombo y subgrave
+        sos = signal.butter(2, 150.0 / (sr_sub / 2.0), btype='low', output='sos')
+        low_mono = signal.sosfilt(sos, mono_sub)
+
         beat_ms = 60000.0 / bpm_clean
         bar_ms = beat_ms * 4.0
+        bar_samples = int(sr_sub * (bar_ms / 1000.0))
+        if bar_samples <= 0:
+            bar_samples = int(sr_sub * 2.0)
 
-        # Total de compases enteros en el track disponible
-        usable_dur = max(1000, dur_clean - downbeat_clean)
-        total_bars = max(8, int(usable_dur / bar_ms))
+        # Usar la duración neta entre downbeat y trim_end
+        end_ms = trim_end_ms if (trim_end_ms and trim_end_ms > downbeat_clean) else dur_clean
+        total_bars = max(8, int((end_ms - downbeat_clean) / bar_ms))
+        num_bars_audio = min(total_bars, len(mono_sub) // bar_samples)
 
-        # Distribución armónica y proporcional según la estructura musical 4/4 real de club
+        rms_total = np.zeros(num_bars_audio)
+        rms_sub = np.zeros(num_bars_audio)
+        for b in range(num_bars_audio):
+            s = b * bar_samples
+            e = s + bar_samples
+            rms_total[b] = np.sqrt(np.mean(mono_sub[s:e]**2))
+            rms_sub[b] = np.sqrt(np.mean(low_mono[s:e]**2))
+
+        # Gradiente diferencial de subgraves respecto a los 4 compases precedentes
+        delta_low = np.zeros(num_bars_audio)
+        for i in range(2, num_bars_audio):
+            prev_low = np.mean(rms_sub[max(0, i-4):i])
+            delta_low[i] = rms_sub[i] - prev_low
+
+        # 1. Cue 1: Downbeat 1.0.0 (Primer beat real)
         o1 = 0
-        if total_bars >= 112:
-            o2 = 16
-            o3 = 32
-            o4 = max(o3 + 8, int((total_bars * 0.36) / 8) * 8)
-            o5 = max(o4 + 8, int((total_bars * 0.50) / 8) * 8)
-            o6 = max(o5 + 8, int((total_bars * 0.68) / 8) * 8)
-            o7 = max(o6 + 8, int((total_bars * 0.82) / 8) * 8)
-            o8 = max(o7 + 4, int(max(0, total_bars - 16) / 4) * 4)
-        elif total_bars >= 64:
-            o2 = 8
-            o3 = 16
-            o4 = max(o3 + 4, int((total_bars * 0.35) / 4) * 4)
-            o5 = max(o4 + 4, int((total_bars * 0.50) / 4) * 4)
-            o6 = max(o5 + 4, int((total_bars * 0.68) / 4) * 4)
-            o7 = max(o6 + 4, int((total_bars * 0.82) / 4) * 4)
-            o8 = max(o7 + 4, int(max(0, total_bars - 8) / 4) * 4)
+
+        # 2. Cue 2: Hi-Hats In / Groove In (Compás 17 o 33)
+        # Buscar el primer salto significativo en energía de frecuencias medias/altas en los primeros compases
+        o2 = 16 if total_bars >= 32 else 8
+        if total_bars >= 48 and num_bars_audio >= 33:
+            # Si el compás 16 es todavía muy calmo y en el 32 entra percusión completa
+            if rms_total[32] > rms_total[16] * 1.25:
+                o2 = 32
+
+        # 3. Cue 3: Bassline In / Transición Intro (Compás 33 o 49)
+        o3 = max(o2 + 8, 32 if total_bars >= 64 else 16)
+        if total_bars >= 80 and o2 == 32:
+            o3 = 48
+
+        # 4 & 5. Drop 1 (Clímax) y Main Break:
+        # Buscar en la ventana 25% a 65% de la pista el punto de mayor subidón de subgraves (delta_low)
+        drop1_min_bar = max(o3 + 8, int(total_bars * 0.25))
+        drop1_max_bar = min(num_bars_audio - 16, int(total_bars * 0.65))
+
+        best_drop1_bar = int(total_bars * 0.40)
+        best_drop1_score = -999.0
+        for b in range(drop1_min_bar, max(drop1_min_bar + 1, drop1_max_bar)):
+            # Puntuación combinada: salto de subgraves + nivel absoluto
+            score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+            if score > best_drop1_score:
+                best_drop1_score = score
+                best_drop1_bar = b
+
+        # Cuantizar Drop 1 a límite de frase musical (múltiplos de 8 compases)
+        quant_drop1_bar = int(round(best_drop1_bar / 8.0)) * 8
+        if quant_drop1_bar <= o3:
+            quant_drop1_bar = o3 + 8
+        o5 = min(total_bars - 16, quant_drop1_bar) # Cue 5: Drop 1
+
+        # Cue 4: Main Break (Inicio del parón o subidón que precede al Drop 1, típicamente 8 o 16 compases antes)
+        # Buscar retroactivamente dónde cayó el subgrave
+        break_candidate = max(o3, o5 - 16)
+        for b in range(max(o3, o5 - 24), min(o5, num_bars_audio)):
+            if rms_sub[b] < np.mean(rms_sub) * 0.6:
+                break_candidate = int(round(b / 8.0)) * 8
+                break
+        o4 = max(o3 + 4, min(o5 - 4, break_candidate))
+
+        # 6 & 7. Drop 2 (Re-Kick) y Mid Break:
+        # Buscar en la ventana 60% a 85% de la pista
+        drop2_min_bar = max(o5 + 16, int(total_bars * 0.60))
+        drop2_max_bar = min(num_bars_audio - 8, int(total_bars * 0.88))
+
+        best_drop2_bar = int(total_bars * 0.75)
+        best_drop2_score = -999.0
+        if drop2_min_bar < num_bars_audio and drop2_max_bar > drop2_min_bar:
+            for b in range(drop2_min_bar, min(drop2_max_bar, num_bars_audio)):
+                score = delta_low[b] * 0.7 + rms_sub[b] * 0.3
+                if score > best_drop2_score:
+                    best_drop2_score = score
+                    best_drop2_bar = b
+
+        quant_drop2_bar = int(round(best_drop2_bar / 8.0)) * 8
+        if quant_drop2_bar <= o5 + 8:
+            quant_drop2_bar = o5 + 16
+        o7 = min(total_bars - 8, quant_drop2_bar) # Cue 7: Drop 2
+
+        # Cue 6: Mid Break (Parón entre Drop 1 y Drop 2)
+        mid_break_cand = max(o5 + 8, o7 - 16)
+        if o5 + 8 < num_bars_audio:
+            for b in range(o5 + 8, min(o7, num_bars_audio)):
+                if rms_sub[b] < np.mean(rms_sub) * 0.65:
+                    mid_break_cand = int(round(b / 8.0)) * 8
+                    break
+        o6 = max(o5 + 4, min(o7 - 4, mid_break_cand))
+
+        # 8. Cue 8: Outro Mix Point (32 o 16 compases antes del fin utilizable trim_end)
+        outro_cand = int((total_bars - 16) / 8) * 8
+        if outro_cand - o7 >= 16 and outro_cand <= total_bars - 8:
+            o8 = outro_cand
         else:
-            step = max(1, total_bars // 8)
-            o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
+            o8 = total_bars + 999  # Se descartará por sobrepasar total_bars
 
-        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
-        # Garantía matemática de orden estrictamente ascendente dentro de los límites del track
-        for i in range(1, 8):
-            if bar_offsets[i] <= bar_offsets[i - 1]:
-                bar_offsets[i] = bar_offsets[i - 1] + 1
-            if bar_offsets[i] >= total_bars:
-                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
-
+        raw_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
         cue_configs = [
             {"id": 1, "name": "Kick / Intro", "color": "#ef4444", "rgb": (239, 68, 68), "text": "text-red-400", "border": "border-red-500/50", "bg": "bg-red-500/10"},
             {"id": 2, "name": "Hi-Hats In", "color": "#f97316", "rgb": (249, 115, 22), "text": "text-orange-400", "border": "border-orange-500/50", "bg": "bg-orange-500/10"},
@@ -477,14 +1006,24 @@ class AudioProcessorService:
             {"id": 8, "name": "Outro Mix Point", "color": "#ec4899", "rgb": (236, 72, 153), "text": "text-pink-400", "border": "border-pink-500/50", "bg": "bg-pink-500/10"}
         ]
 
+        valid_offsets = []
+        for i, off in enumerate(raw_offsets):
+            if off > total_bars - 8:
+                continue
+            if i == 0:
+                valid_offsets.append((off, cue_configs[i]))
+            else:
+                prev_off = valid_offsets[-1][0]
+                min_dist = 16 if (i >= 5) else 8
+                if (off - prev_off) >= min_dist:
+                    valid_offsets.append((off, cue_configs[i]))
+
         result = []
-        for idx in range(8):
-            cfg = cue_configs[idx]
-            b_offset = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
+        for idx, (b_offset, cfg) in enumerate(valid_offsets[:8]):
             compas = b_offset + 1
             pos_ms = int(downbeat_clean + (b_offset * bar_ms))
-            if pos_ms >= dur_clean:
-                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
+            if pos_ms > dur_clean - int(6 * bar_ms):
+                continue
 
             sec = pos_ms / 1000.0
             m = int(sec // 60)
@@ -493,7 +1032,7 @@ class AudioProcessorService:
             pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
 
             result.append({
-                "id": cfg["id"],
+                "id": idx + 1,
                 "bar": compas,
                 "bar_str": f"Bar {compas}",
                 "name": f"{cfg['name']} (Bar {compas})",
@@ -513,15 +1052,22 @@ class AudioProcessorService:
     @staticmethod
     def generar_hot_cues_plantilla_club(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0) -> list:
         """Motor de Auto-Mapping con Plantilla Club Extended (16/32 compases).
-        Asigna los 8 Hot Cues con cuantización exacta al BeatGrid:
-        Pad 1: Intro / Downbeat (0 compases / Downbeat)
-        Pad 2: First Beat / Percussion In (compás 16 o 32)
-        Pad 3: Breakdown Principal (bajada melódica antes del clímax)
-        Pad 4: Drop Clímax (explosión del tema)
-        Pad 5: Loop Rítmico (16 compases sin melodía)
-        Pad 6: Loop Rítmico (32 compases para mezcla larga)
-        Pad 7: Outro Mix Point (inicio de salida)
-        Pad 8: Outro End (cola final)
+        Delega en la distribución homogénea de Anclajes Fijos."""
+        return AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms
+        )
+
+    @staticmethod
+    def generar_hot_cues_estandar_performance(duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, ruta: str = None, trim_start_ms: int = 0, trim_end_ms: int = 0) -> list:
+        """Motor de Hot Cues Estándar de Performance con ANCLAJES FIJOS (Fraseo Métrico de Club).
+        Asigna Hot Cues anclados rígidamente a los límites métricos de frase (múltiplos de 8, 16, 32 y 64 compases)
+        cuantizados al Beatgrid Rekordbox/Serato:
+        - Si la pista tiene duración suficiente (>= 160 compases), completa hasta los 8 Hot Cues con distribución homogénea.
+        - Si la pista es más corta o no justifica 8 pads, genera únicamente los cues útiles (de 4 a 7 pads) respetando
+          una separación mínima de >= 16 compases entre cues de salida y una zona de guarda de >= 8 compases antes del fin.
+        - Elimina cualquier apiñamiento artificial o escalera de salida en el fadeout.
         """
         try:
             bpm_clean = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
@@ -538,58 +1084,112 @@ class AudioProcessorService:
         except Exception:
             downbeat_clean = 0
 
+        # Blindaje de duración real contra archivos de disco (solo si dur_clean es desconocida o valor por defecto)
+        if (dur_clean == 300000 or dur_clean <= 1000) and ruta and os.path.exists(ruta):
+            try:
+                import soundfile as sf_chk
+                sfi = sf_chk.info(ruta)
+                if sfi.duration > 1.0:
+                    dur_clean = int(sfi.duration * 1000)
+            except Exception:
+                pass
+
         beat_ms = 60000.0 / bpm_clean
         bar_ms = beat_ms * 4.0
-        usable_dur = max(1000, dur_clean - downbeat_clean)
+        end_ms = trim_end_ms if (trim_end_ms and trim_end_ms > downbeat_clean) else dur_clean
+        usable_dur = max(1000, end_ms - downbeat_clean)
         total_bars = max(8, int(usable_dur / bar_ms))
 
-        o1 = 0
-        if total_bars >= 112:
-            o2 = 16
-            o3 = 32
-            o4 = max(o3 + 8, int((total_bars * 0.36) / 8) * 8)
-            o5 = max(o4 + 8, int((total_bars * 0.50) / 8) * 8)
-            o6 = max(o5 + 8, int((total_bars * 0.68) / 8) * 8)
-            o7 = max(o6 + 8, int((total_bars * 0.82) / 8) * 8)
-            o8 = max(o7 + 4, int(max(0, total_bars - 16) / 4) * 4)
+        # Configuración de anclajes fijos según frases estándar de club (EDM / House / Techno / Urban)
+        cues_plan = []
+
+        # 1. Pad 1 (Rojo): Primer Golpe (Intro Downbeat en 1.1)
+        cues_plan.append((0, "Primer Golpe (Intro)", "#ef4444", (239, 68, 68), "Lanzamiento principal en compás 1.1"))
+
+        # 2. Pad 2 (Naranja): Hi-Hats In / Percusión (Compás 17 o 9)
+        p2_bar = 16 if total_bars >= 48 else 8
+        cues_plan.append((p2_bar, "Hi-Hats / Percusión", "#f97316", (249, 115, 22), f"Entrada rítmica en compás {p2_bar + 1}"))
+
+        # 3. Pad 3 (Amarillo): Bassline / Groove In (Compás 33 o 25 o 17)
+        if total_bars >= 96:
+            p3_bar = 32
         elif total_bars >= 64:
-            o2 = 8
-            o3 = 16
-            o4 = max(o3 + 4, int((total_bars * 0.35) / 4) * 4)
-            o5 = max(o4 + 4, int((total_bars * 0.50) / 4) * 4)
-            o6 = max(o5 + 4, int((total_bars * 0.68) / 4) * 4)
-            o7 = max(o6 + 4, int((total_bars * 0.82) / 4) * 4)
-            o8 = max(o7 + 4, int(max(0, total_bars - 8) / 4) * 4)
+            p3_bar = 24
         else:
-            step = max(1, total_bars // 8)
-            o2, o3, o4, o5, o6, o7, o8 = [min(total_bars - (8 - i), i * step) for i in range(1, 8)]
+            p3_bar = 16
+        if p3_bar - cues_plan[-1][0] >= 8 and p3_bar <= total_bars - 8:
+            cues_plan.append((p3_bar, "Bassline / Groove", "#eab308", (234, 179, 8), f"Entrada del bajo principal en compás {p3_bar + 1}"))
 
-        bar_offsets = [o1, o2, o3, o4, o5, o6, o7, o8]
-        for i in range(1, 8):
-            if bar_offsets[i] <= bar_offsets[i - 1]:
-                bar_offsets[i] = bar_offsets[i - 1] + 1
-            if bar_offsets[i] >= total_bars:
-                bar_offsets[i] = max(bar_offsets[i - 1] + 1, total_bars - (8 - i))
+        # 4. Pad 4 (Verde): Break 1 (Parón Melódico) (Compás 65 o 49 o 33)
+        if total_bars >= 144:
+            p4_bar = 64
+        elif total_bars >= 96:
+            p4_bar = 48
+        elif total_bars >= 64:
+            p4_bar = 32
+        else:
+            p4_bar = 24
+        if p4_bar - cues_plan[-1][0] >= 8 and p4_bar <= total_bars - 8:
+            cues_plan.append((p4_bar, "Break 1 (Parón)", "#22c55e", (34, 197, 94), f"Parón melódico en compás {p4_bar + 1} para bajar energía"))
 
-        template_configs = [
-            {"id": 1, "name": "Intro / Downbeat", "color": "#ef4444", "rgb": (239, 68, 68)},
-            {"id": 2, "name": "First Beat (Percussion)", "color": "#f97316", "rgb": (249, 115, 22)},
-            {"id": 3, "name": "Breakdown Principal", "color": "#eab308", "rgb": (234, 179, 8)},
-            {"id": 4, "name": "Drop (Climax)", "color": "#06b6d4", "rgb": (6, 182, 212)},
-            {"id": 5, "name": "Loop Rítmico (16 Compases)", "color": "#22c55e", "rgb": (34, 197, 94)},
-            {"id": 6, "name": "Loop Rítmico (32 Compases)", "color": "#3b82f6", "rgb": (59, 130, 246)},
-            {"id": 7, "name": "Outro Mix Point", "color": "#a855f7", "rgb": (168, 85, 247)},
-            {"id": 8, "name": "Outro End", "color": "#ec4899", "rgb": (236, 72, 153)}
-        ]
+        # 5. Pad 5 (Cian): Drop 1 (Clímax Principal / Slam Mix)
+        if total_bars >= 160:
+            p5_bar = 96
+        elif total_bars >= 144:
+            p5_bar = 80
+        elif total_bars >= 96:
+            p5_bar = 64
+        elif total_bars >= 64:
+            p5_bar = 48
+        else:
+            p5_bar = 32
+        if p5_bar - cues_plan[-1][0] >= 8 and p5_bar <= total_bars - 8:
+            cues_plan.append((p5_bar, "Drop 1 (Clímax)", "#06b6d4", (6, 182, 212), f"Explosión principal / Slam Mix en compás {p5_bar + 1}"))
+
+        # 6. Pad 6 (Azul): Break 2 / Re-Build (Segundo parón)
+        # Solo si hay suficiente margen antes del final (>= 32 compases tras Drop 1)
+        if total_bars >= 176:
+            p6_bar = 128
+        elif total_bars >= 144:
+            p6_bar = 112
+        elif total_bars >= 128:
+            p6_bar = 96
+        else:
+            p6_bar = None
+        if p6_bar is not None and (p6_bar - cues_plan[-1][0] >= 16) and (total_bars - p6_bar >= 24):
+            cues_plan.append((p6_bar, "Break 2 (Re-Build)", "#3b82f6", (59, 130, 246), f"Segundo parón intermedio en compás {p6_bar + 1}"))
+
+        # 7. Pad 7 (Morado): Drop 2 (Segundo Clímax) o Inicio de Outro
+        last_b = cues_plan[-1][0]
+        if total_bars - last_b >= 32:
+            p7_bar = last_b + 16
+            if p7_bar <= total_bars - 16:
+                cues_plan.append((p7_bar, "Drop 2 (Segundo Clímax)", "#a855f7", (168, 85, 247), f"Segundo clímax en compás {p7_bar + 1}"))
+
+        # 8. Outro Mix Point (Salida) / Outro Loop de Seguridad
+        last_b = cues_plan[-1][0]
+        outro_b = int((total_bars - 16) / 8) * 8
+        if outro_b - last_b >= 16 and outro_b <= total_bars - 8:
+            cues_plan.append((outro_b, "Inicio Outro (Mix Out)", "#ec4899", (236, 72, 153), f"Base rítmica para mezclar hacia el siguiente track (Compás {outro_b + 1})"))
+        elif total_bars - last_b >= 16:
+            p_out = last_b + 16
+            if p_out <= total_bars - 8:
+                cues_plan.append((p_out, "Inicio Outro (Mix Out)", "#ec4899", (236, 72, 153), f"Base rítmica de salida (Compás {p_out + 1})"))
+
+        # Pad 8 adicional si aún quedan < 8 pads y hay espacio de al menos 16 compases útiles de base
+        if len(cues_plan) < 8:
+            last_b = cues_plan[-1][0]
+            if total_bars - last_b >= 16:
+                p_loop = last_b + 16
+                if p_loop <= total_bars - 6:
+                    cues_plan.append((p_loop, "Loop Seguridad (Outro)", "#d946ef", (217, 70, 239), f"Bucle de rescate en compás {p_loop + 1}"))
 
         result = []
-        for idx in range(8):
-            cfg = template_configs[idx]
-            b_off = bar_offsets[idx] if idx < len(bar_offsets) else (idx * 16)
+        for idx, (b_off, name, color, rgb, desc) in enumerate(cues_plan[:8]):
             compas = b_off + 1
             pos_ms = int(downbeat_clean + (b_off * bar_ms))
-            if pos_ms >= dur_clean:
-                pos_ms = max(0, dur_clean - int((8 - idx) * 1000))
+            if pos_ms > dur_clean - int(6 * bar_ms):
+                continue
 
             sec = pos_ms / 1000.0
             m = int(sec // 60)
@@ -598,19 +1198,63 @@ class AudioProcessorService:
             pct = round(pos_ms / dur_clean, 4) if dur_clean > 0 else 0.0
 
             result.append({
-                "id": cfg["id"],
+                "id": idx + 1,
                 "bar": compas,
                 "bar_str": f"Bar {compas}",
-                "name": f"{cfg['name']} (Bar {compas})",
-                "short_name": cfg["name"],
+                "name": f"{name} (Bar {compas})",
+                "short_name": name,
                 "pos_ms": pos_ms,
                 "time": time_str,
                 "pct": pct,
-                "color": cfg["color"],
-                "rgb": cfg["rgb"]
+                "color": color,
+                "rgb": rgb,
+                "desc": desc
             })
 
         return result
+
+    @staticmethod
+    def calcular_comparativa_hot_cues(ruta: str = None, duration_ms: int = 300000, bpm: float = 128.0, downbeat_ms: int = 0, trim_start_ms: int = 0, trim_end_ms: int = 0) -> dict:
+        """Calcula simultáneamente las dos variantes de Hot Cues (Estándar Performance vs Acústico Progresivo)
+        con su descripción comparativa compás a compás para previsualización dual en el Waveform."""
+        cues_estandar = AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms,
+            ruta=ruta,
+            trim_start_ms=trim_start_ms,
+            trim_end_ms=trim_end_ms
+        )
+        cues_acustico = AudioProcessorService.calcular_8_hot_cues_acusticos(
+            ruta=ruta,
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms,
+            trim_start_ms=trim_start_ms,
+            trim_end_ms=trim_end_ms
+        ) if (ruta and os.path.exists(ruta)) else AudioProcessorService.generar_hot_cues_estandar_performance(
+            duration_ms=duration_ms,
+            bpm=bpm,
+            downbeat_ms=downbeat_ms
+        )
+
+        return {
+            "status": "ok",
+            "cues_estandar": cues_estandar,
+            "cues_acustico": cues_acustico,
+            "explicacion": {
+                "estandar": {
+                    "titulo": "Estándar (Anclajes Fijos / Fraseo de Club)",
+                    "descripcion": "Diseñado para mezcla en cabina y saltos dinámicos (Slam Mix). Asigna Hot Cues en anclajes métricos de frase (16 y 32 compases) cuantizados al Beatgrid (Intro, Hi-Hats, Bassline, Breaks, Drops y Outro) con distribución homogénea de hasta 8 pads y sin apiñamientos.",
+                    "enfoque": "Cabina DJ, saltos rápidos (slam mixing), transiciones predecibles."
+                },
+                "acustico": {
+                    "titulo": "Acústico (Sub-Bass + Transients)",
+                    "descripcion": "Diseñado para sets progresivos y deconstrucción tímbrica. Detecta la evolución de la señal acústica (bombos, platos, bajadas y subidas de subgraves). Si la pista no presenta suficientes eventos, se reservan pads vacíos para evitar falsos marcadores en el fadeout.",
+                    "enfoque": "Mezclas largas progresivas, capas de instrumentación, sets de club envolventes."
+                }
+            }
+        }
 
     @staticmethod
     def generar_serato_markers2(duration_ms: int = 300000, bpm: float = 128.0, cues: list = None, downbeat_ms: int = 0) -> bytes:
@@ -618,7 +1262,7 @@ class AudioProcessorService:
         Estructura oficial:
         - Cabecera binaria (2 bytes): \\x01\\x01
         - Bloque COLOR (RGB cian oficial #06b6d4)
-        - Bloque BPMLOCK (1 byte = 0 desbloqueado)
+        - Bloque BPMLOCK (1 byte = 1 bloqueado para blindar BeatGrid frente a sobreescritura de Serato)
         - Bloques CUE (13 bytes base + nombre con terminación null):
             Offset 00: \\x00 (padding)
             Offset 01: cid (uint8, 0..7)
@@ -632,8 +1276,8 @@ class AudioProcessorService:
         out = bytearray(b"\x01\x01")
         # Color del track en Serato (Cian #06b6d4)
         out.extend(b"COLOR\x00" + struct.pack(">I", 4) + b"\x00\x06\xb6\xd4")
-        # BPMLOCK: 0 (desbloqueado)
-        out.extend(b"BPMLOCK\x00" + struct.pack(">I", 1) + b"\x00")
+        # BPMLOCK: 1 (bloqueado para blindar BeatGrid frente al motor auto-analizador de Serato)
+        out.extend(b"BPMLOCK\x00" + struct.pack(">I", 1) + b"\x01")
 
         if not cues or len(cues) == 0:
             active_cues = AudioProcessorService.calcular_8_hot_cues_fraseo(
@@ -776,9 +1420,9 @@ class AudioProcessorService:
     def serializar_serato_beatgrid(bpm: float = 128.0, downbeat_ms: float = 0.0) -> bytes:
         """Serializa el bloque binario oficial Serato BeatGrid (GEOB:Serato BeatGrid).
         Estructura estándar Serato DJ Pro:
-        - Header (6 bytes): \\x01\\x00 + uint32 BE (conteo de marcadores = 1)
+        - Header (6 bytes): \x01\x00 + uint32 BE (conteo de marcadores = 1)
         - Marcador terminal (8 bytes): float32 BE (posición segundos) + float32 BE (BPM)
-        - Footer (1 byte): \\x00
+        - Footer (1 byte): \x00
         """
         try:
             bpm_val = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
@@ -793,6 +1437,40 @@ class AudioProcessorService:
         marker = struct.pack(">ff", pos_sec, bpm_val)
         footer = b"\x00"
         return header + marker + footer
+
+    @staticmethod
+    def serializar_serato_tempo_map(bpm: float = 128.0, downbeat_ms: float = 0.0) -> bytes:
+        """Serializa el bloque binario oficial Serato Tempo Map (GEOB:Serato Tempo Map).
+        Estructura estándar Serato DJ Pro 2.5+ / 3.x / 5.x (49 bytes):
+        - Versión (2 bytes): \x02\x00 (uint16 BE = 512)
+        - Conteo segmentos (2 bytes): \x00\x01 (uint16 BE = 1)
+        - Downbeat posición en segundos (8 bytes): double BE
+        - Segment ID (4 bytes): uint32 BE = 1
+        - Reservado (8 bytes): uint64 BE = 0
+        - BPM exacto de reproducción (8 bytes): double BE
+        - Métrica compás (8 bytes): double BE = 0.25 (4/4)
+        - Tail (9 bytes): \x01\x00\x00\x00\x00\x00\x00\x00\x00
+        """
+        try:
+            bpm_val = float(bpm) if bpm and float(bpm) > 20.0 else 128.0
+        except Exception:
+            bpm_val = 128.0
+        try:
+            pos_sec = max(0.0, float(downbeat_ms) / 1000.0)
+        except Exception:
+            pos_sec = 0.0
+
+        payload = struct.pack(
+            ">HHdIQdd",
+            512,
+            1,
+            pos_sec,
+            1,
+            0,
+            bpm_val,
+            0.25
+        ) + b"\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+        return payload
 
     @staticmethod
     def procesar_caratula_cuadrada(cover_source, max_dim: int = 600) -> bytes:
@@ -816,11 +1494,15 @@ class AudioProcessorService:
                     raw_bytes = base64.b64decode(b64_data)
                     img = Image.open(io.BytesIO(raw_bytes))
                 elif cover_str.startswith("http://") or cover_str.startswith("https://"):
+                    import ssl
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
                     req = urllib.request.Request(
                         cover_str,
                         headers={"User-Agent": "Mozilla/5.0 (BeatWave Pro)"}
                     )
-                    with urllib.request.urlopen(req, timeout=5) as resp:
+                    with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
                         raw_bytes = resp.read()
                         img = Image.open(io.BytesIO(raw_bytes))
                 elif os.path.exists(cover_str):
@@ -862,20 +1544,23 @@ class AudioProcessorService:
         """Determina de forma ultrarrápida si el archivo contiene carátula incrustada o en su carpeta."""
         if not ruta or not os.path.exists(ruta):
             return False
-        ext = os.path.splitext(ruta)[1].lower()
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
         try:
-            if ext == ".flac":
-                f = FLAC(ruta)
-                if f.pictures and len(f.pictures) > 0:
-                    return True
-            elif ext in (".mp3", ".aiff", ".aif"):
+            if real_fmt == "flac":
+                try:
+                    f = FLAC(ruta)
+                    if f.pictures and len(f.pictures) > 0:
+                        return True
+                except Exception:
+                    pass
+            elif real_fmt in ("mp3", "aiff", "aif", "wav"):
                 try:
                     id3 = ID3(ruta)
                     if id3.getall("APIC"):
                         return True
                 except Exception:
                     pass
-            elif ext in (".m4a", ".aac"):
+            elif real_fmt in ("m4a", "aac", "mp4"):
                 try:
                     m = MP4(ruta)
                     if m.tags and "covr" in m.tags and m.tags["covr"]:
@@ -942,34 +1627,100 @@ class AudioProcessorService:
         return ""
 
     @staticmethod
-    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None, modo_serato: bool = False) -> bool:
+    def escribir_metadatos_pro(ruta: str, meta_track: dict, cover_url: str = None, modo_serato: bool = False, modo_rapido: bool = False) -> bool:
         """Inyecta metadatos profesionales para DJs (BPM exacto, Camelot TKEY, Comentario Táctico COMM,
-        Serato Markers2 Cues, Serato BeatGrid, Carátula 1:1, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV."""
+        Serato Markers2 Cues, Serato BeatGrid, Carátula 1:1, ISRC, Género) en archivos FLAC, MP3, AIFF, M4A y WAV.
+        Preserva de forma estricta los tags originales del archivo para evitar pérdida de información."""
         if not os.path.exists(ruta) or os.path.getsize(ruta) < 1024:
             return False
 
         ext = os.path.splitext(ruta)[1].lower()
-        title = str(meta_track.get("title") or meta_track.get("t") or os.path.splitext(os.path.basename(ruta))[0])
-        artist = str(meta_track.get("artist") or meta_track.get("a") or "Desconocido")
-        album = str(meta_track.get("album") or "CleanDJmix PRO")
-        bpm_val = meta_track.get("bpm") or meta_track.get("b") or "128.00"
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
+        es_rapido = modo_rapido or bool(meta_track.get("modo_rapido")) or bool(meta_track.get("skip_acoustic_bpm"))
+
+        # 0. Lectura previa no destructiva de tags existentes en el contenedor de audio
+        existing_tags = {}
+        has_existing_cover = False
+        try:
+            if real_fmt == "flac":
+                _f_check = FLAC(ruta)
+                has_existing_cover = bool(_f_check.pictures and len(_f_check.pictures) > 0)
+                for _k, _v in _f_check.items():
+                    if _v and len(_v) > 0:
+                        existing_tags[_k.upper()] = str(_v[0])
+            elif real_fmt in ("mp3", "aiff", "aif"):
+                from mutagen.id3 import ID3
+                try:
+                    _id3_check = ID3(ruta)
+                    has_existing_cover = any(k.startswith("APIC") for k in _id3_check.keys())
+                    for frame_key, frame_obj in _id3_check.items():
+                        fk_up = frame_key.upper()
+                        if hasattr(frame_obj, "text") and frame_obj.text:
+                            existing_tags[fk_up] = str(frame_obj.text[0])
+                            if "TXXX:" in fk_up:
+                                existing_tags[fk_up.split("TXXX:", 1)[1]] = str(frame_obj.text[0])
+                        elif hasattr(frame_obj, "desc") and hasattr(frame_obj, "text"):
+                            existing_tags[str(frame_obj.desc).upper()] = str(frame_obj.text[0]) if frame_obj.text else ""
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        title = str(meta_track.get("title") or meta_track.get("t") or existing_tags.get("TITLE") or os.path.splitext(os.path.basename(ruta))[0])
+        artist = str(meta_track.get("artist") or meta_track.get("a") or existing_tags.get("ARTIST") or "Desconocido")
+        
+        album_in = str(meta_track.get("album") or "")
+        album_existing = existing_tags.get("ALBUM") or ""
+
+        bpm_val = meta_track.get("bpm") or meta_track.get("b") or existing_tags.get("BPM") or existing_tags.get("TBPM") or "128.00"
         try:
             bpm_float = float(str(bpm_val).replace(",", "."))
-            bpm_str = f"{bpm_float:.2f}"
         except Exception:
-            bpm_str = str(bpm_val)
             bpm_float = 128.0
 
-        raw_key = meta_track.get("key") or meta_track.get("k") or ""
+        # Verificación acústica estricta de BPM: Solo cuando no es guardado rápido y se solicita verificación explícita
+        if not es_rapido and meta_track.get("verificar_acustica"):
+            bpm_acustico_real = AudioProcessorService.calcular_bpm_acustico_exacto(ruta, bpm_hint=bpm_float)
+            if abs(bpm_acustico_real - bpm_float) > 0.8:
+                print(f"[TEMPO CORRECCIÓN] '{os.path.basename(ruta)}': BPM tag ({bpm_float:.2f}) discrepante con tempo acústico real ({bpm_acustico_real:.2f}). Corrigiendo a {bpm_acustico_real:.2f}.")
+                bpm_float = bpm_acustico_real
+                meta_track["recalcular_grid"] = True
+
+        bpm_str = f"{bpm_float:.2f}"
+
+        raw_key = meta_track.get("key") or meta_track.get("k") or existing_tags.get("KEY") or existing_tags.get("INITIALKEY") or existing_tags.get("TKEY") or ""
         key_camelot = AudioProcessorService.normalizar_key(raw_key) if raw_key else ""
-        comment = str(meta_track.get("comment") or "")
-        genre_val = str(meta_track.get("genre") or meta_track.get("mood") or "Tech House").strip()
-        subgenre_val = str(meta_track.get("subgenre") or "").strip()
-        if subgenre_val and subgenre_val.lower() not in genre_val.lower():
-            genre_full = f"{genre_val} / {subgenre_val}"
+        initial_key_val = str(meta_track.get("initialkey") or existing_tags.get("INITIALKEY") or key_camelot).strip()
+        comment = str(meta_track.get("comment") or existing_tags.get("COMMENT") or existing_tags.get("COMM") or "")
+        raw_genre = str(meta_track.get("genre") or existing_tags.get("GENRE") or existing_tags.get("TCON") or meta_track.get("mood") or "Desconocido").strip()
+        subgenre_val = str(meta_track.get("subgenre") or existing_tags.get("SUBGENRE") or "").strip()
+        if not raw_genre or raw_genre == "Desconocido":
+            if not es_rapido and not meta_track.get("skip_online_lookup"):
+                try:
+                    from services.discogs_service import DiscogsService
+                    resolved_g, resolved_sub = DiscogsService.resolver_genero_disco(
+                        artist=artist,
+                        title=title,
+                        raw_genre=raw_genre,
+                        raw_subgenre=subgenre_val,
+                        bpm=bpm_float
+                    )
+                    genre_val = resolved_g
+                    subgenre_val = resolved_sub
+                except Exception:
+                    genre_val = "Desconocido"
+                    subgenre_val = "Desconocido"
+            else:
+                genre_val = "Desconocido"
+                subgenre_val = "Desconocido"
+            genre_full = f"{genre_val} / {subgenre_val}" if subgenre_val and subgenre_val != "Desconocido" and subgenre_val != genre_val else genre_val
+        elif subgenre_val and subgenre_val != "Desconocido" and subgenre_val.lower() not in raw_genre.lower() and "/" not in raw_genre:
+            genre_val = raw_genre
+            genre_full = f"{raw_genre} / {subgenre_val}"
         else:
-            genre_full = genre_val
-        isrc = str(meta_track.get("isrc") or "")
+            genre_val = raw_genre
+            genre_full = raw_genre
+        isrc = str(meta_track.get("isrc") or existing_tags.get("ISRC") or existing_tags.get("TSRC") or "")
 
         # Cálculo de duración en milisegundos para sincronización de Cues
         dur_str = str(meta_track.get("duration") or "05:00")
@@ -981,39 +1732,76 @@ class AudioProcessorService:
             except Exception:
                 pass
 
-        downbeat_ms = int(float(meta_track.get("first_downbeat_ms") or 0))
-        trim_ms = float(meta_track.get("trim_start_ms") or 0.0)
+        downbeat_ms = float(meta_track.get("first_downbeat_ms") or meta_track.get("downbeat_ms") or existing_tags.get("FIRST_DOWNBEAT_MS") or 0.0)
+        trim_ms = float(meta_track.get("trim_start_ms") or existing_tags.get("TRIM_START_MS") or 0.0)
+        trim_end_ms = float(meta_track.get("trim_end_ms") or existing_tags.get("TRIM_END_MS") or 0.0)
 
-        dance_raw = meta_track.get("danceability") or meta_track.get("dance") or meta_track.get("d") or 85
+        # Recalcular grid/downbeat solo si se solicita explícitamente y no estamos en modo rápido
+        bpm_previo = float(meta_track.get("bpm_previo") or meta_track.get("old_bpm") or 0.0)
+        bpm_cambio = (bpm_previo > 20.0 and abs(bpm_previo - bpm_float) > 0.05)
+        recalcular = (meta_track.get("recalcular_grid") or meta_track.get("verificar_beatgrid") or bpm_cambio) and not es_rapido
+        if not es_rapido and (downbeat_ms <= 0.0 or recalcular):
+            try:
+                t_start, d_down, t_end = AudioProcessorService.detectar_trim_y_downbeat(ruta, bpm=bpm_float, incluir_cola=True)
+                trim_ms = t_start
+                downbeat_ms = d_down
+                trim_end_ms = t_end
+                meta_track["trim_start_ms"] = trim_ms
+                meta_track["first_downbeat_ms"] = downbeat_ms
+                meta_track["trim_end_ms"] = trim_end_ms
+            except Exception:
+                pass
+
+        dance_raw = meta_track.get("danceability") or meta_track.get("dance") or meta_track.get("d") or existing_tags.get("DANCEABILITY") or 85
         try:
             dance_val = int(re.sub(r"[^\d]", "", str(dance_raw)) or "85")
         except Exception:
             dance_val = 85
 
-        energy_raw = meta_track.get("energy") or meta_track.get("energia") or meta_track.get("e") or 80
+        energy_raw = meta_track.get("energy") or meta_track.get("energia") or meta_track.get("e") or existing_tags.get("ENERGY") or 80
         try:
             energy_val = int(re.sub(r"[^\d]", "", str(energy_raw)) or "80")
         except Exception:
             energy_val = 80
 
-        mood_val = str(meta_track.get("mood") or "Peak Time").strip()
-        cues_list = meta_track.get("cues") or []
+        mood_val = str(meta_track.get("mood") or existing_tags.get("MOOD") or existing_tags.get("GROUPING") or "Peak Time").strip()
+        raw_cues = meta_track.get("cues") or []
+        cues_list = [c for c in raw_cues if c and not c.get("is_empty") and (c.get("pos_ms") is not None or c.get("time") or c.get("pct") is not None)] if raw_cues else []
+        if not cues_list or meta_track.get("recalcular_grid") or meta_track.get("recalcular_cues"):
+            modo_cues = str(meta_track.get("modo_cues") or meta_track.get("cues_mode") or "estandar").lower()
+            if modo_cues in ("acustico", "acoustic", "sub_bass"):
+                cues_list = AudioProcessorService.calcular_8_hot_cues_fraseo(
+                    duration_ms=dur_ms,
+                    bpm=bpm_float,
+                    downbeat_ms=int(downbeat_ms),
+                    ruta=ruta,
+                    trim_start_ms=int(trim_ms),
+                    trim_end_ms=int(trim_end_ms)
+                )
+            else:
+                cues_list = AudioProcessorService.generar_hot_cues_estandar_performance(
+                    duration_ms=dur_ms,
+                    bpm=bpm_float,
+                    downbeat_ms=int(downbeat_ms),
+                    ruta=ruta,
+                    trim_start_ms=int(trim_ms),
+                    trim_end_ms=int(trim_end_ms)
+                )
         es_serato = modo_serato or bool(meta_track.get("modo_serato")) or bool(meta_track.get("export_serato"))
 
         # 1. Agrupamiento (Grouping): Solo el Mood
-        grouping_val = mood_val
+        grouping_val = str(meta_track.get("grouping") or existing_tags.get("GROUPING") or mood_val).strip()
 
         # 2. Etiqueta (Label): La Energía
-        label_val = f"⚡{energy_val}%"
+        label_val = str(meta_track.get("label") or existing_tags.get("LABEL") or f"⚡{energy_val}%").strip()
 
         # 3. Remixer: La Danceability
-        if es_serato or not meta_track.get("remixer"):
-            remixer_val = f"🕺{dance_val}%"
+        if es_serato or not (meta_track.get("remixer") or existing_tags.get("REMIXER")):
+            remixer_val = str(meta_track.get("remixer") or existing_tags.get("REMIXER") or f"🕺{dance_val}%").strip()
         else:
-            remixer_val = str(meta_track.get("remixer") or meta_track.get("version") or "").strip()
+            remixer_val = str(meta_track.get("remixer") or existing_tags.get("REMIXER") or meta_track.get("version") or "").strip()
 
-        # 4. Álbum: En modo Serato (o por defecto), Subgénero y Mix Armónico táctico:
-        # Ejemplo: [BUILD-UP E81%] Dark / Industrial. Mix Armónico: 7A (Neutral) • 8A/6A (Cambio Energía)
+        # 4. Álbum: Conservar el álbum existente si ya fue generado o existe; si no, calcular armónico táctico
         from services.mood_intelligence_service import MoodIntelligenceService
         sub_display = str(
             subgenre_val or
@@ -1032,14 +1820,18 @@ class AudioProcessorService:
             lang="es"
         )
 
-        if es_serato or not meta_track.get("album") or meta_track.get("album") in ("CleanDJmix PRO", ""):
-            album_val = tactical_album
+        if album_in and album_in not in ("CleanDJmix PRO", ""):
+            album_val = album_in
+        elif album_existing and album_existing not in ("CleanDJmix PRO", ""):
+            album_val = album_existing
         else:
-            album_val = str(meta_track.get("album"))
+            album_val = tactical_album
 
-        # 5. Comentario: Sin BPM ni Tonalidad (Estructura y Ubicación DJ)
+        # 5. Comentario: Conservar comentario existente si ya existe
         raw_cmt = str(comment).strip()
-        if es_serato or not raw_cmt or any(x in raw_cmt for x in ("BPM", "Mix Armónico", "Harmonic Mix")) or raw_cmt.startswith("["):
+        if raw_cmt and (raw_cmt.startswith("Estructura:") or not any(x in raw_cmt for x in ("BPM", "Mix Armónico", "Harmonic Mix")) and not raw_cmt.startswith("[")):
+            tactical_comment = raw_cmt
+        elif not raw_cmt or raw_cmt.startswith("["):
             tactical_comment = MoodIntelligenceService.generar_comentario_tactico(
                 bpm=bpm_float,
                 key=key_camelot,
@@ -1053,8 +1845,9 @@ class AudioProcessorService:
         else:
             tactical_comment = raw_cmt
 
-        composer_val = str(meta_track.get("composer") or meta_track.get("acoustic_role") or f"⚡E:{energy_val}% 🕺D:{dance_val}%").strip()
-        year_raw = str(meta_track.get("year") or meta_track.get("y") or meta_track.get("date") or "").strip()
+        # 6. Compositor / Rol acústico: Preservar el rol acústico existente ('Bass Driver', etc.)
+        composer_val = str(meta_track.get("composer") or existing_tags.get("COMPOSER") or existing_tags.get("TCOM") or meta_track.get("acoustic_role") or "Bass Driver").strip()
+        year_raw = str(meta_track.get("year") or meta_track.get("y") or meta_track.get("date") or existing_tags.get("DATE") or existing_tags.get("YEAR") or "").strip()
         year_match = re.search(r'\b(19\d\d|20\d\d)\b', year_raw)
         year_str = year_match.group(1) if year_match else ""
 
@@ -1082,40 +1875,72 @@ class AudioProcessorService:
         # Serato Autotags binario oficial
         autotags_data = b"\x01\x01" + f"{bpm_str}\x00-3.000\x000.000\x00".encode("ascii")
 
-        # Payloads empaquetados para contenedores FLAC y MP4
+        # Serato Tempo Map binario oficial (Serato DJ Pro 2.5+ / 3.x / 5.x)
+        serato_tempo_map_bin = AudioProcessorService.serializar_serato_tempo_map(
+            bpm=bpm_float,
+            downbeat_ms=downbeat_ms
+        )
+        serato_analysis_flags_bin = b"\x00\x00\x00\x00\x00\x00\x00\xe1"
+
+        # Payloads empaquetados para contenedores FLAC y MP4 según especificación oficial Serato
         flac_markers2_payload = b"application/octet-stream\x00\x00Serato Markers2\x00" + serato_markers2_geob
-        flac_markers2_b64 = base64.b64encode(flac_markers2_payload).decode("ascii")
-        flac_markers2_str = "\n".join(flac_markers2_b64[i:i+72] for i in range(0, len(flac_markers2_b64), 72))
+        flac_markers2_b64 = base64.b64encode(flac_markers2_payload).decode("ascii").rstrip("=")
+        flac_markers2_str = "\n".join(flac_markers2_b64[i:i+72] for i in range(0, len(flac_markers2_b64), 72)) + "\n"
 
         flac_markers1_payload = b"application/octet-stream\x00\x00Serato Markers_\x00" + serato_markers_v1_bin
-        flac_markers1_b64 = base64.b64encode(flac_markers1_payload).decode("ascii")
-        flac_markers1_str = "\n".join(flac_markers1_b64[i:i+72] for i in range(0, len(flac_markers1_b64), 72))
+        flac_markers1_b64 = base64.b64encode(flac_markers1_payload).decode("ascii").rstrip("=")
+        flac_markers1_str = "\n".join(flac_markers1_b64[i:i+72] for i in range(0, len(flac_markers1_b64), 72)) + "\n"
 
         flac_beatgrid_payload = b"application/octet-stream\x00\x00Serato BeatGrid\x00" + serato_beatgrid_bin
-        flac_beatgrid_b64 = base64.b64encode(flac_beatgrid_payload).decode("ascii")
+        flac_beatgrid_b64 = base64.b64encode(flac_beatgrid_payload).decode("ascii").rstrip("=")
+        flac_beatgrid_str = "\n".join(flac_beatgrid_b64[i:i+72] for i in range(0, len(flac_beatgrid_b64), 72)) + "\n"
+
+        flac_tempo_map_payload = b"application/octet-stream\x00\x00Serato Tempo Map\x00" + serato_tempo_map_bin
+        flac_tempo_map_b64 = base64.b64encode(flac_tempo_map_payload).decode("ascii").rstrip("=")
+        flac_tempo_map_str = "\n".join(flac_tempo_map_b64[i:i+72] for i in range(0, len(flac_tempo_map_b64), 72)) + "\n"
+
+        flac_analysis_payload = b"application/octet-stream\x00\x00Serato Analysis\x00" + serato_analysis_flags_bin
+        flac_analysis_b64 = base64.b64encode(flac_analysis_payload).decode("ascii").rstrip("=")
+        flac_analysis_str = "\n".join(flac_analysis_b64[i:i+72] for i in range(0, len(flac_analysis_b64), 72)) + "\n"
 
         flac_autotags_payload = b"application/octet-stream\x00\x00Serato Autotags\x00" + autotags_data
-        flac_autotags_b64 = base64.b64encode(flac_autotags_payload).decode("ascii")
+        flac_autotags_b64 = base64.b64encode(flac_autotags_payload).decode("ascii").rstrip("=")
+        flac_autotags_str = "\n".join(flac_autotags_b64[i:i+72] for i in range(0, len(flac_autotags_b64), 72)) + "\n"
 
         cover_source = cover_url or meta_track.get("cover") or meta_track.get("cover_url") or meta_track.get("image_url")
-        if not cover_source:
+        if not cover_source and not has_existing_cover and not es_rapido and not meta_track.get("skip_remote_covers"):
             cover_source = AudioProcessorService.resolver_caratula_local_o_remota(ruta, artist, title)
         cover_bytes = AudioProcessorService.procesar_caratula_cuadrada(cover_source) if cover_source else b""
 
+        real_fmt = AudioProcessorService.detectar_formato_audio(ruta)
+        file_ext = ext.replace(".", "").lower()
+        if file_ext and real_fmt and file_ext != real_fmt and not (file_ext in ("aif", "aiff") and real_fmt in ("aif", "aiff")):
+            print(f"[AUDITORÍA AUDIO] Discrepancia de contenedor en '{os.path.basename(ruta)}': extensión .{file_ext} pero formato real '{real_fmt.upper()}'. Inyectando tags nativos {real_fmt.upper()}.")
+
         try:
-            if ext == ".flac":
-                with open(ruta, "rb") as f_check:
-                    if f_check.read(4) != b"fLaC":
-                        print(f"[META ERROR] Cabecera fLaC no válida en: {ruta}")
+            if real_fmt == "flac":
+                try:
+                    audio = FLAC(ruta)
+                except (FLACNoHeaderError, Exception) as flac_err:
+                    # Fallback si el parser FLAC falla por cabecera id3 o ftyp discrepante
+                    with open(ruta, "rb") as f_head:
+                        h = f_head.read(32)
+                    if h.startswith(b"ID3") or (len(h) >= 2 and h[0] == 0xFF):
+                        real_fmt = "mp3"
+                    elif b"ftyp" in h or b"moov" in h:
+                        real_fmt = "m4a"
+                    else:
+                        print(f"[META ERROR] Cabecera FLAC no válida en: {ruta} ({flac_err})")
                         return False
 
+            if real_fmt == "flac":
                 audio = FLAC(ruta)
                 audio["TITLE"] = [title]
                 audio["ARTIST"] = [artist]
                 audio["ALBUM"] = [album_val]
                 audio["BPM"] = [bpm_str]
                 if key_camelot:
-                    audio["INITIALKEY"] = [key_camelot]
+                    audio["INITIALKEY"] = [initial_key_val if initial_key_val else key_camelot]
                     audio["KEY"] = [key_camelot]
                 audio["GROUPING"] = [grouping_val]
                 audio["LABEL"] = [label_val]
@@ -1141,14 +1966,21 @@ class AudioProcessorService:
                 audio["SERATO_PLAYLIST"] = [mood_val]
                 if trim_ms > 0:
                     audio["TRIM_START_MS"] = [f"{trim_ms:.1f}"]
+                if trim_end_ms > 0:
+                    audio["TRIM_END_MS"] = [f"{trim_end_ms:.1f}"]
                 if downbeat_ms > 0:
                     audio["FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}"]
 
-                # Metadatos nativos Serato DJ en VORBIS_COMMENT
+                # Metadatos nativos Serato DJ en VORBIS_COMMENT canónico (especificación oficial Serato DJ Pro)
                 audio["SERATO_MARKERS_V2"] = [flac_markers2_str]
-                audio["SERATO_MARKERS"] = [flac_markers1_str]
-                audio["SERATO_BEATGRID"] = [flac_beatgrid_b64]
-                audio["SERATO_AUTOGAIN"] = [flac_autotags_b64]
+                audio["SERATO_BEATGRID"] = [flac_beatgrid_str]
+                audio["SERATO_ANALYSIS"] = [flac_analysis_str]
+                audio["SERATO_AUTOGAIN"] = [flac_autotags_str]
+
+                # Eliminar tags obsoletos o no conformes que confunden a Serato en contenedores FLAC
+                for obsolete_key in ["SERATO_MARKERS", "SERATO_ANALYSIS_FLAGS", "SERATO_TEMPO_MAP"]:
+                    if obsolete_key in audio:
+                        del audio[obsolete_key]
 
                 if cover_bytes:
                     try:
@@ -1168,7 +2000,7 @@ class AudioProcessorService:
                 audio.save()
                 return True
 
-            elif ext == ".mp3":
+            elif real_fmt == "mp3":
                 try:
                     id3 = ID3(ruta)
                 except ID3NoHeaderError:
@@ -1182,7 +2014,7 @@ class AudioProcessorService:
                 id3.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
                     id3.add(TKEY(encoding=1, text=[key_camelot]))
-                    id3.add(TXXX(encoding=1, desc="INITIALKEY", text=[key_camelot]))
+                    id3.add(TXXX(encoding=1, desc="INITIALKEY", text=[initial_key_val if initial_key_val else key_camelot]))
                     id3.add(TXXX(encoding=1, desc="KEY", text=[key_camelot]))
 
                 # Inyección de Grouping (TIT1): Columna visible en Serato DJ Pro solo para Mood
@@ -1215,6 +2047,8 @@ class AudioProcessorService:
 
                 if trim_ms > 0:
                     id3.add(TXXX(encoding=1, desc="TRIM_START_MS", text=[f"{trim_ms:.1f}"]))
+                if trim_end_ms > 0:
+                    id3.add(TXXX(encoding=1, desc="TRIM_END_MS", text=[f"{trim_end_ms:.1f}"]))
                 if downbeat_ms > 0:
                     id3.add(TXXX(encoding=1, desc="FIRST_DOWNBEAT_MS", text=[f"{downbeat_ms:.1f}"]))
 
@@ -1238,6 +2072,20 @@ class AudioProcessorService:
                     mime="application/octet-stream",
                     desc="Serato BeatGrid",
                     data=serato_beatgrid_bin
+                ))
+                # Inyección GEOB Serato Tempo Map
+                id3.add(GEOB(
+                    encoding=0,
+                    mime="application/octet-stream",
+                    desc="Serato Tempo Map",
+                    data=serato_tempo_map_bin
+                ))
+                # Inyección GEOB Serato Analysis Flags
+                id3.add(GEOB(
+                    encoding=0,
+                    mime="application/octet-stream",
+                    desc="Serato Analysis Flags",
+                    data=serato_analysis_flags_bin
                 ))
                 # Inyección GEOB Serato Autotags
                 id3.add(GEOB(
@@ -1264,7 +2112,7 @@ class AudioProcessorService:
                 id3.save(ruta, v2_version=3)
                 return True
 
-            elif ext in (".aiff", ".aif"):
+            elif real_fmt in ("aiff", "aif", ".aiff", ".aif"):
                 audio = AIFF(ruta)
                 if audio.tags is None:
                     audio.add_tags()
@@ -1275,7 +2123,7 @@ class AudioProcessorService:
                 tags.add(TBPM(encoding=1, text=[bpm_str]))
                 if key_camelot:
                     tags.add(TKEY(encoding=1, text=[key_camelot]))
-                    tags.add(TXXX(encoding=1, desc="INITIALKEY", text=[key_camelot]))
+                    tags.add(TXXX(encoding=1, desc="INITIALKEY", text=[initial_key_val if initial_key_val else key_camelot]))
                     tags.add(TXXX(encoding=1, desc="KEY", text=[key_camelot]))
                 tags.add(TIT1(encoding=1, text=[grouping_val]))
                 tags.add(TPUB(encoding=1, text=[label_val]))
@@ -1301,6 +2149,8 @@ class AudioProcessorService:
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers2", data=serato_markers2_geob))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Markers_", data=serato_markers_v1_bin))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato BeatGrid", data=serato_beatgrid_bin))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Tempo Map", data=serato_tempo_map_bin))
+                tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Analysis Flags", data=serato_analysis_flags_bin))
                 tags.add(GEOB(encoding=0, mime="application/octet-stream", desc="Serato Autotags", data=autotags_data))
 
                 if cover_bytes:
@@ -1319,7 +2169,7 @@ class AudioProcessorService:
                 audio.save()
                 return True
 
-            elif ext in (".m4a", ".aac"):
+            elif real_fmt in ("m4a", "aac", "mp4", ".m4a", ".aac"):
                 audio = MP4(ruta)
                 audio["\xa9nam"] = [title]
                 audio["\xa9ART"] = [artist]
@@ -1348,6 +2198,8 @@ class AudioProcessorService:
                 audio["----:com.apple.iTunes:MOOD"] = [mood_val.encode("utf-8")]
                 if trim_ms > 0:
                     audio["----:com.apple.iTunes:TRIM_START_MS"] = [f"{trim_ms:.1f}".encode("utf-8")]
+                if trim_end_ms > 0:
+                    audio["----:com.apple.iTunes:TRIM_END_MS"] = [f"{trim_end_ms:.1f}".encode("utf-8")]
                 if downbeat_ms > 0:
                     audio["----:com.apple.iTunes:FIRST_DOWNBEAT_MS"] = [f"{downbeat_ms:.1f}".encode("utf-8")]
 

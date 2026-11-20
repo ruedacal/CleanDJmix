@@ -89,6 +89,137 @@ export const ExportMenu = ({ targets, onSyncAll, onSaveTags, disabled, busy }) =
     );
 };
 
+export const AddToCollectionMenu = ({ customLibraries = [], activeCustomLibId, onAddToFolder, onCreateAndAdd, selectedCount = 0, disabled = false }) => {
+    const [open, setOpen] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [newCrateName, setNewCrateName] = useState('');
+    const rootRef = useDismissable(open, (next) => {
+        setOpen(next);
+        if (!next) {
+            setIsCreating(false);
+            setNewCrateName('');
+        }
+    });
+
+    const activeLib = (customLibraries || []).find((l) => l.id === activeCustomLibId) || (customLibraries && customLibraries[0]) || {
+        id: 'lib_default',
+        name: 'Mi Colección Principal',
+        folders: []
+    };
+
+    const handleSelect = (folder) => {
+        setOpen(false);
+        setIsCreating(false);
+        if (onAddToFolder) onAddToFolder(folder);
+    };
+
+    const handleCreate = (e) => {
+        e.preventDefault();
+        if (!newCrateName.trim()) return;
+        setOpen(false);
+        setIsCreating(false);
+        const name = newCrateName.trim();
+        setNewCrateName('');
+        if (onCreateAndAdd) onCreateAndAdd(name);
+    };
+
+    return (
+        <div className="relative" ref={rootRef}>
+            <button
+                type="button"
+                className="ws-btn ws-btn-ghost hover:text-cyan-400"
+                aria-haspopup="menu"
+                aria-expanded={open}
+                disabled={disabled}
+                onClick={() => setOpen((v) => !v)}
+                title="Llevar pistas a un Crate o carpeta de tu Colección"
+            >
+                <Icons.Plus size={15} />
+                <span className="ws-btn-label">Llevar a Colección</span>
+                <Icons.ChevronDown size={14} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div role="menu" className="ws-menu left-0 w-80 bw-fade-in z-50 shadow-2xl">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
+                        <span className="ws-menu-heading !p-0">Crate de Destino</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold">
+                            {selectedCount} {selectedCount === 1 ? 'pista' : 'pistas'}
+                        </span>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto py-1">
+                        {activeLib.folders && activeLib.folders.length > 0 ? (
+                            activeLib.folders.map((folder) => (
+                                <button
+                                    key={folder.id}
+                                    type="button"
+                                    role="menuitem"
+                                    className="ws-menu-row w-full flex items-center justify-between hover:bg-white/5"
+                                    onClick={() => handleSelect(folder)}
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <span className="text-cyan-400"><Icons.Folder size={15} /></span>
+                                        <span className="ws-menu-title truncate text-xs">{folder.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-white/5 shrink-0 ml-2">
+                                        {folder.tracks?.length || 0}
+                                    </span>
+                                </button>
+                            ))
+                        ) : (
+                            <div className="px-3 py-2 text-xs text-zinc-500 font-mono italic">
+                                No hay crates creados aún.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="ws-menu-sep" />
+
+                    {isCreating ? (
+                        <form onSubmit={handleCreate} className="p-2 flex flex-col gap-1.5 bg-black/40">
+                            <input
+                                type="text"
+                                autoFocus
+                                value={newCrateName}
+                                onChange={(e) => setNewCrateName(e.target.value)}
+                                placeholder="Nombre del nuevo crate..."
+                                className="w-full px-2.5 py-1.5 text-xs bg-zinc-900 border border-cyan-500/60 rounded text-white font-mono focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                            />
+                            <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsCreating(false); setNewCrateName(''); }}
+                                    className="px-2 py-1 text-[10px] font-mono rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!newCrateName.trim()}
+                                    className="px-2.5 py-1 text-[10px] font-mono rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold disabled:opacity-50"
+                                >
+                                    Crear y Añadir
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="ws-menu-row w-full flex items-center gap-2 text-cyan-400 hover:text-cyan-300"
+                            onClick={() => setIsCreating(true)}
+                        >
+                            <Icons.Plus size={15} />
+                            <span className="ws-menu-title text-xs">+ Crear nuevo Crate / Carpeta</span>
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const TONE_DOT = {
     cyan: 'bg-[var(--bw-cyan)]',
     emerald: 'bg-emerald-400',
@@ -166,35 +297,96 @@ export const FilterMenu = ({ value, onChange, groups, allLabel = 'Todas las pist
 
 const FORMATS = ['FLAC', 'WAV', 'AIFF', 'MP3', 'M4A', 'OGG'];
 
-export const IngestDropzone = ({ isDragOver, onDragOver, onDragLeave, onDrop, onBrowse }) => (
-    <div
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        className="flex-1 flex items-center justify-center p-4 sm:p-8 select-none my-auto"
-    >
-        <div className={`ws-dropzone ${isDragOver ? 'ws-dropzone-over' : ''}`}>
-            <div className="ws-dropzone-icon" aria-hidden="true">
-                <Icons.Upload size={26} strokeWidth={1.5} />
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-                <h2 className="font-sans font-semibold text-lg sm:text-xl text-zinc-50 text-balance">
-                    {isDragOver ? 'Suelta para analizar' : 'Arrastra tu música aquí'}
-                </h2>
-                <p className="text-sm text-zinc-400 leading-relaxed max-w-md text-pretty">
-                    Carpetas completas o pistas sueltas. Calculamos BPM, Key Camelot y Hot Cues, y certificamos la calidad real de cada archivo.
+export const IngestDropzone = ({ 
+    isDragOver = false, 
+    onDragOver, 
+    onDragLeave, 
+    onDrop, 
+    onBrowse,
+    onImportCollection = null,
+    customLibraries = [],
+    activeCustomLibId = null
+}) => {
+    const [selectedLib, setSelectedLib] = useState(() => {
+        if (activeCustomLibId) return activeCustomLibId;
+        if (customLibraries && customLibraries.length > 0) return customLibraries[0].id;
+        return "";
+    });
+
+    useEffect(() => {
+        if (activeCustomLibId) {
+            setSelectedLib(activeCustomLibId);
+        } else if (customLibraries && customLibraries.length > 0 && !selectedLib) {
+            setSelectedLib(customLibraries[0].id);
+        }
+    }, [activeCustomLibId, customLibraries]);
+
+    const handleImportClick = () => {
+        if (onImportCollection) {
+            onImportCollection(selectedLib || (customLibraries && customLibraries[0] ? customLibraries[0].id : null));
+        }
+    };
+
+    return (
+        <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className="flex-1 flex items-center justify-center p-4 sm:p-8 select-none my-auto"
+        >
+            <div className={`ws-dropzone ${isDragOver ? 'ws-dropzone-over' : ''}`}>
+                <div className="ws-dropzone-icon" aria-hidden="true">
+                    <Icons.Upload size={26} strokeWidth={1.5} />
+                </div>
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <h2 className="font-sans font-semibold text-lg sm:text-xl text-zinc-50 text-balance">
+                        {isDragOver ? 'Suelta para analizar' : 'Arrastra tu música aquí'}
+                    </h2>
+                    <p className="text-sm text-zinc-400 leading-relaxed max-w-md text-pretty">
+                        Carpetas completas o pistas sueltas. Calculamos BPM, Key Camelot y Hot Cues, y certificamos la calidad real de cada archivo.
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-1">
+                    <button type="button" onClick={onBrowse} className="ws-btn ws-btn-primary ws-btn-lg">
+                        <Icons.Folder size={16} />
+                        <span>Elegir carpeta o pistas</span>
+                    </button>
+
+                    {onImportCollection && (
+                        <div className="flex items-center gap-1.5 p-1 bg-zinc-900/90 border border-zinc-700/80 rounded-xl shadow-lg">
+                            {customLibraries && customLibraries.length > 1 && (
+                                <select
+                                    value={selectedLib}
+                                    onChange={(e) => setSelectedLib(e.target.value)}
+                                    className="bg-zinc-800 text-cyan-300 font-mono text-xs font-bold rounded-lg px-2.5 py-2 outline-none border border-zinc-700 cursor-pointer"
+                                    title="Seleccionar biblioteca a importar"
+                                >
+                                    {customLibraries.map(lib => (
+                                        <option key={lib.id} value={lib.id}>
+                                            {lib.name} ({lib.folders?.reduce((acc, f) => acc + (f.tracks?.length || 0), 0) || 0} pistas)
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            <button
+                                type="button"
+                                onClick={handleImportClick}
+                                className="ws-btn ws-btn-secondary ws-btn-lg !bg-cyan-950/80 hover:!bg-cyan-900 !border-cyan-500/60 !text-cyan-200 hover:!text-white shadow-md active:scale-95"
+                                title="Importar colección de música guardada"
+                            >
+                                <Icons.Layers size={16} className="text-cyan-400" />
+                                <span>Importar Colección</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <p className="font-mono text-[11px] tracking-wider text-zinc-500">
+                    {FORMATS.join('  ·  ')}
                 </p>
             </div>
-            <button type="button" onClick={onBrowse} className="ws-btn ws-btn-primary ws-btn-lg">
-                <Icons.Folder size={16} />
-                <span>Elegir carpeta o pistas</span>
-            </button>
-            <p className="font-mono text-[11px] tracking-wider text-zinc-500">
-                {FORMATS.join('  ·  ')}
-            </p>
         </div>
-    </div>
-);
+    );
+};
 
 export function camelotTone(keyStr) {
     const m = String(keyStr || '').trim().toUpperCase().match(/^(\d{1,2})\s*([AB])$/);
@@ -213,3 +405,325 @@ export const CamelotKeyBadge = ({ value, className = '' }) => {
         </span>
     );
 };
+
+// ─── UI COMÚN DE WORKSPACES (SectionTitle, InfoTip, RotaryKnob, AudioEQ) ───
+export const SECTION_TITLE_CLASS = "font-syne font-black text-lg sm:text-xl leading-tight text-white tracking-wide uppercase";
+
+export const SectionTitle = ({ icon: Icon, title, accent, badge, accentColor = "cyan", className = "" }) => {
+    const isPurple = accentColor === "purple";
+    const iconBg = isPurple ? "bg-purple-500/15 border-purple-500/40 text-purple-300" : "bg-djcyan-500/10 border-djcyan-500/30 text-djcyan-400";
+    const accentText = isPurple ? "text-purple-400" : "text-djcyan-400";
+    const badgeStyle = isPurple ? "bg-purple-950/80 text-purple-300 border-purple-800" : "bg-djcyan-950 text-djcyan-400 border-djcyan-800";
+    return (
+        <div className={`flex items-center gap-2.5 min-w-0 shrink-0 ${className}`}>
+            {Icon && (
+                <span className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+                    <Icon size={16} />
+                </span>
+            )}
+            <h2 className={`${SECTION_TITLE_CLASS} truncate`}>
+                {title}{accent && <span className={accentText}> {accent}</span>}
+            </h2>
+            {badge && (
+                <span className={`hidden sm:inline-flex text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}`}>
+                    {badge}
+                </span>
+            )}
+        </div>
+    );
+};
+
+// Tooltip Flotante Educativo Desacoplado de Overflows mediante ReactDOM.createPortal
+export const InfoTip = ({ text, title }) => {
+    const [coords, setCoords] = useState(null);
+    const btnRef = useRef(null);
+
+    const handleEnter = () => {
+        if (!btnRef.current) return;
+        const rect = btnRef.current.getBoundingClientRect();
+        setCoords({
+            top: rect.top + rect.height / 2,
+            right: window.innerWidth - rect.left + 12
+        });
+    };
+
+    const handleLeave = () => setCoords(null);
+
+    return (
+        <span className="inline-flex items-center ml-1.5 align-middle">
+            <button 
+                ref={btnRef}
+                type="button"
+                onMouseEnter={handleEnter}
+                onMouseLeave={handleLeave}
+                onClick={(e) => { e.stopPropagation(); coords ? handleLeave() : handleEnter(); }}
+                className="w-3.5 h-3.5 rounded-full bg-djzinc-800 hover:bg-djcyan-500 hover:text-black border border-djzinc-600 flex items-center justify-center text-[9px] font-mono font-bold text-gray-400 transition-colors cursor-help select-none shrink-0"
+            >
+                i
+            </button>
+
+            {coords && ReactDOM.createPortal(
+                <div 
+                    style={{ 
+                        position: 'fixed', 
+                        top: `${coords.top}px`, 
+                        right: `${coords.right}px`, 
+                        transform: 'translateY(-50%)',
+                        zIndex: 999999
+                    }}
+                    className="w-72 bg-djzinc-900 border border-djzinc-700 rounded-lg p-3 text-xs text-gray-200 shadow-[0_12px_36px_rgba(0,0,0,0.95),0_0_15px_rgba(6,182,212,0.2)] pointer-events-none select-none"
+                >
+                    <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-djzinc-900 border-t border-r border-djzinc-700 rotate-45"></div>
+
+                    {title && (
+                        <div className="text-[11px] font-bold text-djcyan-400 mb-1 uppercase tracking-wider flex items-center gap-1.5 border-b border-djzinc-800 pb-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span>
+                            {title}
+                        </div>
+                    )}
+                    <div className="text-[11px] leading-relaxed text-gray-300 font-sans break-words whitespace-normal">
+                        {text}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </span>
+    );
+};
+
+// Gestor de Ecualizador Web Audio API de 3 Bandas (BASS 250Hz, MID 1000Hz, HI 3500Hz)
+export function getAudioEQNodes(audioElement) {
+    if (!audioElement) return null;
+    if (window.__bwAudioNodes && window.__bwAudioNodes.audio === audioElement) {
+        if (window.__bwAudioNodes.ctx.state === 'suspended') {
+            window.__bwAudioNodes.ctx.resume().catch(() => {});
+        }
+        return window.__bwAudioNodes;
+    }
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaElementSource(audioElement);
+        
+        const low = ctx.createBiquadFilter();
+        low.type = 'lowshelf';
+        low.frequency.value = 250;
+        low.gain.value = 0;
+
+        const mid = ctx.createBiquadFilter();
+        mid.type = 'peaking';
+        mid.frequency.value = 1000;
+        mid.Q.value = 1.0;
+        mid.gain.value = 0;
+
+        const high = ctx.createBiquadFilter();
+        high.type = 'highshelf';
+        high.frequency.value = 3500;
+        high.gain.value = 0;
+
+        source.connect(low);
+        low.connect(mid);
+        mid.connect(high);
+        high.connect(ctx.destination);
+
+        const nodes = { audio: audioElement, ctx, source, low, mid, high };
+        window.__bwAudioNodes = nodes;
+        return nodes;
+    } catch (e) {
+        console.warn("Web Audio EQ initialization note:", e);
+        return null;
+    }
+}
+
+// Potenciómetro Rotatorio Hardware DJ de Alta Precisión
+export const RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, onChange, color = "#06b6d4" }) => {
+    const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
+    const angle = -135 + normalized * 270;
+
+    const handlePointerDown = (e) => {
+        e.preventDefault();
+        const startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+        const startVal = value;
+
+        const onPointerMove = (me) => {
+            const currentY = me.clientY || (me.touches && me.touches[0].clientY) || 0;
+            const deltaY = startY - currentY;
+            const range = max - min;
+            const step = deltaY * (range / 120);
+            const newVal = Math.min(max, Math.max(min, Math.round((startVal + step) * 10) / 10));
+            if (onChange) onChange(newVal);
+        };
+
+        const onPointerUp = () => {
+            window.removeEventListener('mousemove', onPointerMove);
+            window.removeEventListener('mouseup', onPointerUp);
+            window.removeEventListener('touchmove', onPointerMove);
+            window.removeEventListener('touchend', onPointerUp);
+        };
+
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('touchmove', onPointerMove);
+        window.addEventListener('touchend', onPointerUp);
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-1 select-none">
+            <span className="text-[9px] font-mono font-bold text-gray-400 tracking-wider uppercase">{label}</span>
+            <div 
+                onMouseDown={handlePointerDown}
+                onTouchStart={handlePointerDown}
+                onDoubleClick={() => onChange && onChange(defaultValue)}
+                className="w-10 h-10 rounded-full bg-gradient-to-b from-[#181826] to-[#0c0c14] border-2 border-djzinc-700 hover:border-gray-400 relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center group active:scale-95 transition-transform"
+                title={`${label}: ${value > 0 ? '+' : ''}${value.toFixed(1)} dB (Doble clic para 0dB)`}
+            >
+                {/* Indicador de posición de rotación */}
+                <div 
+                    className="absolute w-full h-full rounded-full pointer-events-none"
+                    style={{ transform: `rotate(${angle}deg)` }}
+                >
+                    <div 
+                        className="w-1 h-3 rounded-full mx-auto mt-0.5 shadow-sm"
+                        style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+                    ></div>
+                </div>
+                {/* Tapa central estriada */}
+                <div className="w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner">
+                    <div className="w-1 h-1 rounded-full bg-djzinc-500"></div>
+                </div>
+            </div>
+            <span className="text-[9px] font-mono text-gray-300 font-extrabold">
+                {value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">dB</span>
+            </span>
+        </div>
+    );
+};
+
+// ==============================================================================
+// LOGOTIPO CORPORATIVO BEATWAVE PRO (5 BARRAS ANIMADAS EN BUCLE CONSTANTE DE 3S)
+// ==============================================================================
+export const BeatWaveLogoBadge = ({ size = 'sm', className = '' }) => {
+    return (
+        <div 
+            className={`relative rounded-full flex items-center justify-center shrink-0 bw-brand-logo-badge size-${size} select-none transition-all duration-300 ${className}`}
+        >
+            {/* SVG Vectorial Nativo de 5 Barras Ecualizadoras Animadas en Cian Corporativo */}
+            <svg 
+                viewBox="0 0 100 100" 
+                className="w-[74%] h-[74%] overflow-visible" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <defs>
+                    <linearGradient id="bw-bar-cyan-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a5f3fc" />
+                        <stop offset="25%" stopColor="#67e8f9" />
+                        <stop offset="55%" stopColor="#22d3ee" />
+                        <stop offset="100%" stopColor="#0891b2" />
+                    </linearGradient>
+                    <filter id="bw-bar-glow-fx" x="-30%" y="-30%" width="160%" height="160%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#06b6d4" floodOpacity="0.95" />
+                    </filter>
+                </defs>
+
+                <g filter="url(#bw-bar-glow-fx)">
+                    {/* Barra 1 (Izquierda exterior) */}
+                    <rect 
+                        x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-1" 
+                    />
+                    {/* Barra 2 (Izquierda interior) */}
+                    <rect 
+                        x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-2" 
+                    />
+                    {/* Barra 3 (Centro - Pico Máximo) */}
+                    <rect 
+                        x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-3" 
+                    />
+                    {/* Barra 4 (Derecha interior) */}
+                    <rect 
+                        x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-4" 
+                    />
+                    {/* Barra 5 (Derecha exterior) */}
+                    <rect 
+                        x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" ry="5.9" 
+                        fill="url(#bw-bar-cyan-grad)" 
+                        className="bw-equalizer-bar-5" 
+                    />
+                </g>
+            </svg>
+        </div>
+    );
+};
+
+// ==============================================================================
+// CANONICAL BRAND IDENTITY LOGO (COMPARTIDO EXACTAMENTE EN HEADER Y EN HERO/INTRO)
+// ==============================================================================
+export const BeatWaveBrandIdentity = ({ 
+    variant = 'hero', // 'header' | 'hero'
+    isTechnoActive = false, 
+    onClick = null,
+    className = '' 
+}) => {
+    const isHero = variant === 'hero';
+
+    return (
+        <div 
+            onClick={onClick}
+            className={`select-none ${onClick ? 'cursor-pointer' : ''} group ${
+                isHero ? 'bw-hero-brand-wrap' : 'inline-flex items-center gap-3'
+            } ${className}`}
+        >
+            {/* 1. Badge Circular Oficial */}
+            <BeatWaveLogoBadge size={isHero ? 'hero' : 'sm'} />
+
+            {/* 2. Bloque Tipográfico Limpio Sin Efectos de Texto con Proporción 1:1 */}
+            <div className={`flex flex-col justify-center text-left shrink-0 select-none ${isHero ? 'bw-hero-text-block' : ''}`}>
+                {/* Fila 1: BEATWAVE + PRO */}
+                <div className={`flex items-center leading-none ${isHero ? 'bw-hero-row1' : 'gap-1.5'}`}>
+                    <span 
+                        className={`font-syne select-none uppercase tracking-[0.02em] leading-none transition-all duration-200 ${
+                            isTechnoActive ? 'anim-soundwave' : ''
+                        } ${isHero ? 'bw-hero-title' : 'text-2xl font-extrabold'}`}
+                        style={{ fontFamily: "'Syne', -apple-system, BlinkMacSystemFont, sans-serif" }}
+                    >
+                        <span className="text-white">BEAT</span>
+                        <span className="text-cyan-400">WAVE</span>
+                    </span>
+                    <span 
+                        className={`font-sans font-black tracking-wider text-cyan-400 shrink-0 self-center leading-none uppercase ${
+                            isHero ? 'bw-hero-pro' : 'text-[10.5px] px-1.5 py-0.5 rounded-lg border border-cyan-400'
+                        }`}
+                        style={{ fontFamily: "Inter, -apple-system, sans-serif" }}
+                    >
+                        PRO
+                    </span>
+                </div>
+
+                {/* Fila 2: PRECISION • AUDIO • INTELLIGENCE (Letras grandes, nítidas y puntos centrados) */}
+                <div 
+                    className={`w-full flex justify-between items-center select-none leading-none ${
+                        isHero ? 'bw-hero-sub' : 'text-cyan-200 text-[11px] mt-1 tracking-[0.11em] font-extrabold'
+                    }`}
+                    style={{ fontFamily: "Inter, -apple-system, sans-serif" }}
+                >
+                    <span>PRECISION</span>
+                    <span className={isHero ? 'bw-hero-sub-dot' : 'text-cyan-400 font-black inline-flex items-center justify-center select-none text-sm'}>•</span>
+                    <span>AUDIO</span>
+                    <span className={isHero ? 'bw-hero-sub-dot' : 'text-cyan-400 font-black inline-flex items-center justify-center select-none text-sm'}>•</span>
+                    <span>INTELLIGENCE</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+

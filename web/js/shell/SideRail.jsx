@@ -21,16 +21,28 @@ const RailButton = ({ item, isActive, expanded, onSelect, t, badge }) => {
     );
 };
 
-export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, auditInfo, trackCount, onOpenCopilot }) => {
+export const SideRail = ({ 
+    activeTab, 
+    onSelect, 
+    t, 
+    expanded, 
+    onToggleExpanded, 
+    auditInfo, 
+    trackCount, 
+    onOpenCopilot,
+    onOpenLibrary,
+    libraryCount = 0,
+    isLibraryOpen = false
+}) => {
     const copilotActive = activeTab === 'copilot';
 
     return (
         <nav
             aria-label="Módulos principales"
-            className={`bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? 'xl:w-56' : ''}`}
+            className={`bw-rail hidden md:flex flex-col shrink-0 min-h-0 ${expanded ? 'w-56' : 'w-[76px]'}`}
             data-expanded={expanded ? 'true' : 'false'}
         >
-            <div className="flex flex-col gap-1 p-2">
+            <div className="flex flex-col gap-1.5 p-2">
                 <button
                     type="button"
                     onClick={onOpenCopilot}
@@ -39,17 +51,36 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
                     className={`bw-rail-live ${copilotActive ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
                 >
                     <span className="bw-live-dot" aria-hidden="true" />
+                    <ShellIcons.Turntable size={16} className="text-cyan-400" />
                     <span className="bw-rail-label">{COPILOT_ITEM.fallback}</span>
                     <span className="bw-rail-caption">{COPILOT_ITEM.fallback}</span>
                     {expanded && <span className="bw-kbd ml-auto">LIVE</span>}
+                </button>
+
+                {/* Sección de menú Colección debajo de Copilot */}
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (onSelect) onSelect('library');
+                        else if (onOpenLibrary) onOpenLibrary();
+                    }}
+                    aria-current={activeTab === 'library' || isLibraryOpen ? 'page' : undefined}
+                    title="Colección — Gestor y creador de colecciones persistentes"
+                    className={`bw-rail-item group ${activeTab === 'library' || isLibraryOpen ? 'is-active' : ''} ${expanded ? 'is-expanded' : ''}`}
+                >
+                    <span className="bw-led" aria-hidden="true" />
+                    <ShellIcons.Library size={18} className={activeTab === 'library' || isLibraryOpen ? "text-cyan-400" : "text-gray-400 group-hover:text-white"} />
+                    <span className="bw-rail-label">Colección</span>
+                    <span className="bw-rail-caption">Colección</span>
+                    {libraryCount > 0 && <span className="bw-rail-badge">{libraryCount}</span>}
                 </button>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto bw-scroll-thin flex flex-col gap-4 px-2 pb-3">
                 {NAV_GROUPS.map((group) => (
                     <div key={group.id} className="flex flex-col gap-0.5" role="group" aria-label={group.label}>
-                        <span className={`bw-eyebrow px-2 pb-1 pt-2 ${expanded ? 'hidden xl:block' : 'hidden'}`}>{group.label}</span>
-                        <span className={`mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? 'xl:hidden' : ''}`} aria-hidden="true" />
+                        <span className={`bw-eyebrow px-2 pb-1 pt-2 ${expanded ? 'block' : 'hidden'}`}>{group.label}</span>
+                        <span className={`mx-auto my-1 h-px w-6 bg-white/10 ${expanded ? 'hidden' : ''}`} aria-hidden="true" />
                         {group.items.map((item) => {
                             let badge = null;
                             if (item.id === 'audit' && auditInfo && auditInfo.isAuditing) badge = `${auditInfo.progress}%`;
@@ -70,10 +101,11 @@ export const SideRail = ({ activeTab, onSelect, t, expanded, onToggleExpanded, a
                 ))}
             </div>
 
-            <div className={`hidden xl:flex p-2 border-t border-white/5 ${expanded ? 'justify-end' : 'justify-center'}`}>
+            <div className={`hidden md:flex p-2 border-t border-white/5 ${expanded ? 'justify-end' : 'justify-center'}`}>
                 <button
                     type="button"
                     onClick={onToggleExpanded}
+                    data-rail-toggle="true"
                     className="bw-icon-btn"
                     aria-label={expanded ? 'Contraer navegación' : 'Expandir navegación'}
                     aria-expanded={expanded}

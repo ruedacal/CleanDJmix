@@ -9,12 +9,15 @@
     "build:css": "python3 scripts/build_offline.py --skip-vendor --skip-fonts --skip-js",
     "build:vendor": "python3 scripts/build_offline.py --skip-fonts --skip-css --skip-js",
     "dev": "python3 scripts/dev_web.py",
-    "desktop": "python3 main_web.py"
+    "desktop": "python3 main_web.py",
+    "desktop:fastapi": "bash run_fastapi.sh",
+    "build:desktop": "bash scripts/build_desktop.sh"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.0",
     "esbuild": "^0.24.0",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.4.0"
+    "node-addon-api": "^8.9.2",
+    "tailwindcss": "^3.4.0"
   },
   "allowScripts": {
     "esbuild@0.24.2": true,

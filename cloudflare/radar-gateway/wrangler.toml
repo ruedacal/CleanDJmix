@@ -1,0 +1,12 @@
+name = "beatwave-radar-gateway"
+main = "worker.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ACR_HOST = "identify-eu-west-1.acrcloud.com"
+ALLOWED_ORIGIN = "*"
+
+# Credenciales sensibles (definir vía 'wrangler secret put' o dashboard):
+# wrangler secret put ACR_ACCESS_KEY
+# wrangler secret put ACR_ACCESS_SECRET

@@ -192,33 +192,33 @@ class MoodIntelligenceService:
         energy = int(energy) if energy else 80
         danceability = int(danceability) if danceability else 80
 
-        # Evaluación de Fase y Vibe
-        if bpm < 118.0 or (energy <= 45 and danceability <= 65):
+        # Evaluación de Fase y Vibe basada acústicamente en Energía y Bailabilidad reales
+        if energy <= 45 and danceability <= 60:
             fase = "Calma (Sunset / After)"
             fase_badge = "CALMA"
             fase_color = "teal"
             vibe = "Calma"
             recomendacion = "Ideal para warmup inicial de apertura, sunset session o afterhours."
             momento_set = "Apertura / After"
-        elif (bpm >= 138.0 and energy >= 80) or (is_major and energy >= 76 and bpm >= 126.0):
+        elif (energy >= 85 and danceability >= 80) or (is_major and energy >= 78 and bpm >= 126.0):
             fase = "Cierre (Anthem / Gran Final)"
             fase_badge = "CIERRE"
             fase_color = "purple"
             vibe = "Eufórico"
             recomendacion = "Momento álgido de despedida o himno eufórico para el cierre del set."
             momento_set = "Cierre"
-        elif energy >= 82 or bpm >= 133.0 or (energy >= 78 and danceability >= 85):
+        elif energy >= 82:
             fase = "A Tope de Caña (Peak Time)"
             fase_badge = "CAÑA"
             fase_color = "red"
             vibe = "A Tope de Caña"
             recomendacion = "Clímax de pista completa (hora punta). Máxima contundencia y pegada de bombo."
             momento_set = "Clímax"
-        elif energy >= 68:
+        elif energy >= 64:
             fase = "Medio (Build-Up / Transición)"
             fase_badge = "BUILD-UP"
             fase_color = "amber"
-            vibe = "Agitado"
+            vibe = "Agitado" if danceability >= 75 else "Groove Progresivo"
             recomendacion = "Desarrollo y progresión de pista en la parte media de la sesión."
             momento_set = "Medio"
         else:

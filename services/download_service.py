@@ -77,7 +77,7 @@ class DownloadService:
                     "bpm": t.get("bpm", 135.0),
                     "key": t.get("key", "8A"),
                     "genre": t.get("genre", "Electronic"),
-                    "subgenre": t.get("subgenre", "Tech House"),
+                    "subgenre": t.get("subgenre", "Desconocido"),
                     "duration": t.get("duration", ""),
                     "original_duration": t.get("original_duration", t.get("duration", "")),
                     "isrc": isrc,

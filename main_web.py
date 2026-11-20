@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 import secrets
 import uuid
 
@@ -11,6 +12,7 @@ os.chdir(BASE_DIR)
 
 import subprocess
 import atexit
+import json
 import eel
 import bottle
 
@@ -108,7 +110,8 @@ from services.shazam_service import ShazamRecognitionService
 from services.tag_sanitizer_service import TagSanitizerService
 from services.trends_service import trends_service
 from services.knowledge_service import knowledge_service
-from services.copilot_service import copilot_service
+from services.genre_classifier_service import GenreClassifierDSP
+from services.copilot import copilot_service, copilot_engine
 from services.session_graph_advisor_service import SessionGraphAdvisorService
 
 def compilar_frontend_si_necesario():
@@ -118,7 +121,15 @@ def compilar_frontend_si_necesario():
         if not os.path.exists(bundle_path) or os.path.getmtime(jsx_path) > os.path.getmtime(bundle_path):
             try:
                 subprocess.run(
-                    ["npx", "-y", "esbuild", jsx_path, f"--outfile={bundle_path}"],
+                    [
+                        "npx", "-y", "esbuild", jsx_path,
+                        f"--outfile={bundle_path}",
+                        "--bundle",
+                        "--loader:.jsx=jsx",
+                        "--loader:.js=jsx",
+                        "--target=es2019",
+                        '--define:process.env.NODE_ENV="production"'
+                    ],
                     check=False,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
@@ -132,7 +143,15 @@ def compilar_frontend_si_necesario():
         if not os.path.exists(copilot_bundle) or os.path.getmtime(copilot_jsx) > os.path.getmtime(copilot_bundle):
             try:
                 subprocess.run(
-                    ["npx", "-y", "esbuild", copilot_jsx, f"--outfile={copilot_bundle}"],
+                    [
+                        "npx", "-y", "esbuild", copilot_jsx,
+                        f"--outfile={copilot_bundle}",
+                        "--bundle",
+                        "--loader:.jsx=jsx",
+                        "--loader:.js=jsx",
+                        "--target=es2019",
+                        '--define:process.env.NODE_ENV="production"'
+                    ],
                     check=False,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
@@ -146,6 +165,7 @@ eel.init("web")
 
 audio_playback_svc = AudioPlaybackService()
 audit_svc = AuditService()
+audit_svc.set_playback_checker(lambda: audio_playback_svc.esta_reproduciendo())
 media_svc = MediaService()
 download_svc = DownloadService()
 export_svc = ExportService()
@@ -279,14 +299,23 @@ def serve_previews(filename):
     return bottle.static_file(clean_name, root=previews_dir)
 
 def _sanitize_for_json(data):
-    """Sanitiza recursivamente cualquier estructura de datos para asegurar UTF-8 estricto sin surrogates."""
-    if isinstance(data, str):
-        return data.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-    elif isinstance(data, dict):
-        return {_sanitize_for_json(k): _sanitize_for_json(v) for k, v in data.items()}
-    elif isinstance(data, (list, tuple)):
-        return [_sanitize_for_json(item) for item in data]
-    return data
+    """Sanitiza estructuras para JSON. Optimizado: si ya es válido UTF-8 no realiza recorrido recursivo en Python."""
+    try:
+        json.dumps(data)
+        return data
+    except (UnicodeEncodeError, ValueError, TypeError):
+        pass
+
+    def _clean(obj):
+        if isinstance(obj, str):
+            return obj.encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+        elif isinstance(obj, dict):
+            return {_clean(k): _clean(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [_clean(item) for item in obj]
+        return obj
+
+    return _clean(data)
 
 def _emitir_log_ui(mensaje: str):
     clean = str(mensaje).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
@@ -296,13 +325,40 @@ def _emitir_log_ui(mensaje: str):
     except Exception:
         pass
 
+_GLOBAL_BATCH_PROGRESS = {"pct": 0, "msg": "", "active": False, "ts": time.time()}
+
 def _emitir_progreso_batch(pct: int, msg: str):
+    global _GLOBAL_BATCH_PROGRESS
     try:
-        if hasattr(eel, "actualizar_progreso_batch"):
-            clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
-            eel.actualizar_progreso_batch(int(pct), clean_msg)()
-    except Exception:
-        pass
+        clean_msg = str(msg).encode('utf-8', 'ignore').decode('utf-8', 'ignore')
+        _GLOBAL_BATCH_PROGRESS["pct"] = int(pct)
+        _GLOBAL_BATCH_PROGRESS["msg"] = clean_msg
+        _GLOBAL_BATCH_PROGRESS["active"] = (int(pct) > 0 and int(pct) < 100)
+        _GLOBAL_BATCH_PROGRESS["ts"] = time.time()
+
+        try:
+            if hasattr(eel, "actualizar_progreso_batch"):
+                eel.actualizar_progreso_batch(int(pct), clean_msg)
+            elif hasattr(eel, "_import_js_function"):
+                fn = eel._import_js_function("actualizar_progreso_batch")
+                if fn:
+                    fn(int(pct), clean_msg)
+            elif hasattr(eel, "_js_call"):
+                eel._js_call("actualizar_progreso_batch", (int(pct), clean_msg))
+        except Exception:
+            pass
+
+        # Ceder cooperativamente el control al bucle Gevent para transmitir WebSocket y servir HTTP /api/audit/progress
+        try:
+            import gevent
+            gevent.sleep(0.002)
+        except Exception:
+            try:
+                eel.sleep(0.002)
+            except Exception:
+                time.sleep(0.002)
+    except Exception as e:
+        print(f"[PROGRESS ERROR] {e}")
 
 @eel.expose
 def reproducir_pista_mac(nombre_archivo):
@@ -348,18 +404,118 @@ def api_load_directory():
         bottle.response.status = 204
         return ""
     data = bottle.request.json or {}
-    path = data.get("path", "")
-    if not path or not os.path.isdir(path):
-        ruta = audit_svc.seleccionar_directorio()
-        if isinstance(ruta, dict):
-            path = ruta.get("path") or ""
-        elif isinstance(ruta, str):
-            path = ruta.strip()
-    if not path or not os.path.isdir(path):
+    paths = data.get("paths") or data.get("path", "")
+    if isinstance(paths, list) and len(paths) > 0:
+        valid_items = [p for p in paths if isinstance(p, str) and os.path.exists(p)]
+        if not valid_items:
+            return {"status": "error", "msg": "Ninguna ruta válida especificada", "tracks": []}
+        for item in valid_items:
+            _registrar_directorio_autorizado(os.path.dirname(item) if os.path.isfile(item) else item)
+        res = audit_svc.cargar_metadatos_directorio(valid_items, _emitir_progreso_batch)
+        return _sanitize_for_json(res)
+    elif isinstance(paths, str) and paths.strip():
+        p_clean = paths.strip()
+        if os.path.isfile(p_clean):
+            _registrar_directorio_autorizado(os.path.dirname(p_clean))
+            res = audit_svc.cargar_metadatos_directorio([p_clean], _emitir_progreso_batch)
+            return _sanitize_for_json(res)
+        elif os.path.isdir(p_clean):
+            _registrar_directorio_autorizado(p_clean)
+            res = audit_svc.cargar_metadatos_directorio(p_clean, _emitir_progreso_batch)
+            return _sanitize_for_json(res)
+    # Si no se pasó ruta válida, abrir diálogo nativo del sistema
+    ruta = audit_svc.seleccionar_directorio()
+    if isinstance(ruta, dict):
+        path = ruta.get("path") or ""
+    elif isinstance(ruta, str):
+        path = ruta.strip()
+    else:
+        path = ""
+    if not path or not os.path.exists(path):
         return {"status": "error", "msg": "Ruta inválida o cancelada", "tracks": []}
-    _registrar_directorio_autorizado(path)
+    _registrar_directorio_autorizado(os.path.dirname(path) if os.path.isfile(path) else path)
     res = audit_svc.cargar_metadatos_directorio(path, _emitir_progreso_batch)
     return _sanitize_for_json(res)
+
+@bottle.route('/api/biblioteca/guardar', method=['POST', 'OPTIONS'])
+def api_biblioteca_guardar():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    try:
+        data = bottle.request.json or {}
+        libraries = data.get("libraries", [])
+        active_id = data.get("active_id", "")
+        payload = {
+            "libraries": libraries,
+            "active_id": active_id,
+            "updated_at": time.time()
+        }
+        data_dir = os.path.join(BASE_DIR, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        file_path = os.path.join(data_dir, "saved_library.json")
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        return {"status": "success", "count": len(libraries)}
+    except Exception as e:
+        bottle.response.status = 500
+        return {"status": "error", "message": str(e)}
+
+@bottle.route('/api/biblioteca/cargar', method=['GET', 'OPTIONS'])
+def api_biblioteca_cargar():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    try:
+        file_path = os.path.join(BASE_DIR, "data", "saved_library.json")
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+            return {"status": "success", "data": payload}
+        return {"status": "empty", "data": None}
+    except Exception as e:
+        bottle.response.status = 500
+        return {"status": "error", "message": str(e)}
+
+@bottle.route('/api/rpc/<method_name>', method=['POST', 'OPTIONS'])
+def api_rpc_handler(method_name):
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    data = bottle.request.json or {}
+    args = data.get("args", [])
+    kwargs = data.get("kwargs", {})
+    if not isinstance(args, list):
+        args = [args]
+    func = globals().get(method_name)
+    if func and callable(func):
+        try:
+            res = func(*args, **kwargs)
+            return {"status": "ok", "result": _sanitize_for_json(res)}
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+    if hasattr(audit_svc, method_name):
+        try:
+            res = getattr(audit_svc, method_name)(*args, **kwargs)
+            return {"status": "ok", "result": _sanitize_for_json(res)}
+        except Exception as e:
+            bottle.response.status = 500
+            return {"status": "error", "message": str(e)}
+    bottle.response.status = 404
+    return {"status": "error", "message": f"Método RPC '{method_name}' no encontrado"}
+
+@bottle.route('/api/audit/progress', method=['GET', 'OPTIONS'])
+def api_audit_progress():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    bottle.response.content_type = 'application/json'
+    return json.dumps(_GLOBAL_BATCH_PROGRESS)
 
 @eel.expose
 def iniciar_auditoria(ruta_directorio, opts=None):
@@ -387,6 +543,16 @@ def analizar_espectro_fft(filepath, spotify_id=None):
 @eel.expose
 def calcular_trim_downbeat_track(filepath, track_id=None):
     return audit_svc.analizar_trim_downbeat(filepath, track_id)
+
+@eel.expose
+def calcular_comparativa_hot_cues(filepath, track_id=None):
+    """Calcula las dos variantes (Estándar Performance vs Acústico) para visualización comparativa simultánea."""
+    return audit_svc.calcular_comparativa_hot_cues(filepath, track_id)
+
+@eel.expose
+def guardar_modo_hot_cues(filepath, modo="estandar", cues=None, track_data=None):
+    """Guarda físicamente en disco la versión de Hot Cues seleccionada por el usuario."""
+    return audit_svc.guardar_modo_hot_cues(filepath, modo=modo, cues=cues, track_data=track_data)
 
 @eel.expose
 def detectar_bpm_tonalidad_local(filepath):
@@ -555,8 +721,26 @@ def api_cancelar_procesos():
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()
     media_svc.cancelar_busqueda()
+    global _GLOBAL_BATCH_PROGRESS
+    _GLOBAL_BATCH_PROGRESS["pct"] = 0
+    _GLOBAL_BATCH_PROGRESS["active"] = False
+    _GLOBAL_BATCH_PROGRESS["msg"] = "Cancelado"
     print("[SERVER] Cancelación solicitada y ejecutada vía HTTP /api/cancelar_procesos")
     return {"status": "ok", "msg": "Procesos cancelados"}
+
+@bottle.route('/api/metadata/save_batch', method=['POST', 'OPTIONS'])
+def api_metadata_save_batch():
+    _cors_localhost_only()
+    if bottle.request.method == 'OPTIONS':
+        bottle.response.status = 204
+        return ""
+    err = _verificar_token_remoto()
+    if err is not None:
+        return err
+    data = bottle.request.json or {}
+    tracks = data.get("tracks", [])
+    res = audit_svc.inyectar_lote_metadatos(tracks, _emitir_progreso_batch)
+    return {"status": "ok", "result": res}
 
 @bottle.route('/api/analizar_spotify', method=['GET', 'POST', 'OPTIONS'])
 def api_analizar_spotify():
@@ -713,8 +897,22 @@ def cancelar_procesos_activos():
     audit_svc.cancelar_proceso()
     download_svc.cancelar_descarga()
     media_svc.cancelar_busqueda()
+    global _GLOBAL_BATCH_PROGRESS
+    _GLOBAL_BATCH_PROGRESS["pct"] = 0
+    _GLOBAL_BATCH_PROGRESS["active"] = False
+    _GLOBAL_BATCH_PROGRESS["msg"] = "Cancelado"
     print("[SERVER] Cancelación solicitada y ejecutada vía Eel cancelar_procesos_activos")
     return {"status": "ok", "msg": "Procesos cancelados"}
+
+@eel.expose
+def pausar_auditoria():
+    audit_svc.pausar_proceso()
+    return {"status": "ok", "msg": "Auditoría en pausa"}
+
+@eel.expose
+def reanudar_auditoria():
+    audit_svc.reanudar_proceso()
+    return {"status": "ok", "msg": "Auditoría reanudada"}
 
 @eel.expose
 def seleccionar_directorio_descarga():
@@ -1125,9 +1323,124 @@ def api_download_manual_pdf():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     return bottle.static_file(pdf_filename, root=root_dir, download=pdf_filename, mimetype='application/pdf')
 
+@bottle.route('/api/warmup/status', method=['GET', 'OPTIONS'])
+def api_warmup_status():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    from services.audit_service import AuditCacheDB
+    db = AuditCacheDB()
+    return json.dumps({
+        "ready": db.is_warm_ready(),
+        "total_cached": len(db.get_warm_cache())
+    })
+
+@bottle.route('/api/audit/pause', method=['POST', 'OPTIONS'])
+def api_audit_pause():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    audit_svc.pausar_proceso()
+    return json.dumps({"status": "ok", "paused": True})
+
+@bottle.route('/api/audit/resume', method=['POST', 'OPTIONS'])
+def api_audit_resume():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    audit_svc.reanudar_proceso()
+    return json.dumps({"status": "ok", "paused": False})
+
 # ==========================================
 # RUTAS Y EEL EXPOSURES: BEATWAVE LIVE COPILOT
 # ==========================================
+
+try:
+    import bottle_websocket as wbs
+except ImportError:
+    try:
+        import bottle.ext.websocket as wbs
+    except Exception:
+        wbs = None
+
+if wbs:
+    @bottle.get('/ws/copilot', apply=[wbs.websocket])
+    def ws_copilot_endpoint(ws):
+        """WebSocket nativo para BeatWave Live Copilot (telemetría a 20Hz / 50ms y ping-pong RTT <5ms)."""
+        if not ws:
+            bottle.response.status = 400
+            return "Expected WebSocket connection."
+
+        import gevent
+        from gevent.lock import Semaphore
+        import json, time
+
+        send_lock = Semaphore(1)
+
+        def safe_send(msg_dict):
+            try:
+                payload = json.dumps(msg_dict)
+                with send_lock:
+                    if ws and not getattr(ws, 'closed', False):
+                        ws.send(payload)
+            except Exception:
+                pass
+
+        def streamer():
+            while ws and not getattr(ws, 'closed', False):
+                try:
+                    state = copilot_service.get_live_state()
+                    safe_send(state)
+                except Exception:
+                    break
+                gevent.sleep(0.05)  # 20 Hz (50 ms)
+
+        streamer_worker = gevent.spawn(streamer)
+
+        try:
+            while ws and not getattr(ws, 'closed', False):
+                msg = ws.receive()
+                if msg is None:
+                    break
+                try:
+                    data = json.loads(msg)
+                    action = data.get("action")
+                    if action == "ping":
+                        safe_send({
+                            "type": "pong",
+                            "client_ts": data.get("client_ts"),
+                            "server_ts": time.time()
+                        })
+                    elif action == "set_master":
+                        copilot_service.set_manual_master(data.get("master", 1))
+                    elif action == "set_platform":
+                        copilot_service.set_platform(data.get("platform", "simulation"))
+                except Exception:
+                    pass
+        finally:
+            streamer_worker.kill(block=False)
+
+@bottle.route('/api/copilot/midi_debug')
+def api_copilot_midi_debug():
+    devs = bottle.request.params.get('devices')
+    data = bottle.request.params.get('data')
+    if devs:
+        print(f"[MIDI DEBUG] WebMIDI Devices detected in browser: {devs}", flush=True)
+    if data:
+        print(f"[MIDI DEBUG] Incoming MIDI bytes: {data}", flush=True)
+    return "ok"
 
 @bottle.route('/api/copilot/status', method=['GET', 'OPTIONS'])
 def api_copilot_status():
@@ -1195,6 +1508,22 @@ def api_copilot_set_platform():
     import json
     return json.dumps(new_state)
 
+@bottle.route('/api/copilot/set_master', method=['POST', 'OPTIONS'])
+def api_copilot_set_master():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    try:
+        data = bottle.request.json or {}
+    except Exception:
+        data = {}
+    master_val = data.get('master') or bottle.request.params.get('master', 'toggle')
+    import json
+    return json.dumps(copilot_service.set_manual_master(master_val))
+
 @bottle.route('/api/copilot/toggle_simulation', method=['POST', 'OPTIONS'])
 def api_copilot_toggle_simulation():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
@@ -1204,8 +1533,34 @@ def api_copilot_toggle_simulation():
         return ""
     bottle.response.content_type = 'application/json'
     copilot_service.simulation_mode = not copilot_service.simulation_mode
+    if copilot_service.simulation_mode:
+        copilot_service._restore_simulation_tracks()
+    else:
+        copilot_service._sync_serato_live_state()
     import json
     return json.dumps(copilot_service.get_live_state())
+
+@bottle.route('/api/copilot/deck/<deck_id:int>/toggle_play', method=['POST', 'OPTIONS'])
+def api_copilot_deck_toggle_play(deck_id):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps(copilot_service.toggle_deck_play(deck_id))
+
+@bottle.route('/api/copilot/deck/<deck_id:int>/cue', method=['POST', 'OPTIONS'])
+def api_copilot_deck_cue(deck_id):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps(copilot_service.cue_deck(deck_id))
 
 @bottle.route('/api/copilot/info', method=['GET', 'OPTIONS'])
 def api_copilot_info():
@@ -1340,3 +1695,18 @@ if __name__ == "__main__":
         )
     except (SystemExit, KeyboardInterrupt):
         print("\n[CleanDJmix PRO] Servidor detenido.")
+
+@eel.expose
+def clasificar_genero_pista(filepath, bpm=0.0):
+    return GenreClassifierDSP.classify_track(filepath, known_bpm=float(bpm or 0.0))
+
+@bottle.route('/api/taxonomy/classify', method=['POST', 'GET', 'OPTIONS'])
+def api_taxonomy_classify():
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    filepath = bottle.request.params.get('filepath') or (bottle.request.json or {}).get('filepath')
+    bpm = float(bottle.request.params.get('bpm') or (bottle.request.json or {}).get('bpm') or 0.0)
+    return GenreClassifierDSP.classify_track(filepath, known_bpm=bpm)

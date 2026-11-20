@@ -5,6 +5,8 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --bw-black: #09090b;
     --bw-surface-1: #0e0e11;
     --bw-surface-2: #141418;
@@ -37,6 +39,7 @@ body {
 
 /* Tabular, slashed-zero digits for BPM, Camelot keys and timecodes. */
 .font-mono, code, kbd, .tabular-nums {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums slashed-zero;
     font-feature-settings: 'zero', 'tnum';
 }
@@ -120,12 +123,15 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 
 /* ── Shell: top bar ─────────────────────────────────────────────────── */
 .bw-topbar {
+    position: relative;
+    z-index: 1000 !important;
     background: rgba(9, 9, 11, 0.86);
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
     border-bottom: 1px solid var(--bw-line);
     padding-top: env(safe-area-inset-top);
-    height: calc(3.5rem + env(safe-area-inset-top)) !important;
+    min-height: calc(4.25rem + env(safe-area-inset-top)) !important;
+    height: auto !important;
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────── */
@@ -243,6 +249,8 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 
 /* ── Popover / menu ─────────────────────────────────────────────────── */
 .bw-popover {
+    position: absolute;
+    z-index: 1100 !important;
     background: rgba(20, 20, 24, 0.98);
     border: 1px solid var(--bw-line-strong);
     border-radius: var(--bw-radius-md);
@@ -251,6 +259,83 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
     transform-origin: top right;
 }
 @keyframes bw-pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* ─── CARD SLIDER CINEMÁTICO 3D (INTRO) ─────────────────────────────── */
+:root {
+    --card-transition-speed: 750ms;
+    --card-transition-easing: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bw-card-slider {
+    position: relative;
+    width: 100%;
+    max-width: 860px;
+    height: 245px;
+    perspective: 1000px;
+    overflow: hidden;
+}
+@media (min-width: 640px) {
+    .bw-card-slider {
+        height: 215px;
+    }
+}
+
+/* Estado Base: En reposo en el fondo, difuminada y fuera de visión (flotante sin recuadro) */
+.bw-card-slider .card-item {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #f3f4f6;
+    
+    will-change: transform, opacity, filter;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.88) translateY(18px);
+    filter: blur(22px);
+    pointer-events: none;
+    
+    transition: 
+        opacity var(--card-transition-speed) var(--card-transition-easing),
+        transform var(--card-transition-speed) var(--card-transition-easing),
+        filter var(--card-transition-speed) var(--card-transition-easing),
+        visibility 0s linear var(--card-transition-speed);
+}
+
+/* Estado 1: Caja Activa y Nítida en primer plano */
+.bw-card-slider .card-item.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+    pointer-events: auto;
+    z-index: 2;
+    transition-delay: 0s;
+}
+
+/* Estado 2: Caja Saliendo (Escala hacia arriba, se eleva y se difumina) */
+.bw-card-slider .card-item.is-exiting {
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(1.12) translateY(-20px);
+    filter: blur(24px);
+    z-index: 1;
+    transition-delay: 0s;
+}
+
+/* Estado 3: Caja Entrante (Viene del fondo enfocándose) */
+.bw-card-slider .card-item.is-entering {
+    opacity: 0;
+    visibility: visible;
+    transform: scale(0.85) translateY(24px);
+    filter: blur(28px);
+    z-index: 3;
+}
 .bw-menu-item {
     display: flex;
     align-items: center;
@@ -329,7 +414,7 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .bw-rail-live { border: 1px solid var(--bw-line); background: rgba(255, 255, 255, 0.02); }
 .bw-rail-live.is-active { border-color: rgba(244, 63, 94, 0.45); color: var(--bw-white); background: rgba(244, 63, 94, 0.08); }
 
-@media (min-width: 1280px) {
+@media (min-width: 768px) {
     .bw-rail[data-expanded='true'] {
         width: 224px;
     }
@@ -484,12 +569,12 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 /* ── Access gate (post-intro portal) ────────────────────────────────── */
 .bw-gate-card {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.625rem;
-    padding: 1.125rem 1.25rem;
-    min-height: 112px;
-    border-radius: var(--bw-radius-lg);
+    flex-direction: row;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.75rem 1.125rem;
+    min-height: 60px;
+    border-radius: var(--bw-radius-md);
     border: 1px solid var(--bw-line-strong);
     background: rgba(20, 20, 24, 0.72);
     backdrop-filter: blur(10px);
@@ -807,3 +892,20 @@ button[class*='from-djcyan-'], button[class*='from-cyan-4'], button[class*='from
 .ws-plan-features li { display: flex; gap: .6rem; font-size: .825rem; line-height: 1.45; color: #d4d4d8; }
 .ws-plan-check { flex: none; margin-top: .15rem; color: var(--bw-cyan); }
 .ws-pricing-foot { text-align: center; font-size: .72rem; color: #71717a; }
+
+/* ===== Duotone Effect CSS for Video (Sin Degradados ni Filtros SVG) ===== */
+.duotone-video-container {
+    position: relative;
+    overflow: hidden;
+    background: #191414;
+}
+
+.duotone-video,
+.duotone-filter {
+    filter: 
+        grayscale(100%) 
+        contrast(120%) 
+        sepia(100%) 
+        hue-rotate(145deg)
+        saturate(200%) !important;
+}

@@ -1,0 +1,134 @@
+{
+  "BeatWave_Colors": {
+    "djzinc-950": {
+      "$value": "#09090b",
+      "$type": "color"
+    },
+    "djzinc-925": {
+      "$value": "#101014",
+      "$type": "color"
+    },
+    "djzinc-900": {
+      "$value": "#121216",
+      "$type": "color"
+    },
+    "djzinc-850": {
+      "$value": "#18181f",
+      "$type": "color"
+    },
+    "djzinc-800": {
+      "$value": "#202028",
+      "$type": "color"
+    },
+    "djzinc-750": {
+      "$value": "#2a2a35",
+      "$type": "color"
+    },
+    "djzinc-700": {
+      "$value": "#32323f",
+      "$type": "color"
+    },
+    "djzinc-600": {
+      "$value": "#484858",
+      "$type": "color"
+    },
+    "djcyan-400": {
+      "$value": "#22d3ee",
+      "$type": "color"
+    },
+    "djcyan-500": {
+      "$value": "#06b6d4",
+      "$type": "color"
+    },
+    "djcyan-600": {
+      "$value": "#0891b2",
+      "$type": "color"
+    },
+    "djcyan-950": {
+      "$value": "#0a1a1f",
+      "$type": "color"
+    },
+    "djgreen-400": {
+      "$value": "#4ade80",
+      "$type": "color"
+    },
+    "djgreen-500": {
+      "$value": "#22c55e",
+      "$type": "color"
+    },
+    "canvas": {
+      "$value": "#09090b",
+      "$type": "color"
+    },
+    "surface": {
+      "$value": "#121216",
+      "$type": "color"
+    },
+    "surface-2": {
+      "$value": "#18181f",
+      "$type": "color"
+    },
+    "border": {
+      "$value": "#2a2a35",
+      "$type": "color"
+    },
+    "primary": {
+      "$value": "#22d3ee",
+      "$type": "color"
+    },
+    "dsp-sub-bass": {
+      "$value": "#3B82F6",
+      "$type": "color"
+    },
+    "dsp-low-mid": {
+      "$value": "#EF4444",
+      "$type": "color"
+    },
+    "dsp-mid-high": {
+      "$value": "#F59E0B",
+      "$type": "color"
+    },
+    "dsp-treble": {
+      "$value": "#22D3EE",
+      "$type": "color"
+    }
+  },
+  "BeatWave_Spacing": {
+    "spacing-xs": {
+      "$value": 4,
+      "$type": "number"
+    },
+    "spacing-sm": {
+      "$value": 8,
+      "$type": "number"
+    },
+    "spacing-md": {
+      "$value": 12,
+      "$type": "number"
+    },
+    "spacing-lg": {
+      "$value": 16,
+      "$type": "number"
+    },
+    "spacing-xl": {
+      "$value": 24,
+      "$type": "number"
+    },
+    "radius-sm": {
+      "$value": 4,
+      "$type": "number"
+    },
+    "radius-md": {
+      "$value": 8,
+      "$type": "number"
+    },
+    "radius-lg": {
+      "$value": 12,
+      "$type": "number"
+    },
+    "radius-xl": {
+      "$value": 16,
+      "$type": "number"
+    }
+  }
+}

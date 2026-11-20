@@ -22,8 +22,7 @@ class WebHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?", 1)[0]
         if path == "/":
-            entry = "studio.html" if os.path.exists(os.path.join(WEB_DIR, "studio.html")) else "index.html"
-            self.path = "/" + entry
+            self.path = "/index.html"
         elif path == "/eel.js":
             body = b"/* Modo web: Eel no disponible */\n"
             self.send_response(200)

@@ -6,7 +6,7 @@ export const NAV_GROUPS = [
         id: 'booth',
         label: 'Cabina',
         items: [
-            { id: 'audit', labelKey: 'nav_tab_audit', fallback: 'Biblioteca', icon: 'Library', hint: 'Auditoría FFT, tags y exportación' },
+            { id: 'audit', labelKey: 'nav_tab_audit', fallback: 'Auditoría', icon: 'AuditEye', hint: 'Auditoría FFT, tags y exportación' },
             { id: 'hotcues', labelKey: 'nav_tab_cues', fallback: 'Cues', icon: 'Cue', hint: 'Estudio de 8 Hot Cues y waveform' },
             { id: 'setbuilder', labelKey: 'nav_tab_sets', fallback: 'Sets', icon: 'Flow', hint: 'Set Builder y curva de energía' },
             { id: 'map', labelKey: 'nav_tab_map', fallback: 'Mapa', icon: 'Map', hint: 'Mapa 2D de compatibilidad', showTrackCount: true },
@@ -31,11 +31,12 @@ export const NAV_GROUPS = [
     },
 ];
 
-export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Activity', hint: 'Monitor en vivo de cabina' };
+export const COPILOT_ITEM = { id: 'copilot', fallback: 'Copilot', icon: 'Turntable', hint: 'Monitor en vivo de cabina' };
+export const LIBRARY_ITEM = { id: 'library', fallback: 'Colección', icon: 'Library', hint: 'Gestor y explorador de colecciones guardadas' };
 
 export const MOBILE_PRIMARY_TABS = ['audit', 'hotcues', 'shazam', 'setbuilder'];
 
-const ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: 'En vivo' }];
+const ALL_ITEMS = [...NAV_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, group: group.label }))), { ...COPILOT_ITEM, group: 'En vivo' }, { ...LIBRARY_ITEM, group: 'Gestión' }];
 
 export const findNavItem = (id) => ALL_ITEMS.find((item) => item.id === id) || ALL_ITEMS[0];
 

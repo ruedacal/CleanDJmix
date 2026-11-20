@@ -100,48 +100,68 @@ class MediaService:
 
     def calcular_energia_y_danceability(self, t: dict, idx: int = 0) -> dict:
         """
-        Calcula de forma analítica y acústica la Energía y Bailabilidad (Danceability)
-        en función de BPM, estructura armónica, palabras clave y género musical.
-        Evita valores fijos o hardcodeados al 80%.
+        Calcula de forma analítica y acústica la Energía y Bailabilidad (Danceability).
+        Prioriza métricas DSP reales del archivo si están disponibles o analiza el audio.
         """
-        bpm_val = t.get("bpm") or t.get("b") or 128.0
+        # Si ya cuenta con valores acústicos válidos, respetarlos estrictamente
+        existing_e = t.get("energy") or t.get("e")
+        existing_d = t.get("danceability") or t.get("dance")
+        if existing_e is not None and existing_d is not None:
+            try:
+                e_int = int(existing_e)
+                d_int = int(existing_d)
+                if e_int > 0 and d_int > 0:
+                    return {
+                        "energy": e_int,
+                        "e": e_int,
+                        "danceability": d_int,
+                        "dance": d_int
+                    }
+            except Exception:
+                pass
+
+        # Intento de cálculo DSP acústico directo si hay ruta de archivo
+        filepath = t.get("filepath") or t.get("path") or t.get("f") or ""
+        bpm_val = t.get("bpm") or t.get("b") or 126.0
         try:
             b_num = float(bpm_val)
         except Exception:
-            b_num = 128.0
+            b_num = 126.0
 
+        if filepath and os.path.exists(filepath):
+            try:
+                from infrastructure.audio_processor import AudioProcessorService
+                dsp_e, dsp_d = AudioProcessorService.calcular_dsp_energia_y_bailabilidad(filepath, bpm=b_num)
+                return {
+                    "energy": dsp_e,
+                    "e": dsp_e,
+                    "danceability": dsp_d,
+                    "dance": dsp_d
+                }
+            except Exception:
+                pass
+
+        # Balística acústica de reserva balanceada (sin linealidad desbocada de BPM)
         title = str(t.get("title") or t.get("t") or "").lower()
         artist = str(t.get("artist") or t.get("a") or "").lower()
         genre = str(t.get("genre") or "").lower()
 
-        # 1. Balística de Energía por tempo BPM
-        # Pistas de 120 BPM (~65%), 128 BPM (~75%), 135 BPM (~86%), 142 BPM (~94%)
-        e_base = 60.0 + (b_num - 118.0) * 1.5
+        # Base neutral centrada
+        e_base = 70.0
+        d_base = 78.0
 
-        # 2. Balística de Danceability centrada en el groove club (124 - 128 BPM)
-        d_base = 92.0 - abs(b_num - 126.0) * 0.9
-
-        # 3. Modulación por etiquetas de género y título
         if any(w in title or w in genre for w in ["hard", "peak", "driver", "banger", "festival", "drop", "industrial", "raw"]):
-            e_base += 10.0
-            d_base += 3.0
+            e_base += 12.0
+            d_base += 4.0
         if any(w in title or w in genre for w in ["ambient", "chill", "intro", "outro", "acoustic", "slow", "piano", "ballad"]):
-            e_base -= 22.0
-            d_base -= 20.0
-        if any(w in title or w in genre for w in ["tech house", "deep tech", "minimal", "groove", "funk", "disco", "afro"]):
-            d_base += 7.0
+            e_base -= 25.0
+            d_base -= 30.0
+        if any(w in title or w in genre for w in ["tech house", "groove", "funk", "disco", "afro"]):
+            d_base += 8.0
             e_base += 2.0
-        if any(w in title or w in genre for w in ["extended", "club mix", "original mix", "dub", "remix"]):
-            e_base += 4.0
-            d_base += 5.0
 
-        # 4. Variación orgánica determinista basada en el hash de la pista (nunca valor fijo plano)
-        seed = sum(ord(c) for c in (title + artist)) + (idx * 13)
-        var_e = ((seed * 7) % 17) - 8
-        var_d = ((seed * 11) % 15) - 7
-
-        final_energy = int(min(98, max(38, round(e_base + var_e))))
-        final_dance = int(min(98, max(42, round(d_base + var_d))))
+        final_energy = int(min(98, max(30, round(e_base))))
+        final_dance = int(min(98, max(35, round(d_base))))
 
         return {
             "energy": final_energy,
@@ -242,14 +262,14 @@ class MediaService:
             self._thumb_cache[cache_key] = (data, mime)
         return data, mime
 
-    def buscar_metadata_itunes(self, termino, limit=30):
+    def buscar_metadata_itunes(self, termino, limit=100):
         if self._cancelar_busqueda or not termino:
             return []
         try:
             q = urllib.parse.quote(termino)
             url = f"https://itunes.apple.com/search?term={q}&entity=song&limit={limit}"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'})
-            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=6) as res:
+            with urllib.request.urlopen(req, context=self._ssl_context(), timeout=8) as res:
                 if self._cancelar_busqueda:
                     return []
                 data = json.loads(res.read().decode('utf-8'))
@@ -258,8 +278,8 @@ class MediaService:
             print(f"[MEDIA SERVICE WARN] Error consultando API de iTunes: {e}")
             return []
 
-    def _buscar_tracks_por_spotify_artist_id(self, artist_id: str) -> list:
-        """Obtiene hasta 30 pistas destacadas y carátulas HD a partir del ID de artista en Spotify."""
+    def _buscar_tracks_por_spotify_artist_id(self, artist_id: str, limit_total: int = 150) -> list:
+        """Obtiene hasta limit_total (150) pistas destacadas y carátulas HD a partir del ID de artista en Spotify."""
         keys_camelot = ["8A", "11A", "4A", "6B", "9A", "2A", "1A", "5B", "10A", "7A", "3B", "12A"]
         bpms_tech = ["134.00", "136.00", "132.00", "135.00", "130.00", "133.00", "135.00", "138.00", "131.00", "137.00", "134.00", "136.00"]
 
@@ -273,17 +293,45 @@ class MediaService:
                 genres = art_info.get("genres", [])
                 genre_name = genres[0].title() if genres else "Pop / Electronic"
 
-                albums = self._sp.artist_albums(artist_id, album_type="album,single", limit=6).get("items", [])
                 all_tracks = []
                 seen_titles = set()
 
+                # 1. Top Tracks del artista primero
+                try:
+                    top_res = self._sp.artist_top_tracks(artist_id, country="ES")
+                    for t in top_res.get("tracks", []):
+                        t_name = t.get("name", "").strip()
+                        if t_name.lower() not in seen_titles:
+                            seen_titles.add(t_name.lower())
+                            dur_sec = (t.get("duration_ms") or 210000) // 1000
+                            alb = t.get("album", {})
+                            alb_imgs = alb.get("images", [])
+                            cover = alb_imgs[0]["url"] if alb_imgs else ""
+                            idx = len(all_tracks)
+                            all_tracks.append({
+                                "id": str(t.get("id") or f"sp_{idx}"),
+                                "title": t_name,
+                                "artist": artist_name,
+                                "album": alb.get("name", "Top Release"),
+                                "duration": f"{dur_sec // 60}:{dur_sec % 60:02d}",
+                                "bpm": bpms_tech[idx % len(bpms_tech)],
+                                "key": keys_camelot[idx % len(keys_camelot)],
+                                "cover": cover,
+                                "preview_url": t.get("preview_url") or "",
+                                "genre": genre_name
+                            })
+                except Exception as top_err:
+                    print(f"[MEDIA SERVICE] Top tracks opcionales: {top_err}")
+
+                # 2. Discografía completa (álbumes y singles ampliados hasta limit_total)
+                albums = self._sp.artist_albums(artist_id, album_type="album,single", limit=25).get("items", [])
                 for alb in albums:
                     if self._cancelar_busqueda:
                         break
                     alb_name = alb.get("name", "")
                     alb_imgs = alb.get("images", [])
                     cover = alb_imgs[0]["url"] if alb_imgs else ""
-                    alb_tracks = self._sp.album_tracks(alb["id"], limit=10).get("items", [])
+                    alb_tracks = self._sp.album_tracks(alb["id"], limit=50).get("items", [])
                     for t in alb_tracks:
                         t_name = t.get("name", "").strip()
                         if t_name.lower() not in seen_titles:
@@ -302,9 +350,9 @@ class MediaService:
                                 "preview_url": t.get("preview_url") or "",
                                 "genre": genre_name
                             })
-                        if len(all_tracks) >= 30:
+                        if len(all_tracks) >= limit_total:
                             break
-                    if len(all_tracks) >= 30:
+                    if len(all_tracks) >= limit_total:
                         break
 
                 if all_tracks:
@@ -371,8 +419,8 @@ class MediaService:
                 enriquecidos = self._enriquecer_tracks_con_pre_auditoria(sp_tracks)
                 return {"status": "ok", "tracks": enriquecidos, "count": len(enriquecidos), "query": search_query}
 
-            # 3.2 Respaldo de alta velocidad en iTunes Search API
-            resultados = self.buscar_metadata_itunes(search_query, limit=30)
+            # 3.2 Respaldo de alta velocidad en iTunes Search API (catálogo ampliado de hasta 150 pistas por artista)
+            resultados = self.buscar_metadata_itunes(search_query, limit=150)
             if self._cancelar_busqueda:
                 return {"status": "cancelled", "msg": "Búsqueda cancelada", "tracks": []}
             tracks = []

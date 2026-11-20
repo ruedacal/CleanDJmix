@@ -24,7 +24,7 @@ const HelpMenu = ({ items }) => {
     }, [open]);
 
     return (
-        <div ref={rootRef} className="relative">
+        <div ref={rootRef} className="relative z-50" style={{ zIndex: 1050 }}>
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
@@ -37,7 +37,7 @@ const HelpMenu = ({ items }) => {
                 <ShellIcons.ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             {open && (
-                <div role="menu" className="bw-popover absolute right-0 top-full mt-2 w-72 p-1.5 z-50">
+                <div role="menu" className="bw-popover absolute right-0 top-full mt-2 w-72 p-1.5 z-50 shadow-2xl" style={{ zIndex: 1100 }}>
                     {items.map((item) => {
                         const Icon = ShellIcons[item.icon] || ShellIcons.Help;
                         const content = (
@@ -97,7 +97,7 @@ export const TopBar = ({
     const alias = (userProfile && userProfile.alias) || 'DJ';
 
     return (
-        <header className="bw-topbar relative z-30 flex h-14 w-full shrink-0 items-center gap-3 px-3 sm:px-4">
+        <header className="bw-topbar relative z-50 flex min-h-[68px] w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2.5 sm:py-3" style={{ zIndex: 1000 }}>
             <div className="flex items-center shrink-0 min-w-0">{logo}</div>
 
             <div className="hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10">
@@ -105,28 +105,6 @@ export const TopBar = ({
                 <ShellIcons.ChevronRight size={12} className="text-zinc-600" />
                 <h1 className="text-sm font-semibold text-white truncate">{navLabel(current, t)}</h1>
             </div>
-
-            {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
-                <div
-                    className="flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/40 px-3 py-1 shadow-[0_0_12px_rgba(6,182,212,0.25)]"
-                    role="status"
-                    title={auditInfo.statusMsg || 'Procesando archivos...'}
-                >
-                    <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" />
-                    </span>
-                    <span className="font-mono text-xs text-cyan-200 tabular-nums font-semibold flex items-center gap-1.5">
-                        <span>{auditInfo.isLoadingDir ? 'Cargando carpeta' : (auditInfo.isAuditing ? 'Auditando' : 'Procesando')}</span>
-                        <strong className="text-white">{auditInfo.progress || 0}%</strong>
-                    </span>
-                    {auditInfo.statusMsg && (
-                        <span className="hidden xl:inline text-[11px] text-zinc-400 max-w-[280px] truncate border-l border-white/10 pl-2 font-mono">
-                            {auditInfo.statusMsg}
-                        </span>
-                    )}
-                </div>
-            )}
 
             <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button type="button" onClick={onOpenCopilot} className="bw-btn bw-btn-live md:hidden" aria-label="Abrir Live Copilot">
@@ -150,9 +128,9 @@ export const TopBar = ({
                     <HelpMenu items={helpItems} />
                 </div>
 
-                <button type="button" onClick={onOpenBitacora} className="bw-btn bw-btn-ghost hidden md:inline-flex" title="Bitácora de procesos y exportación Excel">
-                    <ShellIcons.Notebook size={16} />
-                    <span className="hidden xl:inline">Bitácora</span>
+                <button type="button" onClick={onOpenBitacora} className="bw-btn bw-btn-ghost hidden md:inline-flex shrink-0 whitespace-nowrap" title="Bitácora de procesos y exportación Excel">
+                    <ShellIcons.Notebook size={16} className="shrink-0" />
+                    <span className="hidden xl:inline whitespace-nowrap">Bitácora</span>
                 </button>
 
                 <button
@@ -177,15 +155,6 @@ export const TopBar = ({
                     <span className="hidden xl:inline bw-pro-tag">PRO</span>
                 </button>
             </div>
-
-            {auditInfo && (auditInfo.isAuditing || auditInfo.isLoadingDir || auditInfo.progress > 0) && (
-                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-800/80 overflow-hidden pointer-events-none">
-                    <div 
-                        className="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-200 ease-out shadow-[0_0_8px_rgba(6,182,212,0.8)]"
-                        style={{ width: `${Math.min(100, Math.max(0, auditInfo.progress || 0))}%` }}
-                    />
-                </div>
-            )}
         </header>
     );
 };

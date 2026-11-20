@@ -2,11 +2,19 @@ import os
 import csv
 import asyncio
 import numpy as np
-import librosa
+try:
+    import librosa
+except ImportError:
+    librosa = None
 import mutagen.easyid3
 import mutagen
 import mutagen.id3
-import shazamio
+try:
+    import shazamio
+    _Shazam_class = shazamio.Shazam
+except ImportError:
+    shazamio = None
+    _Shazam_class = None
 
 COMPILATION_KEYWORDS = ["future trance", "compilation", "various artists", "vol.", "vol "]
 
@@ -16,7 +24,7 @@ class AudioAdapter:
     # Referencias vinculadas al módulo para permitir monkeypatching en tests
     EasyID3_ref = mutagen.easyid3.EasyID3
     MutagenFile_ref = mutagen.File
-    Shazam_ref = shazamio.Shazam
+    Shazam_ref = _Shazam_class
 
     @classmethod
     def obtener_metadatos_id3(cls, ruta_completa: str, nombre_archivo: str) -> tuple:

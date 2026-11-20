@@ -1,0 +1,25 @@
+{
+  "name": "BEATWAVE PRO - Precision Audio Intelligence",
+  "short_name": "BEATWAVE PRO",
+  "description": "Sistema profesional de inteligencia de audio, auditoría acústica y sincronización multi-plataforma para DJs",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/beatwave_wave_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "productivity", "utilities"]
+}

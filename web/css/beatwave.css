@@ -759,6 +759,263 @@ body.club-mode,
     80% { transform: scaleY(1.26); }
 }
 
+/* ==============================================================================
+   BEATWAVE PRO — CÍRCULO CORPORATIVO CON BORDE BLANCO, BISEL DE PRECISIÓN Y HALO LUMINOSO
+   ============================================================================== */
+.bw-brand-logo-badge {
+    border-color: #ffffff !important;
+    border-style: solid !important;
+    background-color: rgba(3, 7, 18, 0.95) !important;
+    /* Bisel micro-tallado: relieve superior blanco puro + sombra inferior + halo exterior brillante */
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35),
+                inset 0 1.5px 2px rgba(255, 255, 255, 0.85),
+                inset 0 -1.5px 2px rgba(0, 0, 0, 0.6),
+                0 0 14px rgba(255, 255, 255, 0.85), 
+                0 0 28px rgba(6, 182, 212, 0.65), 
+                inset 0 0 10px rgba(6, 182, 212, 0.4) !important;
+}
+
+.bw-brand-logo-badge.size-xs {
+    width: 24px !important;
+    height: 24px !important;
+    border-width: 1.5px !important;
+}
+
+.bw-brand-logo-badge.size-sm {
+    width: 36px !important;
+    height: 36px !important;
+    border-width: 2px !important;
+}
+
+.bw-brand-logo-badge.size-md {
+    width: 44px !important;
+    height: 44px !important;
+    border-width: 3px !important;
+}
+
+.bw-brand-logo-badge.size-lg {
+    width: 76px !important;
+    height: 76px !important;
+    border-width: 3px !important;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4),
+                inset 0 2px 3px rgba(255, 255, 255, 0.95),
+                inset 0 -2px 3px rgba(0, 0, 0, 0.65),
+                0 0 18px rgba(255, 255, 255, 0.8), 
+                0 0 36px rgba(6, 182, 212, 0.8), 
+                inset 0 0 14px rgba(6, 182, 212, 0.45) !important;
+}
+
+/* ==============================================================================
+   BEATWAVE PRO — HERO BRAND LOGO CANONICAL (PROPORCIÓN ARMONIOSA & CENTRADO PERFECTO)
+   ============================================================================== */
+.bw-hero-brand-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    column-gap: 20px !important;
+    user-select: none !important;
+    margin: 0 auto !important;
+}
+
+.bw-hero-logo-stage-wrap {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    user-select: none !important;
+    margin-top: 12px !important;
+    margin-bottom: 46px !important; /* Margen inferior generoso para dar identidad propia al logo */
+}
+
+.bw-brand-logo-badge.size-hero {
+    width: 108px !important;
+    height: 108px !important;
+    border-width: 3.5px !important;
+    border-color: #ffffff !important;
+    border-style: solid !important;
+    background-color: rgba(3, 7, 18, 0.95) !important;
+    box-shadow: 0 0 0 1.2px rgba(255, 255, 255, 0.45),
+                inset 0 2.5px 3.5px rgba(255, 255, 255, 0.95),
+                inset 0 -2.5px 3.5px rgba(0, 0, 0, 0.7),
+                0 0 20px rgba(255, 255, 255, 0.85), 
+                0 0 40px rgba(6, 182, 212, 0.8), 
+                inset 0 0 16px rgba(6, 182, 212, 0.5) !important;
+}
+
+.bw-hero-text-block {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    text-align: left !important;
+}
+
+.bw-hero-row1 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    line-height: 1 !important;
+}
+
+.bw-hero-title {
+    font-family: 'Syne', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 53px !important;
+    line-height: 1 !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+}
+
+.bw-hero-pro {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 900 !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    padding: 3.5px 10px !important;
+    border-radius: 10px !important;
+    border: 2px solid #22d3ee !important;
+    color: #22d3ee !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    display: inline-block !important;
+}
+
+.bw-hero-sub {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 15.5px !important;
+    color: #a5f3fc !important;
+    letter-spacing: 0.13em !important;
+    line-height: 1 !important;
+    margin-top: 6px !important;
+    text-shadow: 0 0 12px rgba(34, 211, 238, 0.4) !important;
+}
+
+.bw-hero-sub-dot {
+    font-size: 22px !important;
+    color: #22d3ee !important;
+    font-weight: 900 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 0 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Tablet (iPad / 1024px) */
+@media (max-width: 1024px) {
+    .bw-hero-brand-wrap {
+        column-gap: 16px !important;
+    }
+    .bw-hero-logo-stage-wrap {
+        margin-top: 8px !important;
+        margin-bottom: 36px !important;
+    }
+    .bw-brand-logo-badge.size-hero {
+        width: 86px !important;
+        height: 86px !important;
+        border-width: 2.5px !important;
+    }
+    .bw-hero-row1 {
+        gap: 9px !important;
+    }
+    .bw-hero-title {
+        font-size: 40px !important;
+    }
+    .bw-hero-pro {
+        font-size: 15px !important;
+        padding: 2.5px 8px !important;
+        border-radius: 8px !important;
+        border-width: 1.8px !important;
+    }
+    .bw-hero-sub {
+        font-size: 12px !important;
+        margin-top: 5px !important;
+        letter-spacing: 0.11em !important;
+    }
+    .bw-hero-sub-dot {
+        font-size: 18px !important;
+    }
+}
+
+/* Mobile (<640px) */
+@media (max-width: 640px) {
+    .bw-hero-brand-wrap {
+        column-gap: 10px !important;
+    }
+    .bw-hero-logo-stage-wrap {
+        margin-top: 4px !important;
+        margin-bottom: 24px !important;
+    }
+    .bw-brand-logo-badge.size-hero {
+        width: 54px !important;
+        height: 54px !important;
+        border-width: 2px !important;
+    }
+    .bw-hero-row1 {
+        gap: 6px !important;
+    }
+    .bw-hero-title {
+        font-size: 26px !important;
+    }
+    .bw-hero-pro {
+        font-size: 10.5px !important;
+        padding: 2px 5px !important;
+        border-radius: 5px !important;
+        border-width: 1.5px !important;
+    }
+    .bw-hero-sub {
+        font-size: 8px !important;
+        margin-top: 3px !important;
+        letter-spacing: 0.07em !important;
+    }
+    .bw-hero-sub-dot {
+        font-size: 12px !important;
+    }
+}
+
+.font-syne {
+    font-family: 'Syne', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-weight: 800 !important;
+}
+
+/* ==============================================================================
+   BEATWAVE PRO — HEADER LOGO CONTAINER (RESPONSIVE PADDING & PROPORTIONS)
+   ============================================================================== */
+.bw-header-logo-container {
+    display: flex !important;
+    align-items: center !important;
+    user-select: none !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+    padding-left: 0.75rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    transition: padding 200ms ease;
+}
+
+/* Tablet en formato vertical (Portrait: 768px a 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+    .bw-header-logo-container {
+        padding-left: 1rem !important;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+}
+
+/* Desktop, Web y Tablet en formato horizontal (Landscape: >= 1024px o >= 768px landscape) */
+@media (min-width: 1024px), (min-width: 768px) and (orientation: landscape) {
+    .bw-header-logo-container {
+        padding-left: 1.2rem !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 0.7rem !important;
+    }
+}
+
+
 
 
 

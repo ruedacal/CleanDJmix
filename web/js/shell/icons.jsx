@@ -25,7 +25,15 @@ const makeIcon = (children, { filled = false, defaultClass = '', defaultSize = 1
 
 export const ShellIcons = {
     Library: makeIcon(<><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></>),
-    Cue: makeIcon(<><rect x="3" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" /></>),
+    AuditEye: makeIcon(
+        <>
+            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+            <circle cx="12" cy="12" r="3.5" />
+            <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+        </>
+    ),
+    Cue: makeIcon(<><path d="M4 22V3" /><path d="M4 4h12.5l-2.8 4.5 2.8 4.5H4" /><circle cx="4" cy="4" r="1.5" /><circle cx="4" cy="21" r="1.25" fill="currentColor" /></>),
+    Turntable: makeIcon(<><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3.2" /><path d="M12 3.5v5.3M12 15.2v5.3" /></>),
     Flow: makeIcon(<><path d="M21 15V6" /><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path d="M12 12H3" /><path d="M16 6H3" /><path d="M12 18H3" /></>),
     Map: makeIcon(<><path d="M3 3v16a2 2 0 0 0 2 2h16" /><circle cx="8" cy="15" r="1.25" /><circle cx="11.5" cy="9.5" r="1.25" /><circle cx="16" cy="13" r="1.25" /><circle cx="19" cy="6" r="1.25" /></>),
     Spotify: makeIcon(<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></>),
@@ -121,3 +129,79 @@ export const ShellIcons = {
     Passport: makeIcon(<><rect x="4" y="2" width="16" height="20" rx="2" /><circle cx="12" cy="10" r="3" /><path d="M8 17h8" /></>),
     Stop: makeIcon(<rect x="5" y="5" width="14" height="14" rx="2" />, { filled: true }),
 };
+
+export const Icons = {
+    ...ShellIcons,
+    Edit: ShellIcons.Pencil,
+};
+
+// =======================================================
+// OFICIAL BRAND VECTOR SVGs PARA SUITES DJ DE CABINA (100% TRANSPARENTE, SIN FONDO BLANCO)
+// =======================================================
+export const PlatformSeratoLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <path d="M7 29L14.5 11H19.5L12 29H7Z" fill="#00d1e8" />
+        <path d="M16 31L23.5 13H28.5L21 31H16Z" fill="#00e5ff" />
+        <path d="M25 29L29.5 18H34L29.5 29H25Z" fill="#38bdf8" />
+        <circle cx="32" cy="31" r="2.2" fill="#00e5ff" />
+    </svg>
+);
+
+export const PlatformRekordboxLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <circle cx="20" cy="20" r="18" stroke="#38bdf8" strokeWidth="2" strokeDasharray="6 3" strokeLinecap="round" opacity="0.85" />
+        <circle cx="20" cy="20" r="13" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="20" cy="20" r="7.5" stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="3 2" />
+        <circle cx="20" cy="20" r="3.5" fill="#00e5ff" />
+        <path d="M20 2V7M20 33V38M2 20H7M33 20H38" stroke="#38bdf8" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M7.27 7.27L10.8 10.8M29.2 29.2L32.73 32.73M7.27 32.73L10.8 29.2M29.2 10.8L32.73 7.27" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" opacity="0.75" />
+    </svg>
+);
+
+export const PlatformVirtualDjLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <circle cx="20" cy="20" r="18" stroke="#f97316" strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx="20" cy="20" r="14.5" stroke="#fb923c" strokeWidth="1" strokeDasharray="2 1.5" opacity="0.75" />
+        <circle cx="20" cy="20" r="11.5" stroke="#ea580c" strokeWidth="1.2" />
+        <path d="M12 12.5L20 28.5L28 12.5H23.5L20 20.5L16.5 12.5H12Z" fill="#ffedd5" />
+        <path d="M14.5 12.5L20 24L25.5 12.5H23.5L20 19.5L16.5 12.5H14.5Z" fill="#f97316" />
+        <circle cx="20" cy="20" r="2.2" fill="#ffffff" />
+        <circle cx="20" cy="20" r="1" fill="#ea580c" />
+    </svg>
+);
+
+export const PlatformTraktorLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className={`shrink-0 ${className}`}>
+        <rect x="5" y="8" width="30" height="6.5" rx="2" fill="#facc15" />
+        <path d="M16 14.5H24V29.5C24 30.88 22.88 32 21.5 32H18.5C17.12 32 16 30.88 16 29.5V14.5Z" fill="#facc15" />
+        <path d="M10 18L13 22H11L14 27" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
+        <circle cx="28" cy="22" r="2.5" fill="#facc15" />
+        <circle cx="28" cy="28" r="1.8" fill="#eab308" />
+    </svg>
+);
+
+export const PlatformAutoLogo = ({ size = 20, className = "" }) => (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+        <rect width="32" height="32" rx="7" fill="#1e0c2e" />
+        <circle cx="16" cy="16" r="9" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="3 2" />
+        <circle cx="16" cy="16" r="5" stroke="#c084fc" strokeWidth="1.5" />
+        <circle cx="16" cy="16" r="2" fill="#e9d5ff" />
+        <path d="M16 6L18.5 10.5L16 9.2L13.5 10.5L16 6Z" fill="#a855f7" />
+        <path d="M16 26L13.5 21.5L16 22.8L18.5 21.5L16 26Z" fill="#a855f7" />
+    </svg>
+);
+
+export const PlatformLogos = {
+    auto: PlatformAutoLogo,
+    serato: PlatformSeratoLogo,
+    rekordbox: PlatformRekordboxLogo,
+    virtualdj: PlatformVirtualDjLogo,
+    traktor: PlatformTraktorLogo
+};
+
+export const renderPlatformLogo = (id, size = 20, className = "") => {
+    const key = (id || 'auto').toLowerCase();
+    const Comp = PlatformLogos[key] || PlatformLogos.auto;
+    return <Comp size={size} className={className} />;
+};
+

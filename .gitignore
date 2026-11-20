@@ -6,12 +6,18 @@ __pycache__/
 # Caches and logs
 *.log
 *.db
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+data/*.json
 .coverage
 .cache
 .cache/
 .pytest_cache/
 cache_preview/
 web/previews/
+conversacion_*.txt
 
 # Environments and Secrets
 .env
@@ -23,7 +29,9 @@ config_ingest.json
 
 # Builds and packaging
 build/
+native/build/
 dist/
+bin/
 *.spec
 assets_extracted/
 CleanDJmix_PRO_Assets.zip
@@ -39,7 +47,13 @@ CleanDJmix_PRO_Assets.zip
 scripts/manual_tests/
 
 node_modules/
+**/node_modules/
+.next/
+**/.next/
 web/vendor/checksums.json
 web/css/tailwind.input.css
 tailwind.config.js
 *.cdn-backup
+external/
+
+*.sqlite

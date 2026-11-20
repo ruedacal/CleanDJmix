@@ -80,7 +80,7 @@ class ExportService:
                     print(f"[SERATO EXPORT TAG WARN] No se pudo escribir metadatos en {p}: {tag_err}")
 
             todas_rutas.append(p)
-            gen = str(t.get("genre") or "Tech House").strip()
+            gen = str(t.get("genre") or "Desconocido").strip()
             subg = str(t.get("subgenre") or "General").strip()
 
             if gen not in por_genero:
@@ -164,7 +164,7 @@ class ExportService:
 
                 key_val = t.get("key") or t.get("k") or ""
                 comment = t.get("comment") or "Intro limpia 32b • Drop contundente • Outro 64b"
-                gen = t.get("genre") or "Tech House"
+                gen = t.get("genre") or "Desconocido"
                 subg = t.get("subgenre") or "General"
                 dur_str = t.get("duration") or "00:00"
                 total_sec = 0
