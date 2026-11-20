@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>BeatWave Pro — Copilot Cabina DJ: Arquitectura y Funcionalidad</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-right {
+      content: counter(page);
+      font-size: 9pt;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      color: #64748b;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    line-height: 1.55;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+  .header-card {
+    background: linear-gradient(135deg, #090d16 0%, #111827 60%, #061c2e 100%);
+    color: #ffffff;
+    padding: 24px 28px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid #1e293b;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  }
+  .header-card h1 {
+    margin: 0 0 6px 0;
+    font-size: 20pt;
+    letter-spacing: -0.5px;
+    color: #38bdf8;
+    font-weight: 800;
+  }
+  .header-card .subtitle {
+    margin: 0 0 14px 0;
+    font-size: 11pt;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+  .header-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 8pt;
+    font-weight: 700;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-cyan { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+  .badge-emerald { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); }
+  .badge-purple { background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.4); }
+  .badge-dark { background: rgba(255, 255, 255, 0.1); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.2); }
+
+  h2 {
+    color: #0f172a;
+    font-size: 13pt;
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 6px;
+    margin-top: 26px;
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+    page-break-after: avoid;
+  }
+  h3 {
+    color: #1e293b;
+    font-size: 11pt;
+    font-weight: 700;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+  p {
+    margin: 0 0 10px 0;
+    text-align: justify;
+  }
+  ul, ol {
+    margin: 0 0 12px 0;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 5px;
+  }
+  .box {
+    background: #f8fafc;
+    border-left: 4px solid #0284c7;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 9.5pt;
+  }
+  .box-title {
+    font-weight: 700;
+    color: #0369a1;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-size: 8.5pt;
+    letter-spacing: 0.5px;
+  }
+  .box-green {
+    border-left-color: #10b981;
+    background: #f0fdf4;
+  }
+  .box-green .box-title {
+    color: #047857;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #0f172a;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 8.5pt;
+    background-color: #f1f5f9;
+    color: #0f172a;
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 8.5pt;
+    line-height: 1.45;
+    overflow-x: auto;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  .footer-note {
+    margin-top: 30px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 8pt;
+    color: #64748b;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-card">
+  <h1>BeatWave Pro — Copilot Cabina DJ</h1>
+  <div class="subtitle">Memoria Técnica de Arquitectura, Sincronización en Directo y Resumen Funcional</div>
+  <div class="header-badges">
+    <span class="badge badge-cyan">Versión 2.0 Native</span>
+    <span class="badge badge-emerald">Serato Live SQLite</span>
+    <span class="badge badge-purple">Numark NV II CoreMIDI</span>
+    <span class="badge badge-dark">Clean-Room DSP</span>
+  </div>
+</div>
+
+<h2>1. Dónde están subidos los cambios (Control de Versiones)</h2>
+<p>
+Todos los cambios, optimizaciones y correcciones del subsistema Copilot se encuentran subidos y versionados en el repositorio Git central del proyecto:
+</p>
+<ul>
+  <li><strong>Repositorio Remoto:</strong> <code>https://github.com/ruedacal/CleanDJmix.git</code></li>
+  <li><strong>Rama Activa:</strong> <code>feature/copilot-v2-native</code></li>
+  <li><strong>Último Commit en Remoto:</strong> <code>41e1ee7</code></li>
+</ul>
+
+<div class="box">
+  <div class="box-title">Historial de Commits Clave en la Rama Actual</div>
+  <ul>
+    <li><strong><code>41e1ee7</code> (Actual):</strong> <em>fix(copilot-transport): sincronizacion total en tiempo real para Decks 1 y 2 con Serato y Numark NV II</em>. Desacople del umbral de tiempo <code>played == 1</code>, enrutamiento MIDI de canales (Ch 0/2 para Deck 1 y Ch 1/3 para Deck 2), debounce hardware de 150ms, botones táctiles en UI y atajos de cabina.</li>
+    <li><strong><code>037819b</code>:</strong> <em>fix(copilot-transport): alinear CUE milimétrico con Serato, eliminar botones manuales redundantes, y optimizar guardado y cancelación en auditoría</em>. Reseteo inmediato de CUE y optimización masiva de metadatos de biblioteca.</li>
+    <li><strong><code>efcb34a</code>:</strong> <em>fix(copilot-transport): sincronización bidireccional hardware MIDI y Serato live independiente para Decks 1 y 2</em>.</li>
+    <li><strong><code>d621e10</code>:</strong> <em>fix(metadata-copilot): optimizar guardado por lotes ultrarrápido y cancelación inmediata</em>. Modo rápido de escritura de metadatos (100ms/track vs 7s).</li>
+    <li><strong><code>39db069</code>:</strong> <em>fix(copilot): resolver sincronización real de Decks 1 y 2 con Serato y transporte live</em>. Purga de datos mock y paso a telemetría de sesión viva.</li>
+  </ul>
+</div>
+
+<h2>2. Dónde está toda la lógica de Copilot (Arquitectura en Detalle)</h2>
+<p>
+La arquitectura de Copilot se organiza en <strong>5 capas modulares e independientes</strong> para garantizar latencia de procesamiento inferior a 1 ms y cero carga cognitiva para el DJ:
+</p>
+
+<h3>A. Backend — Ingestión Serato SQLite en Caliente</h3>
+<p><strong>Fichero:</strong> <code>services/copilot/engine.py</code> (Método: <code>_sync_serato_live_state</code>)</p>
+<ul>
+  <li>Se conecta en modo de solo lectura (<code>mode=ro</code>) a la base de datos viva de Serato ubicada en <code>~/Library/Application Support/Serato/Library/master.sqlite</code>.</li>
+  <li>Identifica la sesión activa mediante <code>SELECT id FROM history_session WHERE end_time = -1</code>.</li>
+  <li>Extrae únicamente las pistas que están montadas físicamente en los platos en ese milisegundo (<code>history_entry WHERE end_time = -1</code>).</li>
+  <li>Si el plato está vacío en Serato, limpia el deck en Copilot a <code>STANDBY (VACÍO)</code> deteniendo la reproducción a 0:00.</li>
+  <li>Al detectar una pista nueva (<code>is_new_track</code>), extrae mediante <code>_extract_serato_markers_cues</code> los marcadores oficiales <strong>Serato Markers2</strong> (Base64) incrustados en las etiquetas del archivo físico, posicionando el cabezal milimétricamente en el <strong>CUE 1 / Downbeat inicial</strong> en estado <code>CUE (PREPARADO)</code> sin rodar antes de tiempo. Si la pista ya venía sonando antes de abrir Copilot (<code>played == 1</code>), arranca en reproducción sincronizada.</li>
+</ul>
+
+<h3>B. Backend — Motor Ticker en Tiempo Real (20 Hz / 50ms)</h3>
+<p><strong>Fichero:</strong> <code>services/copilot/engine.py</code> (Método: <code>_engine_ticker</code>)</p>
+<ul>
+  <li>Hilo continuo demonio que corre cada <strong>50 milisegundos (20 Hz)</strong>.</li>
+  <li>Cuando un deck tiene el estado de reproducción activo (<code>is_playing = True</code>), avanza el tiempo transcurrido (<code>elapsed_sec</code>) y reduce el tiempo restante (<code>remaining_sec</code>).</li>
+  <li>Calcula en tiempo real los beats exactos: número de golpe (1 a 4), compás métrico (1 a 32) y progreso de la frase musical de 128 compases (<code>phrase_progress</code>).</li>
+</ul>
+
+<h3>C. Backend — Escuchador MIDI Hardware (Numark NV II)</h3>
+<p><strong>Fichero:</strong> <code>services/copilot/engine.py</code> (Métodos: <code>_midi_listener_worker</code> y <code>_process_midi_message</code>)</p>
+<ul>
+  <li>Monitorea directamente el puerto CoreMIDI en macOS (<code>NV mkII Control</code>) mediante la librería <code>mido</code>.</li>
+  <li><strong>Filtrado Estricto de Pulsación:</strong> Procesa únicamente eventos <code>note_on</code> o <code>control_change</code> con <code>velocity > 0</code>. Ignora los eventos <code>note_off</code> o <code>velocity = 0</code> para evitar que al soltar el botón físico se conmute de nuevo la reproducción (evitando el doble toggle o parada instantánea).</li>
+  <li><strong>Enrutamiento por Canal:</strong> Canal 0 y 2 dirigen el transporte al <strong>Deck 1</strong>; Canal 1 y 3 dirigen al <strong>Deck 2</strong>.</li>
+  <li><strong>Debounce de 150ms:</strong> Mecanismo de seguridad temporal para absorber rebotes mecánicos de los switches de la mesa.</li>
+</ul>
+
+<h3>D. Backend — DSP Acústico y Reglas Anti-Muddy</h3>
+<p><strong>Fichero:</strong> <code>services/copilot/dsp_cleanroom.py</code></p>
+<ul>
+  <li>Evalúa la energía subgrave en ambos canales (ratio de graves <200 Hz).</li>
+  <li>Si ambos decks están en reproducción simultánea y superan el umbral seguro de club, activa la alerta <strong>ANTI_MUDDY (BASS CLASH)</strong> e indica qué perilla de EQ/Filtro accionar en la mesa física.</li>
+  <li>Evalúa la relación armónica entre ambos platos basándose en la <strong>Rueda de Camelot</strong> (mismo tono, tono vecino +1/-1, o relativo mayor/menor) alertando ante disonancias antes de soltar la mezcla.</li>
+</ul>
+
+<h3>E. Frontend — Interfaz de Cabina, Waveforms y Atajos</h3>
+<p><strong>Ficheros:</strong> <code>web/js/workspaces/CopilotWorkspace.jsx</code>, <code>web/js/copilot.jsx</code> y <code>web/js/waveforms/CopilotSeratoWaveform.jsx</code></p>
+<ul>
+  <li><strong>Telemetría y Badges Interactivos:</strong> Los badges de estado <code>[● EN VIVO]</code> / <code>[🎧 CUE]</code> y las carátulas son botones táctiles interactivos de latencia sub-milisegundo (<1ms) conectados a <code>/api/copilot/deck/{id}/toggle_play</code>.</li>
+  <li><strong>Atajos de Teclado de Cabina:</strong>
+    <ul>
+      <li><code>1</code>: Play/Pausa Deck 1.</li>
+      <li><code>2</code>: Play/Pausa Deck 2.</li>
+      <li><code>Barra Espaciadora</code>: Play/Pausa en el Deck Master actual.</li>
+      <li><code>Q</code>: Salto y parada en CUE Deck 1.</li>
+      <li><code>W</code>: Salto y parada en CUE Deck 2.</li>
+      <li><code>M</code>: Conmutar asignación de Deck Maestro.</li>
+    </ul>
+  </li>
+  <li><strong>Waveform Canvas 60 FPS:</strong> Dibuja la onda Serato Tricromática por hardware (Rojo/Graves, Verde/Medios, Azul/Agudos), minimapa overview 0-100% con salto al clic y marcadores reales de CUE.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>3. Resumen Funcional: Qué es este apartado y qué buscamos</h2>
+
+<h3>A. El Concepto Funcional</h3>
+<p>
+<strong>Copilot Cabina DJ</strong> es una <strong>segunda pantalla táctica de apoyo al directo</strong>. Su función no es mezclar por ti ni sustituir tu oído, sino <strong>eliminar la sobrecarga cognitiva en los momentos críticos de la sesión</strong>.
+</p>
+<p>
+Durante una sesión de club o festival, el DJ debe gestionar simultáneamente: la selección del siguiente tema, la afinidad armónica, el compás de entrada, la sincronización de tempo, el estado de los faders y la saturación de frecuencias graves. Copilot absorbe todo el análisis algorítmico y matemático en segundo plano para presentarle al DJ información limpia, visual y procesable en menos de 1 segundo.
+</p>
+
+<h3>B. Los 4 Objetivos Fundamentales de Copilot</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Pilar Funcional</th>
+      <th style="width: 35%;">El Problema en Cabina</th>
+      <th style="width: 40%;">La Solución que Aporta Copilot</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Espejo Fiel sin Fricción</strong></td>
+      <td>Desfase entre lo que muestra la pantalla y lo que ocurre en los platos físicos; pistas que se mueven antes de pulsar Play.</td>
+      <td>Sincronización milimétrica con Serato y la Numark NV II. Si el plato está vacío en Serato, Copilot está vacío en Standby. Al cargar la pista se sitúa en su CUE inicial sin rodar. Al dar Play en la mesa o en Copilot, arranca instantáneamente.</td>
+    </tr>
+    <tr>
+      <td><strong>2. Fraseo y Estructura a 60 FPS</strong></td>
+      <td>Perder la cuenta de compases antes de que entre un drop o terminar la mezcla dentro de un parón vocal no deseado.</td>
+      <td>Contador continuo de beats (1-4), compases (1-32) y barra de progreso de frase musical (128 compases). El DJ sabe exactamente en qué compás soltar el tema para clavar el bombo en el primer beat de la frase.</td>
+    </tr>
+    <tr>
+      <td><strong>3. Guardián Acústico Anti-Muddy</strong></td>
+      <td>Colisión de graves (Bass Clash) cuando ambos bombos suenan a la vez en el máster, creando saturación y pérdida de pegada.</td>
+      <td>Análisis espectral en tiempo real. Si detecta peligro de cancelación acústica, emite una alerta visual clara y recomienda la acción inmediata: <em>HPF +20%</em>, <em>Corte EQ Low -12dB</em> o <em>Swap de graves en drop</em>.</td>
+    </tr>
+    <tr>
+      <td><strong>4. Mix Oracle (Recomendación)</strong></td>
+      <td>Dudar o tardar demasiado tiempo buscando en las carpetas cuál es el tema idóneo para continuar la progresión musical.</td>
+      <td>Algoritmo armónico que lee la pista que está en el aire (Master) y extrae de tu biblioteca física las 6 mejores opciones clasificadas por Camelot (mismo tono, vecinos energéticos) y BPM compatible.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>C. Flujo Operativo Paso a Paso en un Set Real</h3>
+<ol>
+  <li><strong>Cabina en Espera:</strong> Los platos de Serato están vacíos. Copilot muestra ambos decks en <code>STANDBY (VACÍO)</code> con los indicadores listos en reposo.</li>
+  <li><strong>Carga del Primer Track:</strong> Arrastras un tema al Deck 1 en Serato o con la rueda de la Numark NV II. Copilot lo detecta al vuelo (<50ms), extrae su tonalidad Camelot, BPM, forma de onda y sitúa el playhead en el CUE 1 (0:00).</li>
+  <li><strong>Arranque del Set:</strong> Pulsas <strong>Play</strong> en el Deck 1 de la mesa. El Deck 1 pasa a <code>ON AIR (MASTER)</code>, la onda tricromática empieza a avanzar a 60 FPS y el contador cuantizado inicia la cuenta de compases.</li>
+  <li><strong>Preparación de la Mezcla:</strong> Cargas el siguiente tema en el Deck 2. Copilot lo sitúa en <code>CUE (PREPARADO)</code>, calcula la diferencia de BPM (+/-) y te indica el grado de compatibilidad armónica.</li>
+  <li><strong>Transición en Directo:</strong> Pulsas <strong>Play</strong> en el Deck 2 de la mesa en el compás 1. El motor <strong>Anti-Muddy</strong> vigila que no satures el equipo de sonido. Ejecutas la transición y bajas el fader del Deck 1.</li>
+  <li><strong>Relevo Maestro:</strong> Pulsas CUE en el Deck 1 para detenerlo. Copilot asigna automáticamente el Deck 2 como nuevo Master y refresca de inmediato el carrusel de próximas pistas compatibles.</li>
+</ol>
+
+<div class="footer-note">
+  BeatWave Pro • CleanDJmix Native Architecture • Documento Técnico Generado Automáticamente
+</div>
+
+</body>
+</html>
