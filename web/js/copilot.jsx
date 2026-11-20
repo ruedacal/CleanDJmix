@@ -1467,7 +1467,7 @@ function LiveCopilotApp() {
         } catch (_) {}
     };
 
-    // Atajos de teclado para cabina DJ: 'M' Master Toggle, '1' y '2' Play/Pausa, 'Q' y 'W' Cue
+    // Atajos de teclado para cabina DJ: 'M' Master Toggle, '1' y '2' Play/Pausa, 'Space' Play/Pausa Master, 'Q' y 'W' Cue
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
@@ -1480,6 +1480,9 @@ function LiveCopilotApp() {
             } else if (e.key === '2') {
                 e.preventDefault();
                 toggleDeckPlay(2);
+            } else if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                toggleDeckPlay(state && state.master_deck ? state.master_deck : 1);
             } else if (e.key === 'q' || e.key === 'Q') {
                 e.preventDefault();
                 cueDeck(1);
@@ -1490,12 +1493,13 @@ function LiveCopilotApp() {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    }, [state]);
 
     // Enlace Web MIDI nativo con Numark NV II y controladoras de cabina
     useEffect(() => {
         if (typeof navigator === 'undefined' || !navigator.requestMIDIAccess) return;
         let midiAccess = null;
+        let lastMidiTime = 0;
 
         const onMidiMessage = (e) => {
             if (!e.data || e.data.length < 2) return;
@@ -1503,20 +1507,30 @@ function LiveCopilotApp() {
             const cmd = status & 0xF0;
             const ch = status & 0x0F;
 
-            // Mapeo exhaustivo para Numark NV II (ch 0..3 y notas de transporte)
-            let targetDeck = (ch === 1 || ch === 3) ? 2 : ((ch === 0 || ch === 2) ? ([8, 9, 10, 60, 67, 32, 33, 34, 70, 71, 72].includes(note) ? 2 : 1) : (note < 32 ? 1 : 2));
-            if (!targetDeck) return;
+            // Únicamente procesar Note On o Control Change con velocidad > 0
+            if ((cmd !== 0x90 && cmd !== 0xB0) || velocity <= 0) return;
 
-            const PLAY_NOTES = [0, 4, 8, 11, 12, 32, 59, 60, 64, 66, 67, 71, 0x04, 0x0B, 0x0C, 0x3B];
-            const CUE_NOTES = [1, 5, 9, 12, 33, 34, 51, 65, 67, 72, 0x01, 0x33, 0x41];
+            // Debounce de 150ms para evitar disparos dobles por rebote físico
+            const now = Date.now();
+            if (now - lastMidiTime < 150) return;
+            lastMidiTime = now;
 
-            // Note On o CC con velocidad > 0
-            if ((cmd === 0x90 || cmd === 0xB0) && velocity > 0) {
-                if (PLAY_NOTES.includes(note)) {
-                    toggleDeckPlay(targetDeck);
-                } else if (CUE_NOTES.includes(note)) {
-                    cueDeck(targetDeck);
-                }
+            // Mapeo exhaustivo para Numark NV II (Ch 0/2 => Deck 1, Ch 1/3 => Deck 2)
+            const targetDeck = (ch === 1 || ch === 3) ? 2 : 1;
+
+            const PLAY_NOTES = [
+                0, 4, 8, 11, 12, 32, 50, 51, 59, 60, 64, 66, 67, 71,
+                0x00, 0x04, 0x0B, 0x0C, 0x20, 0x32, 0x33, 0x39, 0x3A, 0x3B, 0x40, 0x42, 0x43, 0x47
+            ];
+            const CUE_NOTES = [
+                1, 5, 9, 12, 33, 34, 51, 65, 67, 72,
+                0x01, 0x05, 0x21, 0x33, 0x34, 0x41, 0x48
+            ];
+
+            if (PLAY_NOTES.includes(note)) {
+                toggleDeckPlay(targetDeck);
+            } else if (CUE_NOTES.includes(note)) {
+                cueDeck(targetDeck);
             }
         };
 
@@ -2263,17 +2277,19 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                             >
                                 {isMaster ? '🔊 MASTER' : '🎧 EN CUE'}
                             </button>
-                            <div 
-                                className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 select-none ${
+                            <button
+                                type="button"
+                                onClick={() => onTogglePlay && onTogglePlay(deckNum)}
+                                className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 select-none cursor-pointer hover:scale-105 active:scale-95 transition-all ${
                                     deck.is_playing 
                                         ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
-                                        : 'bg-zinc-900 border border-zinc-700 text-zinc-400'
+                                        : 'bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500'
                                 }`}
-                                title={deck.is_playing ? `Deck ${side} en reproducción (EN VIVO)` : `Deck ${side} en CUE / Pausa`}
+                                title={`Haz clic para alternar Play/Pausa en DECK ${side} (o pulsa tecla '${deckNum}')`}
                             >
                                 <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
                                 <span>{deck.is_playing ? 'EN VIVO' : 'CUE'}</span>
-                            </div>
+                            </button>
                         </div>
                     )}
                     {deck.phase && !isEmptyDeck && (
@@ -2297,8 +2313,10 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                 {/* COLUMNA IZQUIERDA: Carátula 1:1 Cuadrada Full Height + Título + Artista + Taxonomía */}
                 <div className="flex items-stretch gap-3 min-w-0">
                     <div 
-                        className="relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none"
+                        onClick={() => !isEmptyDeck && onTogglePlay && onTogglePlay(deckNum)}
+                        className={`relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none select-none ${!isEmptyDeck ? 'cursor-pointer hover:border-djcyan-400/80 hover:shadow-[0_0_12px_rgba(6,182,212,0.4)] transition-all' : ''}`}
                         style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
+                        title={!isEmptyDeck ? `Haz clic para alternar Play/Pausa en DECK ${side}` : ''}
                     >
                         <img 
                             src={isEmptyDeck ? DEFAULT_VINYL_SVG : getValidCover(deck.cover)} 

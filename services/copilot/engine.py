@@ -538,22 +538,32 @@ class CopilotEngine:
                             cue_sec = 0.0
                             if d.hot_cues and len(d.hot_cues) > 0:
                                 cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0))
-                            d.elapsed_sec = min(dur, cue_sec)
+
+                            # Si la pista ya venía sonando activamente antes de abrir/conectar Copilot
+                            was_already_playing = (t["played"] == 1 and (now - t["start_time"]) > 3.0)
+                            if was_already_playing:
+                                d.is_playing = True
+                                d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
+                                d.elapsed_sec = min(dur, max(cue_sec, now - t["start_time"]))
+                            else:
+                                d.elapsed_sec = min(dur, cue_sec)
+                                d.is_playing = False
+                                d.status = "CUE (PREPARADO)"
+
                             d.remaining_sec = max(0.0, dur - d.elapsed_sec)
-                            d.is_playing = False
-                            d.status = "CUE (PREPARADO)"
                             d.beat_number = 1
                             d.bar_number = 1
                             d.phrase_progress = 0.0
                         else:
-                            # Misma pista: detectar si Serato pasa de played 0 a 1 para iniciar sincronización
+                            # Misma pista cargada: si Serato pasa de played 0 a 1 y el deck no fue pausado expresamente
                             if t["played"] == 1 and getattr(d, '_last_serato_played', 0) == 0:
                                 d._last_serato_played = 1
-                                if not d.is_playing:
+                                if not d.is_playing and getattr(d, 'status', '') != 'PAUSA':
                                     d.is_playing = True
                                     d.status = "ON AIR (MASTER)" if d.is_master else "REPRODUCIENDO"
                                     if d.elapsed_sec < 5.0:
-                                        d.elapsed_sec = 20.0
+                                        cue_sec = float(d.hot_cues[0].get("pos_sec", 0.0)) if d.hot_cues else 0.0
+                                        d.elapsed_sec = min(dur, max(cue_sec, now - t["start_time"]))
                     else:
                         d.title = ""
                         d.artist = ""
@@ -940,30 +950,42 @@ class CopilotEngine:
     def _process_midi_message(self, msg: Any):
         """Procesa mensajes de transporte (Play/Pausa, Cue) procedentes de la controladora física (Numark NV II, Pioneer, etc.)."""
         try:
-            channel = getattr(msg, 'channel', 0)
             msg_type = getattr(msg, 'type', '')
             val = getattr(msg, 'velocity', getattr(msg, 'value', 0))
-            if val <= 0 and msg_type != 'note_off':
+            # Únicamente procesar pulsaciones activas Note On o Control Change con valor > 0
+            # Evita conmutación doble al soltar el botón físico (note_off o velocity = 0)
+            if msg_type not in ('note_on', 'control_change'):
+                return
+            if val <= 0:
                 return
 
             note_or_ctrl = getattr(msg, 'note', getattr(msg, 'control', -1))
             if note_or_ctrl < 0:
                 return
 
-            # Mapeo de canal y notas para Numark NV II y controladoras de 2 y 4 decks
-            target_deck = None
-            if channel in (1, 3):
-                target_deck = 2
-            elif channel in (0, 2):
-                if note_or_ctrl in (8, 9, 10, 60, 67, 32, 33, 34, 70, 71, 72):
-                    target_deck = 2
-                else:
-                    target_deck = 1
-            else:
-                target_deck = 1 if note_or_ctrl < 32 else 2
+            channel = getattr(msg, 'channel', 0)
+            # En la gran mayoría de controladoras DJ de 2 y 4 canales (Numark NV II, Pioneer, Traktor):
+            # Canal 0 (0x90) / 2 (0x92) => DECK 1
+            # Canal 1 (0x91) / 3 (0x93) => DECK 2
+            target_deck = 2 if channel in (1, 3) else 1
 
-            PLAY_NOTES = {0, 4, 8, 11, 12, 32, 59, 60, 64, 66, 67, 71, 0x04, 0x0B, 0x0C, 0x3B}
-            CUE_NOTES = {1, 5, 9, 12, 33, 34, 51, 65, 67, 72, 0x01, 0x33, 0x41}
+            # Debounce hardware de 150ms por deck
+            now = time.time()
+            if not hasattr(self, '_last_midi_trigger'):
+                self._last_midi_trigger = {}
+            k = f"{target_deck}_{note_or_ctrl}"
+            if now - self._last_midi_trigger.get(k, 0.0) < 0.15:
+                return
+            self._last_midi_trigger[k] = now
+
+            PLAY_NOTES = {
+                0, 4, 8, 11, 12, 32, 50, 51, 59, 60, 64, 66, 67, 71,
+                0x00, 0x04, 0x0B, 0x0C, 0x20, 0x32, 0x33, 0x39, 0x3A, 0x3B, 0x40, 0x42, 0x43, 0x47
+            }
+            CUE_NOTES = {
+                1, 5, 9, 12, 33, 34, 51, 65, 67, 72,
+                0x01, 0x05, 0x21, 0x33, 0x34, 0x41, 0x48
+            }
 
             if note_or_ctrl in PLAY_NOTES:
                 self.toggle_deck_play(target_deck)
