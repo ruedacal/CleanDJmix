@@ -22,6 +22,7 @@ from services.copilot.library_reader import LibraryReader
 from services.copilot.models import ClashAlert, DeckState, LiveSessionState
 from services.copilot.os2l import OS2LReceiver
 from services.copilot.prodjlink import ProDJLinkReceiver
+from services.copilot.waveform_3band import waveform_3band_extractor
 
 
 CAMELOT_PALETTE = {
@@ -883,6 +884,8 @@ class CopilotEngine:
                             # Limpiar SIEMPRE los cues previos y extraer los del archivo físico real
                             d.hot_cues = self._extract_serato_markers_cues(resolved_path) if resolved_path else []
                             d._artwork_data_uri = self._extract_track_artwork(resolved_path) if resolved_path else ""
+                            if resolved_path:
+                                waveform_3band_extractor.prefetch_async(resolved_path)
 
                             cue_sec = self._get_primary_cue_sec(d)
 
@@ -1079,6 +1082,26 @@ class CopilotEngine:
             "lufs_momentary": deck.lufs_momentary,
             "lufs_short_term": deck.lufs_short_term
         }
+
+    def get_deck_waveform_3band(self, deck_id: Any) -> Dict[str, Any]:
+        """Devuelve picos FFT 3Band del deck activo validando siempre contra la ruta en memoria."""
+        try:
+            target_id = int(deck_id)
+        except Exception:
+            return {"ready": False, "pending": False, "error": "invalid_deck"}
+
+        with self._lock:
+            d = self.state.decks.get(target_id)
+            filepath = getattr(d, "_filepath", "") if d else ""
+
+        resolved = self._resolve_audio_path(filepath) if filepath else None
+        if not resolved:
+            return {"ready": False, "pending": False, "error": "no_local_file"}
+
+        cached = waveform_3band_extractor.get_waveform(resolved, block=False)
+        if cached is not None:
+            return {"ready": True, "pending": False, **cached}
+        return {"ready": False, "pending": True, "filepath": resolved}
 
     def get_live_state(self) -> Dict[str, Any]:
         """Retorna el estado completo serializado para CopilotWorkspace y endpoints REST/WebSocket."""

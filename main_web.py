@@ -1566,6 +1566,17 @@ def api_copilot_deck_cue(deck_id):
     import json
     return json.dumps(copilot_service.cue_deck(deck_id))
 
+@bottle.route('/api/copilot/waveform/<deck_id:int>', method=['GET', 'OPTIONS'])
+def api_copilot_deck_waveform(deck_id):
+    bottle.response.set_header("Access-Control-Allow-Origin", "*")
+    bottle.response.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+    bottle.response.set_header("Access-Control-Allow-Headers", "*")
+    if bottle.request.method == 'OPTIONS':
+        return ""
+    bottle.response.content_type = 'application/json'
+    import json
+    return json.dumps(copilot_service.get_deck_waveform_3band(deck_id))
+
 @bottle.route('/api/copilot/info', method=['GET', 'OPTIONS'])
 def api_copilot_info():
     bottle.response.set_header("Access-Control-Allow-Origin", "*")
