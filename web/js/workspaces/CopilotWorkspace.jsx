@@ -1,6 +1,7 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons, renderPlatformLogo } from '../shell/icons.jsx';
 import { CopilotSeratoWaveform, computeTrackStructuralBands } from '../waveforms/index.js';
+import { CopilotMixerMirror } from './CopilotMixerMirror.jsx';
 import { DEFAULT_VINYL_SVG, getValidCover, NV2_COLORS } from '../data/constants.js';
 import { BeatWaveLogoBadge, BeatWaveBrandIdentity } from '../shell/workspace-ui.jsx';
 
@@ -1709,6 +1710,9 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     </div>
                 </div>
             </section>
+
+            {/* MIXER ESPEJO 14-BIT Y AUDITORÍA DE EJECUCIÓN EN TIEMPO REAL */}
+            <CopilotMixerMirror mixer={state?.mixer} audit={state?.audit} />
 
             {/* DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">

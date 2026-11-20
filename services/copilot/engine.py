@@ -23,6 +23,7 @@ from services.copilot.models import ClashAlert, DeckState, LiveSessionState
 from services.copilot.os2l import OS2LReceiver
 from services.copilot.prodjlink import ProDJLinkReceiver
 from services.copilot.waveform_3band import waveform_3band_extractor
+from services.copilot.mixer_audit import CopilotMixerAuditor
 
 
 CAMELOT_PALETTE = {
@@ -338,6 +339,7 @@ class CopilotEngine:
         self.loaded_library_tracks: List[Dict[str, Any]] = []
         self._active_midi_port_name: str = ""
         self._last_midi_trigger: Dict[str, float] = {}
+        self._mixer_audit = CopilotMixerAuditor()
 
         self.state.decks = {
             1: DeckState(
@@ -1157,6 +1159,11 @@ class CopilotEngine:
                         "controller_knobs": {"filter_knob": "Centrado (12h)", "eq_low": "0 dB"}
                     }
 
+            anti_muddy_data, mixer_audit_data = self._mixer_audit.evaluate_and_audit(
+                anti_muddy_data, self.state.master_deck, is_deck_2_empty
+            )
+            mixer_snapshot = self._mixer_audit.get_mixer_snapshot()
+
             formatted_decks = {d_id: self._format_deck_ui(d) for d_id, d in self.state.decks.items()}
             dj_app = self._check_running_dj_apps()
             is_serato_running = dj_app.get("is_open") and dj_app.get("app_id") == "serato"
@@ -1183,6 +1190,8 @@ class CopilotEngine:
                 "deck_4": formatted_decks.get(4, {}),
                 "decks": formatted_decks,
                 "anti_muddy": anti_muddy_data,
+                "mixer": mixer_snapshot,
+                "audit": mixer_audit_data,
                 "harmonic": self.state.harmonic_relation,
                 "harmonic_relation": self.state.harmonic_relation,
                 "active_alerts": [a.to_dict() for a in self.state.active_alerts],
@@ -1323,6 +1332,8 @@ class CopilotEngine:
     def _process_midi_message(self, msg: Any):
         """Máquina de estados MIDI estricta para Numark NV II (ch1/ch2, Play 33, CUE 32, Pads 71..78)."""
         try:
+            if self._mixer_audit.ingest_midi(msg):
+                return
             msg_type = getattr(msg, "type", "")
             if msg_type not in ("note_on", "note_off"):
                 return
