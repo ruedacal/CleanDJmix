@@ -31,7 +31,7 @@ const NAV = [
     ] },
     { group: 'Negocio', items: [
         { id: 'billing', label: 'Facturación', icon: 'card', C: Billing },
-        { id: 'costs', label: 'Costes', icon: 'wallet', C: Costs, count: 4 },
+        { id: 'costs', label: 'Costes', icon: 'wallet', C: Costs, count: 3 },
     ] },
     { group: 'Sistema', items: [
         { id: 'notices', label: 'Avisos', icon: 'bell', C: Notices, count: 1 },
