@@ -6,10 +6,14 @@ const { useEffect, useRef } = React;
 export const MobileTabBar = ({ activeTab, onSelect, onOpenMore, moreOpen, t }) => {
     const inMore = !MOBILE_PRIMARY_TABS.includes(activeTab);
     return (
-        <nav aria-label="Navegación principal" className="bw-tabbar md:hidden flex shrink-0 items-stretch justify-around px-1 z-40">
+        <nav
+            aria-label="Navegación principal"
+            className="bw-tabbar md:hidden flex shrink-0 w-full items-stretch justify-around px-1 z-40 border-t border-white/10 bg-[#09090b]/95 backdrop-blur-md"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
             {MOBILE_PRIMARY_TABS.map((id) => {
                 const item = findNavItem(id);
-                const Icon = ShellIcons[item.icon];
+                const Icon = ShellIcons[item.icon] || ShellIcons.Grid;
                 const isActive = activeTab === id;
                 return (
                     <button
@@ -17,11 +21,11 @@ export const MobileTabBar = ({ activeTab, onSelect, onOpenMore, moreOpen, t }) =
                         type="button"
                         onClick={() => onSelect(id)}
                         aria-current={isActive ? 'page' : undefined}
-                        className={`bw-tab ${isActive ? 'is-active' : ''}`}
+                        className={`bw-tab flex-1 min-w-0 ${isActive ? 'is-active' : ''}`}
                     >
                         <span className="bw-tab-led" aria-hidden="true" />
-                        <Icon size={20} />
-                        <span>{navLabel(item, t)}</span>
+                        <Icon size={19} />
+                        <span className="truncate">{navLabel(item, t)}</span>
                     </button>
                 );
             })}
@@ -30,11 +34,11 @@ export const MobileTabBar = ({ activeTab, onSelect, onOpenMore, moreOpen, t }) =
                 onClick={onOpenMore}
                 aria-haspopup="dialog"
                 aria-expanded={moreOpen}
-                className={`bw-tab ${inMore ? 'is-active' : ''}`}
+                className={`bw-tab flex-1 min-w-0 ${inMore ? 'is-active' : ''}`}
             >
                 <span className="bw-tab-led" aria-hidden="true" />
-                <ShellIcons.Grid size={20} />
-                <span>{inMore ? navLabel(findNavItem(activeTab), t) : 'Más'}</span>
+                <ShellIcons.Grid size={19} />
+                <span className="truncate">{inMore ? navLabel(findNavItem(activeTab), t) : 'Menú'}</span>
             </button>
         </nav>
     );
@@ -61,42 +65,64 @@ export const MoreSheet = ({ open, onClose, activeTab, onSelect, onOpenCopilot, h
     };
 
     return (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Todos los módulos">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm bw-fade-in" onClick={onClose} />
-            <div ref={panelRef} tabIndex={-1} className="bw-sheet absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col outline-none">
-                <div className="flex justify-center pt-2.5 pb-1" aria-hidden="true">
+        <div className="fixed inset-0 z-[1200] lg:hidden" role="dialog" aria-modal="true" aria-label="Todos los módulos">
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-sm bw-fade-in" onClick={onClose} />
+            <div
+                ref={panelRef}
+                tabIndex={-1}
+                className="bw-sheet absolute inset-x-0 bottom-0 md:inset-y-0 md:right-auto md:w-96 flex max-h-[88dvh] md:max-h-full flex-col outline-none bg-[#0d0d12] border-t md:border-t-0 md:border-r border-white/15"
+            >
+                <div className="flex justify-center pt-2.5 pb-1 md:hidden" aria-hidden="true">
                     <span className="h-1 w-10 rounded-full bg-white/20" />
                 </div>
-                <div className="flex items-center justify-between px-5 pb-3 pt-1">
-                    <h2 className="text-base font-semibold text-white">Módulos</h2>
+                <div className="flex items-center justify-between px-5 pb-3 pt-2 border-b border-white/10">
+                    <h2 className="text-base font-semibold text-white font-mono tracking-wide">MENÚ BEATWAVE</h2>
                     <button type="button" onClick={onClose} className="bw-icon-btn" aria-label="Cerrar">
                         <ShellIcons.Close size={18} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-5 bw-safe-bottom">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            onClose();
-                            onOpenCopilot();
-                        }}
-                        className="bw-sheet-live"
-                    >
-                        <span className="bw-live-dot" aria-hidden="true" />
-                        <span className="flex flex-col items-start">
-                            <span className="text-sm font-semibold text-white">Live Copilot</span>
-                            <span className="text-xs text-zinc-400">Monitor táctico de cabina en vivo</span>
-                        </span>
-                        <ShellIcons.ChevronRight size={16} className="ml-auto text-zinc-500" />
-                    </button>
+                <div
+                    className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-5 bw-safe-bottom"
+                    style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+                >
+                    <div className="grid grid-cols-1 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onClose();
+                                onOpenCopilot();
+                            }}
+                            className="bw-sheet-live"
+                        >
+                            <span className="bw-live-dot" aria-hidden="true" />
+                            <span className="flex flex-col items-start">
+                                <span className="text-sm font-semibold text-white">Live Copilot</span>
+                                <span className="text-xs text-zinc-400">Monitor táctico de cabina en vivo</span>
+                            </span>
+                            <ShellIcons.ChevronRight size={16} className="ml-auto text-zinc-500" />
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => choose('library')}
+                            aria-current={activeTab === 'library' ? 'page' : undefined}
+                            className={`bw-sheet-tile ${activeTab === 'library' ? 'is-active' : ''}`}
+                        >
+                            <ShellIcons.Library size={20} className="text-cyan-400" />
+                            <span className="flex flex-col items-start min-w-0">
+                                <span className="text-sm font-medium text-white truncate">Colección / Biblioteca</span>
+                                <span className="text-xs text-zinc-500 leading-snug text-left">Carpetas y librerías persistentes</span>
+                            </span>
+                        </button>
+                    </div>
 
                     {NAV_GROUPS.map((group) => (
                         <section key={group.id} className="flex flex-col gap-2" aria-label={group.label}>
                             <h3 className="bw-eyebrow px-1">{group.label}</h3>
                             <div className="grid grid-cols-2 gap-2">
                                 {group.items.map((item) => {
-                                    const Icon = ShellIcons[item.icon];
+                                    const Icon = ShellIcons[item.icon] || ShellIcons.Grid;
                                     const isActive = activeTab === item.id;
                                     return (
                                         <button

@@ -6146,14 +6146,11 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     ));
   };
 
-  // web/js/waveforms/Rekordbox3BandStack.jsx
-  var { useState: useState8, useEffect: useEffect11, useRef: useRef11, useMemo: useMemo3, useCallback: useCallback4 } = React;
-
   // web/js/shell/hooks.js
-  var { useState: useState9, useEffect: useEffect12, useRef: useRef12, useCallback: useCallback5 } = React;
+  var { useState: useState8, useEffect: useEffect11, useRef: useRef11, useCallback: useCallback4 } = React;
   function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 10) {
-    const [range, setRange] = useState9({ start: 0, end: 60 });
-    useEffect12(() => {
+    const [range, setRange] = useState8({ start: 0, end: 60 });
+    useEffect11(() => {
       const el = containerRef.current;
       if (!el) return;
       let rafId = null;
@@ -6285,7 +6282,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
   }
 
   // web/js/workspaces/LibraryWorkspace.jsx
-  var { useState: useState10, useEffect: useEffect13, useRef: useRef13, useMemo: useMemo4, useCallback: useCallback6 } = React;
+  var { useState: useState9, useEffect: useEffect12, useRef: useRef12, useMemo: useMemo3, useCallback: useCallback5 } = React;
   var LibraryWorkspace = ({
     libraries = [],
     activeLibraryId,
@@ -6307,24 +6304,24 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     setSelectedTrack
   }) => {
     var _a;
-    const [activeLibId, setActiveLibId] = useState10(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
-    const [libNameInput, setLibNameInput] = useState10("");
-    const [newFolderName, setNewFolderName] = useState10("");
-    const [selectedFolderId, setSelectedFolderId] = useState10("__ALL__");
-    const [feedbackMsg, setFeedbackMsg] = useState10("");
-    const [searchTrack, setSearchTrack] = useState10("");
-    const [dragOverFolderId, setDragOverFolderId] = useState10(null);
-    const [selectedTrackKeys, setSelectedTrackKeys] = useState10(/* @__PURE__ */ new Set());
-    const [fsBrowserOpen, setFsBrowserOpen] = useState10(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState10("/Users/admin/Music");
-    const [fsParentPath, setFsParentPath] = useState10("/Users/admin");
-    const [fsFolders, setFsFolders] = useState10([]);
-    const [fsFiles, setFsFiles] = useState10([]);
-    const [stagedFolders, setStagedFolders] = useState10([]);
-    const [stagedFiles, setStagedFiles] = useState10([]);
-    const [fsActiveTab, setFsActiveTab] = useState10("folders");
-    const [fsLoading, setFsLoading] = useState10(false);
-    const [leftColWidth, setLeftColWidth] = useState10(() => {
+    const [activeLibId, setActiveLibId] = useState9(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
+    const [libNameInput, setLibNameInput] = useState9("");
+    const [newFolderName, setNewFolderName] = useState9("");
+    const [selectedFolderId, setSelectedFolderId] = useState9("__ALL__");
+    const [feedbackMsg, setFeedbackMsg] = useState9("");
+    const [searchTrack, setSearchTrack] = useState9("");
+    const [dragOverFolderId, setDragOverFolderId] = useState9(null);
+    const [selectedTrackKeys, setSelectedTrackKeys] = useState9(/* @__PURE__ */ new Set());
+    const [fsBrowserOpen, setFsBrowserOpen] = useState9(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState9("/Users/admin/Music");
+    const [fsParentPath, setFsParentPath] = useState9("/Users/admin");
+    const [fsFolders, setFsFolders] = useState9([]);
+    const [fsFiles, setFsFiles] = useState9([]);
+    const [stagedFolders, setStagedFolders] = useState9([]);
+    const [stagedFiles, setStagedFiles] = useState9([]);
+    const [fsActiveTab, setFsActiveTab] = useState9("folders");
+    const [fsLoading, setFsLoading] = useState9(false);
+    const [leftColWidth, setLeftColWidth] = useState9(() => {
       try {
         const saved = localStorage.getItem("bw_library_col_width");
         return saved ? Math.max(260, Math.min(680, parseInt(saved, 10))) : 360;
@@ -6332,7 +6329,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         return 360;
       }
     });
-    const [isResizing, setIsResizing] = useState10(false);
+    const [isResizing, setIsResizing] = useState9(false);
     const handleSplitterPointerDown = (e) => {
       e.preventDefault();
       setIsResizing(true);
@@ -6363,12 +6360,12 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       tracks: [],
       folders: []
     };
-    useEffect13(() => {
+    useEffect12(() => {
       if (currentLib) {
         setLibNameInput(currentLib.name || "");
       }
     }, [currentLib == null ? void 0 : currentLib.id]);
-    useEffect13(() => {
+    useEffect12(() => {
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
     }, [selectedFolderId, activeLibId]);
     const handleCreateNewLibrary = () => {
@@ -6842,7 +6839,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         setTimeout(() => setFeedbackMsg(""), 3e3);
       }
     };
-    const allLibTracks = useMemo4(() => {
+    const allLibTracks = useMemo3(() => {
       const map = /* @__PURE__ */ new Map();
       (currentLib.tracks || []).forEach((t) => {
         const k = t.id || t.path || t.file_path || t.f || t.filename;
@@ -7422,7 +7419,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
   };
 
   // web/js/modals/HotCueStudioModal.jsx
-  var { useState: useState11, useEffect: useEffect14, useRef: useRef14, useCallback: useCallback7 } = React;
+  var { useState: useState10, useEffect: useEffect13, useRef: useRef13, useCallback: useCallback6 } = React;
   var HotCueStudioModal = ({
     isOpen,
     onClose,
@@ -7451,13 +7448,13 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
-    const [snapToGrid, setSnapToGrid] = useState11(true);
-    const [showBeatgrid, setShowBeatgrid] = useState11(true);
-    const [timeInputValue, setTimeInputValue] = useState11(currentCue.time || "00:00.00");
-    const [nameInputValue, setNameInputValue] = useState11(currentCue.name || "");
-    const [isSavingLocal, setIsSavingLocal] = useState11(false);
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState11("");
-    useEffect14(() => {
+    const [snapToGrid, setSnapToGrid] = useState10(true);
+    const [showBeatgrid, setShowBeatgrid] = useState10(true);
+    const [timeInputValue, setTimeInputValue] = useState10(currentCue.time || "00:00.00");
+    const [nameInputValue, setNameInputValue] = useState10(currentCue.name || "");
+    const [isSavingLocal, setIsSavingLocal] = useState10(false);
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState10("");
+    useEffect13(() => {
       setTimeInputValue(currentCue.time || "00:00.00");
       setNameInputValue(currentCue.name || currentCue.short_name || `Cue ${currentCue.id || 1}`);
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -7864,7 +7861,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
   };
 
   // web/js/modals/CamelotWheelModal.jsx
-  var { useState: useState12 } = React;
+  var { useState: useState11 } = React;
   var CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
     if (!isOpen) return null;
     const currentData = CAMELOT_WHEEL_DATA[currentKey] || CAMELOT_WHEEL_DATA["8A"];
@@ -7928,9 +7925,9 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
   };
 
   // web/js/modals/BatchAuditorModal.jsx
-  var { useState: useState13 } = React;
+  var { useState: useState12 } = React;
   var BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
-    const [opts, setOpts] = useState13({
+    const [opts, setOpts] = useState12({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -8007,15 +8004,15 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
   };
 
   // web/js/modals/DuplicateComparisonModal.jsx
-  var { useState: useState14, useEffect: useEffect15 } = React;
+  var { useState: useState13, useEffect: useEffect14 } = React;
   var DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDeleted }) => {
-    const [dupData, setDupData] = useState14(null);
-    const [loading, setLoading] = useState14(false);
-    const [deleting, setDeleting] = useState14(false);
-    const [selectedToDelete, setSelectedToDelete] = useState14({});
-    const [statusMsg, setStatusMsg] = useState14("");
-    const [protectSisters, setProtectSisters] = useState14(true);
-    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState14(false);
+    const [dupData, setDupData] = useState13(null);
+    const [loading, setLoading] = useState13(false);
+    const [deleting, setDeleting] = useState13(false);
+    const [selectedToDelete, setSelectedToDelete] = useState13({});
+    const [statusMsg, setStatusMsg] = useState13("");
+    const [protectSisters, setProtectSisters] = useState13(true);
+    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState13(false);
     const loadDups = async (protect = true) => {
       setLoading(true);
       setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
@@ -8042,7 +8039,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         setStatusMsg("");
       }
     };
-    useEffect15(() => {
+    useEffect14(() => {
       if (!isOpen) return;
       loadDups(protectSisters);
     }, [isOpen, tracks]);
@@ -8157,7 +8154,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
 
   // web/js/modals/UserAccountModal.jsx
-  var { useState: useState15, useEffect: useEffect16, useRef: useRef15, useCallback: useCallback8 } = React;
+  var { useState: useState14, useEffect: useEffect15, useRef: useRef14, useCallback: useCallback7 } = React;
   var UserAccountModal = ({
     isOpen,
     onClose,
@@ -8175,44 +8172,44 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_account_drawer_width", 540);
-    const [activeTab, setActiveTab] = useState15("profile");
-    const [alias, setAlias] = useState15(userProfile && userProfile.alias || "DJ Alex BeatWave");
-    const [fullName, setFullName] = useState15(userProfile && userProfile.fullName || "Alejandro Rueda");
-    const [email, setEmail] = useState15(userProfile && userProfile.email || "alex.dj@beatwave.pro");
-    const [address, setAddress] = useState15(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
-    const [city, setCity] = useState15(userProfile && userProfile.city || "Madrid");
-    const [country, setCountry] = useState15(userProfile && userProfile.country || "Espa\xF1a");
-    const [phone, setPhone] = useState15(userProfile && userProfile.phone || "+34 612 345 678");
-    const [avatarUrl, setAvatarUrl] = useState15(userProfile && userProfile.avatarUrl || "");
-    const [currentPassword, setCurrentPassword] = useState15("");
-    const [newPassword, setNewPassword] = useState15("");
-    const [confirmPassword, setConfirmPassword] = useState15("");
-    const [passwordMsg, setPasswordMsg] = useState15({ text: "", type: "" });
-    const [djSoftware, setDjSoftware] = useState15(userProfile && userProfile.djSoftware || "Serato DJ Pro");
-    const [audioInterface, setAudioInterface] = useState15(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
-    const [targetLufs, setTargetLufs] = useState15(userProfile && userProfile.targetLufs || -9);
-    const [autoSaveEnabled, setAutoSaveEnabled] = useState15(userProfile ? userProfile.autoSave !== false : true);
-    const [sessionNameInput, setSessionNameInput] = useState15("");
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState15("");
-    const [savedPaymentMethods, setSavedPaymentMethods] = useState15([
+    const [activeTab, setActiveTab] = useState14("profile");
+    const [alias, setAlias] = useState14(userProfile && userProfile.alias || "DJ Alex BeatWave");
+    const [fullName, setFullName] = useState14(userProfile && userProfile.fullName || "Alejandro Rueda");
+    const [email, setEmail] = useState14(userProfile && userProfile.email || "alex.dj@beatwave.pro");
+    const [address, setAddress] = useState14(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
+    const [city, setCity] = useState14(userProfile && userProfile.city || "Madrid");
+    const [country, setCountry] = useState14(userProfile && userProfile.country || "Espa\xF1a");
+    const [phone, setPhone] = useState14(userProfile && userProfile.phone || "+34 612 345 678");
+    const [avatarUrl, setAvatarUrl] = useState14(userProfile && userProfile.avatarUrl || "");
+    const [currentPassword, setCurrentPassword] = useState14("");
+    const [newPassword, setNewPassword] = useState14("");
+    const [confirmPassword, setConfirmPassword] = useState14("");
+    const [passwordMsg, setPasswordMsg] = useState14({ text: "", type: "" });
+    const [djSoftware, setDjSoftware] = useState14(userProfile && userProfile.djSoftware || "Serato DJ Pro");
+    const [audioInterface, setAudioInterface] = useState14(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
+    const [targetLufs, setTargetLufs] = useState14(userProfile && userProfile.targetLufs || -9);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState14(userProfile ? userProfile.autoSave !== false : true);
+    const [sessionNameInput, setSessionNameInput] = useState14("");
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState14("");
+    const [savedPaymentMethods, setSavedPaymentMethods] = useState14([
       { id: "pm_card_main", type: "card", brand: "Mastercard", last4: "4242", exp: "08/29", holder: "Alejandro Rueda", isDefault: true },
       { id: "pm_applepay", type: "applepay", label: "Apple Pay (Wallet)", isDefault: false }
     ]);
-    const [showAddPaymentForm, setShowAddPaymentForm] = useState15(false);
-    const [newMethodType, setNewMethodType] = useState15("card");
-    const [newCardNumber, setNewCardNumber] = useState15("");
-    const [newCardExpiry, setNewCardExpiry] = useState15("");
-    const [newCardCvc, setNewCardCvc] = useState15("");
-    const [newCardHolder, setNewCardHolder] = useState15("Alejandro Rueda");
-    const [paypalEmail, setPaypalEmail] = useState15("");
-    const [demoFilled, setDemoFilled] = useState15(false);
-    const [billingMsg, setBillingMsg] = useState15({ text: "", type: "" });
-    const [fiscalName, setFiscalName] = useState15(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
-    const [fiscalTaxId, setFiscalTaxId] = useState15(userProfile && userProfile.taxId || "ES-48765432-W");
-    const [fiscalAddress, setFiscalAddress] = useState15(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
-    const [fiscalCity, setFiscalCity] = useState15(userProfile && userProfile.fiscalCity || "Madrid");
-    const [fiscalZip, setFiscalZip] = useState15(userProfile && userProfile.fiscalZip || "28013");
-    const [fiscalCountry, setFiscalCountry] = useState15(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
+    const [showAddPaymentForm, setShowAddPaymentForm] = useState14(false);
+    const [newMethodType, setNewMethodType] = useState14("card");
+    const [newCardNumber, setNewCardNumber] = useState14("");
+    const [newCardExpiry, setNewCardExpiry] = useState14("");
+    const [newCardCvc, setNewCardCvc] = useState14("");
+    const [newCardHolder, setNewCardHolder] = useState14("Alejandro Rueda");
+    const [paypalEmail, setPaypalEmail] = useState14("");
+    const [demoFilled, setDemoFilled] = useState14(false);
+    const [billingMsg, setBillingMsg] = useState14({ text: "", type: "" });
+    const [fiscalName, setFiscalName] = useState14(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
+    const [fiscalTaxId, setFiscalTaxId] = useState14(userProfile && userProfile.taxId || "ES-48765432-W");
+    const [fiscalAddress, setFiscalAddress] = useState14(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
+    const [fiscalCity, setFiscalCity] = useState14(userProfile && userProfile.fiscalCity || "Madrid");
+    const [fiscalZip, setFiscalZip] = useState14(userProfile && userProfile.fiscalZip || "28013");
+    const [fiscalCountry, setFiscalCountry] = useState14(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
     const fileInputRef = React.useRef(null);
     const handleAvatarUpload = (e) => {
       const file = e.target.files && e.target.files[0];
@@ -8288,7 +8285,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setSaveSuccessMsg(`\u2713 Sesi\xF3n "${name}" guardada con \xE9xito`);
       setTimeout(() => setSaveSuccessMsg(""), 3e3);
     };
-    useEffect16(() => {
+    useEffect15(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -9001,10 +8998,10 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
 
   // web/js/modals/BitacoraModal.jsx
-  var { useState: useState16, useEffect: useEffect17, useRef: useRef16 } = React;
+  var { useState: useState15, useEffect: useEffect16, useRef: useRef15 } = React;
   var BitacoraDetailContent = ({ entry, onBack, onClose, onOpenBeatgridStudio, tracks = [] }) => {
     if (!entry) return null;
-    const [copied, setCopied] = useState16(false);
+    const [copied, setCopied] = useState15(false);
     const handleCopy = () => {
       const fullText = `=== BIT\xC1CORA BEATWAVE PRO ===
 Operaci\xF3n: ${entry.action || "--"}
@@ -9158,10 +9155,10 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries, onOpenBeatgridStudio, tracks = [] }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_bitacora_drawer_width", 540);
-    const [filterCategory, setFilterCategory] = useState16("all");
-    const [selectedIds, setSelectedIds] = useState16(() => new Set(entries.map((e) => e.id)));
-    const [searchTerm, setSearchTerm] = useState16("");
-    const [detailEntry, setDetailEntry] = useState16(null);
+    const [filterCategory, setFilterCategory] = useState15("all");
+    const [selectedIds, setSelectedIds] = useState15(() => new Set(entries.map((e) => e.id)));
+    const [searchTerm, setSearchTerm] = useState15("");
+    const [detailEntry, setDetailEntry] = useState15(null);
     const filteredEntries = entries.filter((e) => {
       const matchesCategory = filterCategory === "all" || e.category === filterCategory;
       const matchesSearch = !searchTerm || e.trackTitle && e.trackTitle.toLowerCase().includes(searchTerm.toLowerCase()) || e.action && e.action.toLowerCase().includes(searchTerm.toLowerCase()) || e.detailsAfter && e.detailsAfter.toLowerCase().includes(searchTerm.toLowerCase());
@@ -9395,7 +9392,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/DJShortcutsModal.jsx
-  var { useState: useState17, useEffect: useEffect18, useMemo: useMemo5 } = React;
+  var { useState: useState16, useEffect: useEffect17, useMemo: useMemo4 } = React;
   var detectClientOS = () => {
     var _a;
     if (typeof window === "undefined" || typeof navigator === "undefined") return "mac";
@@ -9407,8 +9404,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
   var DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     if (!isOpen) return null;
-    const detectedOS = useMemo5(() => detectClientOS(), []);
-    const [selectedOS, setSelectedOS] = useState17(() => detectedOS);
+    const detectedOS = useMemo4(() => detectClientOS(), []);
+    const [selectedOS, setSelectedOS] = useState16(() => detectedOS);
     const isMac = selectedOS === "mac";
     const modKey = isMac ? "\u2318" : "Ctrl";
     const altKey = isMac ? "\u2325" : "Alt";
@@ -9523,7 +9520,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/InteractiveManualModal.jsx
-  var { useState: useState18, useEffect: useEffect19, useRef: useRef17 } = React;
+  var { useState: useState17, useEffect: useEffect18, useRef: useRef16 } = React;
   var MANUAL_SECTIONS = {
     copilot: {
       id: "copilot",
@@ -9827,23 +9824,23 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_manual_drawer_width", 540);
-    const [isFolded, setIsFolded] = useState18(false);
-    const [activeSectionKey, setActiveSectionKey] = useState18(initialSection || "audit");
+    const [isFolded, setIsFolded] = useState17(false);
+    const [activeSectionKey, setActiveSectionKey] = useState17(initialSection || "audit");
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
-    const [simStep, setSimStep] = useState18(0);
-    const [isSimPlaying, setIsSimPlaying] = useState18(true);
-    const [simSpeed, setSimSpeed] = useState18(1);
-    const [zoomFocus, setZoomFocus] = useState18(null);
-    const [activeManualTab, setActiveManualTab] = useState18("all");
-    const canvasRef = useRef17(null);
-    useEffect19(() => {
+    const [simStep, setSimStep] = useState17(0);
+    const [isSimPlaying, setIsSimPlaying] = useState17(true);
+    const [simSpeed, setSimSpeed] = useState17(1);
+    const [zoomFocus, setZoomFocus] = useState17(null);
+    const [activeManualTab, setActiveManualTab] = useState17("all");
+    const canvasRef = useRef16(null);
+    useEffect18(() => {
       if (initialSection && MANUAL_SECTIONS[initialSection]) {
         setActiveSectionKey(initialSection);
         setSimStep(0);
         setZoomFocus(null);
       }
     }, [initialSection]);
-    useEffect19(() => {
+    useEffect18(() => {
       if (!isSimPlaying) return;
       const interval = simSpeed === 2 ? 1500 : 3e3;
       const timer = setInterval(() => {
@@ -9851,7 +9848,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }, interval);
       return () => clearInterval(timer);
     }, [isSimPlaying, activeSectionKey, simSpeed]);
-    useEffect19(() => {
+    useEffect18(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -9869,7 +9866,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         window.removeEventListener("popstate", handlePopState);
       };
     }, [onClose]);
-    useEffect19(() => {
+    useEffect18(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -10758,10 +10755,10 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/MixOracleModal.jsx
-  var { useState: useState19, useEffect: useEffect20, useMemo: useMemo6 } = React;
+  var { useState: useState18, useEffect: useEffect19, useMemo: useMemo5 } = React;
 
   // web/js/modals/UnifiedLibraryBrowserModal.jsx
-  var { useState: useState20, useEffect: useEffect21 } = React;
+  var { useState: useState19, useEffect: useEffect20 } = React;
   var UnifiedLibraryBrowserModal = ({
     isOpen = false,
     onClose = () => {
@@ -10779,15 +10776,15 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     isAppendMode = false
   }) => {
     if (!isOpen) return null;
-    const [currentPath, setCurrentPath] = useState20(initialPath || "");
-    const [parentPath, setParentPath] = useState20("");
-    const [folders, setFolders] = useState20([]);
-    const [files, setFiles] = useState20([]);
-    const [loading, setLoading] = useState20(false);
-    const [activeTab, setActiveTab] = useState20("folders");
-    const [stagedFolders, setStagedFolders] = useState20([]);
-    const [stagedFiles, setStagedFiles] = useState20([]);
-    const [selectedLibId, setSelectedLibId] = useState20(() => {
+    const [currentPath, setCurrentPath] = useState19(initialPath || "");
+    const [parentPath, setParentPath] = useState19("");
+    const [folders, setFolders] = useState19([]);
+    const [files, setFiles] = useState19([]);
+    const [loading, setLoading] = useState19(false);
+    const [activeTab, setActiveTab] = useState19("folders");
+    const [stagedFolders, setStagedFolders] = useState19([]);
+    const [stagedFiles, setStagedFiles] = useState19([]);
+    const [selectedLibId, setSelectedLibId] = useState19(() => {
       if (activeCustomLibId) return activeCustomLibId;
       if (customLibraries && customLibraries.length > 0) return customLibraries[0].id;
       return "";
@@ -10821,7 +10818,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       setLoading(false);
     };
-    useEffect21(() => {
+    useEffect20(() => {
       fetchDirectoryListing(initialPath);
     }, [initialPath]);
     const handleAbrirFinder = async () => {
@@ -11057,7 +11054,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/workspaces/AuditWorkspace.jsx
-  var { useState: useState21, useEffect: useEffect22, useRef: useRef18, useCallback: useCallback9, useMemo: useMemo7 } = React;
+  var { useState: useState20, useEffect: useEffect21, useRef: useRef17, useCallback: useCallback8, useMemo: useMemo6 } = React;
   var CompactHotCuesSummary = ({ track, cues = NV2_COLORS2, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
     const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
@@ -11125,31 +11122,31 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     onOpenBeatgridStudio
   }) => {
     var _a;
-    const [localRutaOrigen, setLocalRutaOrigen] = useState21("");
+    const [localRutaOrigen, setLocalRutaOrigen] = useState20("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
-    const [selectedLooseFiles, setSelectedLooseFiles] = useState21([]);
-    const [isAuditing, setIsAuditing] = useState21(false);
-    const [isLoadingDir, setIsLoadingDir] = useState21(false);
-    const [isExporting, setIsExporting] = useState21(false);
-    const [isInjecting, setIsInjecting] = useState21(false);
-    const [metrics, setMetrics] = useState21({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
-    const [filtro, setFiltro] = useState21("todos");
-    const [busqueda, setBusqueda] = useState21("");
-    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState21("ALL");
-    const [batchModalOpen, setBatchModalOpen] = useState21(false);
-    const [duplicateModalOpen, setDuplicateModalOpen] = useState21(false);
-    const [batchProgress, setBatchProgress] = useState21(0);
-    const [batchStatusMsg, setBatchStatusMsg] = useState21("");
-    const [saveFeedback, setSaveFeedback] = useState21("");
-    const [sidebarOpen, setSidebarOpen] = useState21(false);
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState20([]);
+    const [isAuditing, setIsAuditing] = useState20(false);
+    const [isLoadingDir, setIsLoadingDir] = useState20(false);
+    const [isExporting, setIsExporting] = useState20(false);
+    const [isInjecting, setIsInjecting] = useState20(false);
+    const [metrics, setMetrics] = useState20({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    const [filtro, setFiltro] = useState20("todos");
+    const [busqueda, setBusqueda] = useState20("");
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState20("ALL");
+    const [batchModalOpen, setBatchModalOpen] = useState20(false);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState20(false);
+    const [batchProgress, setBatchProgress] = useState20(0);
+    const [batchStatusMsg, setBatchStatusMsg] = useState20("");
+    const [saveFeedback, setSaveFeedback] = useState20("");
+    const [sidebarOpen, setSidebarOpen] = useState20(false);
     const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 540);
     const { width: columnsDrawerWidth, onPointerDown: onColumnsResizeDown, resetWidth: onColumnsResetWidth } = useDrawerResize("bw_columns_drawer_width", 540);
-    const [exportDropdownOpen, setExportDropdownOpen] = useState21(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState21("analizar");
-    const [batchConfigured, setBatchConfigured] = useState21(false);
-    const [isAppendMode, setIsAppendMode] = useState21(false);
-    const [batchConfigOpts, setBatchConfigOpts] = useState21({
+    const [exportDropdownOpen, setExportDropdownOpen] = useState20(false);
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState20("analizar");
+    const [batchConfigured, setBatchConfigured] = useState20(false);
+    const [isAppendMode, setIsAppendMode] = useState20(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState20({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -11165,12 +11162,12 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       stripWhitespace: true,
       onlyIncomplete: false
     });
-    const [mixOracleOpen, setMixOracleOpen] = useState21(false);
-    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState21(null);
-    const [selectedAuditIds, setSelectedAuditIds] = useState21(/* @__PURE__ */ new Set());
-    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState21(false);
-    const [deleteModalState, setDeleteModalState] = useState21({ open: false, tracks: [], mode: "trash" });
-    const [saveModalState, setSaveModalState] = useState21({
+    const [mixOracleOpen, setMixOracleOpen] = useState20(false);
+    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState20(null);
+    const [selectedAuditIds, setSelectedAuditIds] = useState20(/* @__PURE__ */ new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState20(false);
+    const [deleteModalState, setDeleteModalState] = useState20({ open: false, tracks: [], mode: "trash" });
+    const [saveModalState, setSaveModalState] = useState20({
       open: false,
       tracks: [],
       fields: {
@@ -11182,35 +11179,35 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         cover: true
       }
     });
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState21(() => {
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState20(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
         return false;
       }
     });
-    const [internalTracks, setInternalTracks] = useState21([]);
+    const [internalTracks, setInternalTracks] = useState20([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
-    const [fftModalOpen, setFftModalOpen] = useState21(false);
-    const [fftAnalysisData, setFftAnalysisData] = useState21(null);
-    const [isAnalyzingFft, setIsAnalyzingFft] = useState21(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState21(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState21("");
-    const [fsParentPath, setFsParentPath] = useState21("");
-    const [fsFolders, setFsFolders] = useState21([]);
-    const [fsFiles, setFsFiles] = useState21([]);
-    const [selectedFsFiles, setSelectedFsFiles] = useState21([]);
-    const [stagedFolders, setStagedFolders] = useState21([]);
-    const [stagedFiles, setStagedFiles] = useState21([]);
-    const [fsActiveTab, setFsActiveTab] = useState21("folders");
-    const [fsLoading, setFsLoading] = useState21(false);
-    const [camelotModalOpen, setCamelotModalOpen] = useState21(false);
-    const tapTimesRef = useRef18([]);
-    const tableScrollRef = useRef18(null);
-    const isProcessCancelledRef = useRef18(false);
-    const activeAbortControllerRef = useRef18(null);
-    const [metricsCollapsed, setMetricsCollapsed] = useState21(() => {
+    const [fftModalOpen, setFftModalOpen] = useState20(false);
+    const [fftAnalysisData, setFftAnalysisData] = useState20(null);
+    const [isAnalyzingFft, setIsAnalyzingFft] = useState20(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState20("");
+    const [fsParentPath, setFsParentPath] = useState20("");
+    const [fsFolders, setFsFolders] = useState20([]);
+    const [fsFiles, setFsFiles] = useState20([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState20([]);
+    const [stagedFolders, setStagedFolders] = useState20([]);
+    const [stagedFiles, setStagedFiles] = useState20([]);
+    const [fsActiveTab, setFsActiveTab] = useState20("folders");
+    const [fsLoading, setFsLoading] = useState20(false);
+    const [camelotModalOpen, setCamelotModalOpen] = useState20(false);
+    const tapTimesRef = useRef17([]);
+    const tableScrollRef = useRef17(null);
+    const isProcessCancelledRef = useRef17(false);
+    const activeAbortControllerRef = useRef17(null);
+    const [metricsCollapsed, setMetricsCollapsed] = useState20(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
       } catch (e) {
@@ -11227,20 +11224,20 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         return next;
       });
     };
-    useEffect22(() => {
+    useEffect21(() => {
       const handleToggleEvent = () => toggleMetricsCollapsed();
       window.addEventListener("bw:toggle-metrics", handleToggleEvent);
       return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
     }, []);
-    useEffect22(() => {
+    useEffect21(() => {
       if (tracks && tracks.length > 0) {
         setMetricsCollapsed(false);
       }
     }, [tracks && tracks.length > 0]);
-    const [selectedCueId, setSelectedCueId] = useState21(1);
-    const [snapToGrid, setSnapToGrid] = useState21(true);
-    const [showBeatgrid, setShowBeatgrid] = useState21(true);
-    const [cueStudioModalOpen, setCueStudioModalOpen] = useState21(false);
+    const [selectedCueId, setSelectedCueId] = useState20(1);
+    const [snapToGrid, setSnapToGrid] = useState20(true);
+    const [showBeatgrid, setShowBeatgrid] = useState20(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState20(false);
     const currentTrack = tracks.find((t2) => t2.id === selectedTrack) || tracks[0] || {};
     const resetAuditWorkspace = (keepFolder = false) => {
       if (!keepFolder) {
@@ -11280,7 +11277,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    useEffect22(() => {
+    useEffect21(() => {
       const handleAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -11433,7 +11430,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       );
       setTimeout(() => setSaveFeedback(""), 4e3);
     };
-    useEffect22(() => {
+    useEffect21(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
           isAuditing,
@@ -11442,7 +11439,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         });
       }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
-    useEffect22(() => {
+    useEffect21(() => {
       if (!tracks || tracks.length === 0) {
         setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
       } else {
@@ -11628,25 +11625,25 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       return false;
     };
-    const badQualityTracks = useMemo7(() => {
+    const badQualityTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => isBadQualityTrack(t2));
     }, [tracks]);
-    const flacUpgradeTracks = useMemo7(() => {
+    const flacUpgradeTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => isFlacUpgradeCandidate(t2));
     }, [tracks]);
-    const missingMetaTracks = useMemo7(() => {
+    const missingMetaTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido");
     }, [tracks]);
-    const missingCuesTracks = useMemo7(() => {
+    const missingCuesTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues));
     }, [tracks]);
-    const trimmedSilenceTracks = useMemo7(() => {
+    const trimmedSilenceTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim)));
     }, [tracks]);
-    const excellentQualityTracks = useMemo7(() => {
+    const excellentQualityTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320));
     }, [tracks]);
-    const highEnergyTracks = useMemo7(() => {
+    const highEnergyTracks = useMemo6(() => {
       return (tracks || []).filter((t2) => Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75);
     }, [tracks]);
     const handleToggleSelectRow = (id, e) => {
@@ -12846,7 +12843,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
-    const [isAuditPaused, setIsAuditPaused] = useState21(false);
+    const [isAuditPaused, setIsAuditPaused] = useState20(false);
     const handleTogglePausaProceso = async () => {
       const nextState = !isAuditPaused;
       setIsAuditPaused(nextState);
@@ -12902,28 +12899,28 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         }
       }, 2e3);
     };
-    const [auditSortField, setAuditSortField] = useState21("id");
-    const [auditSortDir, setAuditSortDir] = useState21("asc");
-    const [filterHeaderSearch, setFilterHeaderSearch] = useState21("");
-    const [filterHeaderArtist, setFilterHeaderArtist] = useState21("");
-    const [filterHeaderFormat, setFilterHeaderFormat] = useState21("ALL");
-    const [filterHeaderKhz, setFilterHeaderKhz] = useState21("ALL");
-    const [filterHeaderKbps, setFilterHeaderKbps] = useState21("ALL");
-    const [filterHeaderQuality, setFilterHeaderQuality] = useState21("ALL");
-    const [filterHeaderLoss, setFilterHeaderLoss] = useState21("ALL");
-    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState21("ALL");
-    const [filterHeaderLufs, setFilterHeaderLufs] = useState21("ALL");
-    const [filterHeaderDuration, setFilterHeaderDuration] = useState21("");
-    const [filterHeaderBpm, setFilterHeaderBpm] = useState21("");
-    const [filterHeaderKey, setFilterHeaderKey] = useState21("");
-    const [filterHeaderCues, setFilterHeaderCues] = useState21("ALL");
-    const [filterHeaderStatus, setFilterHeaderStatus] = useState21("ALL");
-    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState21("ALL");
-    const [filterHeaderDance, setFilterHeaderDance] = useState21("ALL");
-    const [filterHeaderPhase, setFilterHeaderPhase] = useState21("ALL");
-    const [filterHeaderGenre, setFilterHeaderGenre] = useState21("");
-    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState21("");
-    const [filterHeaderComment, setFilterHeaderComment] = useState21("");
+    const [auditSortField, setAuditSortField] = useState20("id");
+    const [auditSortDir, setAuditSortDir] = useState20("asc");
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState20("");
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState20("");
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState20("ALL");
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState20("ALL");
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState20("ALL");
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState20("ALL");
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState20("ALL");
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState20("ALL");
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState20("ALL");
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState20("");
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState20("");
+    const [filterHeaderKey, setFilterHeaderKey] = useState20("");
+    const [filterHeaderCues, setFilterHeaderCues] = useState20("ALL");
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState20("ALL");
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState20("ALL");
+    const [filterHeaderDance, setFilterHeaderDance] = useState20("ALL");
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState20("ALL");
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState20("");
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState20("");
+    const [filterHeaderComment, setFilterHeaderComment] = useState20("");
     const DEFAULT_AUDIT_COLUMNS = {
       id: true,
       waveform: true,
@@ -13016,7 +13013,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         ]
       }
     ];
-    const [visibleColumns, setVisibleColumns] = useState21(() => {
+    const [visibleColumns, setVisibleColumns] = useState20(() => {
       try {
         const saved = localStorage.getItem("bw_audit_visible_columns");
         if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
@@ -13024,10 +13021,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       return DEFAULT_AUDIT_COLUMNS;
     });
-    const [columnSelectorOpen, setColumnSelectorOpen] = useState21(false);
-    const [columnSearchText, setColumnSearchText] = useState21("");
-    const [isDragOver, setIsDragOver] = useState21(false);
-    const [libraryFolders, setLibraryFolders] = useState21(() => {
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState20(false);
+    const [columnSearchText, setColumnSearchText] = useState20("");
+    const [isDragOver, setIsDragOver] = useState20(false);
+    const [libraryFolders, setLibraryFolders] = useState20(() => {
       try {
         const saved = localStorage.getItem("bw_library_folders_v2");
         if (saved) {
@@ -13043,10 +13040,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         { id: "f_close", name: "04 - Closing & Anthems", color: "cyan", collapsed: false, trackIds: [], subfolders: [] }
       ];
     });
-    const [selectedFolderId, setSelectedFolderId] = useState21("all");
-    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState21(true);
-    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState21(false);
-    const [cloudSyncStatus, setCloudSyncStatus] = useState21({ isSyncing: false, synced: false, lastSyncText: "" });
+    const [selectedFolderId, setSelectedFolderId] = useState20("all");
+    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState20(true);
+    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState20(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState20({ isSyncing: false, synced: false, lastSyncText: "" });
     const handleCloudMetadataSync = async () => {
       setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: "Sincronizando..." });
       try {
@@ -13289,7 +13286,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }, 800);
       }
     };
-    const foldersFlatList = useMemo7(() => {
+    const foldersFlatList = useMemo6(() => {
       const list = [];
       libraryFolders.forEach((f) => {
         list.push({ id: f.id, name: f.name, color: f.color, isSub: false });
@@ -13301,7 +13298,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       });
       return list;
     }, [libraryFolders]);
-    const activeFolderMeta = useMemo7(() => {
+    const activeFolderMeta = useMemo6(() => {
       if (!selectedFolderId || selectedFolderId === "all") return null;
       const target = findFolderOrSub(libraryFolders, selectedFolderId);
       if (!target || !target.folder) return null;
@@ -13396,7 +13393,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       setFilterHeaderPhase("ALL");
       setFilterHeaderComment("");
     };
-    const searchIndex = useMemo7(() => {
+    const searchIndex = useMemo6(() => {
       if (!tracks || tracks.length === 0) return null;
       const tokenMap = /* @__PURE__ */ new Map();
       const tokenize = (str) => {
@@ -13426,8 +13423,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return tokenMap;
     }, [tracks]);
-    const searchBenchmarkRef = useRef18(0.2);
-    const tracksFiltrados = useMemo7(() => {
+    const searchBenchmarkRef = useRef17(0.2);
+    const tracksFiltrados = useMemo6(() => {
       const benchStart = performance.now();
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       let baseTracks = tracks;
@@ -15681,7 +15678,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
   };
 
   // web/js/workspaces/HotCuesWorkspace.jsx
-  var { useState: useState22, useEffect: useEffect23, useRef: useRef19, useCallback: useCallback10, useMemo: useMemo8 } = React;
+  var { useState: useState21, useEffect: useEffect22, useRef: useRef18, useCallback: useCallback9, useMemo: useMemo7 } = React;
   var HotCuesWorkspace = ({
     tracks = [],
     setTracks,
@@ -15706,11 +15703,11 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
-    const [studioMode, setStudioMode] = useState22(propsStudioMode || "cues");
-    useEffect23(() => {
+    const [studioMode, setStudioMode] = useState21(propsStudioMode || "cues");
+    useEffect22(() => {
       if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
-    const [tapTimes, setTapTimes] = useState22([]);
+    const [tapTimes, setTapTimes] = useState21([]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
     const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
@@ -15732,33 +15729,33 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
     };
-    const [zoom, setZoom] = useState22(4);
-    const [snapToGrid, setSnapToGrid] = useState22(true);
-    const [showBeatgrid, setShowBeatgrid] = useState22(true);
-    const [followPlayhead, setFollowPlayhead] = useState22(true);
-    const [selectedCueId, setSelectedCueId] = useState22(1);
-    const [isRegeneratingMood, setIsRegeneratingMood] = useState22(false);
-    const [saveStatus, setSaveStatus] = useState22("");
-    const [isSavingBatch, setIsSavingBatch] = useState22(false);
-    const [filterQuery, setFilterQuery] = useState22("");
-    const [fsBrowserOpen, setFsBrowserOpen] = useState22(false);
-    const [carpetasSistema, setCarpetasSistema] = useState22([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState22(currentFolder || "");
-    const [isLoadingDir, setIsLoadingDir] = useState22(false);
-    const [showTrackListDrawer, setShowTrackListDrawer] = useState22(false);
-    const [pitchPercent, setPitchPercent] = useState22(0);
-    const [pitchRange, setPitchRange] = useState22(8);
-    const [eqBass, setEqBass] = useState22(0);
-    const [eqMid, setEqMid] = useState22(0);
-    const [eqTreble, setEqTreble] = useState22(0);
-    const [mobileDeckMode, setMobileDeckMode] = useState22("pads");
-    const [autoMappingStatus, setAutoMappingStatus] = useState22("");
-    const [cuesVersionMode, setCuesVersionMode] = useState22("estandar");
-    const [cuesEstandar, setCuesEstandar] = useState22(null);
-    const [cuesAcustico, setCuesAcustico] = useState22(null);
-    const [isLoadingComparative, setIsLoadingComparative] = useState22(false);
-    const [showDiferenciasModal, setShowDiferenciasModal] = useState22(false);
-    const [diferenciasData, setDiferenciasData] = useState22(null);
+    const [zoom, setZoom] = useState21(4);
+    const [snapToGrid, setSnapToGrid] = useState21(true);
+    const [showBeatgrid, setShowBeatgrid] = useState21(true);
+    const [followPlayhead, setFollowPlayhead] = useState21(true);
+    const [selectedCueId, setSelectedCueId] = useState21(1);
+    const [isRegeneratingMood, setIsRegeneratingMood] = useState21(false);
+    const [saveStatus, setSaveStatus] = useState21("");
+    const [isSavingBatch, setIsSavingBatch] = useState21(false);
+    const [filterQuery, setFilterQuery] = useState21("");
+    const [fsBrowserOpen, setFsBrowserOpen] = useState21(false);
+    const [carpetasSistema, setCarpetasSistema] = useState21([]);
+    const [rutaNavegacion, setRutaNavegacion] = useState21(currentFolder || "");
+    const [isLoadingDir, setIsLoadingDir] = useState21(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState21(false);
+    const [pitchPercent, setPitchPercent] = useState21(0);
+    const [pitchRange, setPitchRange] = useState21(8);
+    const [eqBass, setEqBass] = useState21(0);
+    const [eqMid, setEqMid] = useState21(0);
+    const [eqTreble, setEqTreble] = useState21(0);
+    const [mobileDeckMode, setMobileDeckMode] = useState21("pads");
+    const [autoMappingStatus, setAutoMappingStatus] = useState21("");
+    const [cuesVersionMode, setCuesVersionMode] = useState21("estandar");
+    const [cuesEstandar, setCuesEstandar] = useState21(null);
+    const [cuesAcustico, setCuesAcustico] = useState21(null);
+    const [isLoadingComparative, setIsLoadingComparative] = useState21(false);
+    const [showDiferenciasModal, setShowDiferenciasModal] = useState21(false);
+    const [diferenciasData, setDiferenciasData] = useState21(null);
     const handleCargarComparativa = async (targetMode = "comparativa") => {
       if (!currentTrack) return;
       setIsLoadingComparative(true);
@@ -16085,15 +16082,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
-    const [cueNameInput, setCueNameInput] = useState22(currentCue.name || "");
-    const [cueTimeInput, setCueTimeInput] = useState22(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState22((currentTrack == null ? void 0 : currentTrack.comment) || "");
-    useEffect23(() => {
+    const [cueNameInput, setCueNameInput] = useState21(currentCue.name || "");
+    const [cueTimeInput, setCueTimeInput] = useState21(currentCue.time || "00:00.00");
+    const [tacticalComment, setTacticalComment] = useState21((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    useEffect22(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
     }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
-    useEffect23(() => {
+    useEffect22(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -17538,7 +17535,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
   };
 
   // web/js/workspaces/SpotifyWorkspace.jsx
-  var { useState: useState23, useEffect: useEffect24, useRef: useRef20, useCallback: useCallback11, useMemo: useMemo9 } = React;
+  var { useState: useState22, useEffect: useEffect23, useRef: useRef19, useCallback: useCallback10, useMemo: useMemo8 } = React;
   var SpotifyWorkspace = ({
     tracks: externalTracks,
     setTracks: externalSetTracks,
@@ -17553,7 +17550,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     onSaveCustomLibraries = null
   }) => {
     var _a, _b;
-    const [internalTracks, setInternalTracks] = useState23([]);
+    const [internalTracks, setInternalTracks] = useState22([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
     const handleCargarColeccion = (targetLibId = null) => {
@@ -17583,10 +17580,10 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         setTracks(colTracks);
       }
     };
-    const [spotifyUrl, setSpotifyUrl] = useState23("");
-    const [isAnalyzing, setIsAnalyzing] = useState23(false);
-    const [destDir, setDestDir] = useState23("/Users/admin/Music/mi musica");
-    useEffect24(() => {
+    const [spotifyUrl, setSpotifyUrl] = useState22("");
+    const [isAnalyzing, setIsAnalyzing] = useState22(false);
+    const [destDir, setDestDir] = useState22("/Users/admin/Music/mi musica");
+    useEffect23(() => {
       fetch("/api/directorio_descarga").then((r) => r.json()).then((data) => {
         if (data && data.path && typeof data.path === "string" && data.path.startsWith("/") && !data.path.includes('"') && !data.path.includes(":")) {
           setDestDir(data.path);
@@ -17594,23 +17591,23 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }).catch(() => {
       });
     }, []);
-    const [selectedFormat, setSelectedFormat] = useState23("flac");
-    const [downloadingMsg, setDownloadingMsg] = useState23("");
-    const [downloadProgress, setDownloadProgress] = useState23(0);
-    const [isDownloading, setIsDownloading] = useState23(false);
-    const [isAuditingFft, setIsAuditingFft] = useState23(false);
-    const [fftProgress, setFftProgress] = useState23(0);
-    const [fftMsg, setFftMsg] = useState23("");
-    const [selectedId, setSelectedId] = useState23(null);
-    const [spInspectorOpen, setSpInspectorOpen] = useState23(false);
+    const [selectedFormat, setSelectedFormat] = useState22("flac");
+    const [downloadingMsg, setDownloadingMsg] = useState22("");
+    const [downloadProgress, setDownloadProgress] = useState22(0);
+    const [isDownloading, setIsDownloading] = useState22(false);
+    const [isAuditingFft, setIsAuditingFft] = useState22(false);
+    const [fftProgress, setFftProgress] = useState22(0);
+    const [fftMsg, setFftMsg] = useState22("");
+    const [selectedId, setSelectedId] = useState22(null);
+    const [spInspectorOpen, setSpInspectorOpen] = useState22(false);
     const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 540);
     const { width: poolColumnsDrawerWidth, onPointerDown: onPoolColumnsResizeDown, resetWidth: onPoolColumnsResetWidth } = useDrawerResize("bw_pool_columns_drawer_width", 540);
-    const [downloadSession, setDownloadSession] = useState23({ downloaded: [], failed: [] });
-    const [spSubView, setSpSubView] = useState23("catalog");
-    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState23(/* @__PURE__ */ new Set());
-    const [isExportingXls, setIsExportingXls] = useState23(false);
-    const [xlsToast, setXlsToast] = useState23("");
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState23(() => {
+    const [downloadSession, setDownloadSession] = useState22({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState22("catalog");
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState22(/* @__PURE__ */ new Set());
+    const [isExportingXls, setIsExportingXls] = useState22(false);
+    const [xlsToast, setXlsToast] = useState22("");
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState22(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
@@ -17624,7 +17621,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (e) {
       }
     };
-    const [candidateModal, setCandidateModal] = useState23({
+    const [candidateModal, setCandidateModal] = useState22({
       open: false,
       targetTrack: null,
       candidates: [],
@@ -17715,12 +17712,12 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }));
       setCandidateModal((prev) => ({ ...prev, open: false }));
     };
-    const [fsBrowserOpen, setFsBrowserOpen] = useState23(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState23("");
-    const [fsParentPath, setFsParentPath] = useState23("");
-    const [fsFolders, setFsFolders] = useState23([]);
-    const [fsLoading, setFsLoading] = useState23(false);
-    useEffect24(() => {
+    const [fsBrowserOpen, setFsBrowserOpen] = useState22(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState22("");
+    const [fsParentPath, setFsParentPath] = useState22("");
+    const [fsFolders, setFsFolders] = useState22([]);
+    const [fsLoading, setFsLoading] = useState22(false);
+    useEffect23(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
@@ -18031,7 +18028,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (_) {
       }
     };
-    const [poolVisibleColumns, setPoolVisibleColumns] = useState23(() => {
+    const [poolVisibleColumns, setPoolVisibleColumns] = useState22(() => {
       try {
         const saved = localStorage.getItem("bw_pool_visible_columns");
         if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
@@ -18039,9 +18036,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
       return DEFAULT_POOL_COLUMNS;
     });
-    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState23(false);
-    const [poolColumnSearchText, setPoolColumnSearchText] = useState23("");
-    useEffect24(() => {
+    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState22(false);
+    const [poolColumnSearchText, setPoolColumnSearchText] = useState22("");
+    useEffect23(() => {
       if (!poolColumnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -18104,27 +18101,27 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         return next;
       });
     };
-    const [spSortField, setSpSortField] = useState23("title");
-    const [spSortDir, setSpSortDir] = useState23("asc");
-    const [spFilterSearch, setSpFilterSearch] = useState23("");
-    const [spFilterArtist, setSpFilterArtist] = useState23("");
-    const [spFilterGenre, setSpFilterGenre] = useState23("ALL");
-    const [spFilterSubgenre, setSpFilterSubgenre] = useState23("");
-    const [spFilterOrigin, setSpFilterOrigin] = useState23("ALL");
-    const [spFilterMatch, setSpFilterMatch] = useState23("ALL");
-    const [spFilterPreQuality, setSpFilterPreQuality] = useState23("ALL");
-    const [spFilterFormat, setSpFilterFormat] = useState23("ALL");
-    const [spFilterKhz, setSpFilterKhz] = useState23("ALL");
-    const [spFilterKbps, setSpFilterKbps] = useState23("ALL");
-    const [spFilterQuality, setSpFilterQuality] = useState23("ALL");
-    const [spFilterCutoff, setSpFilterCutoff] = useState23("ALL");
-    const [spFilterDuration, setSpFilterDuration] = useState23("");
-    const [spFilterBpm, setSpFilterBpm] = useState23("");
-    const [spFilterKey, setSpFilterKey] = useState23("ALL");
-    const [spFilterEnergy, setSpFilterEnergy] = useState23("ALL");
-    const [spFilterDance, setSpFilterDance] = useState23("ALL");
-    const [spFilterStatus, setSpFilterStatus] = useState23("ALL");
-    const poolUniqueGenres = useMemo9(() => {
+    const [spSortField, setSpSortField] = useState22("title");
+    const [spSortDir, setSpSortDir] = useState22("asc");
+    const [spFilterSearch, setSpFilterSearch] = useState22("");
+    const [spFilterArtist, setSpFilterArtist] = useState22("");
+    const [spFilterGenre, setSpFilterGenre] = useState22("ALL");
+    const [spFilterSubgenre, setSpFilterSubgenre] = useState22("");
+    const [spFilterOrigin, setSpFilterOrigin] = useState22("ALL");
+    const [spFilterMatch, setSpFilterMatch] = useState22("ALL");
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState22("ALL");
+    const [spFilterFormat, setSpFilterFormat] = useState22("ALL");
+    const [spFilterKhz, setSpFilterKhz] = useState22("ALL");
+    const [spFilterKbps, setSpFilterKbps] = useState22("ALL");
+    const [spFilterQuality, setSpFilterQuality] = useState22("ALL");
+    const [spFilterCutoff, setSpFilterCutoff] = useState22("ALL");
+    const [spFilterDuration, setSpFilterDuration] = useState22("");
+    const [spFilterBpm, setSpFilterBpm] = useState22("");
+    const [spFilterKey, setSpFilterKey] = useState22("ALL");
+    const [spFilterEnergy, setSpFilterEnergy] = useState22("ALL");
+    const [spFilterDance, setSpFilterDance] = useState22("ALL");
+    const [spFilterStatus, setSpFilterStatus] = useState22("ALL");
+    const poolUniqueGenres = useMemo8(() => {
       const set = /* @__PURE__ */ new Set();
       (tracks || []).forEach((t2) => {
         if (t2.genre && typeof t2.genre === "string") set.add(t2.genre.trim());
@@ -18170,7 +18167,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       if (spSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, spSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const tracksFiltradosSp = useMemo9(() => {
+    const tracksFiltradosSp = useMemo8(() => {
       let result = tracks.filter((t2) => {
         if (spFilterSearch) {
           const term = spFilterSearch.toLowerCase();
@@ -19818,7 +19815,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/TaxonomyWorkspace.jsx
-  var { useState: useState24, useEffect: useEffect25, useRef: useRef21, useMemo: useMemo10, useCallback: useCallback12 } = React;
+  var { useState: useState23, useEffect: useEffect24, useRef: useRef20, useMemo: useMemo9, useCallback: useCallback11 } = React;
   var TaxonomyWorkspace = ({
     tracks = [],
     onTracksUpdated,
@@ -19834,21 +19831,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onAddTracksToSpotify,
     onRemoveTrack
   }) => {
-    const [activeSubView, setActiveSubView] = useState24("search");
-    const [searchScope, setSearchScope] = useState24("all");
-    const [isSearchingOnline, setIsSearchingOnline] = useState24(false);
-    const [onlineResults, setOnlineResults] = useState24([]);
-    const [searchLocalResults, setSearchLocalResults] = useState24([]);
-    const [hasExecutedSearch, setHasExecutedSearch] = useState24(false);
-    const [selectedTaxIds, setSelectedTaxIds] = useState24(/* @__PURE__ */ new Set());
-    const [displayMode, setDisplayMode] = useState24("table");
-    const [taxSortField, setTaxSortField] = useState24("matchScore");
-    const [taxSortDir, setTaxSortDir] = useState24("desc");
-    const [taxFilterSearch, setTaxFilterSearch] = useState24("");
-    const [taxFilterGenre, setTaxFilterGenre] = useState24("ALL");
-    const [taxFilterOrigin, setTaxFilterOrigin] = useState24("ALL");
-    const [taxFilterEnergy, setTaxFilterEnergy] = useState24("ALL");
-    const [taxFilterDance, setTaxFilterDance] = useState24("ALL");
+    const [activeSubView, setActiveSubView] = useState23("search");
+    const [searchScope, setSearchScope] = useState23("all");
+    const [isSearchingOnline, setIsSearchingOnline] = useState23(false);
+    const [onlineResults, setOnlineResults] = useState23([]);
+    const [searchLocalResults, setSearchLocalResults] = useState23([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState23(false);
+    const [selectedTaxIds, setSelectedTaxIds] = useState23(/* @__PURE__ */ new Set());
+    const [displayMode, setDisplayMode] = useState23("table");
+    const [taxSortField, setTaxSortField] = useState23("matchScore");
+    const [taxSortDir, setTaxSortDir] = useState23("desc");
+    const [taxFilterSearch, setTaxFilterSearch] = useState23("");
+    const [taxFilterGenre, setTaxFilterGenre] = useState23("ALL");
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState23("ALL");
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState23("ALL");
+    const [taxFilterDance, setTaxFilterDance] = useState23("ALL");
     const handleSortTax = (field) => {
       setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
       setTaxSortField(field);
@@ -19857,18 +19854,18 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const [aiQuery, setAiQuery] = useState24("");
-    const [selectedGenreFilter, setSelectedGenreFilter] = useState24("ALL");
-    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState24("ALL");
-    const [selectedVersionFilter, setSelectedVersionFilter] = useState24("ALL");
-    const [selectedBpmFilter, setSelectedBpmFilter] = useState24("ALL");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState24("ALL");
-    const [selectedMoodFilter, setSelectedMoodFilter] = useState24("ALL");
-    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState24(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState24(false);
-    const [feedbackMsg, setFeedbackMsg] = useState24("");
-    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState24(false);
-    const [activeTagTab, setActiveTagTab] = useState24("bpm");
+    const [aiQuery, setAiQuery] = useState23("");
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState23("ALL");
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState23("ALL");
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState23("ALL");
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState23("ALL");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState23("ALL");
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState23("ALL");
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState23(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState23(false);
+    const [feedbackMsg, setFeedbackMsg] = useState23("");
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState23(false);
+    const [activeTagTab, setActiveTagTab] = useState23("bpm");
     const handleRemoveToken = (tok) => {
       if (!tok) return;
       let newQuery = aiQuery;
@@ -19889,20 +19886,20 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setIsAddTagMenuOpen(false);
       handleEjecutarBusqueda(newQuery);
     };
-    const [rutaBase, setRutaBase] = useState24("/Users/admin/Music/mi musica");
-    const [modo, setModo] = useState24("copy");
-    const [isRouting, setIsRouting] = useState24(false);
-    const [routeProgress, setRouteProgress] = useState24(0);
-    const [routeStatusMsg, setRouteStatusMsg] = useState24("");
-    const [resultSummary, setResultSummary] = useState24(null);
-    const [expandedGenre, setExpandedGenre] = useState24("Techno");
-    const [searchTerm, setSearchTerm] = useState24("");
-    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState24(null);
-    useEffect25(() => {
+    const [rutaBase, setRutaBase] = useState23("/Users/admin/Music/mi musica");
+    const [modo, setModo] = useState23("copy");
+    const [isRouting, setIsRouting] = useState23(false);
+    const [routeProgress, setRouteProgress] = useState23(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState23("");
+    const [resultSummary, setResultSummary] = useState23(null);
+    const [expandedGenre, setExpandedGenre] = useState23("Techno");
+    const [searchTerm, setSearchTerm] = useState23("");
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState23(null);
+    useEffect24(() => {
       handleEjecutarBusqueda("");
     }, []);
-    const parsedQuery = useMemo10(() => parseAIDJQuery(aiQuery), [aiQuery]);
-    const localTracks = useMemo10(() => {
+    const parsedQuery = useMemo9(() => parseAIDJQuery(aiQuery), [aiQuery]);
+    const localTracks = useMemo9(() => {
       return (Array.isArray(tracks) ? tracks : []).map((t) => ({
         ...t,
         isLocal: true,
@@ -19918,7 +19915,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         displayCover: t.cover || (t.path ? `/cover?path=${encodeURIComponent(t.path)}` : null)
       }));
     }, [tracks]);
-    const catalogTracks = useMemo10(() => {
+    const catalogTracks = useMemo9(() => {
       return DJ_CURATED_CATALOG.map((t) => ({
         ...t,
         isCatalog: true,
@@ -19934,7 +19931,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         displayCover: t.cover
       }));
     }, []);
-    const allPoolTracks = useMemo10(() => {
+    const allPoolTracks = useMemo9(() => {
       const combinedLocals = searchLocalResults.length > 0 ? searchLocalResults : localTracks;
       const combinedOnline = onlineResults.length > 0 ? onlineResults : catalogTracks;
       if (searchScope === "local") {
@@ -20002,7 +19999,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         setTimeout(() => setFeedbackMsg(""), 4500);
       }
     };
-    const searchResults = useMemo10(() => {
+    const searchResults = useMemo9(() => {
       const hasTextQuery = Boolean(aiQuery && aiQuery.trim().length > 0);
       const qLower = (aiQuery || "").toLowerCase().trim();
       const queryWords = qLower.split(/\s+/).filter((w) => w.length >= 2 && !["para", "con", "del", "the", "los", "las", "por", "and"].includes(w));
@@ -21406,7 +21403,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/ShazamWorkspace.jsx
-  var { useState: useState25, useEffect: useEffect26, useRef: useRef22, useCallback: useCallback13 } = React;
+  var { useState: useState24, useEffect: useEffect25, useRef: useRef21, useCallback: useCallback12 } = React;
   var MAX_UPLOAD_BYTES = 45 * 1024 * 1024;
   var ShazamWorkspace = ({
     onSendToSpotify,
@@ -21417,56 +21414,56 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onSaveCustomLibraries = null
   }) => {
     var _a, _b;
-    const [isListening, setIsListening] = useState25(false);
-    const [countdown, setCountdown] = useState25(10);
-    const [isAnalyzing, setIsAnalyzing] = useState25(false);
-    const [statusMsg, setStatusMsg] = useState25("");
-    const [identifiedTrack, setIdentifiedTrack] = useState25(null);
-    const [history, setHistory] = useState25([]);
-    const [previewPlaying, setPreviewPlaying] = useState25(false);
-    const [micLevel, setMicLevel] = useState25(0);
-    const audioRef = useRef22(new Audio());
-    const mediaRecorderRef = useRef22(null);
-    const audioStreamRef = useRef22(null);
-    const fileInputRef = useRef22(null);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState25(false);
-    const timerRef = useRef22(null);
-    const animFrameRef = useRef22(null);
-    const audioCtxRef = useRef22(null);
-    const [dragOver, setDragOver] = useState25(false);
-    const [selectedEngine, setSelectedEngine] = useState25(() => {
+    const [isListening, setIsListening] = useState24(false);
+    const [countdown, setCountdown] = useState24(10);
+    const [isAnalyzing, setIsAnalyzing] = useState24(false);
+    const [statusMsg, setStatusMsg] = useState24("");
+    const [identifiedTrack, setIdentifiedTrack] = useState24(null);
+    const [history, setHistory] = useState24([]);
+    const [previewPlaying, setPreviewPlaying] = useState24(false);
+    const [micLevel, setMicLevel] = useState24(0);
+    const audioRef = useRef21(new Audio());
+    const mediaRecorderRef = useRef21(null);
+    const audioStreamRef = useRef21(null);
+    const fileInputRef = useRef21(null);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState24(false);
+    const timerRef = useRef21(null);
+    const animFrameRef = useRef21(null);
+    const audioCtxRef = useRef21(null);
+    const [dragOver, setDragOver] = useState24(false);
+    const [selectedEngine, setSelectedEngine] = useState24(() => {
       try {
         return localStorage.getItem("bw_radar_engine") || "hybrid";
       } catch (e) {
         return "hybrid";
       }
     });
-    const [radarEnvironment, setRadarEnvironment] = useState25(() => {
+    const [radarEnvironment, setRadarEnvironment] = useState24(() => {
       try {
         return localStorage.getItem("bw_radar_env") || "club";
       } catch (e) {
         return "club";
       }
     });
-    const [radarEvent, setRadarEvent] = useState25(null);
-    const recognizerRef = useRef22(null);
-    const [auddToken, setAuddToken] = useState25(() => {
+    const [radarEvent, setRadarEvent] = useState24(null);
+    const recognizerRef = useRef21(null);
+    const [auddToken, setAuddToken] = useState24(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
       } catch (e) {
         return "";
       }
     });
-    const [showConfig, setShowConfig] = useState25(false);
-    const [micCaptureMode, setMicCaptureMode] = useState25("auto");
-    const [micPermissionError, setMicPermissionError] = useState25(null);
-    useEffect26(() => {
+    const [showConfig, setShowConfig] = useState24(false);
+    const [micCaptureMode, setMicCaptureMode] = useState24("auto");
+    const [micPermissionError, setMicPermissionError] = useState24(null);
+    useEffect25(() => {
       try {
         localStorage.setItem("bw_radar_engine", selectedEngine);
       } catch (e) {
       }
     }, [selectedEngine]);
-    useEffect26(() => {
+    useEffect25(() => {
       try {
         localStorage.setItem("bw_radar_env", radarEnvironment);
       } catch (e) {
@@ -21475,7 +21472,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         recognizerRef.current.setEnvironment(radarEnvironment);
       }
     }, [radarEnvironment]);
-    useEffect26(() => {
+    useEffect25(() => {
       recognizerRef.current = new Phase1FastRecognizer({
         workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
         environment: radarEnvironment,
@@ -21523,13 +21520,13 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       });
     }, []);
-    useEffect26(() => {
+    useEffect25(() => {
       try {
         localStorage.setItem("bw_audd_token", auddToken);
       } catch (e) {
       }
     }, [auddToken]);
-    const [notebookTracks, setNotebookTracks] = useState25(() => {
+    const [notebookTracks, setNotebookTracks] = useState24(() => {
       try {
         const saved = localStorage.getItem("beatwave_shazam_notebook");
         return saved ? JSON.parse(saved) : [];
@@ -21537,8 +21534,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         return [];
       }
     });
-    const [notebookFeedback, setNotebookFeedback] = useState25("");
-    useEffect26(() => {
+    const [notebookFeedback, setNotebookFeedback] = useState24("");
+    useEffect25(() => {
       try {
         localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
       } catch (e) {
@@ -21647,7 +21644,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setNotebookFeedback(`\u2713 Archivo TXT descargado: ${filename}`);
       setTimeout(() => setNotebookFeedback(""), 4e3);
     };
-    useEffect26(() => {
+    useEffect25(() => {
       const audio = audioRef.current;
       const handleEnded = () => setPreviewPlaying(false);
       const handlePause = () => setPreviewPlaying(false);
@@ -21687,7 +21684,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       };
     }, []);
-    const togglePlayPreview = useCallback13((url) => {
+    const togglePlayPreview = useCallback12((url) => {
       if (!url) return;
       const audio = audioRef.current;
       if (previewPlaying && audio.src === url) {
@@ -21698,7 +21695,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         audio.play().then(() => setPreviewPlaying(true)).catch((e) => console.error("Error reproduciendo preview:", e));
       }
     }, [previewPlaying]);
-    const handleRecognitionResponse = useCallback13((res, elapsedMs = null) => {
+    const handleRecognitionResponse = useCallback12((res, elapsedMs = null) => {
       setIsAnalyzing(false);
       if (res && res.status === "ok") {
         const engineTag = res.motor_usado ? ` [v\xEDa ${res.motor_usado}]` : "";
@@ -22705,12 +22702,12 @@ ${text}`);
   };
 
   // web/js/workspaces/LogsWorkspace.jsx
-  var { useState: useState26 } = React;
+  var { useState: useState25 } = React;
 
   // web/js/workspaces/TrendsWorkspace.jsx
-  var { useState: useState27, useEffect: useEffect27, useMemo: useMemo11 } = React;
+  var { useState: useState26, useEffect: useEffect26, useMemo: useMemo10 } = React;
   var TrendsWorkspace = ({ lang = "es" }) => {
-    const [trendsData, setTrendsData] = useState27({
+    const [trendsData, setTrendsData] = useState26({
       last_crawled_at: "Sincronizando...",
       next_scheduled_run: "Martes 23:00",
       items: [],
@@ -22722,14 +22719,14 @@ ${text}`);
       dj_gear: [],
       trends_radar: []
     });
-    const [loading, setLoading] = useState27(true);
-    const [isCrawling, setIsCrawling] = useState27(false);
-    const [selectedCategory, setSelectedCategory] = useState27("todas");
-    const [selectedCity, setSelectedCity] = useState27("Madrid");
-    const [searchQuery, setSearchQuery] = useState27("");
-    const [dateFilter, setDateFilter] = useState27("all");
-    const [readingArticle, setReadingArticle] = useState27(null);
-    const [copiedRef, setCopiedRef] = useState27(false);
+    const [loading, setLoading] = useState26(true);
+    const [isCrawling, setIsCrawling] = useState26(false);
+    const [selectedCategory, setSelectedCategory] = useState26("todas");
+    const [selectedCity, setSelectedCity] = useState26("Madrid");
+    const [searchQuery, setSearchQuery] = useState26("");
+    const [dateFilter, setDateFilter] = useState26("all");
+    const [readingArticle, setReadingArticle] = useState26(null);
+    const [copiedRef, setCopiedRef] = useState26(false);
     const categories = [
       { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
       { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
@@ -22761,7 +22758,7 @@ ${text}`);
         setLoading(false);
       }
     };
-    useEffect27(() => {
+    useEffect26(() => {
       fetchTrends();
     }, []);
     const handleRunCrawler = async () => {
@@ -22792,7 +22789,7 @@ ${text}`);
       } catch (_) {
       }
     };
-    const filteredItems = useMemo11(() => {
+    const filteredItems = useMemo10(() => {
       const items = trendsData.items || [];
       return items.filter((item) => {
         const matchCat = selectedCategory === "todas" || item.category === selectedCategory;
@@ -22815,7 +22812,7 @@ ${text}`);
         return true;
       });
     }, [trendsData, selectedCategory, searchQuery, dateFilter]);
-    const festivals = useMemo11(() => {
+    const festivals = useMemo10(() => {
       let list = trendsData.festivals_calendar || [];
       if (selectedCity && selectedCity !== "Todas") {
         list = list.filter((f) => (f.city || "").toLowerCase() === selectedCity.toLowerCase());
@@ -22826,7 +22823,7 @@ ${text}`);
         (f) => (f.name || "").toLowerCase().includes(q) || (f.city || "").toLowerCase().includes(q) || (f.venue || "").toLowerCase().includes(q) || (f.headliners || []).some((h) => h.toLowerCase().includes(q))
       );
     }, [trendsData, selectedCity, searchQuery]);
-    const setBreakdowns = useMemo11(() => {
+    const setBreakdowns = useMemo10(() => {
       const list = trendsData.set_breakdowns || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -22834,7 +22831,7 @@ ${text}`);
         (s) => (s.artist || "").toLowerCase().includes(q) || (s.event || "").toLowerCase().includes(q) || (s.tactical_breakdown || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const interviews = useMemo11(() => {
+    const interviews = useMemo10(() => {
       const list = trendsData.interviews || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -22842,7 +22839,7 @@ ${text}`);
         (it) => (it.artist || "").toLowerCase().includes(q) || (it.headline || "").toLowerCase().includes(q) || (it.quote || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const controllers = useMemo11(() => {
+    const controllers = useMemo10(() => {
       const list = trendsData.controllers || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -22850,7 +22847,7 @@ ${text}`);
         (c) => (c.name || "").toLowerCase().includes(q) || (c.brand || "").toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const gadgets = useMemo11(() => {
+    const gadgets = useMemo10(() => {
       const list = trendsData.gadgets || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -22858,7 +22855,7 @@ ${text}`);
         (g) => (g.name || "").toLowerCase().includes(q) || (g.category || "").toLowerCase().includes(q) || (g.utility || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const djGear = useMemo11(() => {
+    const djGear = useMemo10(() => {
       const list = trendsData.dj_gear || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -22866,7 +22863,7 @@ ${text}`);
         (dg) => (dg.name || "").toLowerCase().includes(q) || (dg.brand || "").toLowerCase().includes(q) || (dg.type || "").toLowerCase().includes(q) || (dg.description || "").toLowerCase().includes(q)
       );
     }, [trendsData, searchQuery]);
-    const radarItems = useMemo11(() => {
+    const radarItems = useMemo10(() => {
       const list = trendsData.trends_radar || [];
       const q = searchQuery.toLowerCase().trim();
       if (!q) return list;
@@ -23165,7 +23162,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/SetBuilderWorkspace.jsx
-  var { useState: useState28, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback14 } = React;
+  var { useState: useState27, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo11, useCallback: useCallback13 } = React;
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
@@ -23360,24 +23357,24 @@ Respuesta: ${qa.a}`).join("\n\n"),
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
-    const [setName, setSetName] = useState28("BeatWave_Mainstage_Set");
-    const [selectedTrackIdx, setSelectedTrackIdx] = useState28(null);
-    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState28(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState28(false);
-    const [searchAddQuery, setSearchAddQuery] = useState28("");
-    const [exportStatus, setExportStatus] = useState28(null);
-    const [isExporting, setIsExporting] = useState28(false);
-    const [isAuditingSet, setIsAuditingSet] = useState28(false);
-    const [auditSetProgress, setAuditSetProgress] = useState28(0);
-    const [folderLoading, setFolderLoading] = useState28(false);
-    const [folderProgress, setFolderProgress] = useState28({ pct: 0, msg: "" });
-    const [viewMode, setViewMode] = useState28("list");
-    const [graphData, setGraphData] = useState28({ nodes: [], edges: [] });
-    const [isLoadingGraph, setIsLoadingGraph] = useState28(false);
-    const [aiAuditResult, setAiAuditResult] = useState28(null);
-    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState28(false);
-    const [hoveredFlowIdx, setHoveredFlowIdx] = useState28(null);
-    useEffect28(() => {
+    const [setName, setSetName] = useState27("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState27(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState27(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState27(false);
+    const [searchAddQuery, setSearchAddQuery] = useState27("");
+    const [exportStatus, setExportStatus] = useState27(null);
+    const [isExporting, setIsExporting] = useState27(false);
+    const [isAuditingSet, setIsAuditingSet] = useState27(false);
+    const [auditSetProgress, setAuditSetProgress] = useState27(0);
+    const [folderLoading, setFolderLoading] = useState27(false);
+    const [folderProgress, setFolderProgress] = useState27({ pct: 0, msg: "" });
+    const [viewMode, setViewMode] = useState27("list");
+    const [graphData, setGraphData] = useState27({ nodes: [], edges: [] });
+    const [isLoadingGraph, setIsLoadingGraph] = useState27(false);
+    const [aiAuditResult, setAiAuditResult] = useState27(null);
+    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState27(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState27(null);
+    useEffect27(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
       const updated = setTracks.map((st) => {
@@ -23410,7 +23407,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setSetTracks(updated);
       }
     }, [auditTracks]);
-    const stats = useMemo12(() => {
+    const stats = useMemo11(() => {
       if (!setTracks || setTracks.length === 0) {
         return { totalDurationSec: 0, minBpm: 0, maxBpm: 0, avgBpm: 0, avgLufs: 0, harmonicScore: 100, pendingAuditCount: 0 };
       }
@@ -23446,7 +23443,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
       return { totalDurationSec: totalSec, minBpm, maxBpm, avgBpm, avgLufs, harmonicScore, pendingAuditCount: pendingAudit };
     }, [setTracks]);
-    const formattedDuration = useMemo12(() => {
+    const formattedDuration = useMemo11(() => {
       const s = stats.totalDurationSec;
       const hrs = Math.floor(s / 3600);
       const mins = Math.floor(s % 3600 / 60);
@@ -24779,7 +24776,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/MapWorkspace.jsx
-  var { useState: useState29, useEffect: useEffect29, useRef: useRef24, useMemo: useMemo13, useCallback: useCallback15 } = React;
+  var { useState: useState28, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback14 } = React;
   var MAP_CAMELOT_COLORS2 = {
     "1A": "#00e5ff",
     "1B": "#00b4d8",
@@ -24909,9 +24906,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
-    const [useDemo, setUseDemo] = useState29(false);
+    const [useDemo, setUseDemo] = useState28(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS2 : [];
-    const [fsBrowserOpen, setFsBrowserOpen] = useState29(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState28(false);
     const handleCargarColeccion = (targetLibId = null) => {
       const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
       const colTracks = [];
@@ -24955,35 +24952,35 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onSelectDirectory(targetPath);
       }
     };
-    const [projectionMode, setProjectionMode] = useState29("energy_dance");
-    const [colorMode, setColorMode] = useState29("genre");
-    const [toolMode, setToolMode] = useState29("pan");
-    const [searchQuery, setSearchQuery] = useState29("");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState29("ALL");
-    const [showHarmonicPaths, setShowHarmonicPaths] = useState29(true);
-    const [selectedTrack, setSelectedTrack] = useState29(null);
-    const [selectedMapTracks, setSelectedMapTracks] = useState29([]);
-    const [hoveredTrack, setHoveredTrack] = useState29(null);
-    const tooltipRef = useRef24(null);
-    const mousePosRef = useRef24({ x: -100, y: -100 });
-    const zoomThrottleRef = useRef24(null);
-    const zoomTrailingRef = useRef24(null);
-    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState29(true);
-    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState29(true);
-    const [zoomDisplay, setZoomDisplay] = useState29(1);
-    const [isPanning, setIsPanning] = useState29(false);
-    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState29(true);
+    const [projectionMode, setProjectionMode] = useState28("energy_dance");
+    const [colorMode, setColorMode] = useState28("genre");
+    const [toolMode, setToolMode] = useState28("pan");
+    const [searchQuery, setSearchQuery] = useState28("");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState28("ALL");
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState28(true);
+    const [selectedTrack, setSelectedTrack] = useState28(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState28([]);
+    const [hoveredTrack, setHoveredTrack] = useState28(null);
+    const tooltipRef = useRef23(null);
+    const mousePosRef = useRef23({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef23(null);
+    const zoomTrailingRef = useRef23(null);
+    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState28(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState28(true);
+    const [zoomDisplay, setZoomDisplay] = useState28(1);
+    const [isPanning, setIsPanning] = useState28(false);
+    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState28(true);
     const {
       width: mapConsoleWidth,
       onPointerDown: onMapConsoleResizeDown,
       resetWidth: onResetMapConsoleWidth
     } = useDrawerResize("bw_map_console_width", 270, 220, 520, true);
-    const [filterMinEnergy, setFilterMinEnergy] = useState29(0);
-    const [filterMinDance, setFilterMinDance] = useState29(0);
-    const [filterMinIntensity, setFilterMinIntensity] = useState29(0);
-    const [filterMinValence, setFilterMinValence] = useState29(0);
-    const [filterQualityMode, setFilterQualityMode] = useState29("ALL");
-    const handleResetAcousticFilters = useCallback15(() => {
+    const [filterMinEnergy, setFilterMinEnergy] = useState28(0);
+    const [filterMinDance, setFilterMinDance] = useState28(0);
+    const [filterMinIntensity, setFilterMinIntensity] = useState28(0);
+    const [filterMinValence, setFilterMinValence] = useState28(0);
+    const [filterQualityMode, setFilterQualityMode] = useState28("ALL");
+    const handleResetAcousticFilters = useCallback14(() => {
       setFilterMinEnergy(0);
       setFilterMinDance(0);
       setFilterMinIntensity(0);
@@ -24991,22 +24988,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setFilterQualityMode("ALL");
       setSelectedKeyFilter("ALL");
     }, []);
-    useEffect29(() => {
+    useEffect28(() => {
       return () => {
         if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
         if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
       };
     }, []);
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== "ALL" || selectedKeyFilter !== "ALL" || Boolean(searchQuery);
-    const canvasRef = useRef24(null);
-    const containerRef = useRef24(null);
-    const animRef = useRef24(null);
-    const imageCacheRef = useRef24(/* @__PURE__ */ new Map());
-    const panTimerRef = useRef24(null);
-    const spatialGridRef = useRef24(/* @__PURE__ */ new Map());
-    const mouseRafRef = useRef24(null);
-    const activeLoadingCountRef = useRef24(0);
-    const pendingLoadQueueRef = useRef24([]);
+    const canvasRef = useRef23(null);
+    const containerRef = useRef23(null);
+    const animRef = useRef23(null);
+    const imageCacheRef = useRef23(/* @__PURE__ */ new Map());
+    const panTimerRef = useRef23(null);
+    const spatialGridRef = useRef23(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef23(null);
+    const activeLoadingCountRef = useRef23(0);
+    const pendingLoadQueueRef = useRef23([]);
     const processCoverQueue = () => {
       const MAX_CONCURRENT = 8;
       while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
@@ -25052,7 +25049,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       processCoverQueue();
     };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
-    const transformRef = useRef24({
+    const transformRef = useRef23({
       scale: 1,
       panX: 0,
       panY: 0,
@@ -25122,7 +25119,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
-    const handleAutoFrame = useCallback15((targetZoom = null) => {
+    const handleAutoFrame = useCallback14((targetZoom = null) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -25198,13 +25195,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       tr.isContinuousPanning = false;
       setZoomDisplay(finalScale);
     }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
-    const selectionRef = useRef24({
+    const selectionRef = useRef23({
       isSelecting: false,
       points: [],
       boxStart: null
     });
-    const nodesRef = useRef24([]);
-    useEffect29(() => {
+    const nodesRef = useRef23([]);
+    useEffect28(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
       const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
@@ -25298,7 +25295,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
-    useEffect29(() => {
+    useEffect28(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -25874,7 +25871,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         selectionRef.current.boxStart = null;
       }
     };
-    const handleWheel = useCallback15((e) => {
+    const handleWheel = useCallback14((e) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -25905,7 +25902,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }, 80);
       }
     }, []);
-    useEffect29(() => {
+    useEffect28(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const onWheelNative = (e) => {
@@ -25926,13 +25923,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const handleResetZoom = () => {
       handleAutoFrame(1);
     };
-    useEffect29(() => {
+    useEffect28(() => {
       const timer = setTimeout(() => {
         handleAutoFrame();
       }, 120);
       return () => clearTimeout(timer);
     }, [projectionMode, activeTracks.length, handleAutoFrame]);
-    const mapStats = useMemo13(() => {
+    const mapStats = useMemo12(() => {
       const q = searchQuery.trim().toLowerCase();
       const vis = activeTracks.filter((t) => {
         const k = (t.key || t.k || "8A").toUpperCase();
@@ -26376,20 +26373,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/KnowledgeWorkspace.jsx
-  var { useState: useState30, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo14 } = React;
+  var { useState: useState29, useEffect: useEffect29, useRef: useRef24, useMemo: useMemo13 } = React;
   var KnowledgeWorkspace = ({ lang = "es" }) => {
-    const [activeSection, setActiveSection] = useState30("courses");
-    const [knowledgeData, setKnowledgeData] = useState30({
+    const [activeSection, setActiveSection] = useState29("courses");
+    const [knowledgeData, setKnowledgeData] = useState29({
       courses: [],
       videos: [],
       manuals: [],
       tricks: [],
       glossary: []
     });
-    const [loading, setLoading] = useState30(true);
-    const [expandedCourseId, setExpandedCourseId] = useState30("course_01");
-    const [glossarySearch, setGlossarySearch] = useState30("");
-    const [glossaryCategory, setGlossaryCategory] = useState30("all");
+    const [loading, setLoading] = useState29(true);
+    const [expandedCourseId, setExpandedCourseId] = useState29("course_01");
+    const [glossarySearch, setGlossarySearch] = useState29("");
+    const [glossaryCategory, setGlossaryCategory] = useState29("all");
     const fetchKnowledge = async () => {
       try {
         setLoading(true);
@@ -26409,10 +26406,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setLoading(false);
       }
     };
-    useEffect30(() => {
+    useEffect29(() => {
       fetchKnowledge();
     }, []);
-    const filteredGlossary = useMemo14(() => {
+    const filteredGlossary = useMemo13(() => {
       const dynamicItems = knowledgeData.glossary || [];
       const combined = [...BEATWAVE_MASTER_GLOSSARY];
       dynamicItems.forEach((d) => {
@@ -26654,8 +26651,247 @@ Respuesta: ${qa.a}`).join("\n\n"),
     ))))));
   };
 
+  // web/js/workspaces/CopilotMixerMirror.jsx
+  var { memo } = React;
+  var KnobSVG = memo(({
+    label,
+    value = 0.5,
+    bipolar = true,
+    alertTarget = false,
+    resolved = false,
+    touched = false
+  }) => {
+    const v = Math.max(0, Math.min(1, Number(value) || 0));
+    const startDeg = -135;
+    const sweepDeg = 270;
+    const angleDeg = startDeg + v * sweepDeg;
+    const rad = (angleDeg - 90) * (Math.PI / 180);
+    const cx = 18;
+    const cy = 18;
+    const r = 13;
+    const px = cx + Math.cos(rad) * (r - 2);
+    const py = cy + Math.sin(rad) * (r - 2);
+    const polarToXY = (deg) => {
+      const a = (deg - 90) * (Math.PI / 180);
+      return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+    };
+    const describeArc = (a0, a1) => {
+      const [x0, y0] = polarToXY(a0);
+      const [x1, y1] = polarToXY(a1);
+      const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+      const sweep = a1 >= a0 ? 1 : 0;
+      return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} ${sweep} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+    };
+    const activeArc = bipolar ? Math.abs(v - 0.5) > 0.015 ? describeArc(0, angleDeg) : "" : v > 0.015 ? describeArc(startDeg, angleDeg) : "";
+    const strokeColor = resolved ? "#10b981" : alertTarget ? "#ef4444" : touched ? "#ffffff" : "#22d3ee";
+    const pctLabel = bipolar ? `${v >= 0.5 ? "+" : ""}${Math.round((v - 0.5) * 200)}%` : `${Math.round(v * 100)}%`;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "flex flex-col items-center select-none",
+        style: { width: 42 },
+        title: `${label}: ${pctLabel}`
+      },
+      /* @__PURE__ */ React.createElement("svg", { width: "36", height: "36", viewBox: "0 0 36 36", style: { overflow: "visible" } }, /* @__PURE__ */ React.createElement(
+        "path",
+        {
+          d: describeArc(startDeg, startDeg + sweepDeg),
+          fill: "none",
+          stroke: "#27272a",
+          strokeWidth: "3",
+          strokeLinecap: "round"
+        }
+      ), alertTarget && !resolved && /* @__PURE__ */ React.createElement(
+        "path",
+        {
+          d: describeArc(startDeg, startDeg + 0.3 * sweepDeg),
+          fill: "none",
+          stroke: "#f59e0b",
+          strokeWidth: "4",
+          strokeLinecap: "round",
+          opacity: "0.85"
+        }
+      ), activeArc && /* @__PURE__ */ React.createElement(
+        "path",
+        {
+          d: activeArc,
+          fill: "none",
+          stroke: strokeColor,
+          strokeWidth: "3",
+          strokeLinecap: "round"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "circle",
+        {
+          cx,
+          cy,
+          r: "8.5",
+          fill: "#111116",
+          stroke: alertTarget ? "#ef4444" : touched ? "#22d3ee" : "#3f3f46",
+          strokeWidth: "1.2"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "line",
+        {
+          x1: cx,
+          y1: cy,
+          x2: px,
+          y2: py,
+          stroke: strokeColor,
+          strokeWidth: "2",
+          strokeLinecap: "round"
+        }
+      )),
+      /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          className: "font-mono font-bold tracking-wider",
+          style: {
+            fontSize: 8.5,
+            marginTop: -2,
+            color: resolved ? "#6ee7b7" : alertTarget ? "#fca5a5" : "#a1a1aa"
+          }
+        },
+        label,
+        alertTarget && !resolved ? " \u2199" : resolved ? " \u2713" : ""
+      )
+    );
+  });
+  var ChannelStrip = memo(({ deckNum, ch, touched = {}, directive = null }) => {
+    var _a, _b, _c, _d, _e, _f;
+    const isTargetLow = Boolean(
+      directive && directive.deck === deckNum && directive.control === "low" && directive.status !== "RESOLVED"
+    );
+    const isResolvedLow = Boolean(
+      directive && directive.deck === deckNum && directive.control === "low" && directive.status === "RESOLVED"
+    );
+    const volPct = Math.round(Math.max(0, Math.min(1, Number((_a = ch == null ? void 0 : ch.volume) != null ? _a : 1))) * 100);
+    const pfx = `deck_${deckNum}`;
+    return /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement(
+      "span",
+      {
+        className: "font-mono font-bold px-1.5 py-0.5 rounded",
+        style: {
+          fontSize: 9,
+          backgroundColor: "rgba(34,211,238,0.10)",
+          border: "1px solid rgba(34,211,238,0.32)",
+          color: "#22d3ee"
+        }
+      },
+      "D",
+      deckNum
+    ), /* @__PURE__ */ React.createElement(KnobSVG, { label: "GAIN", value: (_b = ch == null ? void 0 : ch.gain) != null ? _b : 0.5, bipolar: true }), /* @__PURE__ */ React.createElement(KnobSVG, { label: "HIGH", value: (_c = ch == null ? void 0 : ch.high) != null ? _c : 0.5, bipolar: true, touched: Boolean(touched[`${pfx}.high`]) }), /* @__PURE__ */ React.createElement(KnobSVG, { label: "MID", value: (_d = ch == null ? void 0 : ch.mid) != null ? _d : 0.5, bipolar: true, touched: Boolean(touched[`${pfx}.mid`]) }), /* @__PURE__ */ React.createElement(
+      KnobSVG,
+      {
+        label: "LOW",
+        value: (_e = ch == null ? void 0 : ch.low) != null ? _e : 0.5,
+        bipolar: true,
+        alertTarget: isTargetLow,
+        resolved: isResolvedLow
+      }
+    ), /* @__PURE__ */ React.createElement(KnobSVG, { label: "FLTR", value: (_f = ch == null ? void 0 : ch.filter) != null ? _f : 0.5, bipolar: true, touched: Boolean(touched[`${pfx}.filter`]) }), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center ml-1", style: { width: 26 }, title: `Volumen D${deckNum}: ${volPct}%` }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          width: 8,
+          height: 30,
+          borderRadius: 4,
+          backgroundColor: "#18181b",
+          border: "1px solid #27272a",
+          position: "relative",
+          overflow: "hidden"
+        }
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: `${volPct}%`,
+            backgroundColor: volPct > 12 ? "#22d3ee" : "#52525b",
+            transition: "height 40ms linear"
+          }
+        }
+      )
+    ), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-zinc-400", style: { fontSize: 8, marginTop: 2 } }, "VOL")));
+  });
+  var CopilotMixerMirror = memo(({ mixer = null, audit = null }) => {
+    var _a, _b, _c, _d;
+    const d1 = (mixer == null ? void 0 : mixer.deck_1) || { gain: 0.5, high: 0.5, mid: 0.5, low: 0.5, filter: 0.5, volume: 1 };
+    const d2 = (mixer == null ? void 0 : mixer.deck_2) || { gain: 0.5, high: 0.5, mid: 0.5, low: 0.5, filter: 0.5, volume: 1 };
+    const touched = (mixer == null ? void 0 : mixer.touched) || {};
+    const xf = Math.max(0, Math.min(1, Number((_a = mixer == null ? void 0 : mixer.crossfader) != null ? _a : 0.5)));
+    const directive = (audit == null ? void 0 : audit.active_directive) || null;
+    const scorePct = (_b = audit == null ? void 0 : audit.score_pct) != null ? _b : 100;
+    const resolved = (_c = audit == null ? void 0 : audit.resolved) != null ? _c : 0;
+    const total = (_d = audit == null ? void 0 : audit.total) != null ? _d : 0;
+    return /* @__PURE__ */ React.createElement(
+      "section",
+      {
+        className: "w-full rounded-2xl border border-zinc-800/90 px-3 py-2 mb-3.5 flex items-center justify-between gap-3 flex-wrap",
+        style: { backgroundColor: "#07070c" }
+      },
+      /* @__PURE__ */ React.createElement(ChannelStrip, { deckNum: 1, ch: d1, touched, directive }),
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1.5 min-w-[175px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono", style: { fontSize: 9.5 } }, /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          className: "px-1.5 py-0.5 rounded font-bold",
+          style: {
+            backgroundColor: (mixer == null ? void 0 : mixer.active) ? "rgba(16,185,129,0.14)" : "#18181b",
+            border: (mixer == null ? void 0 : mixer.active) ? "1px solid rgba(16,185,129,0.4)" : "1px solid #3f3f46",
+            color: (mixer == null ? void 0 : mixer.active) ? "#6ee7b7" : "#a1a1aa"
+          }
+        },
+        (mixer == null ? void 0 : mixer.active) ? "MIXER 14-BIT LIVE" : "MIXER STANDBY"
+      ), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-300 font-bold" }, "AUDIT: ", /* @__PURE__ */ React.createElement("span", { style: { color: scorePct >= 80 ? "#22d3ee" : "#f59e0b" } }, scorePct, "%"), total > 0 ? ` (${resolved}/${total})` : "")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 w-full max-w-[160px]" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono text-zinc-500", style: { fontSize: 8.5 } }, "A"), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            position: "relative",
+            flex: 1,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: "#18181b",
+            border: "1px solid #27272a"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              position: "absolute",
+              top: -3,
+              left: `calc(${(xf * 100).toFixed(1)}% - 5px)`,
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              backgroundColor: "#ffffff",
+              border: "1px solid #22d3ee"
+            }
+          }
+        )
+      ), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-zinc-500", style: { fontSize: 8.5 } }, "B")), directive && /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "font-mono font-bold px-2 py-0.5 rounded text-center",
+          style: {
+            fontSize: 9,
+            backgroundColor: directive.status === "RESOLVED" ? "rgba(16,185,129,0.16)" : "rgba(239,68,68,0.16)",
+            border: directive.status === "RESOLVED" ? "1px solid rgba(16,185,129,0.45)" : "1px solid rgba(239,68,68,0.45)",
+            color: directive.status === "RESOLVED" ? "#6ee7b7" : "#fca5a5"
+          }
+        },
+        directive.status === "RESOLVED" ? `\u2713 EJECUTADO EN ${directive.reaction_ms}ms` : directive.label
+      )),
+      /* @__PURE__ */ React.createElement(ChannelStrip, { deckNum: 2, ch: d2, touched, directive })
+    );
+  });
+
   // web/js/workspaces/CopilotWorkspace.jsx
-  var { useState: useState31, useEffect: useEffect31, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback16 } = React;
+  var { useState: useState30, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo14, useCallback: useCallback15 } = React;
   var MASTER_TRACKS_POOL = [
     {
       id: "rec_1",
@@ -27204,17 +27440,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     var _a;
-    const [state, setState] = useState31(DEFAULT_COPILOT_STATE);
-    const [clock, setClock] = useState31("");
-    const [latency, setLatency] = useState31(2);
-    const [visibleCount, setVisibleCount] = useState31(4);
-    const [tracksList, setTracksList] = useState31(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState31(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState31(null);
-    const [lowEqApplied, setLowEqApplied] = useState31(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState31(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState31("");
-    const wsRef = useRef26(null);
+    const [state, setState] = useState30(DEFAULT_COPILOT_STATE);
+    const [clock, setClock] = useState30("");
+    const [latency, setLatency] = useState30(2);
+    const [visibleCount, setVisibleCount] = useState30(4);
+    const [tracksList, setTracksList] = useState30(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState30(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState30(null);
+    const [lowEqApplied, setLowEqApplied] = useState30(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState30(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState30("");
+    const wsRef = useRef25(null);
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -27260,13 +27496,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState31({
+    const [controllerState, setControllerState] = useState30({
       detected: false,
       name: "",
       status: "SIN CONEXI\xD3N"
     });
-    const [testDisconnectSkin, setTestDisconnectSkin] = useState31(false);
-    useEffect31(() => {
+    const [testDisconnectSkin, setTestDisconnectSkin] = useState30(false);
+    useEffect30(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -27303,14 +27539,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         });
       }
     }, []);
-    useEffect31(() => {
+    useEffect30(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect31(() => {
+    useEffect30(() => {
       let isMounted = true;
       let ws = null;
       let fallbackInterval = null;
@@ -27448,7 +27684,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         };
       });
     };
-    const toggleDeckPlay = useCallback16(async (deckTarget) => {
+    const toggleDeckPlay = useCallback15(async (deckTarget) => {
       const deckNum = deckTarget === "2" || deckTarget === 2 ? 2 : 1;
       const dKey = deckNum === 1 ? "deck_1" : "deck_2";
       setState((prev) => {
@@ -27477,7 +27713,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (_) {
       }
     }, []);
-    const cueDeck = useCallback16(async (deckTarget) => {
+    const cueDeck = useCallback15(async (deckTarget) => {
       const deckNum = deckTarget === "2" || deckTarget === 2 ? 2 : 1;
       const dKey = deckNum === 1 ? "deck_1" : "deck_2";
       setState((prev) => {
@@ -27510,7 +27746,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (_) {
       }
     }, []);
-    useEffect31(() => {
+    useEffect30(() => {
       const handleKeyDown = (e) => {
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
@@ -27536,7 +27772,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [setMasterDeck, toggleDeckPlay, cueDeck, state]);
-    useEffect31(() => {
+    useEffect30(() => {
       const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
       if (isLocalHost) return;
       if (typeof navigator === "undefined" || !navigator.requestMIDIAccess) return;
@@ -27791,7 +28027,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       /* @__PURE__ */ React.createElement("span", null, lowEqApplied ? "\u2713" : "\u26A1"),
       /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, "ACCI\xD3N:"),
       /* @__PURE__ */ React.createElement("span", { className: "truncate max-w-[280px]" }, lowEqApplied ? "Restablecer EQ (Deshacer)" : anti_muddy.action || "Corta Low EQ en Deck 2 (-10dB)")
-    ) : /* @__PURE__ */ React.createElement("div", { className: "px-2.5 py-1 rounded-lg font-mono text-[11px] text-zinc-500 border border-zinc-800 bg-zinc-900/60" }, "EQ STANDBY"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: isAppOpen ? harmonic.color : "#71717a" } }, isAppOpen ? harmonic.badge : "--")), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, isAppOpen ? state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta : "--", " dB")))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(
+    ) : /* @__PURE__ */ React.createElement("div", { className: "px-2.5 py-1 rounded-lg font-mono text-[11px] text-zinc-500 border border-zinc-800 bg-zinc-900/60" }, "EQ STANDBY"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: isAppOpen ? harmonic.color : "#71717a" } }, isAppOpen ? harmonic.badge : "--")), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, isAppOpen ? state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta : "--", " dB")))))), /* @__PURE__ */ React.createElement(CopilotMixerMirror, { mixer: state == null ? void 0 : state.mixer, audit: state == null ? void 0 : state.audit }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(
       CopilotDeckCard,
       {
         deck: deck_1,
@@ -27919,10 +28155,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })))));
   };
   var CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState31({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
-    const [copied, setCopied] = useState31(false);
-    const [qrShown, setQrShown] = useState31(false);
-    useEffect31(() => {
+    const [copilotInfo, setCopilotInfo] = useState30({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
+    const [copied, setCopied] = useState30(false);
+    const [qrShown, setQrShown] = useState30(false);
+    useEffect30(() => {
       if (isOpen) {
         fetch("/api/copilot/info").then((r) => r.json()).then((data) => setCopilotInfo(data)).catch(() => {
         });
@@ -28149,18 +28385,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
   ];
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
-    const [currentIndex, setCurrentIndex] = useState31(0);
-    const [isHovered, setIsHovered] = useState31(false);
-    const slideRef = useRef26(null);
-    const titleRef = useRef26(null);
-    const subtitleRef = useRef26(null);
-    const badgeRef = useRef26(null);
-    const trailRef = useRef26(null);
-    const timersRef = useRef26([]);
-    const intervalsRef = useRef26([]);
-    const isHoveredRef = useRef26(false);
+    const [currentIndex, setCurrentIndex] = useState30(0);
+    const [isHovered, setIsHovered] = useState30(false);
+    const slideRef = useRef25(null);
+    const titleRef = useRef25(null);
+    const subtitleRef = useRef25(null);
+    const badgeRef = useRef25(null);
+    const trailRef = useRef25(null);
+    const timersRef = useRef25([]);
+    const intervalsRef = useRef25([]);
+    const isHoveredRef = useRef25(false);
     isHoveredRef.current = isHovered;
-    const isTransitioningRef = useRef26(false);
+    const isTransitioningRef = useRef25(false);
     const clearAsync = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
@@ -28287,7 +28523,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         transitionToSlide(nextIdx, false);
       }, 4200);
     };
-    useEffect31(() => {
+    useEffect30(() => {
       transitionToSlide(0, true);
       return () => clearAsync();
     }, []);
@@ -28362,7 +28598,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
-    const [phase, setPhase] = useState31(() => {
+    const [phase, setPhase] = useState30(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("portal") === "1" || p.get("phase") === "portal") return "portal";
@@ -28370,20 +28606,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "video";
     });
-    const [videoOpacity, setVideoOpacity] = useState31(1);
-    const [isTransitioning, setIsTransitioning] = useState31(false);
-    const [selectedAlpha, setSelectedAlpha] = useState31(0.85);
-    const [isMuted, setIsMuted] = useState31(false);
-    const [isBassShaking, setIsBassShaking] = useState31(false);
-    const videoRef = useRef26(null);
-    const canvasRef = useRef26(null);
-    useEffect31(() => {
+    const [videoOpacity, setVideoOpacity] = useState30(1);
+    const [isTransitioning, setIsTransitioning] = useState30(false);
+    const [selectedAlpha, setSelectedAlpha] = useState30(0.85);
+    const [isMuted, setIsMuted] = useState30(false);
+    const [isBassShaking, setIsBassShaking] = useState30(false);
+    const videoRef = useRef25(null);
+    const canvasRef = useRef25(null);
+    useEffect30(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
       }, 50);
       return () => clearTimeout(timer);
     }, []);
-    useEffect31(() => {
+    useEffect30(() => {
       const vid = videoRef.current;
       if (!vid) return;
       vid.currentTime = 0;
@@ -28465,7 +28701,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClose();
       }
     };
-    useEffect31(() => {
+    useEffect30(() => {
       if (phase !== "portal" && !isTransitioning) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -28611,7 +28847,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/app.jsx
-  var { useState: useState32, useEffect: useEffect32, useRef: useRef27, useMemo: useMemo16, useCallback: useCallback17, createContext, useContext } = React;
+  var { useState: useState31, useEffect: useEffect31, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback16, createContext, useContext } = React;
   var PlayerContext = createContext({
     playProgressRef: { current: 0 },
     isPlaying: false,
@@ -28625,10 +28861,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return null;
   };
   var App = () => {
-    const [pricingOpen, setPricingOpen] = useState32(false);
-    const [registerModalOpen, setRegisterModalOpen] = useState32(false);
-    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState32("pro");
-    const [cinematicIntroOpen, setCinematicIntroOpen] = useState32(() => {
+    const [pricingOpen, setPricingOpen] = useState31(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState31(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState31("pro");
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState31(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("intro") === "1" || p.get("portal") === "1") return true;
@@ -28638,7 +28874,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return false;
       }
     });
-    const [lang, setLang] = useState32(() => {
+    const [lang, setLang] = useState31(() => {
       try {
         return localStorage.getItem("beatwave_lang") || "es";
       } catch (e) {
@@ -28653,7 +28889,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState32(() => {
+    const [activeTab, setActiveTab] = useState31(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         const q = p.get("tab") || window.location.hash.replace("#", "");
@@ -28691,18 +28927,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "library";
     });
-    const [isSimulationMode, setIsSimulationMode] = useState32(false);
-    const [currentFolder, setCurrentFolder] = useState32("");
-    const [studioMode, setStudioMode] = useState32("cues");
-    const [auditTracks, setAuditTracks] = useState32([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState32([]);
-    const [spotifyTracks, setSpotifyTracks] = useState32([]);
-    const [selectedTrack, setSelectedTrack] = useState32(null);
+    const [isSimulationMode, setIsSimulationMode] = useState31(false);
+    const [currentFolder, setCurrentFolder] = useState31("");
+    const [studioMode, setStudioMode] = useState31("cues");
+    const [auditTracks, setAuditTracks] = useState31([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState31([]);
+    const [spotifyTracks, setSpotifyTracks] = useState31([]);
+    const [selectedTrack, setSelectedTrack] = useState31(null);
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-    const [nowPlayingTrack, setNowPlayingTrack] = useState32(null);
-    const [isPlaying, setIsPlaying] = useState32(false);
-    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState32(false);
-    const localAudioInputRef = useRef27(null);
+    const [nowPlayingTrack, setNowPlayingTrack] = useState31(null);
+    const [isPlaying, setIsPlaying] = useState31(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState31(false);
+    const localAudioInputRef = useRef26(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -28742,21 +28978,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setLoadTrackMenuOpen(false);
     };
-    const playProgressRef = useRef27(0);
-    const setPlayProgress = useCallback17((pct) => {
+    const playProgressRef = useRef26(0);
+    const setPlayProgress = useCallback16((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
-    const audioRef = useRef27(null);
-    const [mobileProgress, setMobileProgress] = useState32(0);
-    useEffect32(() => {
+    const audioRef = useRef26(null);
+    const [mobileProgress, setMobileProgress] = useState31(0);
+    useEffect31(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState32(0);
-    useEffect32(() => {
+    const [playProgress, setPlayProgressForWorkspaces] = useState31(0);
+    useEffect31(() => {
       let lastUpdate = 0;
       const THROTTLE_MS = 100;
       const onProgress = (e) => {
@@ -28769,8 +29005,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState32({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
-    useEffect32(() => {
+    const [globalAuditInfo, setGlobalAuditInfo] = useState31({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect31(() => {
       fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
         if (data && data.ready) {
           console.log(`[RAM WARM-UP] Cat\xE1logo precalentado: ${data.total_cached} pistas en memoria RAM.`);
@@ -28778,7 +29014,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }).catch(() => {
       });
     }, []);
-    useEffect32(() => {
+    useEffect31(() => {
       const handleGlobalAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -28811,14 +29047,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return () => window.removeEventListener("bw:audit_progress", handleGlobalAuditEvt);
     }, []);
-    const [tutorialOpen, setTutorialOpen] = useState32(false);
-    const [tutorialInitialMode, setTutorialInitialMode] = useState32("launcher");
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState32(false);
-    const [railExpanded, setRailExpanded] = useState32(true);
+    const [tutorialOpen, setTutorialOpen] = useState31(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState31("launcher");
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState31(false);
+    const [railExpanded, setRailExpanded] = useState31(true);
     const toggleRailExpanded = () => {
       setRailExpanded((prev) => !prev);
     };
-    useEffect32(() => {
+    useEffect31(() => {
       if (!railExpanded) return;
       const handleAutoCollapse = (e) => {
         const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
@@ -28833,8 +29069,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         window.removeEventListener("pointerdown", handleAutoCollapse, true);
       };
     }, [railExpanded]);
-    const [copilotModalOpen, setCopilotModalOpen] = useState32(false);
-    const [customLibraries, setCustomLibraries] = useState32(() => {
+    const [copilotModalOpen, setCopilotModalOpen] = useState31(false);
+    const [customLibraries, setCustomLibraries] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_user_custom_libraries");
         if (saved) {
@@ -28862,14 +29098,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState32(() => {
+    const [activeCustomLibId, setActiveCustomLibId] = useState31(() => {
       try {
         return localStorage.getItem("bw_user_active_library_id") || "lib_default";
       } catch (_) {
         return "lib_default";
       }
     });
-    useEffect32(() => {
+    useEffect31(() => {
       const loadSavedLibraryFromBackend = async () => {
         try {
           const r = await fetch("/api/biblioteca/cargar");
@@ -28896,8 +29132,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
       loadSavedLibraryFromBackend();
     }, []);
-    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState32(false);
-    const [activeCrateFilter, setActiveCrateFilter] = useState32(null);
+    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState31(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState31(null);
     const handleAuditarCrateDesdeModal = (folder, lib) => {
       if (!folder) return;
       const keys = new Set((folder.tracks || []).map((t2) => t2.id !== void 0 ? t2.id : t2.file_path || t2.filename || t2.path));
@@ -28955,8 +29191,8 @@ ${res.path}`);
         }
       }
     };
-    const [manualModalOpen, setManualModalOpen] = useState32(false);
-    const [manualSection, setManualSection] = useState32("audit");
+    const [manualModalOpen, setManualModalOpen] = useState31(false);
+    const [manualSection, setManualSection] = useState31("audit");
     const handleOpenManual = (section = null) => {
       const secMap = {
         "audit": "audit",
@@ -28982,8 +29218,8 @@ ${res.path}`);
         setManualModalOpen(true);
       }
     };
-    const [userModalOpen, setUserModalOpen] = useState32(false);
-    const [userProfile, setUserProfile] = useState32(() => {
+    const [userModalOpen, setUserModalOpen] = useState31(false);
+    const [userProfile, setUserProfile] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_user_profile");
         if (saved) return JSON.parse(saved);
@@ -29016,7 +29252,7 @@ ${res.path}`);
         activeTab: "audit"
       }
     ];
-    const [savedSessions, setSavedSessions] = useState32(() => {
+    const [savedSessions, setSavedSessions] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
@@ -29118,8 +29354,8 @@ ${res.path}`);
         status: "\u2713 Sincronizado"
       }
     ];
-    const [bitacoraModalOpen, setBitacoraModalOpen] = useState32(false);
-    const [bitacoraEntries, setBitacoraEntries] = useState32(() => {
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState31(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_audit_bitacora");
         if (saved) return JSON.parse(saved);
@@ -29134,7 +29370,7 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect32(() => {
+    useEffect31(() => {
       const handleBitacoraSync = (e) => {
         if (e && e.detail && Array.isArray(e.detail)) {
           setBitacoraEntries(e.detail);
@@ -29143,7 +29379,7 @@ ${res.path}`);
       window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
       return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
     }, []);
-    useEffect32(() => {
+    useEffect31(() => {
       if (userProfile && userProfile.autoSave !== false) {
         try {
           const autoSession = {
@@ -29157,7 +29393,7 @@ ${res.path}`);
         }
       }
     }, [currentFolder, activeTab, selectedTrack, userProfile]);
-    const [clubMode, setClubMode] = useState32(() => {
+    const [clubMode, setClubMode] = useState31(() => {
       try {
         return localStorage.getItem("bw_club_mode") === "true";
       } catch (e) {
@@ -29174,8 +29410,8 @@ ${res.path}`);
         return next;
       });
     };
-    const [shortcutsModalOpen, setShortcutsModalOpen] = useState32(false);
-    const [speakerLogoMode, setSpeakerLogoMode] = useState32(() => {
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState31(false);
+    const [speakerLogoMode, setSpeakerLogoMode] = useState31(() => {
       try {
         return localStorage.getItem("cleandjmix_speaker_logo_mode") || "neon";
       } catch (e) {
@@ -29189,15 +29425,15 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect32(() => {
+    useEffect31(() => {
       window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
       window.toggleSpeakerLogoMode = () => {
         handleSetSpeakerLogoMode(speakerLogoMode === "neon" ? "original" : "neon");
       };
     }, [speakerLogoMode]);
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState32(false);
-    const logoTechnoTimerRef = useRef27(null);
-    const initialTechnoPlayedRef = useRef27(false);
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState31(false);
+    const logoTechnoTimerRef = useRef26(null);
+    const initialTechnoPlayedRef = useRef26(false);
     const triggerLogoTechno = () => {
       setIsLogoTechnoActive(true);
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
@@ -29205,13 +29441,13 @@ ${res.path}`);
         setIsLogoTechnoActive(false);
       }, 1e4);
     };
-    useEffect32(() => {
+    useEffect31(() => {
       if (tutorialOpen || copilotModalOpen) {
         if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
         setIsLogoTechnoActive(false);
       }
     }, [tutorialOpen, copilotModalOpen]);
-    useEffect32(() => {
+    useEffect31(() => {
       window.abrirIntroCinematica = () => {
         setCinematicIntroOpen(true);
       };
@@ -29281,14 +29517,14 @@ ${res.path}`);
       setActiveTab("spotify");
     };
     const handleAddTrackToSpotify = handleAddTracksToSpotify;
-    const [logs, setLogs] = useState32([
+    const [logs, setLogs] = useState31([
       { type: "info", text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
       { type: "divider", text: "--------------------------------------------------" },
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
-    const synthAudioCtxRef = useRef27(null);
-    const synthIntervalRef = useRef27(null);
+    const synthAudioCtxRef = useRef26(null);
+    const synthIntervalRef = useRef26(null);
     const stopSynthPreview = () => {
       if (synthIntervalRef.current) {
         clearInterval(synthIntervalRef.current);
@@ -29306,7 +29542,7 @@ ${res.path}`);
       stopSynthPreview();
       setIsPlaying(false);
     };
-    useEffect32(() => {
+    useEffect31(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
@@ -29508,7 +29744,7 @@ ${res.path}`);
         window.eel.cue_audio_mac(trk.path || trk.f || "")();
       }
     };
-    useEffect32(() => {
+    useEffect31(() => {
       const handleKeyDown = (e) => {
         const active = document.activeElement;
         const tag = active ? active.tagName.toLowerCase() : "";

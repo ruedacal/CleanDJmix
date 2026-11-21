@@ -86,6 +86,7 @@ export const TopBar = ({
     clubMode,
     onToggleClubMode,
     onOpenCopilot,
+    onOpenMenu,
     helpItems,
     onOpenBitacora,
     onOpenUser,
@@ -97,8 +98,28 @@ export const TopBar = ({
     const alias = (userProfile && userProfile.alias) || 'DJ';
 
     return (
-        <header className="bw-topbar relative z-50 flex min-h-[68px] w-full shrink-0 items-center gap-2 pl-0 pr-3 sm:pr-4 py-2.5 sm:py-3" style={{ zIndex: 1000 }}>
-            <div className="flex items-center shrink-0 min-w-0">{logo}</div>
+        <header
+            className="bw-topbar relative z-50 flex min-h-[56px] md:min-h-[64px] w-full max-w-full shrink-0 items-center justify-between gap-2 px-2.5 sm:px-4 py-2 overflow-x-clip"
+            style={{ zIndex: 1000 }}
+        >
+            {/* Marca compacta en móvil (<768px) para eliminar recorte horizontal; identidad completa en tablet/desktop */}
+            <div className="flex items-center shrink-0 min-w-0">
+                <div className="hidden md:flex items-center shrink-0">{logo}</div>
+                <button
+                    type="button"
+                    onClick={onOpenMenu}
+                    className="flex md:hidden items-center gap-2 min-w-0 text-left cursor-pointer"
+                    aria-label="BeatWave Menú"
+                >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-500/15 border border-cyan-400/50 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+                        <ShellIcons.Radar size={16} />
+                    </span>
+                    <span className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="font-mono text-sm font-black tracking-[0.14em] text-white">BEATWAVE</span>
+                        <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold text-cyan-300 border border-cyan-400/50 bg-cyan-950/60">PRO</span>
+                    </span>
+                </button>
+            </div>
 
             <div className="hidden md:flex items-center gap-2 min-w-0 pl-3 ml-1 border-l border-white/10">
                 <span className="text-xs text-zinc-500">{current.group}</span>
@@ -106,8 +127,21 @@ export const TopBar = ({
                 <h1 className="text-sm font-semibold text-white truncate">{navLabel(current, t)}</h1>
             </div>
 
-            <div className="ml-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <button type="button" onClick={onOpenCopilot} className="bw-btn bw-btn-live md:hidden" aria-label="Abrir Live Copilot">
+            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                {/* Botón explícito Menú (Móvil y Tablet <1024px) */}
+                {onOpenMenu && (
+                    <button
+                        type="button"
+                        onClick={onOpenMenu}
+                        className="bw-btn bw-btn-ghost lg:hidden border border-white/15 px-2.5 h-8 text-xs font-mono font-semibold text-white"
+                        aria-label="Abrir menú de secciones"
+                    >
+                        <ShellIcons.Grid size={14} className="text-cyan-400" />
+                        <span>Menú</span>
+                    </button>
+                )}
+
+                <button type="button" onClick={onOpenCopilot} className="bw-btn bw-btn-live md:hidden h-8 px-2 text-xs" aria-label="Abrir Live Copilot">
                     <span className="bw-live-dot" aria-hidden="true" />
                     <span>LIVE</span>
                 </button>
@@ -143,7 +177,7 @@ export const TopBar = ({
                     <span className="uppercase">{lang}</span>
                 </button>
 
-                <button type="button" onClick={onOpenUser} className="bw-user-chip" title="Centro de control DJ: perfil, sesiones y preferencias">
+                <button type="button" onClick={onOpenUser} className="bw-user-chip shrink-0" title="Centro de control DJ: perfil, sesiones y preferencias">
                     <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/15">
                         {userProfile && userProfile.avatarUrl ? (
                             <img src={userProfile.avatarUrl} alt="" className="h-full w-full object-cover" />

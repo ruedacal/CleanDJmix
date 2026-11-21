@@ -1,13 +1,17 @@
 """
 Decodificador CoreMIDI 14-bit (Numark NV II, ch=0) y Motor de Auditoría Cerrada en Vivo.
 Registra posición física exacta de GAIN, HIGH, MID, LOW, FILTER, VOLUME y CROSSFADER,
+persiste el estado en caché local (debounce 400 ms) para sobrevivir a reinicios de main_web.py,
 pondera alertas Anti-Muddy en tiempo real y audita el cumplimiento del DJ (ms de reacción).
 """
 
 from __future__ import annotations
 
+import json
+import os
 import threading
 import time
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 
@@ -39,6 +43,9 @@ NV2_TOUCH_MAP: Dict[int, Tuple[str, str]] = {
     96: ("deck_2", "filter"),
 }
 
+STATE_CACHE_PATH: Path = Path.home() / ".beatwave_cache" / "nv2_mixer_state.json"
+STATE_MAX_AGE_SEC: float = 12 * 3600.0
+
 
 class CopilotMixerAuditor:
     """Gestiona telemetría 14-bit del mixer físico y auditoría de directivas tácticas."""
@@ -49,6 +56,7 @@ class CopilotMixerAuditor:
         self._lsb_raw: Dict[int, int] = {}
         self._has_midi_activity: bool = False
         self._last_cc_ts: float = 0.0
+        self._save_timer: Optional[threading.Timer] = None
 
         self._state: Dict[str, Any] = {
             "deck_1": {"gain": 0.5, "high": 0.5, "mid": 0.5, "low": 0.5, "filter": 0.5, "volume": 1.0},
@@ -66,6 +74,55 @@ class CopilotMixerAuditor:
         self._last_reaction_ms: Optional[int] = None
         self._last_resolved_ts: float = 0.0
         self._history: list[Dict[str, Any]] = []
+
+        self._load_persisted_state()
+
+    def _load_persisted_state(self) -> None:
+        """Restaura la última posición 14-bit conocida si la caché local es reciente."""
+        if not STATE_CACHE_PATH.is_file():
+            return
+        try:
+            data = json.loads(STATE_CACHE_PATH.read_text(encoding="utf-8"))
+            saved_ts = float(data.get("saved_at", 0.0))
+            if (time.time() - saved_ts) > STATE_MAX_AGE_SEC:
+                return
+            for dk in ("deck_1", "deck_2"):
+                if isinstance(data.get(dk), dict):
+                    for ctrl in ("gain", "high", "mid", "low", "filter", "volume"):
+                        if ctrl in data[dk]:
+                            self._state[dk][ctrl] = round(max(0.0, min(1.0, float(data[dk][ctrl]))), 4)
+            if "crossfader" in data:
+                self._state["crossfader"] = round(max(0.0, min(1.0, float(data["crossfader"]))), 4)
+            self._has_midi_activity = True
+            self._state["active"] = True
+            self._last_cc_ts = saved_ts
+        except Exception:
+            pass
+
+    def _schedule_persist(self) -> None:
+        """Programa volcado atómico a disco con debounce de 400 ms fuera del hilo CoreMIDI."""
+        if self._save_timer is not None:
+            self._save_timer.cancel()
+        t = threading.Timer(0.4, self._flush_persisted_state)
+        t.daemon = True
+        self._save_timer = t
+        t.start()
+
+    def _flush_persisted_state(self) -> None:
+        with self._lock:
+            payload = {
+                "saved_at": time.time(),
+                "deck_1": dict(self._state["deck_1"]),
+                "deck_2": dict(self._state["deck_2"]),
+                "crossfader": self._state["crossfader"],
+            }
+        try:
+            STATE_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            tmp = STATE_CACHE_PATH.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, STATE_CACHE_PATH)
+        except Exception:
+            pass
 
     def ingest_midi(self, msg: Any) -> bool:
         """
@@ -125,6 +182,7 @@ class CopilotMixerAuditor:
         self._has_midi_activity = True
         self._state["active"] = True
         self._last_cc_ts = time.time()
+        self._schedule_persist()
 
     def get_mixer_snapshot(self) -> Dict[str, Any]:
         with self._lock:
@@ -204,13 +262,11 @@ class CopilotMixerAuditor:
                             self._history = self._history[-10:]
                 else:
                     self._in_range_since = None
-                    # Si el usuario empezó a bajar el knob o a tocarlo, marcar IN_PROGRESS
                     if self._has_midi_activity and (low_val < 0.45 or filt_val > 0.55):
                         directive["status"] = "IN_PROGRESS"
                     else:
                         directive["status"] = "PENDING"
 
-                # Si ya está mitigado físicamente, actualizar el banner Anti-Muddy a SAFE
                 if is_mitigated:
                     anti_muddy_data = {
                         **anti_muddy_data,
