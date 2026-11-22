@@ -17,7 +17,7 @@ const HardwareKnob = memo(({
 
     return (
         <svg 
-            className="bw-dj-knob-svg select-none" 
+            className="dj-knob-svg bw-dj-knob-svg select-none" 
             viewBox="0 0 40 40"
             title={`${label}: ${v >= 0.5 ? '+' : ''}${Math.round((v - 0.5) * 200)}%`}
         >
@@ -47,7 +47,7 @@ const HardwareKnob = memo(({
     );
 });
 
-// Iconos vectoriales de los 8 hitos
+// Iconos vectoriales idénticos a los prototipos HTML oficiales (10x10 viewBox 0 0 24 24)
 const HitoIcons = {
     intro: () => <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="10 8 16 12 10 16 10 8"/></svg>,
     bassline: () => <svg viewBox="0 0 24 24"><polyline points="2 12 6 12 9 4 13 20 16 9 18 12 22 12"/></svg>,
@@ -82,19 +82,20 @@ const DEFAULT_HITOS_D2 = [
 ];
 
 /**
- * CopilotCenterMixer — Mesa Central Slim (448px) con HUD Regresivo
- * Integra HUD dinámico con alerta roja <5s, Hitos interactivos y mixer hardware 2-CH.
+ * CopilotCenterMixer — Mesa Central Slim (448px) con Botones Slim de Hitos y Hardware Mixer
+ * Replica milimétrica del diseño beatwave-pro-mesa-central-slim.html y beatwave-copilot-pro-v3.html
  */
 export const CopilotCenterMixer = memo(({
     deck1 = null,
     deck2 = null,
     mixer = null,
     audit = null,
-    isAppOpen = true
+    isAppOpen = true,
+    showInlineHud = false // El HUD principal reside en la cabecera del Deck (Fila 4)
 }) => {
-    // Selección visual de hitos en cliente (interacción táctica sin seek API)
-    const [d1ActiveHito, setD1ActiveHito] = useState(0);
-    const [d2ActiveHito, setD2ActiveHito] = useState(2); // BUILD UP activo por defecto en D2
+    // Selección interactiva de hitos en cliente
+    const [d1ActiveHito, setD1ActiveHito] = useState(0); // INTRO activo en DK 1
+    const [d2ActiveHito, setD2ActiveHito] = useState(2); // BUILD UP activo en DK 2
     const [pflState, setPflState] = useState({ ch1: false, ch2: true });
 
     // Pulso rítmico de compases [1][2][3][4]
@@ -108,7 +109,7 @@ export const CopilotCenterMixer = memo(({
         return () => clearInterval(interval);
     }, [deck1?.bpm, deck2?.bpm]);
 
-    // Hitos combinados con datos de pista si existen
+    // Hitos sincronizados con la pista
     const hitosD1 = useMemo(() => {
         if (deck1?.cues && deck1.cues.length >= 4) {
             return deck1.cues.map((c, i) => ({
@@ -135,22 +136,16 @@ export const CopilotCenterMixer = memo(({
         return DEFAULT_HITOS_D2;
     }, [deck2?.cues]);
 
-    // Cálculo dinámico de cuenta atrás hacia el próximo hito en la pista entrante (DK 2)
-    const targetDeck = deck2?.is_playing ? deck1 : deck2;
-    const targetHitos = deck2?.is_playing ? hitosD1 : hitosD2;
-    const nextHitoIdx = deck2?.is_playing ? (d1ActiveHito + 1) % targetHitos.length : 3; // MAIN DROP por defecto
-    const nextHito = targetHitos[nextHitoIdx] || targetHitos[0];
-
+    // Cuenta atrás táctica hacia el siguiente hito
     const [countdownSeconds, setCountdownSeconds] = useState(14);
     const [totalSeconds] = useState(14);
 
-    // Motor de cuenta atrás reactivo
     useEffect(() => {
         let timer = null;
         if (isAppOpen) {
             timer = setInterval(() => {
                 setCountdownSeconds(s => {
-                    if (s <= 1) return totalSeconds; // bucle de demostración continuo en vivo
+                    if (s <= 1) return totalSeconds;
                     return s - 1;
                 });
             }, 1000);
@@ -163,7 +158,7 @@ export const CopilotCenterMixer = memo(({
     const isCriticalAlert = countdownSeconds <= 5;
     const progressPct = Math.min(100, Math.max(0, Math.round(((totalSeconds - countdownSeconds) / totalSeconds) * 100)));
 
-    // Extracción de valores de potenciómetros desde state.mixer
+    // Extracción de valores de EQ y faders desde state.mixer
     const ch1Mix = mixer?.ch1 || {};
     const ch2Mix = mixer?.ch2 || {};
 
@@ -190,171 +185,173 @@ export const CopilotCenterMixer = memo(({
 
     return (
         <div 
-            className={`bw-center-mixer ${isCriticalAlert ? 'is-alert-5s' : ''}`} 
+            className={`bw-center-mixer center-mixer ${isCriticalAlert ? 'is-alert-5s' : ''}`} 
             id="mixer-main"
             role="region"
             aria-label="Mesa de Mezclas Central Táctica"
         >
             {/* 1. BARRA SUPERIOR COMPACTA DE SINCRONIZACIÓN Y PULSO RÍTMICO */}
-            <div className="bw-mx-topbar select-none">
-                <div className="bw-mx-sync">
-                    <span className="bw-sync-dot"></span>
+            <div className="mx-topbar bw-mx-topbar select-none">
+                <div className="mx-sync bw-mx-sync">
+                    <span className="sync-dot bw-sync-dot"></span>
                     <span>SYNC · {Math.round(deck1?.bpm || deck2?.bpm || 136)} BPM</span>
                 </div>
-                <div className="bw-mx-beat-strip">
+                <div className="mx-beat-strip bw-mx-beat-strip">
                     {[1, 2, 3, 4].map(b => (
                         <span 
                             key={b}
-                            className={`bw-b-box ${currentBeat === b ? (b === 4 ? 'pulse' : 'on') : ''}`}
+                            className={`b-box bw-b-box ${currentBeat === b ? (b === 4 ? 'pulse' : 'on') : ''}`}
                         >
                             {b}
                         </span>
                     ))}
                 </div>
-                <div className="bw-mx-alert-badge">
+                <div className="mx-alert-badge bw-mx-alert-badge">
                     {isCriticalAlert ? '⚠ <5S ALERTA' : '⚠ <5S'}
                 </div>
             </div>
 
-            {/* 2. HUD TÁCTICO CENTRAL CON CONTADOR REGRESIVO Y TRANSICIÓN ROJA <5S */}
-            <div 
-                className={`bw-cue-hud select-none ${isCriticalAlert ? 'is-impact' : ''}`}
-                role="status"
-                aria-live="assertive"
-            >
-                <div className="bw-cue-hud-ico">
-                    {isCriticalAlert ? (
-                        <svg viewBox="0 0 24 24">
-                            <path d="M7 18v-6a5 5 0 1 1 10 0v6"/>
-                            <path d="M5 21h14"/>
-                            <path d="M12 2v2"/>
-                            <path d="M4.93 4.93l1.41 1.41"/>
-                            <path d="M19.07 4.93l-1.41 1.41"/>
-                            <path d="M2 12h2"/>
-                            <path d="M20 12h2"/>
-                        </svg>
-                    ) : (
-                        <svg viewBox="0 0 24 24">
-                            <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
-                            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
-                            <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-                        </svg>
-                    )}
-                </div>
-                <div className="bw-cue-hud-body">
-                    <div className="bw-cue-hud-kicker">
-                        <span className="bw-cue-hud-dot"></span>
-                        <span>
-                            {isCriticalAlert 
-                                ? (countdownSeconds === 0 ? '¡IMPACTO AHORA! SOLTAR PISTA' : '¡ATENCIÓN! QUEDAN < 5 SEGUNDOS') 
-                                : 'EN CUE (PREPARADO)'}
+            {/* 2. HUD REGRESIVO OPCIONAL (si se solicita dentro del mixer) */}
+            {showInlineHud && (
+                <div 
+                    className={`cue-hud bw-cue-hud select-none ${isCriticalAlert ? 'is-impact' : ''}`}
+                    role="status"
+                    aria-live="assertive"
+                >
+                    <div className="cue-hud-ico bw-cue-hud-ico">
+                        {isCriticalAlert ? (
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 18v-6a5 5 0 1 1 10 0v6"/>
+                                <path d="M5 21h14"/>
+                                <path d="M12 2v2"/>
+                                <path d="M4.93 4.93l1.41 1.41"/>
+                                <path d="M19.07 4.93l-1.41 1.41"/>
+                                <path d="M2 12h2"/>
+                                <path d="M20 12h2"/>
+                            </svg>
+                        ) : (
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+                                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
+                                <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                            </svg>
+                        )}
+                    </div>
+                    <div className="cue-hud-body bw-cue-hud-body">
+                        <div className="cue-hud-kicker bw-cue-hud-kicker">
+                            <span className="cue-hud-dot bw-cue-hud-dot"></span>
+                            <span>
+                                {isCriticalAlert 
+                                    ? (countdownSeconds === 0 ? '¡IMPACTO AHORA! SOLTAR PISTA' : '¡ATENCIÓN! QUEDAN < 5 SEGUNDOS') 
+                                    : 'EN CUE (PREPARADO)'}
+                            </span>
+                        </div>
+                        <div className="cue-hud-text bw-cue-hud-text truncate">
+                            {isCriticalAlert ? 'PRIMER GOLPE (MAIN DROP)' : 'Listo para soltar en primer bombo'}
+                        </div>
+                        <div className="cue-hud-progress bw-cue-hud-progress">
+                            <div 
+                                className="cue-hud-progress-fill bw-cue-hud-progress-fill" 
+                                style={{ width: `${progressPct}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                    <div className="cue-hud-right bw-cue-hud-right">
+                        <span className="cue-hud-timer bw-cue-hud-timer">
+                            00:{String(Math.max(0, countdownSeconds)).padStart(2, '0')}
+                        </span>
+                        <span className="cue-hud-bar-pill bw-cue-hud-bar-pill">
+                            BAR {Math.max(1, Math.ceil(countdownSeconds / 2))}
                         </span>
                     </div>
-                    <div className="bw-cue-hud-text truncate">
-                        {isCriticalAlert ? `PRIMER GOLPE (${nextHito?.label || 'INTRO'})` : 'Listo para soltar en primer bombo'}
-                    </div>
-                    <div className="bw-cue-hud-progress">
-                        <div 
-                            className="bw-cue-hud-progress-fill" 
-                            style={{ width: `${progressPct}%` }}
-                        ></div>
-                    </div>
                 </div>
-                <div className="bw-cue-hud-right">
-                    <span className="bw-cue-hud-timer">
-                        00:{String(Math.max(0, countdownSeconds)).padStart(2, '0')}
-                    </span>
-                    <span className="bw-cue-hud-bar-pill">
-                        BAR {Math.max(1, Math.ceil(countdownSeconds / 2))}
-                    </span>
-                </div>
-            </div>
+            )}
 
-            {/* 3. CUERPO DE 3 COLUMNAS: DECK 1 HITOS | HARDWARE MIXER | DECK 2 HITOS */}
-            <div className="bw-mx-body select-none">
+            {/* 3. CUERPO DE 3 COLUMNAS ENCAJADO: DK 1 (1fr) | HARDWARE MIXER (108px) | DK 2 (1fr) */}
+            <div className="mx-body bw-mx-body select-none">
 
                 {/* COLUMNA 1: DECK 1 HITOS */}
-                <div className="bw-deck-pane bw-d1-pane">
-                    <div className="bw-dp-head">
-                        <span className="bw-dp-title">DK 1</span>
-                        <span className="bw-dp-rem">{deck1?.duration || '-03:14'}</span>
+                <div className="deck-pane d1-pane bw-deck-pane bw-d1-pane">
+                    <div className="dp-head bw-dp-head">
+                        <span className="dp-title bw-dp-title">DK 1</span>
+                        <span className="dp-rem bw-dp-rem">{deck1?.duration || '-03:14'}</span>
                     </div>
-                    <div className="bw-hito-banner">
-                        <div className="bw-hb-bars">16 BARS · 00:29</div>
-                        <div className="bw-hb-name">NEXT: BASSLINE IN</div>
-                        <div className="bw-hb-bar"><div className="bw-hb-fill" style={{ width: '36%' }}></div></div>
+                    <div className="hito-banner bw-hito-banner">
+                        <div className="hb-bars bw-hb-bars">16 BARS · 00:29</div>
+                        <div className="hb-name bw-hb-name">NEXT: BASSLINE IN</div>
+                        <div className="hb-bar bw-hb-bar"><div className="hb-fill bw-hb-fill" style={{ width: '36%' }}></div></div>
                     </div>
-                    <div className="bw-cue-list">
+                    <div className="cue-list bw-cue-list" id="main-d1-list">
                         {hitosD1.map((h, idx) => {
                             const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
                             const isActive = d1ActiveHito === idx;
-                            const isNext = !isActive && idx === (d1ActiveHito + 1);
+                            const isNext = !isActive && idx === 1; // BASSLINE IN es NEXT por defecto
                             return (
                                 <button
                                     key={h.id || idx}
                                     type="button"
                                     onClick={() => setD1ActiveHito(idx)}
-                                    className={`bw-cue-btn ${isActive ? 'is-active' : isNext ? 'is-next' : ''}`}
+                                    className={`cue-btn bw-cue-btn ${isActive ? 'is-active' : isNext ? 'is-next' : ''}`}
                                     title={`Hito DK1: ${h.label} (${h.time})`}
                                 >
-                                    <span className="bw-c-ico"><IconComponent /></span>
-                                    <span className="bw-c-lbl">{h.label}</span>
-                                    <span className="bw-c-time">{h.time}</span>
-                                    <span className="bw-c-led"></span>
+                                    <span className="c-ico bw-c-ico"><IconComponent /></span>
+                                    <span className="c-lbl bw-c-lbl">{h.label}</span>
+                                    <span className="c-time bw-c-time">{h.time}</span>
+                                    <span className="c-led bw-c-led"></span>
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                {/* COLUMNA 2: MESA DE MEZCLAS HARDWARE DUAL COMPACTA */}
-                <div className="bw-hardware-mixer">
-                    <div className="bw-hm-col-headers">
-                        <span className="bw-ch-tag ch1">CH1</span>
-                        <span className="bw-ch-mid">EQ</span>
-                        <span className="bw-ch-tag ch2">CH2</span>
+                {/* COLUMNA 2: MESA DE MEZCLAS HARDWARE DUAL COMPACTA (108px) */}
+                <div className="hardware-mixer bw-hardware-mixer">
+                    <div className="hm-col-headers bw-hm-col-headers">
+                        <span className="ch-tag ch1 bw-ch-tag ch1">CH1</span>
+                        <span className="ch-mid bw-ch-mid">EQ</span>
+                        <span className="ch-tag ch2 bw-ch-tag ch2">CH2</span>
                     </div>
 
                     {/* Fila GAIN */}
-                    <div className="bw-knob-row">
-                        <div className="bw-knob-cell">
+                    <div className="knob-row bw-knob-row">
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch1Gain} color="#00F0FF" label="CH1 Gain" />
                         </div>
-                        <div className="bw-knob-lbl">GAIN</div>
-                        <div className="bw-knob-cell">
+                        <div className="knob-lbl bw-knob-lbl">GAIN</div>
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch2Gain} color="#38BDF8" label="CH2 Gain" />
                         </div>
                     </div>
 
                     {/* Fila HI */}
-                    <div className="bw-knob-row">
-                        <div className="bw-knob-cell">
+                    <div className="knob-row bw-knob-row">
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch1Hi} color="#00F0FF" label="CH1 High" />
                         </div>
-                        <div className="bw-knob-lbl">HI</div>
-                        <div className="bw-knob-cell">
+                        <div className="knob-lbl bw-knob-lbl">HI</div>
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch2Hi} color="#38BDF8" label="CH2 High" />
                         </div>
                     </div>
 
                     {/* Fila MID */}
-                    <div className="bw-knob-row">
-                        <div className="bw-knob-cell">
+                    <div className="knob-row bw-knob-row">
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch1Mid} color="#00F0FF" label="CH1 Mid" />
                         </div>
-                        <div className="bw-knob-lbl">MID</div>
-                        <div className="bw-knob-cell">
+                        <div className="knob-lbl bw-knob-lbl">MID</div>
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch2Mid} color="#38BDF8" label="CH2 Mid" />
                         </div>
                     </div>
 
                     {/* Fila LOW */}
-                    <div className="bw-knob-row">
-                        <div className="bw-knob-cell">
+                    <div className="knob-row bw-knob-row">
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch1Low} color="#00F0FF" label="CH1 Low" />
                         </div>
-                        <div className="bw-knob-lbl">LOW</div>
-                        <div className="bw-knob-cell">
+                        <div className="knob-lbl bw-knob-lbl">LOW</div>
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob 
                                 value={ch2Low} 
                                 color={isCriticalAlert ? '#FF2A54' : '#38BDF8'} 
@@ -364,28 +361,28 @@ export const CopilotCenterMixer = memo(({
                     </div>
 
                     {/* Fila FILTER */}
-                    <div className="bw-knob-row">
-                        <div className="bw-knob-cell">
+                    <div className="knob-row bw-knob-row">
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch1Fltr} color="#38BDF8" label="CH1 Filter" isFilter />
                         </div>
-                        <div className="bw-knob-lbl fltr">FLTR</div>
-                        <div className="bw-knob-cell">
+                        <div className="knob-lbl fltr bw-knob-lbl fltr">FLTR</div>
+                        <div className="knob-cell bw-knob-cell">
                             <HardwareKnob value={ch2Fltr} color="#38BDF8" label="CH2 Filter" isFilter />
                         </div>
                     </div>
 
                     {/* Botones PFL CUE 1 / CUE 2 */}
-                    <div className="bw-pfl-row">
+                    <div className="pfl-row bw-pfl-row">
                         <button 
                             type="button" 
-                            className={`bw-pfl-btn ${pflState.ch1 ? 'is-on' : ''}`}
+                            className={`pfl-btn bw-pfl-btn ${pflState.ch1 ? 'is-on' : ''}`}
                             onClick={() => setPflState(p => ({ ...p, ch1: !p.ch1 }))}
                         >
                             CUE 1
                         </button>
                         <button 
                             type="button" 
-                            className={`bw-pfl-btn ${pflState.ch2 ? 'is-on' : ''}`}
+                            className={`pfl-btn bw-pfl-btn ${pflState.ch2 ? 'is-on' : ''}`}
                             onClick={() => setPflState(p => ({ ...p, ch2: !p.ch2 }))}
                         >
                             CUE 2
@@ -393,63 +390,63 @@ export const CopilotCenterMixer = memo(({
                     </div>
 
                     {/* Faders verticales de canal + Puente central de vúmetros */}
-                    <div className="bw-faders-deck">
-                        <div className="bw-fader-unit">
-                            <div className="bw-fader-slot">
+                    <div className="faders-deck bw-faders-deck">
+                        <div className="fader-unit bw-fader-unit">
+                            <div className="fader-slot bw-fader-slot">
                                 <div 
-                                    className="bw-fader-cap" 
+                                    className="fader-cap bw-fader-cap" 
                                     style={{ top: `${Math.round((1 - ch1Fader) * 80)}%` }}
                                 >
-                                    <span className="bw-cap-line"></span>
+                                    <span className="cap-line bw-cap-line"></span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Vúmetros estéreo de 10 segmentos LED */}
-                        <div className="bw-vu-bridge">
-                            <div className="bw-vu-col">
-                                <span className="bw-vu-led"></span>
-                                <span className="bw-vu-led"></span>
-                                <span className="bw-vu-led on-amber"></span>
-                                <span className="bw-vu-led on-amber"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
+                        <div className="vu-bridge bw-vu-bridge">
+                            <div className="vu-col bw-vu-col">
+                                <span className="vu-led bw-vu-led"></span>
+                                <span className="vu-led bw-vu-led"></span>
+                                <span className="vu-led on-amber bw-vu-led on-amber"></span>
+                                <span className="vu-led on-amber bw-vu-led on-amber"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
                             </div>
-                            <div className="bw-vu-col">
-                                <span className={`bw-vu-led ${isCriticalAlert ? 'on-red' : ''}`}></span>
-                                <span className="bw-vu-led"></span>
-                                <span className="bw-vu-led on-amber"></span>
-                                <span className="bw-vu-led"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
-                                <span className="bw-vu-led on-cyan"></span>
+                            <div className="vu-col bw-vu-col">
+                                <span className={`vu-led bw-vu-led ${isCriticalAlert ? 'on-red' : ''}`}></span>
+                                <span className="vu-led bw-vu-led"></span>
+                                <span className="vu-led on-amber bw-vu-led on-amber"></span>
+                                <span className="vu-led bw-vu-led"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
+                                <span className="vu-led on-cyan bw-vu-led on-cyan"></span>
                             </div>
                         </div>
 
-                        <div className="bw-fader-unit">
-                            <div className="bw-fader-slot">
+                        <div className="fader-unit bw-fader-unit">
+                            <div className="fader-slot bw-fader-slot">
                                 <div 
-                                    className="bw-fader-cap bw-ch2-cap" 
+                                    className="fader-cap ch2-cap bw-fader-cap bw-ch2-cap" 
                                     style={{ top: `${Math.round((1 - ch2Fader) * 80)}%` }}
                                 >
-                                    <span className="bw-cap-line"></span>
+                                    <span className="cap-line bw-cap-line"></span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Crossfader horizontal */}
-                    <div className="bw-xfader-box">
-                        <div className="bw-xf-slot">
+                    <div className="xfader-box bw-xfader-box">
+                        <div className="xf-slot bw-xf-slot">
                             <div 
-                                className="bw-xf-thumb" 
+                                className="xf-thumb bw-xf-thumb" 
                                 style={{ left: `calc(${Math.round(crossfader * 100)}% - 5px)` }}
                             ></div>
                         </div>
@@ -457,45 +454,45 @@ export const CopilotCenterMixer = memo(({
                 </div>
 
                 {/* COLUMNA 3: DECK 2 HITOS */}
-                <div className="bw-deck-pane bw-d2-pane">
-                    <div className="bw-dp-head">
-                        <span className="bw-dp-title">DK 2</span>
-                        <span className="bw-dp-rem">{deck2?.duration || '-02:41'}</span>
+                <div className="deck-pane d2-pane bw-deck-pane bw-d2-pane">
+                    <div className="dp-head bw-dp-head">
+                        <span className="dp-title bw-dp-title">DK 2</span>
+                        <span className="dp-rem bw-dp-rem">{deck2?.duration || '-02:41'}</span>
                     </div>
-                    <div className={`bw-hito-banner ${isCriticalAlert ? 'alert-mode' : ''}`}>
-                        <div className="bw-hb-bars">
+                    <div className={`hito-banner bw-hito-banner ${isCriticalAlert ? 'alert-mode' : ''}`}>
+                        <div className="hb-bars bw-hb-bars">
                             {isCriticalAlert ? `2 BARS · 00:${String(countdownSeconds).padStart(2, '0')}` : '8 BARS · 00:14'}
                         </div>
-                        <div className="bw-hb-name">
+                        <div className="hb-name bw-hb-name">
                             {isCriticalAlert ? 'INMINENTE: MAIN DROP' : 'NEXT: MAIN DROP'}
                         </div>
-                        <div className="bw-hb-bar">
+                        <div className="hb-bar bw-hb-bar">
                             <div 
-                                className="bw-hb-fill" 
+                                className="hb-fill bw-hb-fill" 
                                 style={{ width: `${isCriticalAlert ? 92 : 54}%` }}
                             ></div>
                         </div>
                     </div>
-                    <div className="bw-cue-list">
+                    <div className="cue-list bw-cue-list" id="main-d2-list">
                         {hitosD2.map((h, idx) => {
                             const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
                             const isActive = d2ActiveHito === idx;
-                            const isAlert = isCriticalAlert && idx === 3; // MAIN DROP en alerta roja
-                            const isNext = !isActive && !isAlert && idx === 3;
+                            const isAlert = isCriticalAlert && idx === 3; // MAIN DROP en alerta roja <5s
+                            const isNext = !isActive && !isAlert && idx === 3; // MAIN DROP es NEXT antes de activarse
                             return (
                                 <button
                                     key={h.id || idx}
                                     type="button"
                                     onClick={() => setD2ActiveHito(idx)}
-                                    className={`bw-cue-btn ${
+                                    className={`cue-btn bw-cue-btn ${
                                         isAlert ? 'is-alert' : isActive ? 'is-active' : isNext ? 'is-next' : ''
                                     }`}
                                     title={`Hito DK2: ${h.label} (${h.time})`}
                                 >
-                                    <span className="bw-c-ico"><IconComponent /></span>
-                                    <span className="bw-c-lbl">{h.label}</span>
-                                    <span className="bw-c-time">{h.time}</span>
-                                    <span className="bw-c-led"></span>
+                                    <span className="c-ico bw-c-ico"><IconComponent /></span>
+                                    <span className="c-lbl bw-c-lbl">{h.label}</span>
+                                    <span className="c-time bw-c-time">{h.time}</span>
+                                    <span className="c-led bw-c-led"></span>
                                 </button>
                             );
                         })}
@@ -505,10 +502,10 @@ export const CopilotCenterMixer = memo(({
             </div>
 
             {/* 4. FOOTER DE MESA CENTRAL */}
-            <div className="bw-mx-footer select-none">
+            <div className="mx-footer bw-mx-footer select-none">
                 <span>LOW SWAP: ARMED</span>
                 <span>·</span>
-                <span className="bw-mx-status-label">
+                <span className="mx-status-label bw-mx-status-label">
                     {isCriticalAlert ? 'ALERTA < 5S' : `AUDIT: ${auditScore}%`}
                 </span>
             </div>

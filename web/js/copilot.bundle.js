@@ -49,7 +49,7 @@
     return /* @__PURE__ */ React.createElement(
       "svg",
       {
-        className: "bw-dj-knob-svg select-none",
+        className: "dj-knob-svg bw-dj-knob-svg select-none",
         viewBox: "0 0 40 40",
         title: `${label}: ${v >= 0.5 ? "+" : ""}${Math.round((v - 0.5) * 200)}%`
       },
@@ -120,7 +120,9 @@
     deck2 = null,
     mixer = null,
     audit = null,
-    isAppOpen = true
+    isAppOpen = true,
+    showInlineHud = false
+    // El HUD principal reside en la cabecera del Deck (Fila 4)
   }) => {
     const [d1ActiveHito, setD1ActiveHito] = useState(0);
     const [d2ActiveHito, setD2ActiveHito] = useState(2);
@@ -164,10 +166,6 @@
       }
       return DEFAULT_HITOS_D2;
     }, [deck2 == null ? void 0 : deck2.cues]);
-    const targetDeck = (deck2 == null ? void 0 : deck2.is_playing) ? deck1 : deck2;
-    const targetHitos = (deck2 == null ? void 0 : deck2.is_playing) ? hitosD1 : hitosD2;
-    const nextHitoIdx = (deck2 == null ? void 0 : deck2.is_playing) ? (d1ActiveHito + 1) % targetHitos.length : 3;
-    const nextHito = targetHitos[nextHitoIdx] || targetHitos[0];
     const [countdownSeconds, setCountdownSeconds] = useState(14);
     const [totalSeconds] = useState(14);
     useEffect(() => {
@@ -205,66 +203,66 @@
     return /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: `bw-center-mixer ${isCriticalAlert ? "is-alert-5s" : ""}`,
+        className: `bw-center-mixer center-mixer ${isCriticalAlert ? "is-alert-5s" : ""}`,
         id: "mixer-main",
         role: "region",
         "aria-label": "Mesa de Mezclas Central T\xE1ctica"
       },
-      /* @__PURE__ */ React.createElement("div", { className: "bw-mx-topbar select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bw-mx-sync" }, /* @__PURE__ */ React.createElement("span", { className: "bw-sync-dot" }), /* @__PURE__ */ React.createElement("span", null, "SYNC \xB7 ", Math.round((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136), " BPM")), /* @__PURE__ */ React.createElement("div", { className: "bw-mx-beat-strip" }, [1, 2, 3, 4].map((b) => /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "mx-topbar bw-mx-topbar select-none" }, /* @__PURE__ */ React.createElement("div", { className: "mx-sync bw-mx-sync" }, /* @__PURE__ */ React.createElement("span", { className: "sync-dot bw-sync-dot" }), /* @__PURE__ */ React.createElement("span", null, "SYNC \xB7 ", Math.round((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136), " BPM")), /* @__PURE__ */ React.createElement("div", { className: "mx-beat-strip bw-mx-beat-strip" }, [1, 2, 3, 4].map((b) => /* @__PURE__ */ React.createElement(
         "span",
         {
           key: b,
-          className: `bw-b-box ${currentBeat === b ? b === 4 ? "pulse" : "on" : ""}`
+          className: `b-box bw-b-box ${currentBeat === b ? b === 4 ? "pulse" : "on" : ""}`
         },
         b
-      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-mx-alert-badge" }, isCriticalAlert ? "\u26A0 <5S ALERTA" : "\u26A0 <5S")),
-      /* @__PURE__ */ React.createElement(
+      ))), /* @__PURE__ */ React.createElement("div", { className: "mx-alert-badge bw-mx-alert-badge" }, isCriticalAlert ? "\u26A0 <5S ALERTA" : "\u26A0 <5S")),
+      showInlineHud && /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: `bw-cue-hud select-none ${isCriticalAlert ? "is-impact" : ""}`,
+          className: `cue-hud bw-cue-hud select-none ${isCriticalAlert ? "is-impact" : ""}`,
           role: "status",
           "aria-live": "assertive"
         },
-        /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-ico" }, isCriticalAlert ? /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M7 18v-6a5 5 0 1 1 10 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M5 21h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M4.93 4.93l1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M19.07 4.93l-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" })) : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M3 18v-6a9 9 0 0 1 18 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" }))),
-        /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-body" }, /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-kicker" }, /* @__PURE__ */ React.createElement("span", { className: "bw-cue-hud-dot" }), /* @__PURE__ */ React.createElement("span", null, isCriticalAlert ? countdownSeconds === 0 ? "\xA1IMPACTO AHORA! SOLTAR PISTA" : "\xA1ATENCI\xD3N! QUEDAN < 5 SEGUNDOS" : "EN CUE (PREPARADO)")), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-text truncate" }, isCriticalAlert ? `PRIMER GOLPE (${(nextHito == null ? void 0 : nextHito.label) || "INTRO"})` : "Listo para soltar en primer bombo"), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-progress" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-ico bw-cue-hud-ico" }, isCriticalAlert ? /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M7 18v-6a5 5 0 1 1 10 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M5 21h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M4.93 4.93l1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M19.07 4.93l-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" })) : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M3 18v-6a9 9 0 0 1 18 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" }))),
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-body bw-cue-hud-body" }, /* @__PURE__ */ React.createElement("div", { className: "cue-hud-kicker bw-cue-hud-kicker" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-dot bw-cue-hud-dot" }), /* @__PURE__ */ React.createElement("span", null, isCriticalAlert ? countdownSeconds === 0 ? "\xA1IMPACTO AHORA! SOLTAR PISTA" : "\xA1ATENCI\xD3N! QUEDAN < 5 SEGUNDOS" : "EN CUE (PREPARADO)")), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-text bw-cue-hud-text truncate" }, isCriticalAlert ? "PRIMER GOLPE (MAIN DROP)" : "Listo para soltar en primer bombo"), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-progress bw-cue-hud-progress" }, /* @__PURE__ */ React.createElement(
           "div",
           {
-            className: "bw-cue-hud-progress-fill",
+            className: "cue-hud-progress-fill bw-cue-hud-progress-fill",
             style: { width: `${progressPct}%` }
           }
         ))),
-        /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-right" }, /* @__PURE__ */ React.createElement("span", { className: "bw-cue-hud-timer" }, "00:", String(Math.max(0, countdownSeconds)).padStart(2, "0")), /* @__PURE__ */ React.createElement("span", { className: "bw-cue-hud-bar-pill" }, "BAR ", Math.max(1, Math.ceil(countdownSeconds / 2))))
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-right bw-cue-hud-right" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-timer bw-cue-hud-timer" }, "00:", String(Math.max(0, countdownSeconds)).padStart(2, "0")), /* @__PURE__ */ React.createElement("span", { className: "cue-hud-bar-pill bw-cue-hud-bar-pill" }, "BAR ", Math.max(1, Math.ceil(countdownSeconds / 2))))
       ),
-      /* @__PURE__ */ React.createElement("div", { className: "bw-mx-body select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bw-deck-pane bw-d1-pane" }, /* @__PURE__ */ React.createElement("div", { className: "bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "bw-dp-title" }, "DK 1"), /* @__PURE__ */ React.createElement("span", { className: "bw-dp-rem" }, (deck1 == null ? void 0 : deck1.duration) || "-03:14")), /* @__PURE__ */ React.createElement("div", { className: "bw-hito-banner" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bars" }, "16 BARS \xB7 00:29"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-name" }, "NEXT: BASSLINE IN"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bar" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hb-fill", style: { width: "36%" } }))), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-list" }, hitosD1.map((h, idx) => {
+      /* @__PURE__ */ React.createElement("div", { className: "mx-body bw-mx-body select-none" }, /* @__PURE__ */ React.createElement("div", { className: "deck-pane d1-pane bw-deck-pane bw-d1-pane" }, /* @__PURE__ */ React.createElement("div", { className: "dp-head bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "dp-title bw-dp-title" }, "DK 1"), /* @__PURE__ */ React.createElement("span", { className: "dp-rem bw-dp-rem" }, (deck1 == null ? void 0 : deck1.duration) || "-03:14")), /* @__PURE__ */ React.createElement("div", { className: "hito-banner bw-hito-banner" }, /* @__PURE__ */ React.createElement("div", { className: "hb-bars bw-hb-bars" }, "16 BARS \xB7 00:29"), /* @__PURE__ */ React.createElement("div", { className: "hb-name bw-hb-name" }, "NEXT: BASSLINE IN"), /* @__PURE__ */ React.createElement("div", { className: "hb-bar bw-hb-bar" }, /* @__PURE__ */ React.createElement("div", { className: "hb-fill bw-hb-fill", style: { width: "36%" } }))), /* @__PURE__ */ React.createElement("div", { className: "cue-list bw-cue-list", id: "main-d1-list" }, hitosD1.map((h, idx) => {
         const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
         const isActive = d1ActiveHito === idx;
-        const isNext = !isActive && idx === d1ActiveHito + 1;
+        const isNext = !isActive && idx === 1;
         return /* @__PURE__ */ React.createElement(
           "button",
           {
             key: h.id || idx,
             type: "button",
             onClick: () => setD1ActiveHito(idx),
-            className: `bw-cue-btn ${isActive ? "is-active" : isNext ? "is-next" : ""}`,
+            className: `cue-btn bw-cue-btn ${isActive ? "is-active" : isNext ? "is-next" : ""}`,
             title: `Hito DK1: ${h.label} (${h.time})`
           },
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-ico" }, /* @__PURE__ */ React.createElement(IconComponent, null)),
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-lbl" }, h.label),
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-time" }, h.time),
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-led" })
+          /* @__PURE__ */ React.createElement("span", { className: "c-ico bw-c-ico" }, /* @__PURE__ */ React.createElement(IconComponent, null)),
+          /* @__PURE__ */ React.createElement("span", { className: "c-lbl bw-c-lbl" }, h.label),
+          /* @__PURE__ */ React.createElement("span", { className: "c-time bw-c-time" }, h.time),
+          /* @__PURE__ */ React.createElement("span", { className: "c-led bw-c-led" })
         );
-      }))), /* @__PURE__ */ React.createElement("div", { className: "bw-hardware-mixer" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hm-col-headers" }, /* @__PURE__ */ React.createElement("span", { className: "bw-ch-tag ch1" }, "CH1"), /* @__PURE__ */ React.createElement("span", { className: "bw-ch-mid" }, "EQ"), /* @__PURE__ */ React.createElement("span", { className: "bw-ch-tag ch2" }, "CH2")), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Gain, color: "#00F0FF", label: "CH1 Gain" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "GAIN"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Gain, color: "#38BDF8", label: "CH2 Gain" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Hi, color: "#00F0FF", label: "CH1 High" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "HI"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Hi, color: "#38BDF8", label: "CH2 High" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Mid, color: "#00F0FF", label: "CH1 Mid" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "MID"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Mid, color: "#38BDF8", label: "CH2 Mid" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Low, color: "#00F0FF", label: "CH1 Low" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "LOW"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(
+      }))), /* @__PURE__ */ React.createElement("div", { className: "hardware-mixer bw-hardware-mixer" }, /* @__PURE__ */ React.createElement("div", { className: "hm-col-headers bw-hm-col-headers" }, /* @__PURE__ */ React.createElement("span", { className: "ch-tag ch1 bw-ch-tag ch1" }, "CH1"), /* @__PURE__ */ React.createElement("span", { className: "ch-mid bw-ch-mid" }, "EQ"), /* @__PURE__ */ React.createElement("span", { className: "ch-tag ch2 bw-ch-tag ch2" }, "CH2")), /* @__PURE__ */ React.createElement("div", { className: "knob-row bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Gain, color: "#00F0FF", label: "CH1 Gain" })), /* @__PURE__ */ React.createElement("div", { className: "knob-lbl bw-knob-lbl" }, "GAIN"), /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Gain, color: "#38BDF8", label: "CH2 Gain" }))), /* @__PURE__ */ React.createElement("div", { className: "knob-row bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Hi, color: "#00F0FF", label: "CH1 High" })), /* @__PURE__ */ React.createElement("div", { className: "knob-lbl bw-knob-lbl" }, "HI"), /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Hi, color: "#38BDF8", label: "CH2 High" }))), /* @__PURE__ */ React.createElement("div", { className: "knob-row bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Mid, color: "#00F0FF", label: "CH1 Mid" })), /* @__PURE__ */ React.createElement("div", { className: "knob-lbl bw-knob-lbl" }, "MID"), /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Mid, color: "#38BDF8", label: "CH2 Mid" }))), /* @__PURE__ */ React.createElement("div", { className: "knob-row bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Low, color: "#00F0FF", label: "CH1 Low" })), /* @__PURE__ */ React.createElement("div", { className: "knob-lbl bw-knob-lbl" }, "LOW"), /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(
         HardwareKnob,
         {
           value: ch2Low,
           color: isCriticalAlert ? "#FF2A54" : "#38BDF8",
           label: "CH2 Low"
         }
-      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Fltr, color: "#38BDF8", label: "CH1 Filter", isFilter: true })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl fltr" }, "FLTR"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Fltr, color: "#38BDF8", label: "CH2 Filter", isFilter: true }))), /* @__PURE__ */ React.createElement("div", { className: "bw-pfl-row" }, /* @__PURE__ */ React.createElement(
+      ))), /* @__PURE__ */ React.createElement("div", { className: "knob-row bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Fltr, color: "#38BDF8", label: "CH1 Filter", isFilter: true })), /* @__PURE__ */ React.createElement("div", { className: "knob-lbl fltr bw-knob-lbl fltr" }, "FLTR"), /* @__PURE__ */ React.createElement("div", { className: "knob-cell bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Fltr, color: "#38BDF8", label: "CH2 Filter", isFilter: true }))), /* @__PURE__ */ React.createElement("div", { className: "pfl-row bw-pfl-row" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
-          className: `bw-pfl-btn ${pflState.ch1 ? "is-on" : ""}`,
+          className: `pfl-btn bw-pfl-btn ${pflState.ch1 ? "is-on" : ""}`,
           onClick: () => setPflState((p) => ({ ...p, ch1: !p.ch1 }))
         },
         "CUE 1"
@@ -272,37 +270,37 @@
         "button",
         {
           type: "button",
-          className: `bw-pfl-btn ${pflState.ch2 ? "is-on" : ""}`,
+          className: `pfl-btn bw-pfl-btn ${pflState.ch2 ? "is-on" : ""}`,
           onClick: () => setPflState((p) => ({ ...p, ch2: !p.ch2 }))
         },
         "CUE 2"
-      )), /* @__PURE__ */ React.createElement("div", { className: "bw-faders-deck" }, /* @__PURE__ */ React.createElement("div", { className: "bw-fader-unit" }, /* @__PURE__ */ React.createElement("div", { className: "bw-fader-slot" }, /* @__PURE__ */ React.createElement(
+      )), /* @__PURE__ */ React.createElement("div", { className: "faders-deck bw-faders-deck" }, /* @__PURE__ */ React.createElement("div", { className: "fader-unit bw-fader-unit" }, /* @__PURE__ */ React.createElement("div", { className: "fader-slot bw-fader-slot" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "bw-fader-cap",
+          className: "fader-cap bw-fader-cap",
           style: { top: `${Math.round((1 - ch1Fader) * 80)}%` }
         },
-        /* @__PURE__ */ React.createElement("span", { className: "bw-cap-line" })
-      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-vu-bridge" }, /* @__PURE__ */ React.createElement("div", { className: "bw-vu-col" }, /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" })), /* @__PURE__ */ React.createElement("div", { className: "bw-vu-col" }, /* @__PURE__ */ React.createElement("span", { className: `bw-vu-led ${isCriticalAlert ? "on-red" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-fader-unit" }, /* @__PURE__ */ React.createElement("div", { className: "bw-fader-slot" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("span", { className: "cap-line bw-cap-line" })
+      ))), /* @__PURE__ */ React.createElement("div", { className: "vu-bridge bw-vu-bridge" }, /* @__PURE__ */ React.createElement("div", { className: "vu-col bw-vu-col" }, /* @__PURE__ */ React.createElement("span", { className: "vu-led bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-amber bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-amber bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" })), /* @__PURE__ */ React.createElement("div", { className: "vu-col bw-vu-col" }, /* @__PURE__ */ React.createElement("span", { className: `vu-led bw-vu-led ${isCriticalAlert ? "on-red" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "vu-led bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-amber bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "vu-led on-cyan bw-vu-led on-cyan" }))), /* @__PURE__ */ React.createElement("div", { className: "fader-unit bw-fader-unit" }, /* @__PURE__ */ React.createElement("div", { className: "fader-slot bw-fader-slot" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "bw-fader-cap bw-ch2-cap",
+          className: "fader-cap ch2-cap bw-fader-cap bw-ch2-cap",
           style: { top: `${Math.round((1 - ch2Fader) * 80)}%` }
         },
-        /* @__PURE__ */ React.createElement("span", { className: "bw-cap-line" })
-      )))), /* @__PURE__ */ React.createElement("div", { className: "bw-xfader-box" }, /* @__PURE__ */ React.createElement("div", { className: "bw-xf-slot" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("span", { className: "cap-line bw-cap-line" })
+      )))), /* @__PURE__ */ React.createElement("div", { className: "xfader-box bw-xfader-box" }, /* @__PURE__ */ React.createElement("div", { className: "xf-slot bw-xf-slot" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "bw-xf-thumb",
+          className: "xf-thumb bw-xf-thumb",
           style: { left: `calc(${Math.round(crossfader * 100)}% - 5px)` }
         }
-      )))), /* @__PURE__ */ React.createElement("div", { className: "bw-deck-pane bw-d2-pane" }, /* @__PURE__ */ React.createElement("div", { className: "bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "bw-dp-title" }, "DK 2"), /* @__PURE__ */ React.createElement("span", { className: "bw-dp-rem" }, (deck2 == null ? void 0 : deck2.duration) || "-02:41")), /* @__PURE__ */ React.createElement("div", { className: `bw-hito-banner ${isCriticalAlert ? "alert-mode" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bars" }, isCriticalAlert ? `2 BARS \xB7 00:${String(countdownSeconds).padStart(2, "0")}` : "8 BARS \xB7 00:14"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-name" }, isCriticalAlert ? "INMINENTE: MAIN DROP" : "NEXT: MAIN DROP"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bar" }, /* @__PURE__ */ React.createElement(
+      )))), /* @__PURE__ */ React.createElement("div", { className: "deck-pane d2-pane bw-deck-pane bw-d2-pane" }, /* @__PURE__ */ React.createElement("div", { className: "dp-head bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "dp-title bw-dp-title" }, "DK 2"), /* @__PURE__ */ React.createElement("span", { className: "dp-rem bw-dp-rem" }, (deck2 == null ? void 0 : deck2.duration) || "-02:41")), /* @__PURE__ */ React.createElement("div", { className: `hito-banner bw-hito-banner ${isCriticalAlert ? "alert-mode" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "hb-bars bw-hb-bars" }, isCriticalAlert ? `2 BARS \xB7 00:${String(countdownSeconds).padStart(2, "0")}` : "8 BARS \xB7 00:14"), /* @__PURE__ */ React.createElement("div", { className: "hb-name bw-hb-name" }, isCriticalAlert ? "INMINENTE: MAIN DROP" : "NEXT: MAIN DROP"), /* @__PURE__ */ React.createElement("div", { className: "hb-bar bw-hb-bar" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: "bw-hb-fill",
+          className: "hb-fill bw-hb-fill",
           style: { width: `${isCriticalAlert ? 92 : 54}%` }
         }
-      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-list" }, hitosD2.map((h, idx) => {
+      ))), /* @__PURE__ */ React.createElement("div", { className: "cue-list bw-cue-list", id: "main-d2-list" }, hitosD2.map((h, idx) => {
         const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
         const isActive = d2ActiveHito === idx;
         const isAlert = isCriticalAlert && idx === 3;
@@ -313,16 +311,16 @@
             key: h.id || idx,
             type: "button",
             onClick: () => setD2ActiveHito(idx),
-            className: `bw-cue-btn ${isAlert ? "is-alert" : isActive ? "is-active" : isNext ? "is-next" : ""}`,
+            className: `cue-btn bw-cue-btn ${isAlert ? "is-alert" : isActive ? "is-active" : isNext ? "is-next" : ""}`,
             title: `Hito DK2: ${h.label} (${h.time})`
           },
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-ico" }, /* @__PURE__ */ React.createElement(IconComponent, null)),
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-lbl" }, h.label),
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-time" }, h.time),
-          /* @__PURE__ */ React.createElement("span", { className: "bw-c-led" })
+          /* @__PURE__ */ React.createElement("span", { className: "c-ico bw-c-ico" }, /* @__PURE__ */ React.createElement(IconComponent, null)),
+          /* @__PURE__ */ React.createElement("span", { className: "c-lbl bw-c-lbl" }, h.label),
+          /* @__PURE__ */ React.createElement("span", { className: "c-time bw-c-time" }, h.time),
+          /* @__PURE__ */ React.createElement("span", { className: "c-led bw-c-led" })
         );
       })))),
-      /* @__PURE__ */ React.createElement("div", { className: "bw-mx-footer select-none" }, /* @__PURE__ */ React.createElement("span", null, "LOW SWAP: ARMED"), /* @__PURE__ */ React.createElement("span", null, "\xB7"), /* @__PURE__ */ React.createElement("span", { className: "bw-mx-status-label" }, isCriticalAlert ? "ALERTA < 5S" : `AUDIT: ${auditScore}%`))
+      /* @__PURE__ */ React.createElement("div", { className: "mx-footer bw-mx-footer select-none" }, /* @__PURE__ */ React.createElement("span", null, "LOW SWAP: ARMED"), /* @__PURE__ */ React.createElement("span", null, "\xB7"), /* @__PURE__ */ React.createElement("span", { className: "mx-status-label bw-mx-status-label" }, isCriticalAlert ? "ALERTA < 5S" : `AUDIT: ${auditScore}%`))
     );
   });
 
@@ -1982,7 +1980,7 @@
     }
     const deckNum = side === "A" ? "1" : side === "B" ? "2" : side;
     const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === "STANDBY (VAC\xCDO)";
-    return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"} ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "dk-top-bar select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-id-group" }, /* @__PURE__ */ React.createElement("span", { className: "dk-id" }, "DECK ", side), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"} ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "dk-top-bar select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-id-group" }, /* @__PURE__ */ React.createElement("span", { className: "dk-id" }, "DECK ", deckNum), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",

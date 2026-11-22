@@ -2272,7 +2272,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
             {/* FILA 1: CABECERA DEL DECK (DECK 1 + EN CUE/MASTER + CUE/PLAY + FLAC + DEFAULT DSP) */}
             <div className="dk-top-bar select-none">
                 <div className="dk-id-group">
-                    <span className="dk-id">DECK {side}</span>
+                    <span className="dk-id">DECK {deckNum}</span>
                     {isEmptyDeck ? (
                         <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500">
                             STANDBY (VACÍO)
