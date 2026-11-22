@@ -340,6 +340,10 @@ class CopilotEngine:
         self._active_midi_port_name: str = ""
         self._last_midi_trigger: Dict[str, float] = {}
         self._mixer_audit = CopilotMixerAuditor()
+        self._shift_held: Dict[int, bool] = {1: False, 2: False}
+        self._jog_lsb: Dict[int, int] = {1: 0, 2: 0}
+        self._jog_msb: Dict[int, int] = {1: 0, 2: 0}
+        self._jog_last_raw: Dict[int, Optional[int]] = {1: None, 2: None}
 
         self.state.decks = {
             1: DeckState(
@@ -863,6 +867,15 @@ class CopilotEngine:
                             or getattr(d, "_serato_entry_id", None) != t["id"]
                         )
                         if is_new_track:
+                            _now_wall = time.time()
+                            _was_playing_near_end = bool(
+                                d.title and d.is_playing and d.duration_sec > 0 and d.remaining_sec <= 22.0
+                            )
+                            _ended_naturally_recently = (
+                                (_now_wall - float(getattr(d, "_natural_end_ts", 0.0))) <= 15.0
+                            )
+                            _is_autoplay_handoff = _was_playing_near_end or _ended_naturally_recently
+                            d._natural_end_ts = 0.0
                             d.title = t["title"]
                             d.artist = t["artist"]
                             d.bpm = t["bpm"]
@@ -891,12 +904,22 @@ class CopilotEngine:
 
                             cue_sec = self._get_primary_cue_sec(d)
 
-                            # Arrancar siempre posicionado en CUE 1 (sin extrapolar desde start_time)
-                            d.is_playing = False
-                            d._anchor_perf_ts = None
-                            d.elapsed_sec = cue_sec
-                            d.remaining_sec = max(0.0, dur - cue_sec)
-                            d.status = "CUE (PREPARADO)"
+                            if _is_autoplay_handoff:
+                                _lag_sec = max(0.0, min(15.0, time.time() - float(t["start_time"])))
+                                _start_pos = min(dur, _lag_sec)
+                                d.is_playing = True
+                                d._anchor_perf_ts = time.perf_counter()
+                                d._anchor_elapsed_sec = _start_pos
+                                d.elapsed_sec = _start_pos
+                                d.remaining_sec = max(0.0, dur - _start_pos)
+                                d.status = "REPRODUCIENDO (AUTOPLAY)"
+                            else:
+                                # Carga manual: arrancar posicionado en CUE 1 sin extrapolar
+                                d.is_playing = False
+                                d._anchor_perf_ts = None
+                                d.elapsed_sec = cue_sec
+                                d.remaining_sec = max(0.0, dur - cue_sec)
+                                d.status = "CUE (PREPARADO)"
                             self._sync_deck_metrics(d)
                         else:
                             # SQLite nunca fuerza is_playing=True; solo actualiza estado informativo
@@ -1269,6 +1292,7 @@ class CopilotEngine:
                             d._anchor_perf_ts = None
                             d._cue_hold_active = False
                             d._hot_cue_hold_index = None
+                            d._natural_end_ts = time.time()
                         d.remaining_sec = max(0.0, d.duration_sec - d.elapsed_sec)
                         self._sync_deck_metrics(d)
 
@@ -1335,6 +1359,37 @@ class CopilotEngine:
             if self._mixer_audit.ingest_midi(msg):
                 return
             msg_type = getattr(msg, "type", "")
+            if msg_type == "control_change":
+                ch_cc = int(getattr(msg, "channel", -1))
+                cc_num = int(getattr(msg, "control", -1))
+                cc_val = int(getattr(msg, "value", 0))
+                target_deck_cc = NV2_CHANNEL_TO_DECK.get(ch_cc)
+                if target_deck_cc in (1, 2) and cc_num in (0, 32):
+                    if cc_num == 0:
+                        self._jog_lsb[target_deck_cc] = cc_val
+                    else:
+                        self._jog_msb[target_deck_cc] = cc_val
+                        raw = (self._jog_msb[target_deck_cc] << 7) | self._jog_lsb[target_deck_cc]
+                        prev = self._jog_last_raw.get(target_deck_cc)
+                        self._jog_last_raw[target_deck_cc] = raw
+                        if prev is not None and self._shift_held.get(target_deck_cc, False):
+                            delta = (raw - prev) % 16384
+                            if delta > 8192:
+                                delta -= 16384
+                            if delta != 0:
+                                sec_per_tick = float(os.environ.get("NV2_SHIFT_JOG_SEC_PER_TICK", "0.025"))
+                                with self._lock:
+                                    d = self.state.decks.get(target_deck_cc)
+                                    if d and d.title and d.duration_sec > 0:
+                                        new_pos = max(0.0, min(d.duration_sec, d.elapsed_sec + (delta * sec_per_tick)))
+                                        d.elapsed_sec = new_pos
+                                        d._anchor_elapsed_sec = new_pos
+                                        if d.is_playing:
+                                            d._anchor_perf_ts = time.perf_counter()
+                                        d.remaining_sec = max(0.0, d.duration_sec - new_pos)
+                                        self._sync_deck_metrics(d)
+                return
+
             if msg_type not in ("note_on", "note_off"):
                 return
 
@@ -1357,6 +1412,9 @@ class CopilotEngine:
 
                 if os.environ.get("COPILOT_MIDI_DEBUG") == "1":
                     print(f"[COPILOT-MIDI] deck={target_deck} {msg_type} ch={channel} note={note} vel={val}", flush=True)
+                if note == 13:
+                    self._shift_held[target_deck] = is_press
+                    return
                 now = time.perf_counter()
 
                 # 1. PLAY / PAUSE (note 33 / 0x21)
