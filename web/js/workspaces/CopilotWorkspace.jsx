@@ -2,6 +2,8 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons, renderPlatformLogo } from '../shell/icons.jsx';
 import { CopilotSeratoWaveform, computeTrackStructuralBands } from '../waveforms/index.js';
 import { CopilotMixerMirror } from './CopilotMixerMirror.jsx';
+import { CopilotCleanMixBanner } from './CopilotCleanMixBanner.jsx';
+import { CopilotCenterMixer } from './CopilotCenterMixer.jsx';
 import { DEFAULT_VINYL_SVG, getValidCover, NV2_COLORS } from '../data/constants.js';
 import { BeatWaveLogoBadge, BeatWaveBrandIdentity } from '../shell/workspace-ui.jsx';
 
@@ -458,12 +460,34 @@ const DEFAULT_COPILOT_STATE = {
     "is_simulating": true
 };
 
-export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true }) => {
+const DEFAULT_CABINA_HOT_CUES = [
+    { id: 1, time: '00:00.01', color: '#EF4444' },
+    { id: 2, time: '00:28.25', color: '#F97316' },
+    { id: 3, time: '00:56.48', color: '#FBBF24' },
+    { id: 4, time: '01:24.72', color: '#10B981' },
+    { id: 5, time: '01:52.95', color: '#00F0FF' },
+    { id: 6, time: '02:21.19', color: '#A855F7' },
+    { id: 7, time: '02:49.42', color: '#EC4899' },
+    { id: 8, time: '03:17.65', color: '#3B82F6' }
+];
+
+export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true, isCompact = false }) => {
     if (!deck) return null;
+
+    const cabinaHotCues = useMemo(() => {
+        if (deck?.cues && deck.cues.length > 0) {
+            return deck.cues.slice(0, 8).map((c, i) => ({
+                id: c.id || (i + 1),
+                time: c.time || DEFAULT_CABINA_HOT_CUES[i]?.time || '00:00.00',
+                color: c.color || DEFAULT_CABINA_HOT_CUES[i]?.color || '#00F0FF'
+            }));
+        }
+        return DEFAULT_CABINA_HOT_CUES;
+    }, [deck?.cues]);
 
     if (!isAppOpen) {
         return (
-            <div className="p-3.5 sm:p-4 rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all">
+            <div className={`rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all ${isCompact ? 'p-2.5 sm:p-3' : 'p-3.5 sm:p-4'}`}>
                 {/* Cabecera del Deck en Standby */}
                 <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60">
                     <div className="flex items-center gap-2">
@@ -599,257 +623,131 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
     const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
 
     return (
-        <div className={`p-3.5 sm:p-4 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+        <div className={`rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+            isCompact ? 'p-2.5 sm:p-3' : 'p-3.5 sm:p-4'
+        } ${
             isMaster 
             ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.2)]' 
             : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
         }`}>
-            {/* Cabecera del Deck */}
-            <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60">
-                <div className="flex items-center gap-2">
-                    <span className="font-orbitron font-black text-sm sm:text-base text-zinc-400">DECK {side}</span>
+            {/* FILA 1: CABECERA DEL DECK (DECK 1 + EN CUE/MASTER + CUE/PLAY + FLAC + DEFAULT DSP) */}
+            <div className="dk-top-bar select-none">
+                <div className="dk-id-group">
+                    <span className="dk-id">DECK {side}</span>
                     {isEmptyDeck ? (
                         <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500">
                             STANDBY (VACÍO)
                         </span>
                     ) : (
-                        <div className="flex items-center gap-1.5">
+                        <>
                             <button
                                 type="button"
                                 onClick={() => onSetMaster && onSetMaster(side)}
-                                className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${
-                                    isMaster ? 'bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                                }`}
+                                className={`dk-pill-btn ${isMaster ? 'is-master' : ''}`}
                                 title={`Haz clic para alternar DECK ${side} como MASTER (o pulsa 'M')`}
                             >
-                                {isMaster ? '🔊 MASTER' : '🎧 EN CUE'}
+                                <span>{isMaster ? '🔊' : '🎧'}</span>
+                                <span>{isMaster ? 'MASTER' : 'EN CUE'}</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onTogglePlay && onTogglePlay(side)}
-                                className={`px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 select-none cursor-pointer hover:scale-105 active:scale-95 transition-all ${
-                                    deck.is_playing 
-                                        ? 'bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
-                                        : 'bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500'
-                                }`}
+                                className={`dk-pill-btn ${deck.is_playing ? 'is-playing' : ''}`}
                                 title={`Haz clic para alternar Play/Pausa en DECK ${side} (o pulsa tecla '${side}')`}
                             >
                                 <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
                                 <span>{deck.is_playing ? 'EN VIVO' : 'CUE'}</span>
                             </button>
-                        </div>
-                    )}
-
-                    {(deck.mood || deck.phase) && !isEmptyDeck && (
-                        <span className="hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase">
-                            <Icons.Sparkles size={12} className="inline-block align-[-1px] mr-1" /> {deck.mood || deck.phase}
-                        </span>
+                        </>
                     )}
                 </div>
-                <div className="flex items-center gap-2 font-mono text-[11px] text-zinc-500 uppercase">
-                    {deck.format && !isEmptyDeck && (
-                        <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-bold text-zinc-300">
-                            {deck.format}
-                        </span>
-                    )}
-                    <span className="hidden sm:inline">{isEmptyDeck ? 'STANDBY' : (deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP')}</span>
+                <div className="flex items-center gap-2">
+                    <span className="dk-format-badge">{deck.format || 'FLAC'}</span>
+                    <span className="dk-dsp-lbl">{isEmptyDeck ? 'STANDBY' : (deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP')}</span>
                 </div>
             </div>
 
-            {/* SECCIÓN PISTA EN 2 COLUMNAS (IZQUIERDA: COVER+INFO | DERECHA: CAMELOT+BPM+ENERGÍA+MOOD) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch">
-                {/* COLUMNA IZQUIERDA: Carátula 1:1 Cuadrada Full Height + Título + Artista + Taxonomía */}
-                <div className="flex items-stretch gap-3 min-w-0">
+            {/* FILA 2: BARRA HORIZONTAL UNIFICADA DE PISTA (VINILO + TITULO + ARTISTA | 136.00 BPM | 6A | METRICAS) */}
+            <div className="dk-track-row select-none">
+                <div className="dk-track-left">
                     <div 
                         onClick={() => !isEmptyDeck && onTogglePlay && onTogglePlay(side)}
-                        className={`relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none select-none ${!isEmptyDeck ? 'cursor-pointer hover:border-djcyan-400/80 hover:shadow-[0_0_12px_rgba(6,182,212,0.4)] transition-all' : ''}`}
-                        style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
-                        title={!isEmptyDeck ? `Haz clic para alternar Play/Pausa en DECK ${side}` : ''}
+                        className="dk-vinyl-avatar"
+                        title={!isEmptyDeck ? `Reproducir / Pausar DECK ${side}` : ''}
                     >
-                        <img 
-                            src={isEmptyDeck ? DEFAULT_VINYL_SVG : getValidCover(deck.cover)} 
-                            alt="Carátula" 
-                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            className={`w-full h-full object-cover transition-transform duration-300 ${isEmptyDeck ? 'opacity-30 p-2' : 'group-hover:scale-105'}`}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
-                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-400">
-                            {isEmptyDeck ? '--:--' : (deck.duration || '--:--')}
-                        </span>
-                        {deck.year && !isEmptyDeck && (
-                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400">
-                                {deck.year}
-                            </span>
+                        {deck.cover && !isEmptyDeck ? (
+                            <img 
+                                src={getValidCover(deck.cover)} 
+                                alt="Cover" 
+                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                            />
+                        ) : (
+                            <span className="text-[7px] font-mono font-black text-black select-none">AEPX</span>
                         )}
                     </div>
-
-                    <div className="min-w-0 flex-1 flex flex-col justify-center">
-                        <h2 className={`font-syne font-bold text-xs sm:text-sm tracking-tight leading-tight truncate ${isEmptyDeck ? 'italic text-zinc-500' : 'text-white'}`} title={deck.title || 'Arrastrar canción aquí'}>
-                            {deck.title || 'Arrastrar canción aquí'}
-                        </h2>
-                        <p className="font-syne font-bold text-xs text-zinc-500 mt-0.5 truncate" title={deck.artist || 'Deck Vacío'}>
-                            {deck.artist || 'Deck Vacío'}
-                        </p>
-                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                            {isEmptyDeck ? (
-                                <span className="px-1.5 py-0.2 rounded bg-zinc-900/80 border border-zinc-800 text-[9px] font-mono text-zinc-600 truncate">
-                                    -- EN ESPERA --
-                                </span>
-                            ) : (
-                                <>
-                                    {deck.genre && (
-                                        <span className="px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate">
-                                            {deck.genre}
-                                        </span>
-                                    )}
-                                    {deck.subgenre && (
-                                        <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate">
-                                            {deck.subgenre}
-                                        </span>
-                                    )}
-                                </>
-                            )}
-                        </div>
+                    <div className="dk-track-titles">
+                        <span className="dk-title" title={deck.title || 'Track'}>
+                            {deck.title || (isEmptyDeck ? '-- Esperando Pista --' : 'Whip')}
+                        </span>
+                        <span className="dk-artist" title={deck.artist || 'Artista'}>
+                            {deck.artist || (isEmptyDeck ? 'Conecta Serato o mesa' : 'Mark Broom')}
+                        </span>
                     </div>
                 </div>
 
-                {/* COLUMNA DERECHA: TONO Y TEMPO APILADOS CON MOOD DEBAJO + ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD */}
-                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3">
-                    {/* BLOQUE TONO, TEMPO Y MOOD DEBAJO DE LOS BPM */}
-                    <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
-                        {/* Fila Tono */}
-                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
-                            <div 
-                                className="w-5 h-4 rounded text-[9px] font-orbitron font-black flex items-center justify-center shrink-0 shadow-sm"
-                                style={{ backgroundColor: isEmptyDeck ? '#27272a' : (deck.camelot_color || '#ec4899'), color: isEmptyDeck ? '#71717a' : '#000000' }}
-                            >
-                                {isEmptyDeck ? '--' : (deck.camelot || '10A')}
-                            </div>
-                            <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TONO</span>
-                            <span className="font-syne font-bold text-[10px] text-zinc-400 truncate">{isEmptyDeck ? '--' : (deck.raw_key || deck.camelot)}</span>
-                        </div>
-
-                        {/* Fila Tempo (BPM) */}
-                        <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80">
-                            <span className="text-[7px] font-mono uppercase text-zinc-500 font-bold">TEMPO</span>
-                            <span className="font-orbitron font-black text-[10px] text-zinc-300">
-                                {isEmptyDeck ? '--.--' : (deck.bpm ? Number(deck.bpm).toFixed(2) : '130.00')}
-                            </span>
-                            <span className="text-[7px] text-zinc-500 font-mono">BPM</span>
-                        </div>
-
-                        {/* Cuadro morado con el Mood ubicado debajo de los BPM */}
-                        <div className={`px-1.5 py-0.5 rounded-lg border text-[8px] font-mono font-bold truncate max-w-full text-center ${
-                            isEmptyDeck 
-                            ? 'bg-zinc-900/60 border-zinc-800/60 text-zinc-600'
-                            : 'bg-purple-950/70 border-purple-500/40 text-purple-300'
-                        }`} title={deck.mood || deck.phase || 'Peak Time Climax'}>
-                            {isEmptyDeck ? 'STANDBY (VACÍO)' : `✨ ${deck.mood || deck.phase || 'Peak Time Climax'}`}
-                        </div>
+                <div className="dk-track-right">
+                    <div className="dk-bpm-wrap">
+                        <span className="dk-bpm-val">
+                            {deck.bpm ? Number(deck.bpm).toFixed(2) : (isEmptyDeck ? '--.--' : '136.00')}
+                        </span>
+                        <span className="dk-bpm-unit">BPM</span>
                     </div>
 
-                    {/* COLUMNA PSICOMETRÍA: ENERGÍA, INTENSIDAD, DANZABILIDAD Y POSITIVIDAD APILADAS */}
-                    <div className="flex-1 min-w-[130px] flex flex-col justify-center gap-1">
-                        {/* Fila 1: Energía */}
-                        <div>
-                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
-                                <span className="text-amber-400 font-bold flex items-center gap-1">
-                                    <Icons.Zap size={9} /> ENERGÍA
-                                </span>
-                                <span className="text-amber-400 font-bold">{isEmptyDeck ? 0 : (deck.energy || 90)}%</span>
-                            </div>
-                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full" style={{ width: `${isEmptyDeck ? 0 : (deck.energy || 90)}%` }}></div>
-                            </div>
-                        </div>
+                    <span 
+                        className={`dk-key-pill ${side === '2' || side === 'B' ? 'd2' : ''}`}
+                        style={deck.camelot_color ? { backgroundColor: deck.camelot_color, borderColor: `${deck.camelot_color}cc` } : {}}
+                    >
+                        {deck.camelot || deck.raw_key || (side === '1' || side === 'A' ? '6A' : '8A')}
+                    </span>
 
-                        {/* Fila 2: Intensidad */}
-                        <div>
-                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
-                                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                                    <Icons.Activity size={9} /> INTENSIDAD
-                                </span>
-                                <span className="text-emerald-400 font-bold">{isEmptyDeck ? 0 : (deck.arousal || Math.round((deck.energy || 90) * 0.95))}%</span>
-                            </div>
-                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]" style={{ width: `${isEmptyDeck ? 0 : (deck.arousal || Math.round((deck.energy || 90) * 0.95))}%` }}></div>
-                            </div>
-                        </div>
-
-                        {/* Fila 3: Danzabilidad */}
-                        <div>
-                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
-                                <span className="text-purple-300 font-bold flex items-center gap-1">
-                                    <Icons.Sliders size={9} /> DANZABILIDAD
-                                </span>
-                                <span className="text-purple-300 font-bold">{isEmptyDeck ? 0 : (deck.danceability || 85)}%</span>
-                            </div>
-                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]" style={{ width: `${isEmptyDeck ? 0 : (deck.danceability || 85)}%` }}></div>
-                            </div>
-                        </div>
-
-                        {/* Fila 4: Positividad */}
-                        <div>
-                            <div className="flex items-center justify-between text-[8px] font-mono mb-0.5">
-                                <span className="text-djcyan-400 font-bold flex items-center gap-1">
-                                    <Icons.Sparkles size={9} /> POSITIVIDAD
-                                </span>
-                                <span className="text-djcyan-400 font-bold">{isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%</span>
-                            </div>
-                            <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex">
-                                <div className="h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]" style={{ width: `${isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%` }}></div>
-                            </div>
-                        </div>
+                    <div className="dk-metrics-strip">
+                        <span className="dk-metric-item energy" title="Energía">
+                            <Icons.Zap size={11} className="text-amber-400" /> {isEmptyDeck ? 0 : (deck.energy || 90)}%
+                        </span>
+                        <span className="dk-metric-item groove" title="Groove / Intensidad">
+                            <Icons.Activity size={11} className="text-emerald-400" /> {isEmptyDeck ? 0 : (deck.groove || 86)}%
+                        </span>
+                        <span className="dk-metric-item dance" title="Danzabilidad">
+                            <Icons.Sliders size={11} className="text-purple-400" /> {isEmptyDeck ? 0 : (deck.danceability || 85)}%
+                        </span>
+                        <span className="dk-metric-item valence" title="Positividad / Brillo">
+                            <Icons.Sparkles size={11} className="text-cyan-400" /> {isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%
+                        </span>
                     </div>
                 </div>
             </div>
 
-            {/* Tira Visual de 8 Hot Cues de Cabina */}
-            <div className="mb-2.5 p-2 rounded-2xl bg-black/60 border border-zinc-800/80">
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400"></span> 8 HOT CUES DE CABINA
-                    </span>
-                    <span className="text-[8px] font-mono text-zinc-500">{isEmptyDeck ? 'En espera de pista' : 'Puntos de Salto & Estructura'}</span>
+            {/* FILA 3: 8 HOT CUES DE CABINA */}
+            <div className="dk-hotcues-box select-none">
+                <div className="dk-hc-lbl">
+                    <span className="dk-hc-dot"></span>
+                    <span>8 HOT CUES DE CABINA</span>
                 </div>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
-                    {(isEmptyDeck 
-                        ? [1, 2, 3, 4, 5, 6, 7, 8].map(i => ({ id: i, name: `Cue ${i}`, color: '#27272a', time: '--:--', empty: true }))
-                        : (deck.cues && deck.cues.length > 0 ? deck.cues : [
-                            { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
-                            { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
-                            { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
-                            { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
-                            { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
-                            { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
-                            { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
-                            { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" },
-                        ])
-                    ).map((cue, cIdx) => (
-                        <div 
-                            key={cue.id || cIdx}
-                            className={`p-1 rounded-xl border flex flex-col justify-between transition-all ${
-                                cue.empty 
-                                ? 'bg-zinc-950/60 border-zinc-800/40 text-zinc-600' 
-                                : 'bg-zinc-950/80 hover:bg-zinc-900 cursor-default'
-                            }`}
-                            style={cue.empty ? {} : { borderColor: `${cue.color || '#06b6d4'}55` }}
+                <div className="dk-hc-strip">
+                    {cabinaHotCues.map((cue, idx) => (
+                        <span 
+                            key={cue.id || idx}
+                            className="hc-chip"
+                            style={{ borderColor: cue.color || '#00F0FF' }}
                         >
-                            <div className="flex items-center justify-between">
-                                <span 
-                                    className="w-3 h-3 rounded-full flex items-center justify-center text-[7px] font-black font-mono shadow-sm"
-                                    style={cue.empty ? { backgroundColor: '#27272a', color: '#71717a' } : { backgroundColor: cue.color || '#06b6d4', color: '#000000' }}
-                                >
-                                    {cue.id || (cIdx + 1)}
-                                </span>
-                                <span className="text-[7px] font-mono text-zinc-500">{cue.time || '--:--'}</span>
-                            </div>
-                            <div className={`text-[7px] font-syne font-bold truncate mt-0.5 ${cue.empty ? 'text-zinc-600' : 'text-zinc-200'}`} title={cue.name}>
-                                {cue.name}
-                            </div>
-                        </div>
+                            <span 
+                                className="hc-badge"
+                                style={{ backgroundColor: cue.color || '#00F0FF' }}
+                            >
+                                {cue.id || (idx + 1)}
+                            </span>
+                            <span>{cue.time}</span>
+                        </span>
                     ))}
                 </div>
             </div>
@@ -861,6 +759,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                     side={side} 
                     antiMuddy={antiMuddy} 
                     partnerDeck={partnerDeck} 
+                    isCompact={isCompact}
                 />
             </div>
 
@@ -963,6 +862,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         status: 'SIN CONEXIÓN'
     });
     const [testDisconnectSkin, setTestDisconnectSkin] = useState(false);
+    const [forceLiveStage, setForceLiveStage] = useState(false);
 
     // Detección automática y mapeo reactivo de Controladora DJ (WebMIDI API <1ms)
     useEffect(() => {
@@ -1442,6 +1342,14 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     const isStandby = state.source && state.source.endsWith('_STANDBY');
     const displayRecommendations = tracksList.length > 0 ? tracksList : (state.recommendations || []);
 
+    const hasActiveTrack = Boolean(
+        (deck_1?.title && deck_1.title !== 'Deck Vacío') || 
+        (deck_2?.title && deck_2.title !== 'Deck Vacío') || 
+        deck_1?.is_playing || 
+        deck_2?.is_playing
+    );
+    const isLiveStage = forceLiveStage || hasActiveTrack;
+
     // Detección de software DJ abierto (Serato, Rekordbox, Traktor, VirtualDJ) o modo prueba
     const isAppRunning = state.is_app_open !== undefined ? state.is_app_open : (state.dj_app ? state.dj_app.is_open : false);
     const isAppOpen = !testDisconnectSkin && isAppRunning;
@@ -1486,22 +1394,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 <span className={isLive ? 'text-red-400 font-bold' : 'text-cyan-400 font-bold'}>
                                     {state.platform_status || (isLive ? 'LIVE' : 'STANDBY')}
                                 </span>
-                            </div>
-                        </div>
-
-                        {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                                <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setMasterDeck('toggle')}
-                                    className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[9px]"
-                                    title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
-                                >
-                                    ⇄ DECK {deck_1.is_master ? '1' : '2'} [M]
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -1627,95 +1519,20 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                 </div>
             )}
 
-            {/* GUARDIÁN TÁCTICO ANTI-MUDDY (REDUCIDO Y UBICADO ENCIMA DE LOS DECKS) */}
-            <section className="mb-2.5">
-                <div className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${
-                    !isAppOpen
-                    ? 'bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse'
-                    : anti_muddy.status === 'danger'
-                    ? 'bg-red-950/40 border border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
-                    : anti_muddy.status === 'warning'
-                    ? 'bg-amber-950/40 border border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                    : 'bg-emerald-950/30 border border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-                }`}>
-                    {!isAppOpen ? (
-                        <div className="flex items-center gap-2 min-w-0 py-0.5">
-                            <span className="text-base shrink-0">🛡️</span>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h3 className="font-syne font-bold text-xs text-zinc-400 tracking-wide">ANTI-MUDDY FILTER • STANDBY</h3>
-                                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-500 border border-zinc-800">
-                                        SIN SEÑAL
-                                    </span>
-                                </div>
-                                <p className="text-[10.5px] font-syne text-zinc-500 truncate mt-0.5">
-                                    Supervisión de choque de frecuencias inactiva hasta conectar software y hardware DJ.
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-base shrink-0">
-                                {anti_muddy.status === 'danger' ? '🛡️' : anti_muddy.status === 'warning' ? '⚡' : '🟢'}
-                            </span>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h3 className="font-syne font-black text-xs text-white tracking-wide">{anti_muddy.title}</h3>
-                                    <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${
-                                        anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
-                                    }`}>
-                                        {anti_muddy.tag}
-                                    </span>
-                                </div>
-                                <p className="text-[10.5px] text-zinc-300 truncate mt-0.5">{anti_muddy.message}</p>
-                            </div>
-                        </div>
-                    )}
+            {/* BANNER TÁCTICO: MEZCLA LIMPIA V3 */}
+            <CopilotCleanMixBanner 
+                antiMuddy={anti_muddy} 
+                harmonic={harmonic} 
+                controllerState={controllerState} 
+                lufsDelta={state?.lufs_delta} 
+                lowEqApplied={lowEqApplied} 
+                onApplyCorrection={handleApplyCorrection} 
+                isAppOpen={isAppOpen} 
+                latency={latency}
+            />
 
-                    <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
-                        {isAppOpen && controllerState.detected && (anti_muddy.controller_knobs || anti_muddy.flx4) && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                <span>🎛️ {(state.controller?.name || controllerState.name || 'NUMARK NV II').replace(' (USB)', '')}:</span>
-                                <span className="text-white font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob}</span>
-                                <span className="text-zinc-400">•</span>
-                                <span className="text-amber-300 font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).eq_low}</span>
-                            </div>
-                        )}
-                        {/* BOTÓN INTERACTIVO DE ACCIÓN CORRECTIVA ANTI-MUDDY */}
-                        {isAppOpen ? (
-                            <button
-                                type="button"
-                                onClick={handleApplyCorrection}
-                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm border ${
-                                    lowEqApplied
-                                    ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500 text-emerald-300 hover:text-white'
-                                    : 'bg-red-900/90 hover:bg-red-800 border-red-500 text-white animate-pulse'
-                                }`}
-                                title="Aplicar corte táctico de EQ para resolver choque de sub-graves"
-                            >
-                                <span>{lowEqApplied ? '✓' : '⚡'}</span>
-                                <span className="text-djcyan-300 font-bold">ACCIÓN:</span>
-                                <span className="truncate max-w-[280px]">{lowEqApplied ? 'Restablecer EQ (Deshacer)' : (anti_muddy.action || 'Corta Low EQ en Deck 2 (-10dB)')}</span>
-                            </button>
-                        ) : (
-                            <div className="px-2.5 py-1 rounded-lg font-mono text-[11px] text-zinc-500 border border-zinc-800 bg-zinc-900/60">
-                                EQ STANDBY
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-2 text-zinc-400 text-[10px]">
-                            <span>CAMELOT: <strong style={{ color: isAppOpen ? harmonic.color : '#71717a' }}>{isAppOpen ? harmonic.badge : '--'}</strong></span>
-                            <span>Δ LUFS: <strong className="text-white">{isAppOpen ? (state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta) : '--'} dB</strong></span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* MIXER ESPEJO 14-BIT Y AUDITORÍA DE EJECUCIÓN EN TIEMPO REAL */}
-            <CopilotMixerMirror mixer={state?.mixer} audit={state?.audit} />
-
-            {/* DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
+            {/* ESCENARIO DE CABINA: DECKS ORIGINALES ADAPTABLES + APERTURA ANIMADA DE MESA CENTRAL 448PX */}
+            <div className={`bw-copilot-stage ${isLiveStage ? 'is-live' : ''} mb-4`}>
                 <CopilotDeckCard 
                     deck={deck_1} 
                     side="1" 
@@ -1725,7 +1542,21 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     onSetMaster={setMasterDeck} 
                     onTogglePlay={toggleDeckPlay}
                     isAppOpen={isAppOpen}
+                    isCompact={isLiveStage}
                 />
+
+                {/* MESA CENTRAL SLIM 448PX CON HUD REGRESIVO */}
+                <div className="bw-center-slot">
+                    <CopilotCenterMixer 
+                        deck1={deck_1} 
+                        deck2={deck_2} 
+                        mixer={state?.mixer} 
+                        audit={state?.audit} 
+                        isAppOpen={isAppOpen} 
+                        showInlineHud={true}
+                    />
+                </div>
+
                 <CopilotDeckCard 
                     deck={deck_2} 
                     side="2" 
@@ -1735,6 +1566,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     onSetMaster={setMasterDeck} 
                     onTogglePlay={toggleDeckPlay}
                     isAppOpen={isAppOpen}
+                    isCompact={isLiveStage}
                 />
             </div>
 
