@@ -1751,22 +1751,6 @@ function LiveCopilotApp() {
                                 </span>
                             </div>
                         </div>
-
-                        {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA & MASTER */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                                <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setMasterDeck('toggle')}
-                                    className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[10px]"
-                                    title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
-                                >
-                                    ⇄ MASTER: DECK {deck_1.is_master ? '1' : '2'} <span className="text-[9px] text-zinc-400">[M]</span>
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* CENTRO-DERECHA: TEXTO ENCIMA DE LA IMAGEN + CONTROLES */}
@@ -1920,6 +1904,7 @@ function LiveCopilotApp() {
                 lowEqApplied={lowEqApplied} 
                 onApplyCorrection={handleApplyCorrection} 
                 isAppOpen={isAppOpen} 
+                latency={latency}
             />
 
             {/* ESCENARIO DE CABINA CON APERTURA ANIMADA AL INICIAR/CARGAR PISTA */}

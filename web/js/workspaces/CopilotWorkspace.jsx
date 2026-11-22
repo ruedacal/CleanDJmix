@@ -1396,22 +1396,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 </span>
                             </div>
                         </div>
-
-                        {/* FILA INFERIOR IZQUIERDA: LATENCIA CABINA */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                                <span className="font-bold tracking-tight">⚡ Latencia Cabina: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setMasterDeck('toggle')}
-                                    className="ml-1 px-1.5 py-0.2 rounded bg-zinc-800 hover:bg-zinc-700 text-cyan-300 hover:text-white border border-cyan-500/40 font-bold transition-all cursor-pointer active:scale-95 text-[9px]"
-                                    title="Intercambiar qué Deck es Master en vivo (Atajo de teclado: M)"
-                                >
-                                    ⇄ DECK {deck_1.is_master ? '1' : '2'} [M]
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* CENTRO-DERECHA: TEXTO ENCIMA DE LA IMAGEN + CONTROLES DE CABINA */}
@@ -1544,6 +1528,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                 lowEqApplied={lowEqApplied} 
                 onApplyCorrection={handleApplyCorrection} 
                 isAppOpen={isAppOpen} 
+                latency={latency}
             />
 
             {/* ESCENARIO DE CABINA: DECKS ORIGINALES ADAPTABLES + APERTURA ANIMADA DE MESA CENTRAL 448PX */}

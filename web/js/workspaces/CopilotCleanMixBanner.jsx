@@ -11,7 +11,8 @@ export const CopilotCleanMixBanner = memo(({
     lufsDelta = null,
     lowEqApplied = false,
     onApplyCorrection = null,
-    isAppOpen = true
+    isAppOpen = true,
+    latency = 2
 }) => {
     const isDanger = isAppOpen && antiMuddy && antiMuddy.status === 'danger';
     const isWarning = isAppOpen && antiMuddy && antiMuddy.status === 'warning';
@@ -82,6 +83,12 @@ export const CopilotCleanMixBanner = memo(({
 
             {/* Telemetría y acciones de controladora */}
             <div className="flex items-center gap-2 flex-wrap justify-end">
+                {/* Latencia en vivo integrada (sin palabra Cabina y sin botón Deck) */}
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10.5px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
+                    <span className="font-bold tracking-tight">⚡ Latencia: <strong className="text-white font-extrabold">{latency}ms</strong> • Sincronizado</span>
+                </span>
+
                 {controllerState?.detected && (
                     <span className="font-mono text-[10.5px] font-bold px-2.5 py-1 rounded-lg bg-[#0F172A] border border-cyan-500/40 text-cyan-300">
                         {controllerName} · {isDanger ? 'LOW CH2 ACTIVO' : 'Centrado (12h) · 0 dB'}
