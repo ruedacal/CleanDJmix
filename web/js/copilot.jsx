@@ -1,3 +1,6 @@
+import { CopilotCleanMixBanner } from './workspaces/CopilotCleanMixBanner.jsx';
+import { CopilotCenterMixer } from './workspaces/CopilotCenterMixer.jsx';
+
 const { useState, useEffect, useRef } = React;
 
 const SlidersIcon = ({ size = 14, className = "" }) => (
@@ -1703,6 +1706,14 @@ function LiveCopilotApp() {
     const isAppRunning = state.is_app_open !== undefined ? state.is_app_open : (state.dj_app ? state.dj_app.is_open : false);
     const isAppOpen = !testDisconnectSkin && isAppRunning;
 
+    const hasActiveTrack = Boolean(
+        (deck_1?.title && deck_1.title !== 'Deck Vacío') || 
+        (deck_2?.title && deck_2.title !== 'Deck Vacío') || 
+        deck_1?.is_playing || 
+        deck_2?.is_playing
+    );
+    const isLiveStage = hasActiveTrack;
+
     return (
         <div className="flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200">
             {/* BARRA SUPERIOR DE CABINA HUD */}
@@ -1897,82 +1908,53 @@ function LiveCopilotApp() {
                 </div>
             )}
 
-            {/* GUARDIÁN TÁCTICO ANTI-MUDDY & RADAR ARMÓNICO (SOBRE LOS DECKS Y REDUCIDO) */}
-            <section className="mb-2.5">
-                <div className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${
-                    !isAppOpen
-                    ? 'bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse'
-                    : anti_muddy.status === 'danger'
-                    ? 'bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]'
-                    : anti_muddy.status === 'warning'
-                    ? 'bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                    : 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-                }`}>
-                    {!isAppOpen ? (
-                        <div className="flex items-center gap-2 min-w-0 py-0.5">
-                            <span className="text-base shrink-0">🛡️</span>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h2 className="font-syne font-bold text-xs text-zinc-400 tracking-wide">
-                                        ANTI-MUDDY FILTER • STANDBY
-                                    </h2>
-                                    <span className="px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-500 border border-zinc-800">
-                                        SIN SEÑAL
-                                    </span>
-                                </div>
-                                <p className="text-[10.5px] font-syne text-zinc-500 truncate mt-0.5">
-                                    Supervisión de choque de frecuencias inactiva hasta conectar software y hardware DJ.
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-base shrink-0">
-                                {anti_muddy.status === 'danger' ? '🛡️' : anti_muddy.status === 'warning' ? '⚡' : '🟢'}
-                            </span>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h2 className="font-syne font-black text-xs text-white tracking-wide">
-                                        {anti_muddy.title}
-                                    </h2>
-                                    <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${
-                                        anti_muddy.status === 'danger' ? 'bg-red-600 text-white' : anti_muddy.status === 'warning' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-black'
-                                    }`}>
-                                        {anti_muddy.tag}
-                                    </span>
-                                </div>
-                                <p className="text-[10.5px] text-zinc-300 truncate mt-0.5">
-                                    {anti_muddy.message}
-                                </p>
-                            </div>
-                        </div>
-                    )}
+            {/* BANNER TÁCTICO: MEZCLA LIMPIA V3 */}
+            <CopilotCleanMixBanner 
+                antiMuddy={anti_muddy} 
+                harmonic={harmonic} 
+                controllerState={controllerState} 
+                lufsDelta={state?.lufs_delta} 
+                lowEqApplied={lowEqApplied} 
+                onApplyCorrection={handleApplyCorrection} 
+                isAppOpen={isAppOpen} 
+            />
 
-                    <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono">
-                        {isAppOpen && controllerState.detected && (anti_muddy.controller_knobs || anti_muddy.flx4) && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                                <span>🎛️ {(state.controller?.name || controllerState.name || 'NUMARK NV II').replace(' (USB)', '')}:</span>
-                                <span className="text-white font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob}</span>
-                                <span className="text-zinc-400">•</span>
-                                <span className="text-amber-300 font-extrabold">{(anti_muddy.controller_knobs || anti_muddy.flx4).eq_low}</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/60 border border-zinc-800">
-                            <span className="text-djcyan-400 font-bold">ACCIÓN:</span>
-                            <span className="text-zinc-200 font-semibold truncate max-w-[280px]">{isAppOpen ? anti_muddy.action : 'Esperando Conexión'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-zinc-400 text-[10px]">
-                            <span>CAMELOT: <strong style={{ color: isAppOpen ? harmonic.color : '#71717a' }}>{isAppOpen ? harmonic.badge : '--'}</strong></span>
-                            <span>Δ LUFS: <strong className="text-white">{isAppOpen ? (state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta) : '--'} dB</strong></span>
-                        </div>
-                    </div>
+            {/* ESCENARIO DE CABINA CON APERTURA ANIMADA AL INICIAR/CARGAR PISTA */}
+            <div className={`bw-copilot-stage ${isLiveStage ? 'is-live' : ''} mb-4`}>
+                <DeckCard 
+                    deck={deck_1} 
+                    side="A" 
+                    isMaster={deck_1.is_master} 
+                    antiMuddy={anti_muddy} 
+                    partnerDeck={deck_2} 
+                    onSetMaster={setMasterDeck} 
+                    onTogglePlay={toggleDeckPlay} 
+                    isAppOpen={isAppOpen}
+                    isCompact={isLiveStage}
+                />
+
+                {/* MESA CENTRAL SLIM 448PX CON HUD REGRESIVO */}
+                <div className="bw-center-slot">
+                    <CopilotCenterMixer 
+                        deck1={deck_1} 
+                        deck2={deck_2} 
+                        mixer={state?.mixer} 
+                        audit={state?.audit} 
+                        isAppOpen={isAppOpen} 
+                    />
                 </div>
-            </section>
 
-            {/* CUERPO PRINCIPAL: DUAL DECK HEADS-UP DISPLAY ENRIQUECIDO */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4">
-                <DeckCard deck={deck_1} side="A" isMaster={deck_1.is_master} antiMuddy={anti_muddy} partnerDeck={deck_2} onSetMaster={setMasterDeck} onTogglePlay={toggleDeckPlay} isAppOpen={isAppOpen} />
-                <DeckCard deck={deck_2} side="B" isMaster={deck_2.is_master} antiMuddy={anti_muddy} partnerDeck={deck_1} onSetMaster={setMasterDeck} onTogglePlay={toggleDeckPlay} isAppOpen={isAppOpen} />
+                <DeckCard 
+                    deck={deck_2} 
+                    side="B" 
+                    isMaster={deck_2.is_master} 
+                    antiMuddy={anti_muddy} 
+                    partnerDeck={deck_1} 
+                    onSetMaster={setMasterDeck} 
+                    onTogglePlay={toggleDeckPlay} 
+                    isAppOpen={isAppOpen}
+                    isCompact={isLiveStage}
+                />
             </div>
 
             {/* SECCIÓN DE PRÓXIMAS PISTAS (4 VISIBLES, CARGAR MÁS, DRAG & DROP Y ANÁLISIS DINÁMICO) */}
@@ -2185,12 +2167,12 @@ function LiveCopilotApp() {
 }
 
 // Subcomponente de Tarjeta de Deck A/B Enriquecido
-function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true }) {
+function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true, isCompact = false }) {
     if (!deck) return null;
 
     if (!isAppOpen) {
         return (
-            <div className="p-4 sm:p-5 lg:p-6 rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all">
+            <div className={`rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all ${isCompact ? 'p-2.5 sm:p-3' : 'p-4 sm:p-5 lg:p-6'}`}>
                 {/* Cabecera del Deck en Standby */}
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60">
                     <div className="flex items-center gap-2">
@@ -2258,7 +2240,9 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
     const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
 
     return (
-        <div className={`p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+        <div className={`rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${
+            isCompact ? 'p-2.5 sm:p-3' : 'p-4 sm:p-5 lg:p-6'
+        } ${
             isMaster 
             ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]' 
             : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'

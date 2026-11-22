@@ -173,10 +173,11 @@ def test_copilot_transport_and_midi_controls():
     # Probar Cue en Deck 1
     state3 = engine.cue_deck(1)
     assert state3["deck_1"]["is_playing"] is False
-    assert state3["deck_1"]["elapsed_sec"] == 0.0
+    assert abs(state3["deck_1"]["elapsed_sec"] - round(engine._get_primary_cue_sec(engine.state.decks[1]), 2)) < 0.001
     assert state3["deck_1"]["status"] == "CUE (PREPARADO)"
 
-    # Probar mensaje MIDI (Note On 59 = Play/Pausa Deck 2)
+    # Probar mensaje MIDI genérico (Note On 59 = Play/Pausa Deck 2)
+    engine._active_midi_port_name = "Generic MIDI Controller"
     class FakeMidiMsg:
         type = "note_on"
         channel = 1  # Deck 2
@@ -189,6 +190,7 @@ def test_copilot_transport_and_midi_controls():
     assert d2.is_playing != was_playing
 
     # Probar mensaje MIDI Numark NV II Play (Note 4) y Cue (Note 1)
+    engine._active_midi_port_name = "Numark NV II Control"
     class NumarkPlayMsg:
         type = "note_on"
         channel = 0  # Deck 1

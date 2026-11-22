@@ -12,3 +12,5 @@ export { SetBuilderWorkspace } from './SetBuilderWorkspace.jsx';
 export { MapWorkspace } from './MapWorkspace.jsx';
 export { KnowledgeWorkspace } from './KnowledgeWorkspace.jsx';
 export { CopilotWorkspace, CopilotLaunchModal, AppCinematicIntro } from './CopilotWorkspace.jsx';
+export { CopilotCleanMixBanner } from './CopilotCleanMixBanner.jsx';
+export { CopilotCenterMixer } from './CopilotCenterMixer.jsx';

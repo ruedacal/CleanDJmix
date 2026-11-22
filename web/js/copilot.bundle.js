@@ -1,6 +1,333 @@
 (() => {
+  // web/js/workspaces/CopilotCleanMixBanner.jsx
+  var { memo } = React;
+  var CopilotCleanMixBanner = memo(({
+    antiMuddy = null,
+    harmonic = null,
+    controllerState = null,
+    lufsDelta = null,
+    lowEqApplied = false,
+    onApplyCorrection = null,
+    isAppOpen = true
+  }) => {
+    const isDanger = isAppOpen && antiMuddy && antiMuddy.status === "danger";
+    const isWarning = isAppOpen && antiMuddy && antiMuddy.status === "warning";
+    const isClean = !isDanger && !isWarning;
+    const controllerName = ((controllerState == null ? void 0 : controllerState.name) || "NUMARK NV II").replace(/\s*\(USB\)\s*/i, "").trim();
+    return /* @__PURE__ */ React.createElement(
+      "section",
+      {
+        className: `bw-msg-banner ${isDanger ? "is-danger" : ""} ${!isAppOpen ? "opacity-50" : ""}`,
+        "aria-live": "polite"
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "bw-msg-visual" }, /* @__PURE__ */ React.createElement("div", { className: "bw-phase-bars" }, /* @__PURE__ */ React.createElement("span", { className: "bw-p-bar" }), /* @__PURE__ */ React.createElement("span", { className: "bw-p-bar" }), /* @__PURE__ */ React.createElement("span", { className: "bw-p-bar" }), /* @__PURE__ */ React.createElement("span", { className: "bw-p-bar" }), /* @__PURE__ */ React.createElement("span", { className: "bw-p-bar" })), /* @__PURE__ */ React.createElement("div", { className: "msg-phase-meta font-mono text-[10px] leading-tight select-none" }, /* @__PURE__ */ React.createElement("div", { className: "text-zinc-400 font-bold" }, "SUB-BASS"), /* @__PURE__ */ React.createElement("div", { className: `font-black ${isDanger ? "text-[#ff6b88]" : "text-emerald-400"}` }, !isAppOpen ? "STANDBY" : isDanger ? "COLISI\xD3N 142\xB0" : "FASE 0\xB0 OK"))),
+      /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "font-syne font-black text-sm tracking-wider text-white" }, !isAppOpen ? "CABINA EN STANDBY" : isDanger ? (antiMuddy == null ? void 0 : antiMuddy.title) || "ALERTA DE GRAVES" : isWarning ? (antiMuddy == null ? void 0 : antiMuddy.title) || "AVISO DE FRECUENCIAS" : "MEZCLA LIMPIA"), /* @__PURE__ */ React.createElement("span", { className: `text-[10px] font-mono font-black px-2 py-0.5 rounded-full tracking-wider ${!isAppOpen ? "bg-zinc-800 text-zinc-400" : isDanger ? "bg-[#FF2A54] text-white shadow-[0_0_10px_rgba(255,42,84,0.72)]" : isWarning ? "bg-amber-400 text-black" : "bg-emerald-500 text-[#03140E]"}` }, !isAppOpen ? "SIN CONEXI\xD3N" : isDanger ? (antiMuddy == null ? void 0 : antiMuddy.tag) || "BASS CLASH \xB7 -0.2 dB CLIP" : (antiMuddy == null ? void 0 : antiMuddy.tag) || "CLEAR MIX \xB7 HEADROOM +2.4 dB")), /* @__PURE__ */ React.createElement("div", { className: `text-[11.5px] font-syne truncate ${isDanger ? "text-[#ffe4e6] font-semibold" : "text-zinc-300 font-medium"}` }, !isAppOpen ? "Supervisi\xF3n inactiva hasta conectar software y hardware DJ." : (antiMuddy == null ? void 0 : antiMuddy.message) || (isDanger ? "Choque de sub-graves detectado entre DK1 y DK2. Riesgo de saturaci\xF3n en PA." : "Espectro de graves despejado (30\u2013120 Hz). Sin riesgo de cancelaci\xF3n ac\xFAstica."))),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap justify-end" }, (controllerState == null ? void 0 : controllerState.detected) && /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10.5px] font-bold px-2.5 py-1 rounded-lg bg-[#0F172A] border border-cyan-500/40 text-cyan-300" }, controllerName, " \xB7 ", isDanger ? "LOW CH2 ACTIVO" : "Centrado (12h) \xB7 0 dB"), onApplyCorrection && isAppOpen ? /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: onApplyCorrection,
+          className: `font-mono text-[10.5px] font-bold px-3 py-1 rounded-lg border transition-all cursor-pointer ${lowEqApplied ? "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500 text-emerald-300" : isDanger ? "bg-[#FF2A54] hover:bg-red-500 border-red-200 text-white font-black shadow-[0_0_12px_rgba(255,42,84,0.5)] animate-pulse" : "bg-[#0F172A] hover:bg-zinc-800 border-emerald-500/60 text-emerald-300"}`,
+          title: "Aplicar ajuste correctivo anti-muddy"
+        },
+        lowEqApplied ? "\u2713 EQ RESTABLECIDO" : (antiMuddy == null ? void 0 : antiMuddy.action) || (isDanger ? "ACCI\xD3N: CORTAR LOW CH2 (-12 dB) AHORA" : "ACCI\xD3N: Frecuencias equilibradas")
+      ) : /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10.5px] px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500" }, "EQ STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10.5px] font-bold px-2 py-1 rounded-lg bg-[#0F172A] border border-[#26354F] text-zinc-300" }, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: (harmonic == null ? void 0 : harmonic.color) || "#38bdf8" } }, (harmonic == null ? void 0 : harmonic.badge) || "--"), " \xB7 ", lufsDelta != null ? `${lufsDelta > 0 ? "+" : ""}${lufsDelta} dB` : "-8.4 LUFS"))
+    );
+  });
+
+  // web/js/workspaces/CopilotCenterMixer.jsx
+  var { useState, useEffect, useRef, useMemo, memo: memo2 } = React;
+  var HardwareKnob = memo2(({
+    value = 0.5,
+    color = "#00F0FF",
+    label = "",
+    isFilter = false,
+    onChange = null
+  }) => {
+    const v = Math.max(0, Math.min(1, Number(value) || 0.5));
+    const angle = Math.round((v - 0.5) * 270);
+    return /* @__PURE__ */ React.createElement(
+      "svg",
+      {
+        className: "bw-dj-knob-svg select-none",
+        viewBox: "0 0 40 40",
+        title: `${label}: ${v >= 0.5 ? "+" : ""}${Math.round((v - 0.5) * 200)}%`
+      },
+      /* @__PURE__ */ React.createElement(
+        "circle",
+        {
+          cx: "20",
+          cy: "20",
+          r: "14",
+          fill: "none",
+          stroke: "#162033",
+          strokeWidth: "2.2",
+          strokeDasharray: "66 24",
+          transform: "rotate(135 20 20)"
+        }
+      ),
+      /* @__PURE__ */ React.createElement(
+        "circle",
+        {
+          cx: "20",
+          cy: "20",
+          r: "14",
+          fill: "none",
+          stroke: color,
+          strokeWidth: "2.2",
+          strokeDasharray: "38 56",
+          transform: "rotate(135 20 20)",
+          opacity: "0.88"
+        }
+      ),
+      /* @__PURE__ */ React.createElement("circle", { cx: "20", cy: "20", r: "10.5", fill: "#0A101C", stroke: "#334155", strokeWidth: "1.3" }),
+      /* @__PURE__ */ React.createElement("circle", { cx: "20", cy: "20", r: "8.2", fill: "#151F32" }),
+      /* @__PURE__ */ React.createElement("g", { transform: `rotate(${angle} 20 20)` }, /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "20", x2: "20", y2: "10", stroke: color, strokeWidth: "2.2", strokeLinecap: "round" }))
+    );
+  });
+  var HitoIcons = {
+    intro: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "9" }), /* @__PURE__ */ React.createElement("polygon", { points: "10 8 16 12 10 16 10 8" })),
+    bassline: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("polyline", { points: "2 12 6 12 9 4 13 20 16 9 18 12 22 12" })),
+    buildup: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("polyline", { points: "17 11 12 6 7 11" }), /* @__PURE__ */ React.createElement("polyline", { points: "17 18 12 13 7 18" })),
+    drop: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "2", x2: "12", y2: "6" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "18", x2: "12", y2: "22" }), /* @__PURE__ */ React.createElement("line", { x1: "2", y1: "12", x2: "6", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "18", y1: "12", x2: "22", y2: "12" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "1.5" })),
+    breakdown: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M2 9c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0 4-2.5 4-2.5" }), /* @__PURE__ */ React.createElement("path", { d: "M2 15c2.5-2.5 5.5-2.5 8 0s5.5 2.5 8 0 4-2.5 4-2.5" })),
+    break2: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("rect", { x: "3", y: "3", width: "18", height: "18", rx: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "10", y1: "8", x2: "10", y2: "16" }), /* @__PURE__ */ React.createElement("line", { x1: "14", y1: "8", x2: "14", y2: "16" })),
+    drop2: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("polygon", { points: "13 2 4 14 12 14 11 22 20 10 12 10 13 2" })),
+    outro: () => /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M5 21V4" }), /* @__PURE__ */ React.createElement("path", { d: "M5 4h12l-2.5 4L17 12H5" }))
+  };
+  var DEFAULT_HITOS_D1 = [
+    { id: 1, key: "intro", label: "INTRO", time: "00:00", pos_sec: 0 },
+    { id: 2, key: "bassline", label: "BASSLINE IN", time: "00:32", pos_sec: 32 },
+    { id: 3, key: "buildup", label: "BUILD UP", time: "01:04", pos_sec: 64 },
+    { id: 4, key: "drop", label: "MAIN DROP", time: "01:36", pos_sec: 96 },
+    { id: 5, key: "breakdown", label: "BREAKDOWN", time: "02:15", pos_sec: 135 },
+    { id: 6, key: "break2", label: "2ND BREAK", time: "02:58", pos_sec: 178 },
+    { id: 7, key: "drop2", label: "DROP 2", time: "03:30", pos_sec: 210 },
+    { id: 8, key: "outro", label: "OUTRO", time: "04:12", pos_sec: 252 }
+  ];
+  var DEFAULT_HITOS_D2 = [
+    { id: 1, key: "intro", label: "INTRO", time: "00:00", pos_sec: 0 },
+    { id: 2, key: "bassline", label: "BASSLINE IN", time: "00:16", pos_sec: 16 },
+    { id: 3, key: "buildup", label: "BUILD UP", time: "00:48", pos_sec: 48 },
+    { id: 4, key: "drop", label: "MAIN DROP", time: "01:04", pos_sec: 64 },
+    { id: 5, key: "breakdown", label: "BREAKDOWN", time: "01:48", pos_sec: 108 },
+    { id: 6, key: "break2", label: "2ND BREAK", time: "02:30", pos_sec: 150 },
+    { id: 7, key: "drop2", label: "DROP 2", time: "03:02", pos_sec: 182 },
+    { id: 8, key: "outro", label: "OUTRO", time: "03:45", pos_sec: 225 }
+  ];
+  var CopilotCenterMixer = memo2(({
+    deck1 = null,
+    deck2 = null,
+    mixer = null,
+    audit = null,
+    isAppOpen = true
+  }) => {
+    const [d1ActiveHito, setD1ActiveHito] = useState(0);
+    const [d2ActiveHito, setD2ActiveHito] = useState(2);
+    const [pflState, setPflState] = useState({ ch1: false, ch2: true });
+    const [currentBeat, setCurrentBeat] = useState(1);
+    useEffect(() => {
+      const bpm = Number((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136);
+      const beatMs = Math.round(60 / bpm * 1e3);
+      const interval = setInterval(() => {
+        setCurrentBeat((b) => b % 4 + 1);
+      }, beatMs);
+      return () => clearInterval(interval);
+    }, [deck1 == null ? void 0 : deck1.bpm, deck2 == null ? void 0 : deck2.bpm]);
+    const hitosD1 = useMemo(() => {
+      if ((deck1 == null ? void 0 : deck1.cues) && deck1.cues.length >= 4) {
+        return deck1.cues.map((c, i) => {
+          var _a, _b, _c, _d;
+          return {
+            id: c.id || i + 1,
+            key: ((_a = DEFAULT_HITOS_D1[i]) == null ? void 0 : _a.key) || "intro",
+            label: c.name || ((_b = DEFAULT_HITOS_D1[i]) == null ? void 0 : _b.label) || `CUE ${i + 1}`,
+            time: c.time || ((_c = DEFAULT_HITOS_D1[i]) == null ? void 0 : _c.time) || "00:00",
+            pos_sec: c.pos_sec !== void 0 ? c.pos_sec : ((_d = DEFAULT_HITOS_D1[i]) == null ? void 0 : _d.pos_sec) || 0
+          };
+        });
+      }
+      return DEFAULT_HITOS_D1;
+    }, [deck1 == null ? void 0 : deck1.cues]);
+    const hitosD2 = useMemo(() => {
+      if ((deck2 == null ? void 0 : deck2.cues) && deck2.cues.length >= 4) {
+        return deck2.cues.map((c, i) => {
+          var _a, _b, _c, _d;
+          return {
+            id: c.id || i + 1,
+            key: ((_a = DEFAULT_HITOS_D2[i]) == null ? void 0 : _a.key) || "intro",
+            label: c.name || ((_b = DEFAULT_HITOS_D2[i]) == null ? void 0 : _b.label) || `CUE ${i + 1}`,
+            time: c.time || ((_c = DEFAULT_HITOS_D2[i]) == null ? void 0 : _c.time) || "00:00",
+            pos_sec: c.pos_sec !== void 0 ? c.pos_sec : ((_d = DEFAULT_HITOS_D2[i]) == null ? void 0 : _d.pos_sec) || 0
+          };
+        });
+      }
+      return DEFAULT_HITOS_D2;
+    }, [deck2 == null ? void 0 : deck2.cues]);
+    const targetDeck = (deck2 == null ? void 0 : deck2.is_playing) ? deck1 : deck2;
+    const targetHitos = (deck2 == null ? void 0 : deck2.is_playing) ? hitosD1 : hitosD2;
+    const nextHitoIdx = (deck2 == null ? void 0 : deck2.is_playing) ? (d1ActiveHito + 1) % targetHitos.length : 3;
+    const nextHito = targetHitos[nextHitoIdx] || targetHitos[0];
+    const [countdownSeconds, setCountdownSeconds] = useState(14);
+    const [totalSeconds] = useState(14);
+    useEffect(() => {
+      let timer = null;
+      if (isAppOpen) {
+        timer = setInterval(() => {
+          setCountdownSeconds((s) => {
+            if (s <= 1) return totalSeconds;
+            return s - 1;
+          });
+        }, 1e3);
+      }
+      return () => {
+        if (timer) clearInterval(timer);
+      };
+    }, [isAppOpen, totalSeconds]);
+    const isCriticalAlert = countdownSeconds <= 5;
+    const progressPct = Math.min(100, Math.max(0, Math.round((totalSeconds - countdownSeconds) / totalSeconds * 100)));
+    const ch1Mix = (mixer == null ? void 0 : mixer.ch1) || {};
+    const ch2Mix = (mixer == null ? void 0 : mixer.ch2) || {};
+    const ch1Gain = ch1Mix.gain !== void 0 ? ch1Mix.gain : 0.5;
+    const ch2Gain = ch2Mix.gain !== void 0 ? ch2Mix.gain : 0.52;
+    const ch1Hi = ch1Mix.eq_high !== void 0 ? ch1Mix.eq_high : 0.5;
+    const ch2Hi = ch2Mix.eq_high !== void 0 ? ch2Mix.eq_high : 0.45;
+    const ch1Mid = ch1Mix.eq_mid !== void 0 ? ch1Mix.eq_mid : 0.53;
+    const ch2Mid = ch2Mix.eq_mid !== void 0 ? ch2Mix.eq_mid : 0.4;
+    const ch1Low = ch1Mix.eq_low !== void 0 ? ch1Mix.eq_low : 0.5;
+    const ch2Low = ch2Mix.eq_low !== void 0 ? ch2Mix.eq_low : isCriticalAlert ? 0.2 : 0.38;
+    const ch1Fltr = ch1Mix.filter !== void 0 ? ch1Mix.filter : 0.5;
+    const ch2Fltr = ch2Mix.filter !== void 0 ? ch2Mix.filter : 0.58;
+    const ch1Fader = ch1Mix.fader !== void 0 ? ch1Mix.fader : 0.88;
+    const ch2Fader = ch2Mix.fader !== void 0 ? ch2Mix.fader : 0.42;
+    const crossfader = (mixer == null ? void 0 : mixer.crossfader) !== void 0 ? mixer.crossfader : 0.22;
+    const auditScore = (audit == null ? void 0 : audit.score_pct) !== void 0 ? audit.score_pct : 100;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: `bw-center-mixer ${isCriticalAlert ? "is-alert-5s" : ""}`,
+        id: "mixer-main",
+        role: "region",
+        "aria-label": "Mesa de Mezclas Central T\xE1ctica"
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "bw-mx-topbar select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bw-mx-sync" }, /* @__PURE__ */ React.createElement("span", { className: "bw-sync-dot" }), /* @__PURE__ */ React.createElement("span", null, "SYNC \xB7 ", Math.round((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136), " BPM")), /* @__PURE__ */ React.createElement("div", { className: "bw-mx-beat-strip" }, [1, 2, 3, 4].map((b) => /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          key: b,
+          className: `bw-b-box ${currentBeat === b ? b === 4 ? "pulse" : "on" : ""}`
+        },
+        b
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-mx-alert-badge" }, isCriticalAlert ? "\u26A0 <5S ALERTA" : "\u26A0 <5S")),
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: `bw-cue-hud select-none ${isCriticalAlert ? "is-impact" : ""}`,
+          role: "status",
+          "aria-live": "assertive"
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-ico" }, isCriticalAlert ? /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M7 18v-6a5 5 0 1 1 10 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M5 21h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M4.93 4.93l1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M19.07 4.93l-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" })) : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M3 18v-6a9 9 0 0 1 18 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" }))),
+        /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-body" }, /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-kicker" }, /* @__PURE__ */ React.createElement("span", { className: "bw-cue-hud-dot" }), /* @__PURE__ */ React.createElement("span", null, isCriticalAlert ? countdownSeconds === 0 ? "\xA1IMPACTO AHORA! SOLTAR PISTA" : "\xA1ATENCI\xD3N! QUEDAN < 5 SEGUNDOS" : "EN CUE (PREPARADO)")), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-text truncate" }, isCriticalAlert ? `PRIMER GOLPE (${(nextHito == null ? void 0 : nextHito.label) || "INTRO"})` : "Listo para soltar en primer bombo"), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-progress" }, /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "bw-cue-hud-progress-fill",
+            style: { width: `${progressPct}%` }
+          }
+        ))),
+        /* @__PURE__ */ React.createElement("div", { className: "bw-cue-hud-right" }, /* @__PURE__ */ React.createElement("span", { className: "bw-cue-hud-timer" }, "00:", String(Math.max(0, countdownSeconds)).padStart(2, "0")), /* @__PURE__ */ React.createElement("span", { className: "bw-cue-hud-bar-pill" }, "BAR ", Math.max(1, Math.ceil(countdownSeconds / 2))))
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "bw-mx-body select-none" }, /* @__PURE__ */ React.createElement("div", { className: "bw-deck-pane bw-d1-pane" }, /* @__PURE__ */ React.createElement("div", { className: "bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "bw-dp-title" }, "DK 1"), /* @__PURE__ */ React.createElement("span", { className: "bw-dp-rem" }, (deck1 == null ? void 0 : deck1.duration) || "-03:14")), /* @__PURE__ */ React.createElement("div", { className: "bw-hito-banner" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bars" }, "16 BARS \xB7 00:29"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-name" }, "NEXT: BASSLINE IN"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bar" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hb-fill", style: { width: "36%" } }))), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-list" }, hitosD1.map((h, idx) => {
+        const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
+        const isActive = d1ActiveHito === idx;
+        const isNext = !isActive && idx === d1ActiveHito + 1;
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: h.id || idx,
+            type: "button",
+            onClick: () => setD1ActiveHito(idx),
+            className: `bw-cue-btn ${isActive ? "is-active" : isNext ? "is-next" : ""}`,
+            title: `Hito DK1: ${h.label} (${h.time})`
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-ico" }, /* @__PURE__ */ React.createElement(IconComponent, null)),
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-lbl" }, h.label),
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-time" }, h.time),
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-led" })
+        );
+      }))), /* @__PURE__ */ React.createElement("div", { className: "bw-hardware-mixer" }, /* @__PURE__ */ React.createElement("div", { className: "bw-hm-col-headers" }, /* @__PURE__ */ React.createElement("span", { className: "bw-ch-tag ch1" }, "CH1"), /* @__PURE__ */ React.createElement("span", { className: "bw-ch-mid" }, "EQ"), /* @__PURE__ */ React.createElement("span", { className: "bw-ch-tag ch2" }, "CH2")), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Gain, color: "#00F0FF", label: "CH1 Gain" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "GAIN"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Gain, color: "#38BDF8", label: "CH2 Gain" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Hi, color: "#00F0FF", label: "CH1 High" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "HI"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Hi, color: "#38BDF8", label: "CH2 High" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Mid, color: "#00F0FF", label: "CH1 Mid" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "MID"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Mid, color: "#38BDF8", label: "CH2 Mid" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Low, color: "#00F0FF", label: "CH1 Low" })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl" }, "LOW"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(
+        HardwareKnob,
+        {
+          value: ch2Low,
+          color: isCriticalAlert ? "#FF2A54" : "#38BDF8",
+          label: "CH2 Low"
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-row" }, /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch1Fltr, color: "#38BDF8", label: "CH1 Filter", isFilter: true })), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-lbl fltr" }, "FLTR"), /* @__PURE__ */ React.createElement("div", { className: "bw-knob-cell" }, /* @__PURE__ */ React.createElement(HardwareKnob, { value: ch2Fltr, color: "#38BDF8", label: "CH2 Filter", isFilter: true }))), /* @__PURE__ */ React.createElement("div", { className: "bw-pfl-row" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          className: `bw-pfl-btn ${pflState.ch1 ? "is-on" : ""}`,
+          onClick: () => setPflState((p) => ({ ...p, ch1: !p.ch1 }))
+        },
+        "CUE 1"
+      ), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          className: `bw-pfl-btn ${pflState.ch2 ? "is-on" : ""}`,
+          onClick: () => setPflState((p) => ({ ...p, ch2: !p.ch2 }))
+        },
+        "CUE 2"
+      )), /* @__PURE__ */ React.createElement("div", { className: "bw-faders-deck" }, /* @__PURE__ */ React.createElement("div", { className: "bw-fader-unit" }, /* @__PURE__ */ React.createElement("div", { className: "bw-fader-slot" }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bw-fader-cap",
+          style: { top: `${Math.round((1 - ch1Fader) * 80)}%` }
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "bw-cap-line" })
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-vu-bridge" }, /* @__PURE__ */ React.createElement("div", { className: "bw-vu-col" }, /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" })), /* @__PURE__ */ React.createElement("div", { className: "bw-vu-col" }, /* @__PURE__ */ React.createElement("span", { className: `bw-vu-led ${isCriticalAlert ? "on-red" : ""}` }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-amber" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }), /* @__PURE__ */ React.createElement("span", { className: "bw-vu-led on-cyan" }))), /* @__PURE__ */ React.createElement("div", { className: "bw-fader-unit" }, /* @__PURE__ */ React.createElement("div", { className: "bw-fader-slot" }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bw-fader-cap bw-ch2-cap",
+          style: { top: `${Math.round((1 - ch2Fader) * 80)}%` }
+        },
+        /* @__PURE__ */ React.createElement("span", { className: "bw-cap-line" })
+      )))), /* @__PURE__ */ React.createElement("div", { className: "bw-xfader-box" }, /* @__PURE__ */ React.createElement("div", { className: "bw-xf-slot" }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bw-xf-thumb",
+          style: { left: `calc(${Math.round(crossfader * 100)}% - 5px)` }
+        }
+      )))), /* @__PURE__ */ React.createElement("div", { className: "bw-deck-pane bw-d2-pane" }, /* @__PURE__ */ React.createElement("div", { className: "bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "bw-dp-title" }, "DK 2"), /* @__PURE__ */ React.createElement("span", { className: "bw-dp-rem" }, (deck2 == null ? void 0 : deck2.duration) || "-02:41")), /* @__PURE__ */ React.createElement("div", { className: `bw-hito-banner ${isCriticalAlert ? "alert-mode" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bars" }, isCriticalAlert ? `2 BARS \xB7 00:${String(countdownSeconds).padStart(2, "0")}` : "8 BARS \xB7 00:14"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-name" }, isCriticalAlert ? "INMINENTE: MAIN DROP" : "NEXT: MAIN DROP"), /* @__PURE__ */ React.createElement("div", { className: "bw-hb-bar" }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "bw-hb-fill",
+          style: { width: `${isCriticalAlert ? 92 : 54}%` }
+        }
+      ))), /* @__PURE__ */ React.createElement("div", { className: "bw-cue-list" }, hitosD2.map((h, idx) => {
+        const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
+        const isActive = d2ActiveHito === idx;
+        const isAlert = isCriticalAlert && idx === 3;
+        const isNext = !isActive && !isAlert && idx === 3;
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: h.id || idx,
+            type: "button",
+            onClick: () => setD2ActiveHito(idx),
+            className: `bw-cue-btn ${isAlert ? "is-alert" : isActive ? "is-active" : isNext ? "is-next" : ""}`,
+            title: `Hito DK2: ${h.label} (${h.time})`
+          },
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-ico" }, /* @__PURE__ */ React.createElement(IconComponent, null)),
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-lbl" }, h.label),
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-time" }, h.time),
+          /* @__PURE__ */ React.createElement("span", { className: "bw-c-led" })
+        );
+      })))),
+      /* @__PURE__ */ React.createElement("div", { className: "bw-mx-footer select-none" }, /* @__PURE__ */ React.createElement("span", null, "LOW SWAP: ARMED"), /* @__PURE__ */ React.createElement("span", null, "\xB7"), /* @__PURE__ */ React.createElement("span", { className: "bw-mx-status-label" }, isCriticalAlert ? "ALERTA < 5S" : `AUDIT: ${auditScore}%`))
+    );
+  });
+
   // web/js/copilot.jsx
-  var { useState, useEffect, useRef } = React;
+  var { useState: useState2, useEffect: useEffect2, useRef: useRef2 } = React;
   var SlidersIcon = ({ size = 14, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "21", x2: "4", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "10", x2: "4", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "21", x2: "12", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "8", x2: "12", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "21", x2: "20", y2: "16" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "12", x2: "20", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "1", y1: "14", x2: "7", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "9", y1: "8", x2: "15", y2: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "17", y1: "16", x2: "23", y2: "16" }));
   var DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
   function getValidCover(c) {
@@ -87,18 +414,18 @@
     antiMuddy = null,
     partnerDeck = null
   }) => {
-    const canvasRef = useRef(null);
-    const minimapRef = useRef(null);
-    const minimapCacheRef = useRef(null);
-    const [zoom, setZoom] = useState(4);
-    const [showTacticalAids, setShowTacticalAids] = useState(true);
-    const [hoveredMilestone, setHoveredMilestone] = useState(null);
-    const [progress, setProgress] = useState(deck.play_progress || 0.15);
-    const progressRef = useRef(deck.play_progress || 0.15);
-    const isPlayingRef = useRef(Boolean(deck.is_playing));
-    const bpmRef = useRef(deck.bpm || 130);
-    const durationSecRef = useRef(deck.duration_sec || 390);
-    useEffect(() => {
+    const canvasRef = useRef2(null);
+    const minimapRef = useRef2(null);
+    const minimapCacheRef = useRef2(null);
+    const [zoom, setZoom] = useState2(4);
+    const [showTacticalAids, setShowTacticalAids] = useState2(true);
+    const [hoveredMilestone, setHoveredMilestone] = useState2(null);
+    const [progress, setProgress] = useState2(deck.play_progress || 0.15);
+    const progressRef = useRef2(deck.play_progress || 0.15);
+    const isPlayingRef = useRef2(Boolean(deck.is_playing));
+    const bpmRef = useRef2(deck.bpm || 130);
+    const durationSecRef = useRef2(deck.duration_sec || 390);
+    useEffect2(() => {
       if (deck.play_progress !== void 0) {
         const diff = Math.abs(progressRef.current - deck.play_progress);
         if (diff > 0.02) {
@@ -110,7 +437,7 @@
       bpmRef.current = parseFloat(deck.bpm) || 130;
       durationSecRef.current = parseFloat(deck.duration_sec) || 390;
     }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
-    useEffect(() => {
+    useEffect2(() => {
       let animId;
       let lastTime = performance.now();
       let lastUiUpdate = 0;
@@ -170,7 +497,7 @@
     const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
     const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
     const isBassClashDanger = antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44;
-    useEffect(() => {
+    useEffect2(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -891,20 +1218,19 @@
     "is_simulating": true
   };
   function LiveCopilotApp() {
-    var _a;
-    const [state, setState] = useState(DEFAULT_COPILOT_STATE);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [qrModalOpen, setQrModalOpen] = useState(false);
-    const [clock, setClock] = useState("");
-    const [latency, setLatency] = useState(2);
-    const [errorCount, setErrorCount] = useState(0);
-    const [visibleCount, setVisibleCount] = useState(4);
-    const [tracksList, setTracksList] = useState(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState(null);
-    const [lowEqApplied, setLowEqApplied] = useState(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState("");
+    const [state, setState] = useState2(DEFAULT_COPILOT_STATE);
+    const [isFullscreen, setIsFullscreen] = useState2(false);
+    const [qrModalOpen, setQrModalOpen] = useState2(false);
+    const [clock, setClock] = useState2("");
+    const [latency, setLatency] = useState2(2);
+    const [errorCount, setErrorCount] = useState2(0);
+    const [visibleCount, setVisibleCount] = useState2(4);
+    const [tracksList, setTracksList] = useState2(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState2(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState2(null);
+    const [lowEqApplied, setLowEqApplied] = useState2(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState2(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState2("");
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -950,13 +1276,13 @@
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState({
+    const [controllerState, setControllerState] = useState2({
       detected: false,
       name: "",
       status: "SIN CONEXI\xD3N"
     });
-    const [testDisconnectSkin, setTestDisconnectSkin] = useState(false);
-    useEffect(() => {
+    const [testDisconnectSkin, setTestDisconnectSkin] = useState2(false);
+    useEffect2(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -993,14 +1319,14 @@
         });
       }
     }, []);
-    useEffect(() => {
+    useEffect2(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect(() => {
+    useEffect2(() => {
       let isMounted = true;
       let ws = null;
       let eventSource = null;
@@ -1117,9 +1443,9 @@
         }
       }
       setState((prev) => {
-        var _a2;
+        var _a;
         if (!prev) return prev;
-        const cur1Master = (_a2 = prev.deck_1) == null ? void 0 : _a2.is_master;
+        const cur1Master = (_a = prev.deck_1) == null ? void 0 : _a.is_master;
         const new1Master = deckTarget === "1" ? true : deckTarget === "2" ? false : !cur1Master;
         return {
           ...prev,
@@ -1202,7 +1528,7 @@
       } catch (_) {
       }
     };
-    useEffect(() => {
+    useEffect2(() => {
       const handleKeyDown = (e) => {
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
@@ -1228,7 +1554,7 @@
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [state]);
-    useEffect(() => {
+    useEffect2(() => {
       const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
       if (isLocalHost) return;
       if (typeof navigator === "undefined" || !navigator.requestMIDIAccess) return;
@@ -1387,6 +1713,10 @@
     const isStandby = state.source && state.source.endsWith("_STANDBY");
     const isAppRunning = state.is_app_open !== void 0 ? state.is_app_open : state.dj_app ? state.dj_app.is_open : false;
     const isAppOpen = !testDisconnectSkin && isAppRunning;
+    const hasActiveTrack = Boolean(
+      (deck_1 == null ? void 0 : deck_1.title) && deck_1.title !== "Deck Vac\xEDo" || (deck_2 == null ? void 0 : deck_2.title) && deck_2.title !== "Deck Vac\xEDo" || (deck_1 == null ? void 0 : deck_1.is_playing) || (deck_2 == null ? void 0 : deck_2.is_playing)
+    );
+    const isLiveStage = hasActiveTrack;
     return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-h-screen p-3 sm:p-5 lg:p-6 select-none bg-[#040407] text-gray-200" }, /* @__PURE__ */ React.createElement("header", { className: "relative flex items-center justify-between pb-3 sm:pb-4 border-b border-zinc-800/80 mb-4 sm:mb-6 px-1 select-none" }, /* @__PURE__ */ React.createElement("div", { className: "relative z-10 flex items-center justify-between gap-3 w-full" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: `w-3.5 h-3.5 rounded-full shrink-0 ${isLive ? "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse" : isStandby ? "bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" : "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]"}` }), /* @__PURE__ */ React.createElement("span", { className: "w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]" }, /* @__PURE__ */ React.createElement(CopilotTurntableLogo, { size: 18 })), /* @__PURE__ */ React.createElement("h1", { className: "font-syne font-black text-lg sm:text-2xl text-white tracking-wider uppercase" }, "BEATWAVE ", /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400" }, "COPILOT"))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-xs" }, renderPlatformLogo(platform || "serato", 16), /* @__PURE__ */ React.createElement("strong", { style: { color: platform_color || "#00d1e8" } }, platform_name || "Serato DJ Pro"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-600" }, "|"), /* @__PURE__ */ React.createElement("span", { className: isLive ? "text-red-400 font-bold" : "text-cyan-400 font-bold" }, platform_status || (isLive ? "LIVE" : "STANDBY")))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.25)]" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" }), /* @__PURE__ */ React.createElement("span", { className: "font-bold tracking-tight" }, "\u26A1 Latencia Cabina: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white font-extrabold" }, latency, "ms"), " \u2022 Sincronizado"), /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -1479,7 +1809,53 @@
         title: "Pantalla Completa"
       },
       /* @__PURE__ */ React.createElement("svg", { className: "w-4 h-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: "2", d: "M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" }))
-    )))), testDisconnectSkin && /* @__PURE__ */ React.createElement("div", { className: "mb-3 p-3 sm:p-3.5 rounded-2xl bg-red-950/80 border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-between gap-3 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl shrink-0" }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-red-100 uppercase tracking-wide" }, "Es necesario conectar la aplicaci\xF3n y la controladora"), /* @__PURE__ */ React.createElement("p", { className: "font-syne text-[11px] text-red-200/90 mt-0.5" }, "Conecta la aplicaci\xF3n de m\xFAsica (Serato, Rekordbox, Traktor o VirtualDJ) y la controladora DJ para activar el an\xE1lisis en vivo."))), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-900/60 border border-red-500/50 font-mono text-[9px] text-red-300 uppercase shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, "SKIN STANDBY"))), /* @__PURE__ */ React.createElement("section", { className: "mb-2.5" }, /* @__PURE__ */ React.createElement("div", { className: `px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-2 ${!isAppOpen ? "bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse" : anti_muddy.status === "danger" ? "bg-red-950/40 border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.25)]" : anti_muddy.status === "warning" ? "bg-amber-950/40 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]" : "bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.15)]"}` }, !isAppOpen ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 py-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, "\u{1F6E1}\uFE0F"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-bold text-xs text-zinc-400 tracking-wide" }, "ANTI-MUDDY FILTER \u2022 STANDBY"), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-500 border border-zinc-800" }, "SIN SE\xD1AL")), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] font-syne text-zinc-500 truncate mt-0.5" }, "Supervisi\xF3n de choque de frecuencias inactiva hasta conectar software y hardware DJ."))) : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, anti_muddy.status === "danger" ? "\u{1F6E1}\uFE0F" : anti_muddy.status === "warning" ? "\u26A1" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" }, /* @__PURE__ */ React.createElement("h2", { className: "font-syne font-black text-xs text-white tracking-wide" }, anti_muddy.title), /* @__PURE__ */ React.createElement("span", { className: `px-1.5 py-0.2 rounded-full text-[8.5px] font-mono font-black uppercase tracking-wider shrink-0 ${anti_muddy.status === "danger" ? "bg-red-600 text-white" : anti_muddy.status === "warning" ? "bg-amber-500 text-black" : "bg-emerald-500 text-black"}` }, anti_muddy.tag)), /* @__PURE__ */ React.createElement("p", { className: "text-[10.5px] text-zinc-300 truncate mt-0.5" }, anti_muddy.message))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 shrink-0 flex-wrap justify-between md:justify-end text-[10.5px] font-mono" }, isAppOpen && controllerState.detected && (anti_muddy.controller_knobs || anti_muddy.flx4) && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-cyan-950/80 border border-cyan-500/60 text-cyan-300 font-bold text-[10px] shadow-[0_0_10px_rgba(6,182,212,0.2)]" }, /* @__PURE__ */ React.createElement("span", null, "\u{1F39B}\uFE0F ", (((_a = state.controller) == null ? void 0 : _a.name) || controllerState.name || "NUMARK NV II").replace(" (USB)", ""), ":"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).filter_knob), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-400" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-300 font-extrabold" }, (anti_muddy.controller_knobs || anti_muddy.flx4).eq_low)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/60 border border-zinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, "ACCI\xD3N:"), /* @__PURE__ */ React.createElement("span", { className: "text-zinc-200 font-semibold truncate max-w-[280px]" }, isAppOpen ? anti_muddy.action : "Esperando Conexi\xF3n")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-zinc-400 text-[10px]" }, /* @__PURE__ */ React.createElement("span", null, "CAMELOT: ", /* @__PURE__ */ React.createElement("strong", { style: { color: isAppOpen ? harmonic.color : "#71717a" } }, isAppOpen ? harmonic.badge : "--")), /* @__PURE__ */ React.createElement("span", null, "\u0394 LUFS: ", /* @__PURE__ */ React.createElement("strong", { className: "text-white" }, isAppOpen ? state.lufs_delta > 0 ? `+${state.lufs_delta}` : state.lufs_delta : "--", " dB")))))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-3.5 mb-4" }, /* @__PURE__ */ React.createElement(DeckCard, { deck: deck_1, side: "A", isMaster: deck_1.is_master, antiMuddy: anti_muddy, partnerDeck: deck_2, onSetMaster: setMasterDeck, onTogglePlay: toggleDeckPlay, isAppOpen }), /* @__PURE__ */ React.createElement(DeckCard, { deck: deck_2, side: "B", isMaster: deck_2.is_master, antiMuddy: anti_muddy, partnerDeck: deck_1, onSetMaster: setMasterDeck, onTogglePlay: toggleDeckPlay, isAppOpen })), /* @__PURE__ */ React.createElement("section", { className: `mt-auto transition-all ${!isAppOpen ? "p-3 rounded-2xl bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-base" }, "\u{1F3AF}"), /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-xs sm:text-sm uppercase tracking-wider text-zinc-300" }, "Pr\xF3ximas Pistas Sugeridas (", isAppOpen ? displayRecommendations.length : 0, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, isAppOpen ? "\u2022 Arrastra para reordenar" : "\u2022 Modo Standby Skin")), isAppOpen && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
+    )))), testDisconnectSkin && /* @__PURE__ */ React.createElement("div", { className: "mb-3 p-3 sm:p-3.5 rounded-2xl bg-red-950/80 border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] flex items-center justify-between gap-3 animate-pulse" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-xl shrink-0" }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h4", { className: "font-syne font-bold text-xs sm:text-sm text-red-100 uppercase tracking-wide" }, "Es necesario conectar la aplicaci\xF3n y la controladora"), /* @__PURE__ */ React.createElement("p", { className: "font-syne text-[11px] text-red-200/90 mt-0.5" }, "Conecta la aplicaci\xF3n de m\xFAsica (Serato, Rekordbox, Traktor o VirtualDJ) y la controladora DJ para activar el an\xE1lisis en vivo."))), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-900/60 border border-red-500/50 font-mono text-[9px] text-red-300 uppercase shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" }), /* @__PURE__ */ React.createElement("span", null, "SKIN STANDBY"))), /* @__PURE__ */ React.createElement(
+      CopilotCleanMixBanner,
+      {
+        antiMuddy: anti_muddy,
+        harmonic,
+        controllerState,
+        lufsDelta: state == null ? void 0 : state.lufs_delta,
+        lowEqApplied,
+        onApplyCorrection: handleApplyCorrection,
+        isAppOpen
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: `bw-copilot-stage ${isLiveStage ? "is-live" : ""} mb-4` }, /* @__PURE__ */ React.createElement(
+      DeckCard,
+      {
+        deck: deck_1,
+        side: "A",
+        isMaster: deck_1.is_master,
+        antiMuddy: anti_muddy,
+        partnerDeck: deck_2,
+        onSetMaster: setMasterDeck,
+        onTogglePlay: toggleDeckPlay,
+        isAppOpen,
+        isCompact: isLiveStage
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: "bw-center-slot" }, /* @__PURE__ */ React.createElement(
+      CopilotCenterMixer,
+      {
+        deck1: deck_1,
+        deck2: deck_2,
+        mixer: state == null ? void 0 : state.mixer,
+        audit: state == null ? void 0 : state.audit,
+        isAppOpen
+      }
+    )), /* @__PURE__ */ React.createElement(
+      DeckCard,
+      {
+        deck: deck_2,
+        side: "B",
+        isMaster: deck_2.is_master,
+        antiMuddy: anti_muddy,
+        partnerDeck: deck_1,
+        onSetMaster: setMasterDeck,
+        onTogglePlay: toggleDeckPlay,
+        isAppOpen,
+        isCompact: isLiveStage
+      }
+    )), /* @__PURE__ */ React.createElement("section", { className: `mt-auto transition-all ${!isAppOpen ? "p-3 rounded-2xl bg-[#06060c] border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-2.5 flex-wrap gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-base" }, "\u{1F3AF}"), /* @__PURE__ */ React.createElement("h3", { className: "font-syne font-black text-xs sm:text-sm uppercase tracking-wider text-zinc-300" }, "Pr\xF3ximas Pistas Sugeridas (", isAppOpen ? displayRecommendations.length : 0, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-zinc-500 hidden sm:inline" }, isAppOpen ? "\u2022 Arrastra para reordenar" : "\u2022 Modo Standby Skin")), isAppOpen && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -1572,10 +1948,10 @@
       "Copiar Enlace Directo"
     ))));
   }
-  function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true }) {
+  function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true, isCompact = false }) {
     if (!deck) return null;
     if (!isAppOpen) {
-      return /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-5 lg:p-6 rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-500" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300" }, "STANDBY \u2022 SIN CONEXI\xD3N")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-600 uppercase" }, /* @__PURE__ */ React.createElement("span", null, "STANDBY SKIN"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/60 items-stretch opacity-60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-500" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300" }, "STANDBY \u2022 SIN CONEXI\xD3N")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-600 uppercase" }, /* @__PURE__ */ React.createElement("span", null, "STANDBY SKIN"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/60 items-stretch opacity-60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
         "div",
         {
           className: "relative rounded-xl overflow-hidden shrink-0 border border-zinc-800 bg-zinc-950 flex items-center justify-center",
@@ -1587,7 +1963,7 @@
     }
     const deckNum = side === "A" ? "1" : side === "B" ? "2" : side;
     const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === "STANDBY (VAC\xCDO)";
-    return /* @__PURE__ */ React.createElement("div", { className: `p-4 sm:p-5 lg:p-6 rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-400" }, "DECK ", side), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"} ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-400" }, "DECK ", side), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",

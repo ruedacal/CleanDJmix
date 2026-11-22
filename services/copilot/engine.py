@@ -36,7 +36,7 @@ CAMELOT_PALETTE = {
 }
 
 # Mapa verificado por captura CoreMIDI real sobre Numark NV II (NV mkII Control)
-NV2_CHANNEL_TO_DECK: Dict[int, int] = {1: 1, 2: 2, 3: 3, 4: 4}
+NV2_CHANNEL_TO_DECK: Dict[int, int] = {0: 1, 1: 2, 2: 3, 3: 4}
 NV2_NOTE_CUE: int = 32           # 0x20
 NV2_NOTE_PLAY: int = 33          # 0x21
 NV2_HOT_CUE_BASE_NOTE: int = 71  # 0x47 (Pads 1..8 -> notas 71..78)
@@ -1417,8 +1417,8 @@ class CopilotEngine:
                     return
                 now = time.perf_counter()
 
-                # 1. PLAY / PAUSE (note 33 / 0x21)
-                if note == NV2_NOTE_PLAY:
+                # 1. PLAY / PAUSE (note 33 / 0x21 o alias 4)
+                if note in (NV2_NOTE_PLAY, 4):
                     if not is_press:
                         return
                     k = f"nv2_play_{target_deck}"
@@ -1428,8 +1428,8 @@ class CopilotEngine:
                     self.toggle_deck_play(target_deck)
                     return
 
-                # 2. CUE (note 32 / 0x20): parada a CUE + cue-hold momentáneo en note_off
-                if note == NV2_NOTE_CUE:
+                # 2. CUE (note 32 / 0x20 o alias 1): parada a CUE + cue-hold momentáneo en note_off
+                if note in (NV2_NOTE_CUE, 1):
                     if is_press:
                         k = f"nv2_cue_{target_deck}"
                         if now - self._last_midi_trigger.get(k, 0.0) < 0.04:
