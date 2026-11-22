@@ -327,8 +327,7 @@
   });
 
   // web/js/copilot.jsx
-  var { useState: useState2, useEffect: useEffect2, useRef: useRef2 } = React;
-  var SlidersIcon = ({ size = 14, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "21", x2: "4", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "10", x2: "4", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "21", x2: "12", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "8", x2: "12", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "21", x2: "20", y2: "16" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "12", x2: "20", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "1", y1: "14", x2: "7", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "9", y1: "8", x2: "15", y2: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "17", y1: "16", x2: "23", y2: "16" }));
+  var { useState: useState2, useEffect: useEffect2, useRef: useRef2, useMemo: useMemo2 } = React;
   var DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
   function getValidCover(c) {
     if (!c || typeof c !== "string") return DEFAULT_VINYL_SVG;
@@ -393,9 +392,6 @@
   var PlatformTraktorLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#241a02" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "8", width: "18", height: "4", rx: "1", fill: "#facc15" }), /* @__PURE__ */ React.createElement("path", { d: "M13.5 12H18.5V23.5C18.5 24.3 17.8 25 17 25H15C14.2 25 13.5 24.3 13.5 23.5V12Z", fill: "#facc15" }), /* @__PURE__ */ React.createElement("circle", { cx: "22", cy: "19", r: "2", fill: "#eab308" }));
   var PlatformAutoLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#1e0c2e" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "9", stroke: "#a855f7", strokeWidth: "1.5", strokeDasharray: "3 2" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "5", stroke: "#c084fc", strokeWidth: "1.5" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "2", fill: "#e9d5ff" }), /* @__PURE__ */ React.createElement("path", { d: "M16 6L18.5 10.5L16 9.2L13.5 10.5L16 6Z", fill: "#a855f7" }), /* @__PURE__ */ React.createElement("path", { d: "M16 26L13.5 21.5L16 22.8L18.5 21.5L16 26Z", fill: "#a855f7" }));
   var CopilotTurntableLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.75", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "8.5" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "3.2" }), /* @__PURE__ */ React.createElement("path", { d: "M12 3.5v5.3M12 15.2v5.3" }));
-  var ZapIcon = ({ size = 10, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("polygon", { points: "13 2 3 14 12 14 11 22 21 10 12 10 13 2" }));
-  var ActivityIcon = ({ size = 10, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("polyline", { points: "22 12 18 12 15 21 9 3 6 12 2 12" }));
-  var SparklesIcon = ({ size = 10, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("path", { d: "m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" }));
   var PlatformLogos = {
     auto: PlatformAutoLogo,
     serato: PlatformSeratoLogo,
@@ -1948,8 +1944,31 @@
       "Copiar Enlace Directo"
     ))));
   }
+  var DEFAULT_CABINA_HOT_CUES = [
+    { id: 1, time: "00:00.01", color: "#EF4444" },
+    { id: 2, time: "00:28.25", color: "#F97316" },
+    { id: 3, time: "00:56.48", color: "#FBBF24" },
+    { id: 4, time: "01:24.72", color: "#10B981" },
+    { id: 5, time: "01:52.95", color: "#00F0FF" },
+    { id: 6, time: "02:21.19", color: "#A855F7" },
+    { id: 7, time: "02:49.42", color: "#EC4899" },
+    { id: 8, time: "03:17.65", color: "#3B82F6" }
+  ];
   function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, onSetMaster = null, onTogglePlay = null, isAppOpen = true, isCompact = false }) {
     if (!deck) return null;
+    const cabinaHotCues = useMemo2(() => {
+      if ((deck == null ? void 0 : deck.cues) && deck.cues.length > 0) {
+        return deck.cues.slice(0, 8).map((c, i) => {
+          var _a, _b;
+          return {
+            id: c.id || i + 1,
+            time: c.time || ((_a = DEFAULT_CABINA_HOT_CUES[i]) == null ? void 0 : _a.time) || "00:00.00",
+            color: c.color || ((_b = DEFAULT_CABINA_HOT_CUES[i]) == null ? void 0 : _b.color) || "#00F0FF"
+          };
+        });
+      }
+      return DEFAULT_CABINA_HOT_CUES;
+    }, [deck == null ? void 0 : deck.cues]);
     if (!isAppOpen) {
       return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse relative overflow-hidden flex flex-col justify-between bg-[#06060c] transition-all ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-500" }, "DECK ", side), /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300" }, "STANDBY \u2022 SIN CONEXI\xD3N")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-600 uppercase" }, /* @__PURE__ */ React.createElement("span", null, "STANDBY SKIN"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/60 items-stretch opacity-60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
         "div",
@@ -1963,81 +1982,67 @@
     }
     const deckNum = side === "A" ? "1" : side === "B" ? "2" : side;
     const isEmptyDeck = !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === "STANDBY (VAC\xCDO)";
-    return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"} ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-3 pb-2 border-b border-zinc-800/60" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-base sm:text-lg text-zinc-400" }, "DECK ", side), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: `rounded-3xl border transition-all relative overflow-hidden flex flex-col justify-between ${isCompact ? "p-2.5 sm:p-3" : "p-4 sm:p-5 lg:p-6"} ${isMaster ? "bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "bg-[#07070f] border-zinc-800 hover:border-zinc-700"}` }, /* @__PURE__ */ React.createElement("div", { className: "dk-top-bar select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-id-group" }, /* @__PURE__ */ React.createElement("span", { className: "dk-id" }, "DECK ", side), isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500" }, "STANDBY (VAC\xCDO)") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => onSetMaster && onSetMaster(deckNum),
-        className: `px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black uppercase tracking-wider cursor-pointer hover:scale-105 active:scale-95 transition-all ${isMaster ? "bg-djcyan-400 text-black shadow-[0_0_10px_rgba(6,182,212,0.6)] animate-pulse" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"}`,
+        className: `dk-pill-btn ${isMaster ? "is-master" : ""}`,
         title: `Haz clic para alternar DECK ${side} como MASTER (o pulsa 'M')`
       },
-      isMaster ? "\u{1F50A} MASTER" : "\u{1F3A7} EN CUE"
+      /* @__PURE__ */ React.createElement("span", null, isMaster ? "\u{1F50A}" : "\u{1F3A7}"),
+      /* @__PURE__ */ React.createElement("span", null, isMaster ? "MASTER" : "EN CUE")
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: () => onTogglePlay && onTogglePlay(deckNum),
-        className: `px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 select-none cursor-pointer hover:scale-105 active:scale-95 transition-all ${deck.is_playing ? "bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500"}`,
+        className: `dk-pill-btn ${deck.is_playing ? "is-playing" : ""}`,
         title: `Haz clic para alternar Play/Pausa en DECK ${side} (o pulsa tecla '${deckNum}')`
       },
       /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${deck.is_playing ? "bg-emerald-400 animate-pulse" : "bg-zinc-500"}` }),
       /* @__PURE__ */ React.createElement("span", null, deck.is_playing ? "EN VIVO" : "CUE")
-    )), deck.phase && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline-flex px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 uppercase" }, "\u2728 ", deck.phase)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 font-mono text-xs text-zinc-500 uppercase" }, deck.format && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/60 text-[10px] font-bold text-zinc-300" }, deck.format), /* @__PURE__ */ React.createElement("span", null, isEmptyDeck ? "STANDBY" : deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 mb-2.5 p-2.5 rounded-2xl bg-black/40 border border-zinc-800/80 items-stretch" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-stretch gap-3 min-w-0" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "dk-format-badge" }, deck.format || "FLAC"), /* @__PURE__ */ React.createElement("span", { className: "dk-dsp-lbl" }, isEmptyDeck ? "STANDBY" : deck.is_audited ? "\u2713 DSP BEATWAVE" : "DEFAULT DSP"))), /* @__PURE__ */ React.createElement("div", { className: "dk-track-row select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-track-left" }, /* @__PURE__ */ React.createElement(
       "div",
       {
         onClick: () => !isEmptyDeck && onTogglePlay && onTogglePlay(deckNum),
-        className: `relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none select-none ${!isEmptyDeck ? "cursor-pointer hover:border-djcyan-400/80 hover:shadow-[0_0_12px_rgba(6,182,212,0.4)] transition-all" : ""}`,
-        style: { width: "68px", height: "68px", minWidth: "68px", minHeight: "68px", aspectRatio: "1 / 1" },
-        title: !isEmptyDeck ? `Haz clic para alternar Play/Pausa en DECK ${side}` : ""
+        className: "dk-vinyl-avatar",
+        title: !isEmptyDeck ? `Reproducir / Pausar DECK ${side}` : ""
       },
-      /* @__PURE__ */ React.createElement(
+      deck.cover && !isEmptyDeck ? /* @__PURE__ */ React.createElement(
         "img",
         {
-          src: isEmptyDeck ? DEFAULT_VINYL_SVG : getValidCover(deck.cover),
-          alt: "Car\xE1tula",
+          src: getValidCover(deck.cover),
+          alt: "Cover",
           onError: (e) => {
             e.target.onerror = null;
             e.target.src = DEFAULT_VINYL_SVG;
-          },
-          className: `w-full h-full object-cover transition-transform duration-300 ${isEmptyDeck ? "opacity-30 p-2" : "group-hover:scale-105"}`,
-          style: { width: "100%", height: "100%", objectFit: "cover" }
+          }
         }
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" }),
-      /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono font-bold text-zinc-400" }, isEmptyDeck ? "--:--" : deck.duration || "--:--"),
-      deck.year && !isEmptyDeck && /* @__PURE__ */ React.createElement("span", { className: "absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-[8px] font-mono text-zinc-400" }, deck.year)
-    ), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 flex flex-col justify-center" }, /* @__PURE__ */ React.createElement("h2", { className: `font-syne font-bold text-xs sm:text-sm tracking-tight leading-tight truncate ${isEmptyDeck ? "italic text-zinc-500" : "text-white"}`, title: deck.title || "Arrastrar canci\xF3n aqu\xED" }, deck.title || "Arrastrar canci\xF3n aqu\xED"), /* @__PURE__ */ React.createElement("p", { className: "font-syne font-bold text-xs text-zinc-500 mt-0.5 truncate", title: deck.artist || "Deck Vac\xEDo" }, deck.artist || "Deck Vac\xEDo"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap mt-1" }, isEmptyDeck ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-900/80 border border-zinc-800 text-[9px] font-mono text-zinc-600 truncate" }, "-- EN ESPERA --") : /* @__PURE__ */ React.createElement(React.Fragment, null, deck.genre && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-djcyan-950/70 border border-djcyan-500/40 text-[9px] font-mono font-bold text-djcyan-300 truncate" }, deck.genre), deck.subgenre && /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/60 text-[9px] font-mono text-zinc-400 truncate" }, deck.subgenre))))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/80 pt-2 md:pt-0 md:pl-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80" }, /* @__PURE__ */ React.createElement(
-      "div",
+      ) : /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono font-black text-black select-none" }, "AEPX")
+    ), /* @__PURE__ */ React.createElement("div", { className: "dk-track-titles" }, /* @__PURE__ */ React.createElement("span", { className: "dk-title", title: deck.title || "Track" }, deck.title || (isEmptyDeck ? "-- Esperando Pista --" : "Whip")), /* @__PURE__ */ React.createElement("span", { className: "dk-artist", title: deck.artist || "Artista" }, deck.artist || (isEmptyDeck ? "Conecta Serato o mesa" : "Mark Broom")))), /* @__PURE__ */ React.createElement("div", { className: "dk-track-right" }, /* @__PURE__ */ React.createElement("div", { className: "dk-bpm-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "dk-bpm-val" }, deck.bpm ? Number(deck.bpm).toFixed(2) : isEmptyDeck ? "--.--" : "136.00"), /* @__PURE__ */ React.createElement("span", { className: "dk-bpm-unit" }, "BPM")), /* @__PURE__ */ React.createElement(
+      "span",
       {
-        className: "w-5 h-4 rounded text-[9px] font-orbitron font-black flex items-center justify-center shrink-0 shadow-sm",
-        style: { backgroundColor: isEmptyDeck ? "#27272a" : deck.camelot_color || "#ec4899", color: isEmptyDeck ? "#71717a" : "#000000" }
+        className: `dk-key-pill ${side === "2" || side === "B" ? "d2" : ""}`,
+        style: deck.camelot_color ? { backgroundColor: deck.camelot_color, borderColor: `${deck.camelot_color}cc` } : {}
       },
-      isEmptyDeck ? "--" : deck.camelot || "10A"
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase text-zinc-500 font-bold" }, "TONO"), /* @__PURE__ */ React.createElement("span", { className: "font-syne font-bold text-[10px] text-zinc-400 truncate" }, isEmptyDeck ? "--" : deck.raw_key || deck.camelot)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/80" }, /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-mono uppercase text-zinc-500 font-bold" }, "TEMPO"), /* @__PURE__ */ React.createElement("span", { className: "font-orbitron font-black text-[10px] text-zinc-300" }, isEmptyDeck ? "--.--" : deck.bpm ? Number(deck.bpm).toFixed(2) : "130.00"), /* @__PURE__ */ React.createElement("span", { className: "text-[7px] text-zinc-500 font-mono" }, "BPM")), /* @__PURE__ */ React.createElement("div", { className: `px-1.5 py-0.5 rounded-lg border text-[8px] font-mono font-bold truncate max-w-full text-center ${isEmptyDeck ? "bg-zinc-900/60 border-zinc-800/60 text-zinc-600" : "bg-purple-950/70 border-purple-500/40 text-purple-300"}`, title: deck.mood || deck.phase || "Peak Time Climax" }, isEmptyDeck ? "STANDBY (VAC\xCDO)" : `\u2728 ${deck.mood || deck.phase || "Peak Time Climax"}`)), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-[130px] flex flex-col justify-center gap-1" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(ZapIcon, { size: 9 }), " ENERG\xCDA"), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-bold" }, isEmptyDeck ? 0 : deck.energy || 90, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-gradient-to-r from-amber-500 to-red-500 rounded-full", style: { width: `${isEmptyDeck ? 0 : deck.energy || 90}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(ActivityIcon, { size: 9 }), " INTENSIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-emerald-400 font-bold" }, isEmptyDeck ? 0 : deck.arousal || Math.round((deck.energy || 90) * 0.95), "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-emerald-400 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.8)]", style: { width: `${isEmptyDeck ? 0 : deck.arousal || Math.round((deck.energy || 90) * 0.95)}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(SlidersIcon, { size: 9 }), " DANZABILIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-purple-300 font-bold" }, isEmptyDeck ? 0 : deck.danceability || 85, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-[0_0_6px_rgba(168,85,247,0.8)]", style: { width: `${isEmptyDeck ? 0 : deck.danceability || 85}%` } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8px] font-mono mb-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement(SparklesIcon, { size: 9 }), " POSITIVIDAD"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62, "%")), /* @__PURE__ */ React.createElement("div", { className: "w-full bg-zinc-900 rounded-full h-1 overflow-hidden flex" }, /* @__PURE__ */ React.createElement("div", { className: "h-full bg-djcyan-400 rounded-full shadow-[0_0_6px_rgba(6,182,212,0.8)]", style: { width: `${isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62}%` } })))))), /* @__PURE__ */ React.createElement("div", { className: "mb-3 p-2.5 rounded-2xl bg-black/60 border border-zinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase text-zinc-400 tracking-wider font-bold flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400" }), " 8 HOT CUES DE CABINA"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-zinc-500" }, isEmptyDeck ? "En espera de pista" : "Puntos de Salto & Estructura")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-4 sm:grid-cols-8 gap-1.5" }, (isEmptyDeck ? [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ id: i, name: `Cue ${i}`, color: "#27272a", time: "--:--", empty: true })) : deck.cues && deck.cues.length > 0 ? deck.cues : [
-      { id: 1, name: "Downbeat", color: "#ef4444", time: "00:00" },
-      { id: 2, name: "Intro", color: "#f97316", time: "01:04" },
-      { id: 3, name: "Bass In", color: "#eab308", time: "02:08" },
-      { id: 4, name: "MAIN DROP", color: "#10b981", time: "03:12" },
-      { id: 5, name: "Break", color: "#06b6d4", time: "04:16" },
-      { id: 6, name: "Climax", color: "#22d3ee", time: "05:04" },
-      { id: 7, name: "Outro 32b", color: "#8b5cf6", time: "06:08" },
-      { id: 8, name: "Cut / Fade", color: "#ec4899", time: "07:15" }
-    ]).map((cue, cIdx) => /* @__PURE__ */ React.createElement(
-      "div",
+      deck.camelot || deck.raw_key || (side === "1" || side === "A" ? "6A" : "8A")
+    ), /* @__PURE__ */ React.createElement("div", { className: "dk-metrics-strip" }, /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item energy", title: "Energ\xEDa" }, "\u26A1 ", isEmptyDeck ? 0 : deck.energy || 90, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item groove", title: "Groove / Pulso" }, "\u{1F4C8} ", isEmptyDeck ? 0 : deck.groove || 86, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item dance", title: "Danzabilidad" }, "\u{1F39A} ", isEmptyDeck ? 0 : deck.danceability || 85, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item valence", title: "Positividad / Brillo" }, "\u2728 ", isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62, "%")))), /* @__PURE__ */ React.createElement("div", { className: "dk-hotcues-box select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-hc-lbl" }, /* @__PURE__ */ React.createElement("span", { className: "dk-hc-dot" }), /* @__PURE__ */ React.createElement("span", null, "8 HOT CUES DE CABINA")), /* @__PURE__ */ React.createElement("div", { className: "dk-hc-strip" }, cabinaHotCues.map((cue, idx) => /* @__PURE__ */ React.createElement(
+      "span",
       {
-        key: cue.id || cIdx,
-        className: `p-1 rounded-xl border flex flex-col justify-between transition-all ${cue.empty ? "bg-zinc-950/60 border-zinc-800/40 text-zinc-600" : "bg-zinc-950/80 hover:bg-zinc-900 cursor-default"}`,
-        style: cue.empty ? {} : { borderColor: `${cue.color || "#06b6d4"}55` }
+        key: cue.id || idx,
+        className: "hc-chip",
+        style: { borderColor: cue.color || "#00F0FF" }
       },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(
         "span",
         {
-          className: "w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black font-mono shadow-sm",
-          style: cue.empty ? { backgroundColor: "#27272a", color: "#71717a" } : { backgroundColor: cue.color || "#06b6d4", color: "#000000" }
+          className: "hc-badge",
+          style: { backgroundColor: cue.color || "#00F0FF" }
         },
-        cue.id || cIdx + 1
-      ), /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-zinc-500" }, cue.time || "--:--")),
-      /* @__PURE__ */ React.createElement("div", { className: `text-[8px] font-syne font-bold truncate mt-1 ${cue.empty ? "text-zinc-600" : "text-zinc-200"}`, title: cue.name }, cue.name)
+        cue.id || idx + 1
+      ),
+      /* @__PURE__ */ React.createElement("span", null, cue.time)
     )))), /* @__PURE__ */ React.createElement("div", { className: "mb-3" }, /* @__PURE__ */ React.createElement(
       CopilotSeratoWaveform,
       {
