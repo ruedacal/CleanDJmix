@@ -759,6 +759,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                     side={side} 
                     antiMuddy={antiMuddy} 
                     partnerDeck={partnerDeck} 
+                    isCompact={isCompact}
                 />
             </div>
 
@@ -1567,6 +1568,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                         mixer={state?.mixer} 
                         audit={state?.audit} 
                         isAppOpen={isAppOpen} 
+                        showInlineHud={true}
                     />
                 </div>
 

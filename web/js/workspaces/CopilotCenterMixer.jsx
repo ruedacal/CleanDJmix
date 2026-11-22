@@ -91,7 +91,7 @@ export const CopilotCenterMixer = memo(({
     mixer = null,
     audit = null,
     isAppOpen = true,
-    showInlineHud = false // El HUD principal reside en la cabecera del Deck (Fila 4)
+    showInlineHud = true // HUD integrado en la mesa central slim
 }) => {
     // Selección interactiva de hitos en cliente
     const [d1ActiveHito, setD1ActiveHito] = useState(0); // INTRO activo en DK 1
@@ -247,7 +247,7 @@ export const CopilotCenterMixer = memo(({
                             </span>
                         </div>
                         <div className="cue-hud-text bw-cue-hud-text truncate">
-                            {isCriticalAlert ? 'PRIMER GOLPE (MAIN DROP)' : 'Listo para soltar en primer bombo'}
+                            {isCriticalAlert ? 'PRIMER GOLPE (INTRO)' : 'Listo para soltar en primer bombo'}
                         </div>
                         <div className="cue-hud-progress bw-cue-hud-progress">
                             <div 

@@ -59,7 +59,8 @@ export const CopilotSeratoWaveform = ({
     deck,
     side = "1",
     antiMuddy = null,
-    partnerDeck = null
+    partnerDeck = null,
+    isCompact = false
 }) => {
     const canvasRef = useRef(null);
     const minimapRef = useRef(null);
@@ -635,8 +636,8 @@ export const CopilotSeratoWaveform = ({
 
     return (
         <div className="flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner">
-            {/* TACTICAL ANTICIPATION HUD BOX: CONTADOR Y PUNTOS CLAVE CON TOOLTIP DETALLADO */}
-            {showTacticalAids && (
+            {/* TACTICAL ANTICIPATION HUD BOX: CONTADOR Y PUNTOS CLAVE CON TOOLTIP DETALLADO (SUPRIMIDO EN MODO COMPACTO CON PANEL CENTRAL) */}
+            {(!isCompact && showTacticalAids) && (
                 <div className="relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md">
                     {isEmptyDeck ? (
                         <div className="flex items-center justify-between gap-2">
@@ -742,19 +743,21 @@ export const CopilotSeratoWaveform = ({
             {/* Barra de Control del Waveform + LEYENDA REKORDBOX 3BAND */}
             <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-mono">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                        type="button"
-                        onClick={() => setShowTacticalAids(!showTacticalAids)}
-                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
-                            showTacticalAids
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
-                            : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
-                        }`}
-                        title="Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
-                    >
-                        <span>{showTacticalAids ? '🎯' : '⚪'}</span>
-                        <span>{showTacticalAids ? 'Ayudas DJ' : 'Puro Wave'}</span>
-                    </button>
+                    {!isCompact && (
+                        <button
+                            type="button"
+                            onClick={() => setShowTacticalAids(!showTacticalAids)}
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
+                                showTacticalAids
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
+                                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
+                            }`}
+                            title="Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
+                        >
+                            <span>{showTacticalAids ? '🎯' : '⚪'}</span>
+                            <span>{showTacticalAids ? 'Ayudas DJ' : 'Puro Wave'}</span>
+                        </button>
+                    )}
 
                     {/* LEYENDA VISUAL DE FRECUENCIAS REKORDBOX 3BAND (CDJ-3000) */}
                     <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400">
