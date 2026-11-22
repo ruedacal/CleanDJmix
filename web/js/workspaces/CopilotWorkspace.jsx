@@ -712,16 +712,16 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
 
                     <div className="dk-metrics-strip">
                         <span className="dk-metric-item energy" title="Energía">
-                            ⚡ {isEmptyDeck ? 0 : (deck.energy || 90)}%
+                            <Icons.Zap size={11} className="text-amber-400" /> {isEmptyDeck ? 0 : (deck.energy || 90)}%
                         </span>
-                        <span className="dk-metric-item groove" title="Groove / Pulso">
-                            📈 {isEmptyDeck ? 0 : (deck.groove || 86)}%
+                        <span className="dk-metric-item groove" title="Groove / Intensidad">
+                            <Icons.Activity size={11} className="text-emerald-400" /> {isEmptyDeck ? 0 : (deck.groove || 86)}%
                         </span>
                         <span className="dk-metric-item dance" title="Danzabilidad">
-                            🎚 {isEmptyDeck ? 0 : (deck.danceability || 85)}%
+                            <Icons.Sliders size={11} className="text-purple-400" /> {isEmptyDeck ? 0 : (deck.danceability || 85)}%
                         </span>
                         <span className="dk-metric-item valence" title="Positividad / Brillo">
-                            ✨ {isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%
+                            <Icons.Sparkles size={11} className="text-cyan-400" /> {isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%
                         </span>
                     </div>
                 </div>

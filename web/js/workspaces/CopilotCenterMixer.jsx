@@ -136,27 +136,80 @@ export const CopilotCenterMixer = memo(({
         return DEFAULT_HITOS_D2;
     }, [deck2?.cues]);
 
-    // Cuenta atrás táctica hacia el siguiente hito
-    const [countdownSeconds, setCountdownSeconds] = useState(14);
-    const [totalSeconds] = useState(14);
+    // Helper de formato mm:ss o 00:ss
+    const formatSec = (sec) => {
+        const s = Math.max(0, Math.round(sec));
+        const mins = Math.floor(s / 60);
+        const secs = s % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    };
+
+    // Tracking de posición de reproducción real (en segundos)
+    const d1Duration = Number(deck1?.duration_sec) || 240;
+    const d2Duration = Number(deck2?.duration_sec) || 240;
+
+    const [d1PlayPos, setD1PlayPos] = useState(() => (typeof deck1?.play_progress === 'number' ? deck1.play_progress : 0.15) * d1Duration);
+    const [d2PlayPos, setD2PlayPos] = useState(() => (typeof deck2?.play_progress === 'number' ? deck2.play_progress : 0.0) * d2Duration);
 
     useEffect(() => {
-        let timer = null;
-        if (isAppOpen) {
-            timer = setInterval(() => {
-                setCountdownSeconds(s => {
-                    if (s <= 1) return totalSeconds;
-                    return s - 1;
-                });
-            }, 1000);
+        if (typeof deck1?.play_progress === 'number') {
+            setD1PlayPos(deck1.play_progress * d1Duration);
         }
-        return () => {
-            if (timer) clearInterval(timer);
-        };
-    }, [isAppOpen, totalSeconds]);
+    }, [deck1?.play_progress, d1Duration]);
 
-    const isCriticalAlert = countdownSeconds <= 5;
-    const progressPct = Math.min(100, Math.max(0, Math.round(((totalSeconds - countdownSeconds) / totalSeconds) * 100)));
+    useEffect(() => {
+        if (typeof deck2?.play_progress === 'number') {
+            setD2PlayPos(deck2.play_progress * d2Duration);
+        }
+    }, [deck2?.play_progress, d2Duration]);
+
+    // Timer en tiempo real para avance de reproducción
+    useEffect(() => {
+        if (!isAppOpen) return;
+        const interval = setInterval(() => {
+            if (deck1?.is_playing) {
+                setD1PlayPos(p => (p + 1 > d1Duration ? 0 : p + 1));
+            }
+            if (deck2?.is_playing) {
+                setD2PlayPos(p => (p + 1 > d2Duration ? 0 : p + 1));
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [isAppOpen, deck1?.is_playing, deck2?.is_playing, d1Duration, d2Duration]);
+
+    // Cálculos rítmicos y de compás
+    const d1Bpm = Number(deck1?.bpm) || 136;
+    const d2Bpm = Number(deck2?.bpm) || 136;
+    const d1BarSec = (60 / d1Bpm) * 4;
+    const d2BarSec = (60 / d2Bpm) * 4;
+
+    // Próximo hito y segundos reales en DECK 1
+    const d1NextHito = useMemo(() => {
+        const upcoming = hitosD1.find(h => h.pos_sec > d1PlayPos + 0.5);
+        return upcoming || hitosD1[d1ActiveHito] || hitosD1[0];
+    }, [hitosD1, d1PlayPos, d1ActiveHito]);
+
+    const d1RemainingSec = Math.max(0, Math.round((d1NextHito?.pos_sec || 32) - d1PlayPos));
+    const d1RemainingBars = Math.max(1, Math.ceil(d1RemainingSec / d1BarSec));
+    const d1IsPlaying = Boolean(deck1?.is_playing);
+    const d1IsAlert = d1IsPlaying && d1RemainingSec <= 5 && d1RemainingSec > 0;
+    const d1ProgressPct = Math.min(100, Math.max(0, Math.round(((d1NextHito.pos_sec - d1RemainingSec) / (d1NextHito.pos_sec || 1)) * 100)));
+
+    // Próximo hito y segundos reales en DECK 2
+    const d2NextHito = useMemo(() => {
+        const upcoming = hitosD2.find(h => h.pos_sec > d2PlayPos + 0.5);
+        return upcoming || hitosD2[d2ActiveHito] || hitosD2[2] || hitosD2[0];
+    }, [hitosD2, d2PlayPos, d2ActiveHito]);
+
+    const d2IsPlaying = Boolean(deck2?.is_playing);
+    const d2RemainingSec = d2IsPlaying 
+        ? Math.max(0, Math.round((d2NextHito?.pos_sec || 48) - d2PlayPos))
+        : (d1IsPlaying ? d1RemainingSec : 14);
+    const d2RemainingBars = Math.max(1, Math.ceil(d2RemainingSec / d2BarSec));
+    const d2IsAlert = (d2IsPlaying || (d1IsPlaying && !d2IsPlaying)) && d2RemainingSec <= 5 && d2RemainingSec > 0;
+    const d2ProgressPct = Math.min(100, Math.max(0, Math.round(((d2NextHito.pos_sec - d2RemainingSec) / (d2NextHito.pos_sec || 1)) * 100)));
+
+    const isCriticalAlert = d1IsAlert || d2IsAlert;
 
     // Extracción de valores de EQ y faders desde state.mixer
     const ch1Mix = mixer?.ch1 || {};
@@ -211,58 +264,97 @@ export const CopilotCenterMixer = memo(({
                 </div>
             </div>
 
-            {/* 2. HUD REGRESIVO OPCIONAL (si se solicita dentro del mixer) */}
+            {/* 2. HUDS TÁCTICOS REGRESIVOS DUALES: UNO PARA CADA DECK */}
             {showInlineHud && (
-                <div 
-                    className={`cue-hud bw-cue-hud select-none ${isCriticalAlert ? 'is-impact' : ''}`}
-                    role="status"
-                    aria-live="assertive"
-                >
-                    <div className="cue-hud-ico bw-cue-hud-ico">
-                        {isCriticalAlert ? (
-                            <svg viewBox="0 0 24 24">
-                                <path d="M7 18v-6a5 5 0 1 1 10 0v6"/>
-                                <path d="M5 21h14"/>
-                                <path d="M12 2v2"/>
-                                <path d="M4.93 4.93l1.41 1.41"/>
-                                <path d="M19.07 4.93l-1.41 1.41"/>
-                                <path d="M2 12h2"/>
-                                <path d="M20 12h2"/>
-                            </svg>
-                        ) : (
-                            <svg viewBox="0 0 24 24">
-                                <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
-                                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/>
-                                <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-                            </svg>
-                        )}
-                    </div>
-                    <div className="cue-hud-body bw-cue-hud-body">
-                        <div className="cue-hud-kicker bw-cue-hud-kicker">
-                            <span className="cue-hud-dot bw-cue-hud-dot"></span>
-                            <span>
-                                {isCriticalAlert 
-                                    ? (countdownSeconds === 0 ? '¡IMPACTO AHORA! SOLTAR PISTA' : '¡ATENCIÓN! QUEDAN < 5 SEGUNDOS') 
-                                    : 'EN CUE (PREPARADO)'}
+                <div className="bw-dual-huds">
+                    {/* HUD DECK 1 */}
+                    <div 
+                        className={`cue-hud bw-cue-hud d1-hud select-none ${d1IsAlert ? 'is-impact' : ''}`}
+                        role="status"
+                        aria-live="assertive"
+                    >
+                        <div className="cue-hud-ico bw-cue-hud-ico">
+                            {d1IsAlert ? (
+                                <svg viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21h14"/><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                            )}
+                        </div>
+                        <div className="cue-hud-body bw-cue-hud-body">
+                            <div className="cue-hud-kicker bw-cue-hud-kicker">
+                                <span className="cue-hud-dot bw-cue-hud-dot" style={{ backgroundColor: '#00F0FF', boxShadow: '0 0 7px #00F0FF' }}></span>
+                                <span className="text-[#00F0FF] font-black mr-1">DK 1</span>
+                                <span>
+                                    {d1IsAlert 
+                                        ? (d1RemainingSec === 0 ? '¡IMPACTO AHORA! SOLTAR PISTA' : '¡ATENCIÓN! QUEDAN < 5 SEGUNDOS') 
+                                        : (d1IsPlaying ? `EN PLAY · PROXIMO: ${d1NextHito?.label || 'HITO'}` : 'EN CUE (PREPARADO)')}
+                                </span>
+                            </div>
+                            <div className="cue-hud-text bw-cue-hud-text truncate">
+                                {d1IsAlert 
+                                    ? `PRIMER GOLPE (${d1NextHito?.label || 'INTRO'})` 
+                                    : (d1IsPlaying ? `Transición a ${d1NextHito?.label || 'Hito'} en ${d1RemainingBars} compases` : 'Listo para soltar en primer bombo')}
+                            </div>
+                            <div className="cue-hud-progress bw-cue-hud-progress">
+                                <div 
+                                    className="cue-hud-progress-fill bw-cue-hud-progress-fill" 
+                                    style={{ width: `${d1ProgressPct}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                        <div className="cue-hud-right bw-cue-hud-right">
+                            <span className="cue-hud-timer bw-cue-hud-timer">
+                                {formatSec(d1RemainingSec)}
+                            </span>
+                            <span className="cue-hud-bar-pill bw-cue-hud-bar-pill">
+                                BAR {d1RemainingBars}
                             </span>
                         </div>
-                        <div className="cue-hud-text bw-cue-hud-text truncate">
-                            {isCriticalAlert ? 'PRIMER GOLPE (INTRO)' : 'Listo para soltar en primer bombo'}
-                        </div>
-                        <div className="cue-hud-progress bw-cue-hud-progress">
-                            <div 
-                                className="cue-hud-progress-fill bw-cue-hud-progress-fill" 
-                                style={{ width: `${progressPct}%` }}
-                            ></div>
-                        </div>
                     </div>
-                    <div className="cue-hud-right bw-cue-hud-right">
-                        <span className="cue-hud-timer bw-cue-hud-timer">
-                            00:{String(Math.max(0, countdownSeconds)).padStart(2, '0')}
-                        </span>
-                        <span className="cue-hud-bar-pill bw-cue-hud-bar-pill">
-                            BAR {Math.max(1, Math.ceil(countdownSeconds / 2))}
-                        </span>
+
+                    {/* HUD DECK 2 */}
+                    <div 
+                        className={`cue-hud bw-cue-hud d2-hud select-none ${d2IsAlert ? 'is-impact' : ''}`}
+                        role="status"
+                        aria-live="assertive"
+                    >
+                        <div className="cue-hud-ico bw-cue-hud-ico">
+                            {d2IsAlert ? (
+                                <svg viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21h14"/><path d="M12 2v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"/><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                            )}
+                        </div>
+                        <div className="cue-hud-body bw-cue-hud-body">
+                            <div className="cue-hud-kicker bw-cue-hud-kicker">
+                                <span className="cue-hud-dot bw-cue-hud-dot" style={{ backgroundColor: '#818CF8', boxShadow: '0 0 7px #818CF8' }}></span>
+                                <span className="text-[#38BDF8] font-black mr-1">DK 2</span>
+                                <span>
+                                    {d2IsAlert 
+                                        ? (d2RemainingSec === 0 ? '¡IMPACTO AHORA! SOLTAR PISTA' : '¡ATENCIÓN! QUEDAN < 5 SEGUNDOS') 
+                                        : (d2IsPlaying ? `EN PLAY · PROXIMO: ${d2NextHito?.label || 'HITO'}` : 'EN CUE (PREPARADO)')}
+                                </span>
+                            </div>
+                            <div className="cue-hud-text bw-cue-hud-text truncate">
+                                {d2IsAlert 
+                                    ? `PRIMER GOLPE (${d2NextHito?.label || 'INTRO'})` 
+                                    : (d2IsPlaying ? `Transición a ${d2NextHito?.label || 'Hito'} en ${d2RemainingBars} compases` : 'Listo para soltar en primer bombo')}
+                            </div>
+                            <div className="cue-hud-progress bw-cue-hud-progress">
+                                <div 
+                                    className="cue-hud-progress-fill bw-cue-hud-progress-fill" 
+                                    style={{ width: `${d2ProgressPct}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                        <div className="cue-hud-right bw-cue-hud-right">
+                            <span className="cue-hud-timer bw-cue-hud-timer">
+                                {formatSec(d2RemainingSec)}
+                            </span>
+                            <span className="cue-hud-bar-pill bw-cue-hud-bar-pill">
+                                BAR {d2RemainingBars}
+                            </span>
+                        </div>
                     </div>
                 </div>
             )}
@@ -277,9 +369,9 @@ export const CopilotCenterMixer = memo(({
                         <span className="dp-rem bw-dp-rem">{deck1?.duration || '-03:14'}</span>
                     </div>
                     <div className="hito-banner bw-hito-banner">
-                        <div className="hb-bars bw-hb-bars">16 BARS · 00:29</div>
-                        <div className="hb-name bw-hb-name">NEXT: BASSLINE IN</div>
-                        <div className="hb-bar bw-hb-bar"><div className="hb-fill bw-hb-fill" style={{ width: '36%' }}></div></div>
+                        <div className="hb-bars bw-hb-bars">{d1RemainingBars} BARS · {formatSec(d1RemainingSec)}</div>
+                        <div className="hb-name bw-hb-name">NEXT: {d1NextHito?.label || 'BASSLINE IN'}</div>
+                        <div className="hb-bar bw-hb-bar"><div className="hb-fill bw-hb-fill" style={{ width: `${d1ProgressPct}%` }}></div></div>
                     </div>
                     <div className="cue-list bw-cue-list" id="main-d1-list">
                         {hitosD1.map((h, idx) => {
@@ -459,17 +551,17 @@ export const CopilotCenterMixer = memo(({
                         <span className="dp-title bw-dp-title">DK 2</span>
                         <span className="dp-rem bw-dp-rem">{deck2?.duration || '-02:41'}</span>
                     </div>
-                    <div className={`hito-banner bw-hito-banner ${isCriticalAlert ? 'alert-mode' : ''}`}>
+                    <div className={`hito-banner bw-hito-banner ${d2IsAlert ? 'alert-mode' : ''}`}>
                         <div className="hb-bars bw-hb-bars">
-                            {isCriticalAlert ? `2 BARS · 00:${String(countdownSeconds).padStart(2, '0')}` : '8 BARS · 00:14'}
+                            {d2IsAlert ? `2 BARS · ${formatSec(d2RemainingSec)}` : `${d2RemainingBars} BARS · ${formatSec(d2RemainingSec)}`}
                         </div>
                         <div className="hb-name bw-hb-name">
-                            {isCriticalAlert ? 'INMINENTE: MAIN DROP' : 'NEXT: MAIN DROP'}
+                            {d2IsAlert ? `INMINENTE: ${d2NextHito?.label || 'MAIN DROP'}` : `NEXT: ${d2NextHito?.label || 'MAIN DROP'}`}
                         </div>
                         <div className="hb-bar bw-hb-bar">
                             <div 
                                 className="hb-fill bw-hb-fill" 
-                                style={{ width: `${isCriticalAlert ? 92 : 54}%` }}
+                                style={{ width: `${d2ProgressPct}%` }}
                             ></div>
                         </div>
                     </div>

@@ -1243,7 +1243,27 @@ body.club-mode,
   animation: flashTag 0.72s infinite;
 }
 
-/* 2. HUD TÁCTICO REGRESIVO INTEGRADO CON TRANSICIÓN ROJA <5S */
+/* 2. HUD TÁCTICO REGRESIVO INTEGRADO CON TRANSICIÓN ROJA <5S (DUAL DK1 + DK2) */
+.bw-dual-huds {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+.bw-dual-huds .cue-hud,
+.bw-dual-huds .bw-cue-hud {
+  margin-bottom: 0;
+  padding: 5px 8px;
+}
+.bw-dual-huds .cue-hud.d1-hud,
+.bw-dual-huds .bw-cue-hud.d1-hud {
+  border-color: rgba(0, 240, 255, 0.45);
+}
+.bw-dual-huds .cue-hud.d2-hud,
+.bw-dual-huds .bw-cue-hud.d2-hud {
+  border-color: rgba(99, 102, 241, 0.55);
+}
+
 .cue-hud, .bw-cue-hud {
   position: relative;
   overflow: hidden;
@@ -2039,7 +2059,12 @@ body.club-mode,
 .dk-metric-item {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 3.5px;
+}
+.dk-metric-item svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 .dk-metric-item.energy { color: #F59E0B; }
 .dk-metric-item.groove { color: #10B981; }

@@ -166,24 +166,61 @@
       }
       return DEFAULT_HITOS_D2;
     }, [deck2 == null ? void 0 : deck2.cues]);
-    const [countdownSeconds, setCountdownSeconds] = useState(14);
-    const [totalSeconds] = useState(14);
+    const formatSec = (sec) => {
+      const s = Math.max(0, Math.round(sec));
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    };
+    const d1Duration = Number(deck1 == null ? void 0 : deck1.duration_sec) || 240;
+    const d2Duration = Number(deck2 == null ? void 0 : deck2.duration_sec) || 240;
+    const [d1PlayPos, setD1PlayPos] = useState(() => (typeof (deck1 == null ? void 0 : deck1.play_progress) === "number" ? deck1.play_progress : 0.15) * d1Duration);
+    const [d2PlayPos, setD2PlayPos] = useState(() => (typeof (deck2 == null ? void 0 : deck2.play_progress) === "number" ? deck2.play_progress : 0) * d2Duration);
     useEffect(() => {
-      let timer = null;
-      if (isAppOpen) {
-        timer = setInterval(() => {
-          setCountdownSeconds((s) => {
-            if (s <= 1) return totalSeconds;
-            return s - 1;
-          });
-        }, 1e3);
+      if (typeof (deck1 == null ? void 0 : deck1.play_progress) === "number") {
+        setD1PlayPos(deck1.play_progress * d1Duration);
       }
-      return () => {
-        if (timer) clearInterval(timer);
-      };
-    }, [isAppOpen, totalSeconds]);
-    const isCriticalAlert = countdownSeconds <= 5;
-    const progressPct = Math.min(100, Math.max(0, Math.round((totalSeconds - countdownSeconds) / totalSeconds * 100)));
+    }, [deck1 == null ? void 0 : deck1.play_progress, d1Duration]);
+    useEffect(() => {
+      if (typeof (deck2 == null ? void 0 : deck2.play_progress) === "number") {
+        setD2PlayPos(deck2.play_progress * d2Duration);
+      }
+    }, [deck2 == null ? void 0 : deck2.play_progress, d2Duration]);
+    useEffect(() => {
+      if (!isAppOpen) return;
+      const interval = setInterval(() => {
+        if (deck1 == null ? void 0 : deck1.is_playing) {
+          setD1PlayPos((p) => p + 1 > d1Duration ? 0 : p + 1);
+        }
+        if (deck2 == null ? void 0 : deck2.is_playing) {
+          setD2PlayPos((p) => p + 1 > d2Duration ? 0 : p + 1);
+        }
+      }, 1e3);
+      return () => clearInterval(interval);
+    }, [isAppOpen, deck1 == null ? void 0 : deck1.is_playing, deck2 == null ? void 0 : deck2.is_playing, d1Duration, d2Duration]);
+    const d1Bpm = Number(deck1 == null ? void 0 : deck1.bpm) || 136;
+    const d2Bpm = Number(deck2 == null ? void 0 : deck2.bpm) || 136;
+    const d1BarSec = 60 / d1Bpm * 4;
+    const d2BarSec = 60 / d2Bpm * 4;
+    const d1NextHito = useMemo(() => {
+      const upcoming = hitosD1.find((h) => h.pos_sec > d1PlayPos + 0.5);
+      return upcoming || hitosD1[d1ActiveHito] || hitosD1[0];
+    }, [hitosD1, d1PlayPos, d1ActiveHito]);
+    const d1RemainingSec = Math.max(0, Math.round(((d1NextHito == null ? void 0 : d1NextHito.pos_sec) || 32) - d1PlayPos));
+    const d1RemainingBars = Math.max(1, Math.ceil(d1RemainingSec / d1BarSec));
+    const d1IsPlaying = Boolean(deck1 == null ? void 0 : deck1.is_playing);
+    const d1IsAlert = d1IsPlaying && d1RemainingSec <= 5 && d1RemainingSec > 0;
+    const d1ProgressPct = Math.min(100, Math.max(0, Math.round((d1NextHito.pos_sec - d1RemainingSec) / (d1NextHito.pos_sec || 1) * 100)));
+    const d2NextHito = useMemo(() => {
+      const upcoming = hitosD2.find((h) => h.pos_sec > d2PlayPos + 0.5);
+      return upcoming || hitosD2[d2ActiveHito] || hitosD2[2] || hitosD2[0];
+    }, [hitosD2, d2PlayPos, d2ActiveHito]);
+    const d2IsPlaying = Boolean(deck2 == null ? void 0 : deck2.is_playing);
+    const d2RemainingSec = d2IsPlaying ? Math.max(0, Math.round(((d2NextHito == null ? void 0 : d2NextHito.pos_sec) || 48) - d2PlayPos)) : d1IsPlaying ? d1RemainingSec : 14;
+    const d2RemainingBars = Math.max(1, Math.ceil(d2RemainingSec / d2BarSec));
+    const d2IsAlert = (d2IsPlaying || d1IsPlaying && !d2IsPlaying) && d2RemainingSec <= 5 && d2RemainingSec > 0;
+    const d2ProgressPct = Math.min(100, Math.max(0, Math.round((d2NextHito.pos_sec - d2RemainingSec) / (d2NextHito.pos_sec || 1) * 100)));
+    const isCriticalAlert = d1IsAlert || d2IsAlert;
     const ch1Mix = (mixer == null ? void 0 : mixer.ch1) || {};
     const ch2Mix = (mixer == null ? void 0 : mixer.ch2) || {};
     const ch1Gain = ch1Mix.gain !== void 0 ? ch1Mix.gain : 0.5;
@@ -216,24 +253,40 @@
         },
         b
       ))), /* @__PURE__ */ React.createElement("div", { className: "mx-alert-badge bw-mx-alert-badge" }, isCriticalAlert ? "\u26A0 <5S ALERTA" : "\u26A0 <5S")),
-      showInlineHud && /* @__PURE__ */ React.createElement(
+      showInlineHud && /* @__PURE__ */ React.createElement("div", { className: "bw-dual-huds" }, /* @__PURE__ */ React.createElement(
         "div",
         {
-          className: `cue-hud bw-cue-hud select-none ${isCriticalAlert ? "is-impact" : ""}`,
+          className: `cue-hud bw-cue-hud d1-hud select-none ${d1IsAlert ? "is-impact" : ""}`,
           role: "status",
           "aria-live": "assertive"
         },
-        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-ico bw-cue-hud-ico" }, isCriticalAlert ? /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M7 18v-6a5 5 0 1 1 10 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M5 21h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M4.93 4.93l1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M19.07 4.93l-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" })) : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M3 18v-6a9 9 0 0 1 18 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" }))),
-        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-body bw-cue-hud-body" }, /* @__PURE__ */ React.createElement("div", { className: "cue-hud-kicker bw-cue-hud-kicker" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-dot bw-cue-hud-dot" }), /* @__PURE__ */ React.createElement("span", null, isCriticalAlert ? countdownSeconds === 0 ? "\xA1IMPACTO AHORA! SOLTAR PISTA" : "\xA1ATENCI\xD3N! QUEDAN < 5 SEGUNDOS" : "EN CUE (PREPARADO)")), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-text bw-cue-hud-text truncate" }, isCriticalAlert ? "PRIMER GOLPE (INTRO)" : "Listo para soltar en primer bombo"), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-progress bw-cue-hud-progress" }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-ico bw-cue-hud-ico" }, d1IsAlert ? /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M7 18v-6a5 5 0 1 1 10 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M5 21h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M4.93 4.93l1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M19.07 4.93l-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" })) : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M3 18v-6a9 9 0 0 1 18 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" }))),
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-body bw-cue-hud-body" }, /* @__PURE__ */ React.createElement("div", { className: "cue-hud-kicker bw-cue-hud-kicker" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-dot bw-cue-hud-dot", style: { backgroundColor: "#00F0FF", boxShadow: "0 0 7px #00F0FF" } }), /* @__PURE__ */ React.createElement("span", { className: "text-[#00F0FF] font-black mr-1" }, "DK 1"), /* @__PURE__ */ React.createElement("span", null, d1IsAlert ? d1RemainingSec === 0 ? "\xA1IMPACTO AHORA! SOLTAR PISTA" : "\xA1ATENCI\xD3N! QUEDAN < 5 SEGUNDOS" : d1IsPlaying ? `EN PLAY \xB7 PROXIMO: ${(d1NextHito == null ? void 0 : d1NextHito.label) || "HITO"}` : "EN CUE (PREPARADO)")), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-text bw-cue-hud-text truncate" }, d1IsAlert ? `PRIMER GOLPE (${(d1NextHito == null ? void 0 : d1NextHito.label) || "INTRO"})` : d1IsPlaying ? `Transici\xF3n a ${(d1NextHito == null ? void 0 : d1NextHito.label) || "Hito"} en ${d1RemainingBars} compases` : "Listo para soltar en primer bombo"), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-progress bw-cue-hud-progress" }, /* @__PURE__ */ React.createElement(
           "div",
           {
             className: "cue-hud-progress-fill bw-cue-hud-progress-fill",
-            style: { width: `${progressPct}%` }
+            style: { width: `${d1ProgressPct}%` }
           }
         ))),
-        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-right bw-cue-hud-right" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-timer bw-cue-hud-timer" }, "00:", String(Math.max(0, countdownSeconds)).padStart(2, "0")), /* @__PURE__ */ React.createElement("span", { className: "cue-hud-bar-pill bw-cue-hud-bar-pill" }, "BAR ", Math.max(1, Math.ceil(countdownSeconds / 2))))
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "mx-body bw-mx-body select-none" }, /* @__PURE__ */ React.createElement("div", { className: "deck-pane d1-pane bw-deck-pane bw-d1-pane" }, /* @__PURE__ */ React.createElement("div", { className: "dp-head bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "dp-title bw-dp-title" }, "DK 1"), /* @__PURE__ */ React.createElement("span", { className: "dp-rem bw-dp-rem" }, (deck1 == null ? void 0 : deck1.duration) || "-03:14")), /* @__PURE__ */ React.createElement("div", { className: "hito-banner bw-hito-banner" }, /* @__PURE__ */ React.createElement("div", { className: "hb-bars bw-hb-bars" }, "16 BARS \xB7 00:29"), /* @__PURE__ */ React.createElement("div", { className: "hb-name bw-hb-name" }, "NEXT: BASSLINE IN"), /* @__PURE__ */ React.createElement("div", { className: "hb-bar bw-hb-bar" }, /* @__PURE__ */ React.createElement("div", { className: "hb-fill bw-hb-fill", style: { width: "36%" } }))), /* @__PURE__ */ React.createElement("div", { className: "cue-list bw-cue-list", id: "main-d1-list" }, hitosD1.map((h, idx) => {
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-right bw-cue-hud-right" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-timer bw-cue-hud-timer" }, formatSec(d1RemainingSec)), /* @__PURE__ */ React.createElement("span", { className: "cue-hud-bar-pill bw-cue-hud-bar-pill" }, "BAR ", d1RemainingBars))
+      ), /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: `cue-hud bw-cue-hud d2-hud select-none ${d2IsAlert ? "is-impact" : ""}`,
+          role: "status",
+          "aria-live": "assertive"
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-ico bw-cue-hud-ico" }, d2IsAlert ? /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M7 18v-6a5 5 0 1 1 10 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M5 21h14" }), /* @__PURE__ */ React.createElement("path", { d: "M12 2v2" }), /* @__PURE__ */ React.createElement("path", { d: "M4.93 4.93l1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M19.07 4.93l-1.41 1.41" }), /* @__PURE__ */ React.createElement("path", { d: "M2 12h2" }), /* @__PURE__ */ React.createElement("path", { d: "M20 12h2" })) : /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 24 24" }, /* @__PURE__ */ React.createElement("path", { d: "M3 18v-6a9 9 0 0 1 18 0v6" }), /* @__PURE__ */ React.createElement("path", { d: "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" }), /* @__PURE__ */ React.createElement("path", { d: "M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" }))),
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-body bw-cue-hud-body" }, /* @__PURE__ */ React.createElement("div", { className: "cue-hud-kicker bw-cue-hud-kicker" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-dot bw-cue-hud-dot", style: { backgroundColor: "#818CF8", boxShadow: "0 0 7px #818CF8" } }), /* @__PURE__ */ React.createElement("span", { className: "text-[#38BDF8] font-black mr-1" }, "DK 2"), /* @__PURE__ */ React.createElement("span", null, d2IsAlert ? d2RemainingSec === 0 ? "\xA1IMPACTO AHORA! SOLTAR PISTA" : "\xA1ATENCI\xD3N! QUEDAN < 5 SEGUNDOS" : d2IsPlaying ? `EN PLAY \xB7 PROXIMO: ${(d2NextHito == null ? void 0 : d2NextHito.label) || "HITO"}` : "EN CUE (PREPARADO)")), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-text bw-cue-hud-text truncate" }, d2IsAlert ? `PRIMER GOLPE (${(d2NextHito == null ? void 0 : d2NextHito.label) || "INTRO"})` : d2IsPlaying ? `Transici\xF3n a ${(d2NextHito == null ? void 0 : d2NextHito.label) || "Hito"} en ${d2RemainingBars} compases` : "Listo para soltar en primer bombo"), /* @__PURE__ */ React.createElement("div", { className: "cue-hud-progress bw-cue-hud-progress" }, /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            className: "cue-hud-progress-fill bw-cue-hud-progress-fill",
+            style: { width: `${d2ProgressPct}%` }
+          }
+        ))),
+        /* @__PURE__ */ React.createElement("div", { className: "cue-hud-right bw-cue-hud-right" }, /* @__PURE__ */ React.createElement("span", { className: "cue-hud-timer bw-cue-hud-timer" }, formatSec(d2RemainingSec)), /* @__PURE__ */ React.createElement("span", { className: "cue-hud-bar-pill bw-cue-hud-bar-pill" }, "BAR ", d2RemainingBars))
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "mx-body bw-mx-body select-none" }, /* @__PURE__ */ React.createElement("div", { className: "deck-pane d1-pane bw-deck-pane bw-d1-pane" }, /* @__PURE__ */ React.createElement("div", { className: "dp-head bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "dp-title bw-dp-title" }, "DK 1"), /* @__PURE__ */ React.createElement("span", { className: "dp-rem bw-dp-rem" }, (deck1 == null ? void 0 : deck1.duration) || "-03:14")), /* @__PURE__ */ React.createElement("div", { className: "hito-banner bw-hito-banner" }, /* @__PURE__ */ React.createElement("div", { className: "hb-bars bw-hb-bars" }, d1RemainingBars, " BARS \xB7 ", formatSec(d1RemainingSec)), /* @__PURE__ */ React.createElement("div", { className: "hb-name bw-hb-name" }, "NEXT: ", (d1NextHito == null ? void 0 : d1NextHito.label) || "BASSLINE IN"), /* @__PURE__ */ React.createElement("div", { className: "hb-bar bw-hb-bar" }, /* @__PURE__ */ React.createElement("div", { className: "hb-fill bw-hb-fill", style: { width: `${d1ProgressPct}%` } }))), /* @__PURE__ */ React.createElement("div", { className: "cue-list bw-cue-list", id: "main-d1-list" }, hitosD1.map((h, idx) => {
         const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
         const isActive = d1ActiveHito === idx;
         const isNext = !isActive && idx === 1;
@@ -294,11 +347,11 @@
           className: "xf-thumb bw-xf-thumb",
           style: { left: `calc(${Math.round(crossfader * 100)}% - 5px)` }
         }
-      )))), /* @__PURE__ */ React.createElement("div", { className: "deck-pane d2-pane bw-deck-pane bw-d2-pane" }, /* @__PURE__ */ React.createElement("div", { className: "dp-head bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "dp-title bw-dp-title" }, "DK 2"), /* @__PURE__ */ React.createElement("span", { className: "dp-rem bw-dp-rem" }, (deck2 == null ? void 0 : deck2.duration) || "-02:41")), /* @__PURE__ */ React.createElement("div", { className: `hito-banner bw-hito-banner ${isCriticalAlert ? "alert-mode" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "hb-bars bw-hb-bars" }, isCriticalAlert ? `2 BARS \xB7 00:${String(countdownSeconds).padStart(2, "0")}` : "8 BARS \xB7 00:14"), /* @__PURE__ */ React.createElement("div", { className: "hb-name bw-hb-name" }, isCriticalAlert ? "INMINENTE: MAIN DROP" : "NEXT: MAIN DROP"), /* @__PURE__ */ React.createElement("div", { className: "hb-bar bw-hb-bar" }, /* @__PURE__ */ React.createElement(
+      )))), /* @__PURE__ */ React.createElement("div", { className: "deck-pane d2-pane bw-deck-pane bw-d2-pane" }, /* @__PURE__ */ React.createElement("div", { className: "dp-head bw-dp-head" }, /* @__PURE__ */ React.createElement("span", { className: "dp-title bw-dp-title" }, "DK 2"), /* @__PURE__ */ React.createElement("span", { className: "dp-rem bw-dp-rem" }, (deck2 == null ? void 0 : deck2.duration) || "-02:41")), /* @__PURE__ */ React.createElement("div", { className: `hito-banner bw-hito-banner ${d2IsAlert ? "alert-mode" : ""}` }, /* @__PURE__ */ React.createElement("div", { className: "hb-bars bw-hb-bars" }, d2IsAlert ? `2 BARS \xB7 ${formatSec(d2RemainingSec)}` : `${d2RemainingBars} BARS \xB7 ${formatSec(d2RemainingSec)}`), /* @__PURE__ */ React.createElement("div", { className: "hb-name bw-hb-name" }, d2IsAlert ? `INMINENTE: ${(d2NextHito == null ? void 0 : d2NextHito.label) || "MAIN DROP"}` : `NEXT: ${(d2NextHito == null ? void 0 : d2NextHito.label) || "MAIN DROP"}`), /* @__PURE__ */ React.createElement("div", { className: "hb-bar bw-hb-bar" }, /* @__PURE__ */ React.createElement(
         "div",
         {
           className: "hb-fill bw-hb-fill",
-          style: { width: `${isCriticalAlert ? 92 : 54}%` }
+          style: { width: `${d2ProgressPct}%` }
         }
       ))), /* @__PURE__ */ React.createElement("div", { className: "cue-list bw-cue-list", id: "main-d2-list" }, hitosD2.map((h, idx) => {
         const IconComponent = HitoIcons[h.key] || HitoIcons.intro;
@@ -326,6 +379,7 @@
 
   // web/js/copilot.jsx
   var { useState: useState2, useEffect: useEffect2, useRef: useRef2, useMemo: useMemo2 } = React;
+  var SlidersIcon = ({ size = 14, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "21", x2: "4", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "10", x2: "4", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "21", x2: "12", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "8", x2: "12", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "21", x2: "20", y2: "16" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "12", x2: "20", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "1", y1: "14", x2: "7", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "9", y1: "8", x2: "15", y2: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "17", y1: "16", x2: "23", y2: "16" }));
   var DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
   function getValidCover(c) {
     if (!c || typeof c !== "string") return DEFAULT_VINYL_SVG;
@@ -390,6 +444,9 @@
   var PlatformTraktorLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#241a02" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "8", width: "18", height: "4", rx: "1", fill: "#facc15" }), /* @__PURE__ */ React.createElement("path", { d: "M13.5 12H18.5V23.5C18.5 24.3 17.8 25 17 25H15C14.2 25 13.5 24.3 13.5 23.5V12Z", fill: "#facc15" }), /* @__PURE__ */ React.createElement("circle", { cx: "22", cy: "19", r: "2", fill: "#eab308" }));
   var PlatformAutoLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg", className }, /* @__PURE__ */ React.createElement("rect", { width: "32", height: "32", rx: "7", fill: "#1e0c2e" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "9", stroke: "#a855f7", strokeWidth: "1.5", strokeDasharray: "3 2" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "5", stroke: "#c084fc", strokeWidth: "1.5" }), /* @__PURE__ */ React.createElement("circle", { cx: "16", cy: "16", r: "2", fill: "#e9d5ff" }), /* @__PURE__ */ React.createElement("path", { d: "M16 6L18.5 10.5L16 9.2L13.5 10.5L16 6Z", fill: "#a855f7" }), /* @__PURE__ */ React.createElement("path", { d: "M16 26L13.5 21.5L16 22.8L18.5 21.5L16 26Z", fill: "#a855f7" }));
   var CopilotTurntableLogo = ({ size = 20, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.75", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "8.5" }), /* @__PURE__ */ React.createElement("circle", { cx: "12", cy: "12", r: "3.2" }), /* @__PURE__ */ React.createElement("path", { d: "M12 3.5v5.3M12 15.2v5.3" }));
+  var ZapIcon = ({ size = 10, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("polygon", { points: "13 2 3 14 12 14 11 22 21 10 12 10 13 2" }));
+  var ActivityIcon = ({ size = 10, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("polyline", { points: "22 12 18 12 15 21 9 3 6 12 2 12" }));
+  var SparklesIcon = ({ size = 10, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("path", { d: "m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" }));
   var PlatformLogos = {
     auto: PlatformAutoLogo,
     serato: PlatformSeratoLogo,
@@ -2027,7 +2084,7 @@
         style: deck.camelot_color ? { backgroundColor: deck.camelot_color, borderColor: `${deck.camelot_color}cc` } : {}
       },
       deck.camelot || deck.raw_key || (side === "1" || side === "A" ? "6A" : "8A")
-    ), /* @__PURE__ */ React.createElement("div", { className: "dk-metrics-strip" }, /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item energy", title: "Energ\xEDa" }, "\u26A1 ", isEmptyDeck ? 0 : deck.energy || 90, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item groove", title: "Groove / Pulso" }, "\u{1F4C8} ", isEmptyDeck ? 0 : deck.groove || 86, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item dance", title: "Danzabilidad" }, "\u{1F39A} ", isEmptyDeck ? 0 : deck.danceability || 85, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item valence", title: "Positividad / Brillo" }, "\u2728 ", isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62, "%")))), /* @__PURE__ */ React.createElement("div", { className: "dk-hotcues-box select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-hc-lbl" }, /* @__PURE__ */ React.createElement("span", { className: "dk-hc-dot" }), /* @__PURE__ */ React.createElement("span", null, "8 HOT CUES DE CABINA")), /* @__PURE__ */ React.createElement("div", { className: "dk-hc-strip" }, cabinaHotCues.map((cue, idx) => /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "dk-metrics-strip" }, /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item energy", title: "Energ\xEDa" }, /* @__PURE__ */ React.createElement(ZapIcon, { size: 11, className: "text-amber-400" }), " ", isEmptyDeck ? 0 : deck.energy || 90, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item groove", title: "Groove / Intensidad" }, /* @__PURE__ */ React.createElement(ActivityIcon, { size: 11, className: "text-emerald-400" }), " ", isEmptyDeck ? 0 : deck.groove || 86, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item dance", title: "Danzabilidad" }, /* @__PURE__ */ React.createElement(SlidersIcon, { size: 11, className: "text-purple-400" }), " ", isEmptyDeck ? 0 : deck.danceability || 85, "%"), /* @__PURE__ */ React.createElement("span", { className: "dk-metric-item valence", title: "Positividad / Brillo" }, /* @__PURE__ */ React.createElement(SparklesIcon, { size: 11, className: "text-cyan-400" }), " ", isEmptyDeck ? 0 : deck.valence != null ? deck.valence : side === "1" || side === "A" ? 55 : 62, "%")))), /* @__PURE__ */ React.createElement("div", { className: "dk-hotcues-box select-none" }, /* @__PURE__ */ React.createElement("div", { className: "dk-hc-lbl" }, /* @__PURE__ */ React.createElement("span", { className: "dk-hc-dot" }), /* @__PURE__ */ React.createElement("span", null, "8 HOT CUES DE CABINA")), /* @__PURE__ */ React.createElement("div", { className: "dk-hc-strip" }, cabinaHotCues.map((cue, idx) => /* @__PURE__ */ React.createElement(
       "span",
       {
         key: cue.id || idx,
