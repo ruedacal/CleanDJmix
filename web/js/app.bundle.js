@@ -6288,6 +6288,22 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     const [selectedFolderId, setSelectedFolderId] = useState9("__ALL__");
     const [feedbackMsg, setFeedbackMsg] = useState9("");
     const [searchTrack, setSearchTrack] = useState9("");
+    const [tableFilter, setTableFilter] = useState9("all");
+    const [colFilters, setColFilters] = useState9({
+      file: "",
+      artist: "",
+      genre: "",
+      format: "ALL",
+      bpm: "",
+      key: "",
+      energy: "",
+      dance: "",
+      intensity: ""
+    });
+    const [sortConfig, setSortConfig] = useState9({ key: null, dir: "asc" });
+    const hasActiveColFilters = Object.entries(colFilters).some(([k, v]) => k === "format" ? v !== "ALL" : Boolean(String(v).trim()));
+    const resetColFilters = () => setColFilters({ file: "", artist: "", genre: "", format: "ALL", bpm: "", key: "", energy: "", dance: "", intensity: "" });
+    const toggleSort = (key) => setSortConfig((prev) => prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
     const [dragOverFolderId, setDragOverFolderId] = useState9(null);
     const [selectedTrackKeys, setSelectedTrackKeys] = useState9(/* @__PURE__ */ new Set());
     const [fsBrowserOpen, setFsBrowserOpen] = useState9(false);
@@ -6339,10 +6355,21 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       folders: []
     };
     useEffect12(() => {
+      if (activeLibraryId && libraries.some((l) => l.id === activeLibraryId)) {
+        if (activeLibId !== activeLibraryId) {
+          setActiveLibId(activeLibraryId);
+          setSelectedFolderId("__ALL__");
+        }
+      } else if (libraries.length > 0 && !libraries.some((l) => l.id === activeLibId)) {
+        setActiveLibId(libraries[0].id);
+        setSelectedFolderId("__ALL__");
+      }
+    }, [activeLibraryId, libraries]);
+    useEffect12(() => {
       if (currentLib) {
         setLibNameInput(currentLib.name || "");
       }
-    }, [currentLib == null ? void 0 : currentLib.id]);
+    }, [currentLib == null ? void 0 : currentLib.id, currentLib == null ? void 0 : currentLib.name]);
     useEffect12(() => {
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
     }, [selectedFolderId, activeLibId]);
@@ -6545,32 +6572,50 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         const rawIntensity = t.intensity !== void 0 ? parseFloat(t.intensity) : rawEnergy * 0.7 + 0.25;
         const rawAtmo = t.atmosphere !== void 0 ? parseFloat(t.atmosphere) : 0.5;
         const camelot = t.camelot_key || t.key || t.k || "8A";
-        const classified = classifyTrackGenre({
-          bpm: rawBpm,
-          energy: rawEnergy,
-          intensity: rawIntensity,
-          atmosphere: rawAtmo,
-          camelotKey: camelot
-        });
-        let g = (t.genre || t.subgenre || "").trim();
-        if (!g || ["electronic", "electr\xF3nica", "dance", "club", "pop", "other", "unknown", "electr\xF3nica general"].includes(g.toLowerCase()) || classified.ruleApplied.startsWith("HARD_RULE")) {
+        let classified = null;
+        try {
+          if (typeof classifyTrackGenre === "function") {
+            classified = classifyTrackGenre({
+              bpm: rawBpm,
+              energy: rawEnergy,
+              intensity: rawIntensity,
+              atmosphere: rawAtmo,
+              camelotKey: camelot
+            });
+          }
+        } catch (err) {
+          console.warn("[AutoGenre] Fallback a metadata ID3:", err);
+        }
+        let g = String(t.genre || t.subgenre || "").trim();
+        const genericGenres = ["electronic", "electr\xF3nica", "dance", "club", "pop", "other", "unknown", "desconocido", "electr\xF3nica general"];
+        const isHardRule = String((classified == null ? void 0 : classified.ruleApplied) || "").startsWith("HARD_RULE");
+        if ((!g || genericGenres.includes(g.toLowerCase()) || isHardRule) && (classified == null ? void 0 : classified.canonicalGenre)) {
           g = classified.canonicalGenre;
         }
+        if (!g) g = "Sin G\xE9nero";
         if (!byGenre[g]) byGenre[g] = [];
         byGenre[g].push(t);
       });
-      const newFolders = Object.entries(byGenre).map(([genreName, trList], idx) => ({
-        id: `f_auto_${idx}_${Date.now()}`,
+      const baseTs = Date.now();
+      const newFolders = Object.entries(byGenre).sort((a, b) => b[1].length - a[1].length).map(([genreName, trList], idx) => ({
+        id: `f_auto_${idx}_${baseTs}`,
         name: genreName,
         tracks: trList
       }));
-      const updated = libraries.map((l) => {
-        if (l.id === activeLibId) {
-          return { ...l, folders: newFolders };
+      const targetId = currentLib.id;
+      const existsInList = libraries.some((l) => l.id === targetId);
+      const updated = existsInList ? libraries.map((l) => {
+        if (l.id === targetId) {
+          return {
+            ...l,
+            tracks: l.tracks && l.tracks.length > 0 ? l.tracks : pool,
+            folders: newFolders
+          };
         }
         return l;
-      });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      }) : [...libraries, { ...currentLib, id: targetId, tracks: pool, folders: newFolders }];
+      setActiveLibId(targetId);
+      if (onSaveLibraries) onSaveLibraries(updated, targetId);
       if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
       setFeedbackMsg(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero (Motor BeatWave Neural)`);
       setTimeout(() => setFeedbackMsg(""), 3500);
@@ -6833,14 +6878,153 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     }, [currentLib]);
     const activeFolder = (currentLib.folders || []).find((f) => f.id === selectedFolderId);
     const displayedTracks = selectedFolderId === "__ALL__" || !selectedFolderId || !activeFolder ? allLibTracks.length > 0 ? allLibTracks : currentLib.tracks || [] : (activeFolder == null ? void 0 : activeFolder.tracks) || [];
-    const filteredTracks = displayedTracks.filter((t) => {
+    const _filterSourceTracks = displayedTracks;
+    const matchesTableFilter = (t, filterId) => {
+      var _a2;
+      if (!filterId || filterId === "all") return true;
+      const bpm = parseFloat(t.bpm || t.b || 0);
+      const key = String(t.camelot_key || t.key || t.k || "").trim();
+      const artist = String(t.artist || t.a || "").trim();
+      const title = String(t.title || t.t || "").trim();
+      const hasCover = Boolean(t.cover || t.has_cover || t.artwork);
+      const cues = t.hot_cues || t.cues || t.cue_points || [];
+      const fmt = String(t.format || t.ext || "").toUpperCase();
+      const bitrate = parseFloat(t.bitrate || t.kbps || 0);
+      const qStatus = String(t.quality_status || t.audit_status || t.quality || "").toLowerCase();
+      const isFake = Boolean(t.is_fake || t.fake || qStatus.includes("fake") || qStatus.includes("bad") || qStatus.includes("mala") || bitrate > 0 && bitrate < 256);
+      const isLossless = ["FLAC", "WAV", "AIFF", "ALAC"].some((x) => fmt.includes(x));
+      const isExcellent = !isFake && (isLossless || bitrate >= 320 || qStatus.includes("excel") || qStatus.includes("lossless"));
+      const isTrimmed = Boolean(t.silence_trimmed || t.trimmed || t.silences_trimmed);
+      const rawEnergy = parseFloat((_a2 = t.energy) != null ? _a2 : 0);
+      const energyPct = rawEnergy > 1 ? rawEnergy : rawEnergy * 100;
+      switch (filterId) {
+        case "missing":
+          return !bpm || bpm <= 0 || !key || key === "-" || key === "N/A";
+        case "missing_meta":
+          return !artist || !title || artist.toLowerCase() === "desconocido" || artist.toLowerCase() === "unknown";
+        case "missing_cover":
+          return !hasCover;
+        case "missing_cues":
+          return !Array.isArray(cues) || cues.length === 0;
+        case "bad_quality":
+          return isFake;
+        case "excellent_quality":
+          return isExcellent;
+        case "silences_trimmed":
+          return isTrimmed;
+        case "high_energy":
+          return energyPct >= 75;
+        default:
+          return true;
+      }
+    };
+    const filterCounts = useMemo3(() => ({
+      total: _filterSourceTracks.length,
+      missing: _filterSourceTracks.filter((t) => matchesTableFilter(t, "missing")).length,
+      missing_meta: _filterSourceTracks.filter((t) => matchesTableFilter(t, "missing_meta")).length,
+      missing_cover: _filterSourceTracks.filter((t) => matchesTableFilter(t, "missing_cover")).length,
+      missing_cues: _filterSourceTracks.filter((t) => matchesTableFilter(t, "missing_cues")).length,
+      bad_quality: _filterSourceTracks.filter((t) => matchesTableFilter(t, "bad_quality")).length,
+      excellent_quality: _filterSourceTracks.filter((t) => matchesTableFilter(t, "excellent_quality")).length,
+      silences_trimmed: _filterSourceTracks.filter((t) => matchesTableFilter(t, "silences_trimmed")).length,
+      high_energy: _filterSourceTracks.filter((t) => matchesTableFilter(t, "high_energy")).length
+    }), [_filterSourceTracks]);
+    const filteredTracks = _filterSourceTracks.filter((t) => {
+      if (!matchesTableFilter(t, tableFilter)) return false;
       if (!searchTrack.trim()) return true;
       const q = searchTrack.toLowerCase();
       const title = (t.title || t.t || t.filename || t.f || "").toLowerCase();
       const artist = (t.artist || t.a || "").toLowerCase();
       const genre = (t.genre || t.subgenre || "").toLowerCase();
       return title.includes(q) || artist.includes(q) || genre.includes(q);
+    }).filter((t) => {
+      var _a2, _b, _c;
+      const matchNum = (val, query) => {
+        const q = String(query || "").trim();
+        if (!q) return true;
+        const n = parseFloat(val);
+        if (isNaN(n)) return false;
+        if (q.startsWith(">=")) return n >= parseFloat(q.slice(2));
+        if (q.startsWith("<=")) return n <= parseFloat(q.slice(2));
+        if (q.startsWith(">")) return n > parseFloat(q.slice(1));
+        if (q.startsWith("<")) return n < parseFloat(q.slice(1));
+        if (q.includes("-")) {
+          const [a, b] = q.split("-").map((x) => parseFloat(x.trim()));
+          if (!isNaN(a) && !isNaN(b)) return n >= a && n <= b;
+        }
+        return String(Math.round(n)).includes(q) || String(val).includes(q);
+      };
+      if (colFilters.file.trim()) {
+        const q = colFilters.file.trim().toLowerCase();
+        const fStr = `${t.title || t.t || ""} ${t.filename || t.f || ""} ${t.path || ""}`.toLowerCase();
+        if (!fStr.includes(q)) return false;
+      }
+      if (colFilters.artist.trim()) {
+        const q = colFilters.artist.trim().toLowerCase();
+        if (!String(t.artist || t.a || "").toLowerCase().includes(q)) return false;
+      }
+      if (colFilters.genre.trim()) {
+        const q = colFilters.genre.trim().toLowerCase();
+        const gStr = `${t.genre || ""} ${t.subgenre || ""}`.toLowerCase();
+        if (!gStr.includes(q)) return false;
+      }
+      if (colFilters.format && colFilters.format !== "ALL") {
+        const fmt = String(t.format || (t.filename || t.f || t.path || "").split(".").pop() || "").toUpperCase();
+        if (fmt !== colFilters.format) return false;
+      }
+      if (colFilters.bpm.trim() && !matchNum(t.bpm || t.b, colFilters.bpm)) return false;
+      if (colFilters.key.trim()) {
+        const q = colFilters.key.trim().toLowerCase();
+        const kStr = String(t.key || t.k || t.camelot || t.camelot_key || "").toLowerCase();
+        if (!kStr.includes(q)) return false;
+      }
+      const eVal = t.energy !== void 0 ? Math.round(parseFloat(t.energy) > 1 ? parseFloat(t.energy) : parseFloat(t.energy) * 100) : (_a2 = t.e) != null ? _a2 : 80;
+      const dVal = t.dance !== void 0 ? Math.round(parseFloat(t.dance) > 1 ? parseFloat(t.dance) : parseFloat(t.dance) * 100) : (_b = t.danceability) != null ? _b : 80;
+      const iVal = t.intensity !== void 0 ? Math.round(parseFloat(t.intensity) > 1 ? parseFloat(t.intensity) : parseFloat(t.intensity) * 100) : (_c = t.int) != null ? _c : 75;
+      if (colFilters.energy.trim() && !matchNum(eVal, colFilters.energy)) return false;
+      if (colFilters.dance.trim() && !matchNum(dVal, colFilters.dance)) return false;
+      if (colFilters.intensity.trim() && !matchNum(iVal, colFilters.intensity)) return false;
+      return true;
+    }).sort((a, b) => {
+      if (!sortConfig.key) return 0;
+      const dir = sortConfig.dir === "asc" ? 1 : -1;
+      const getVal = (t, k) => {
+        switch (k) {
+          case "file":
+            return String(t.title || t.t || t.filename || t.f || "").toLowerCase();
+          case "artist":
+            return String(t.artist || t.a || "").toLowerCase();
+          case "genre":
+            return String(t.genre || t.subgenre || "").toLowerCase();
+          case "format":
+            return String(t.format || (t.filename || t.f || t.path || "").split(".").pop() || "").toUpperCase();
+          case "bpm":
+            return parseFloat(t.bpm || t.b || 0);
+          case "key":
+            return String(t.key || t.k || t.camelot || t.camelot_key || "").toLowerCase();
+          case "energy":
+            return t.energy !== void 0 ? parseFloat(t.energy) > 1 ? parseFloat(t.energy) : parseFloat(t.energy) * 100 : t.e || 0;
+          case "dance":
+            return t.dance !== void 0 ? parseFloat(t.dance) > 1 ? parseFloat(t.dance) : parseFloat(t.dance) * 100 : t.danceability || 0;
+          case "intensity":
+            return t.intensity !== void 0 ? parseFloat(t.intensity) > 1 ? parseFloat(t.intensity) : parseFloat(t.intensity) * 100 : t.int || 0;
+          default:
+            return "";
+        }
+      };
+      const va = getVal(a, sortConfig.key);
+      const vb = getVal(b, sortConfig.key);
+      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      return String(va).localeCompare(String(vb)) * dir;
     });
+    const availableFormats = useMemo3(() => {
+      const set = /* @__PURE__ */ new Set();
+      _filterSourceTracks.forEach((t) => {
+        const fmt = String(t.format || (t.filename || t.f || t.path || "").split(".").pop() || "").toUpperCase().trim();
+        if (fmt && fmt.length <= 6) set.add(fmt);
+      });
+      return Array.from(set).sort();
+    }, [_filterSourceTracks]);
     const totalTracksInLib = allLibTracks.length;
     return /* @__PURE__ */ React.createElement("div", { className: "w-full h-full flex flex-col bg-[#09090e] text-gray-200 select-none overflow-hidden font-sans" }, /* @__PURE__ */ React.createElement("div", { className: "px-3.5 py-2 border-b border-djzinc-800 bg-[#09090f]/95 backdrop-blur flex items-center justify-between shrink-0 gap-3 z-20" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3 shrink-0" }, /* @__PURE__ */ React.createElement(SectionTitle, { icon: Icons.Library, title: "Colecci\xF3n", accent: "Biblioteca", badge: `${totalTracksInLib} PISTAS` })), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, feedbackMsg && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-emerald-400 font-bold animate-pulse px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700/60" }, feedbackMsg), /* @__PURE__ */ React.createElement(
       "button",
@@ -6865,10 +7049,13 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     ))), /* @__PURE__ */ React.createElement("div", { className: "px-3.5 py-2 border-b border-djzinc-800 bg-[#0c0d14] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap flex-1 min-w-[280px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono uppercase font-bold text-gray-400" }, "Biblioteca:"), /* @__PURE__ */ React.createElement(
       "select",
       {
-        value: activeLibId,
+        value: currentLib.id,
         onChange: (e) => {
           const id = e.target.value;
           setActiveLibId(id);
+          setSelectedFolderId("__ALL__");
+          setSearchTrack("");
+          setSelectedTrackKeys(/* @__PURE__ */ new Set());
           if (onSelectLibrary) onSelectLibrary(id);
         },
         className: "px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
@@ -6927,7 +7114,19 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         },
         className: "p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0 select-none"
       },
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onClick: () => setSelectedFolderId("__ALL__"),
+          style: {
+            backgroundColor: selectedFolderId === "__ALL__" ? "rgba(39, 39, 42, 0.85)" : "rgba(24, 24, 27, 0.55)"
+          },
+          className: `p-3 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-all ${selectedFolderId === "__ALL__" ? "text-white shadow-md" : "text-gray-300 hover:bg-zinc-800/70"}`,
+          title: `Ver todas las pistas de ${currentLib.name || "Mi Biblioteca Principal"}`
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 18, className: "text-cyan-400 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase tracking-wider text-cyan-400 font-bold block" }, "Biblioteca Activa"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, currentLib.name || "Mi Biblioteca Principal"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono block" }, totalTracksInLib, " pista(s) \xB7 Colecci\xF3n completa")))
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pt-1" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -6936,20 +7135,8 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
           title: "Crea carpetas autom\xE1ticamente a partir de los g\xE9neros musicales de tus pistas cargadas"
         },
         /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
-        " Auto por G\xE9nero"
+        " Auto g\xE9nero"
       )),
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          onClick: () => setSelectedFolderId("__ALL__"),
-          style: {
-            backgroundColor: selectedFolderId === "__ALL__" ? "rgba(6, 182, 212, 0.15)" : "rgba(24, 24, 27, 0.6)",
-            borderColor: selectedFolderId === "__ALL__" ? "rgba(6, 182, 212, 0.8)" : "rgba(255, 255, 255, 0.08)"
-          },
-          className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${selectedFolderId === "__ALL__" ? "text-white shadow-md" : "text-gray-300 hover:border-zinc-600"}`
-        },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-base shrink-0" }, "\u{1F5C2}\uFE0F"), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, "Todas las Pistas (Colecci\xF3n Completa)"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, totalTracksInLib, " pista(s) en total")))
-      ),
       /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(
         "input",
         {
@@ -7016,7 +7203,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
               type: "button",
               onClick: () => handleAssignTracksToActiveFolder(f.id, false),
               className: "px-2 py-0.5 rounded bg-zinc-800 hover:bg-cyan-950 hover:text-cyan-300 text-gray-300 text-[10px] font-mono border border-zinc-700 cursor-pointer",
-              title: `Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`
+              title: `Guardar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`
             },
             "+ Asignar"
           ), /* @__PURE__ */ React.createElement(
@@ -7030,7 +7217,21 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
             /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
           ))
         );
-      }))
+      })),
+      /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-white/10 shrink-0" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            if (onSaveLibraries) onSaveLibraries(libraries, currentLib.id);
+            setFeedbackMsg("\u2713 Cambios y carpetas guardados");
+            setTimeout(() => setFeedbackMsg(""), 2500);
+          },
+          className: "w-full py-2 px-3 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5",
+          title: "Guardar toda la biblioteca y la clasificaci\xF3n de carpetas"
+        },
+        /* @__PURE__ */ React.createElement("span", null, "Guardar Todo")
+      ))
     ), /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -7063,7 +7264,22 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       },
       /* @__PURE__ */ React.createElement(Icons.AuditEye, { size: 13 }),
       /* @__PURE__ */ React.createElement("span", null, "Auditar en Mesa")
-    ), onNavigateTab && /* @__PURE__ */ React.createElement(
+    ), onNavigateTab && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => {
+          if (setAuditTracks && allLibTracks.length > 0) {
+            setAuditTracks(allLibTracks);
+          }
+          onNavigateTab("audit");
+        },
+        className: "px-3 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-600/70 text-cyan-300 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
+        title: "Auditar las pistas de esta colecci\xF3n en la mesa de Auditor\xEDa"
+      },
+      /* @__PURE__ */ React.createElement(Icons.AuditEye, { size: 13 }),
+      /* @__PURE__ */ React.createElement("span", null, "Auditar")
+    ), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -7077,8 +7293,8 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         title: "Ver compatibilidad arm\xF3nica y energ\xEDa en el Mapa 2D"
       },
       /* @__PURE__ */ React.createElement(Icons.Map, { size: 13 }),
-      /* @__PURE__ */ React.createElement("span", null, "Auditar en Mapa")
-    ))), /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3 top-2.5 text-gray-500" }), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("span", null, "Ver el Mapa")
+    )))), /* @__PURE__ */ React.createElement("div", { className: "relative shrink-0" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 14, className: "inline-block align-[-2px] absolute left-3 top-2.5 text-gray-500" }), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "text",
@@ -7154,7 +7370,98 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         className: "accent-cyan-500 cursor-pointer w-3.5 h-3.5 rounded",
         title: "Seleccionar / deseleccionar todas las pistas visibles"
       }
-    )), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-28 text-center text-cyan-400 font-bold" }, "Waveform"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 min-w-[200px]" }, "File"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-32" }, "Artist"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-28" }, "G\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "Formato"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "BPM"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-2 text-center w-20" }, "Key"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Energy"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Dance"), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 text-center w-28" }, "Intensidad"))), /* @__PURE__ */ React.createElement("tbody", null, filteredTracks.map((tr, tIdx) => {
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-2.5 px-3 w-28 text-center text-cyan-400 font-bold" }, "Waveform"), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("file"), className: "py-2.5 px-3 min-w-[200px] cursor-pointer hover:text-white select-none" }, "Archivo / T\xEDtulo ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "file" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "file" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("artist"), className: "py-2.5 px-3 w-32 cursor-pointer hover:text-white select-none" }, "Artista ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "artist" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "artist" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("genre"), className: "py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white select-none" }, "G\xE9nero ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "genre" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "genre" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("format"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white select-none" }, "Formato ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "format" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "format" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("bpm"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white select-none" }, "BPM ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "bpm" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "bpm" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("key"), className: "py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white select-none" }, "Key ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "key" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "key" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("energy"), className: "py-2.5 px-3 text-center w-28 cursor-pointer hover:text-white select-none" }, "Energy ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "energy" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "energy" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("dance"), className: "py-2.5 px-3 text-center w-28 cursor-pointer hover:text-white select-none" }, "Dance ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "dance" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "dance" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195")), /* @__PURE__ */ React.createElement("th", { onClick: () => toggleSort("intensity"), className: "py-2.5 px-3 text-center w-28 cursor-pointer hover:text-white select-none" }, "Intensidad ", /* @__PURE__ */ React.createElement("span", { className: sortConfig.key === "intensity" ? "text-cyan-400" : "text-zinc-600" }, sortConfig.key === "intensity" ? sortConfig.dir === "asc" ? "\u25B2" : "\u25BC" : "\u2195"))), /* @__PURE__ */ React.createElement("tr", { className: "bg-[#090a12] border-t border-white/5 normal-case" }, /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5 text-center" }, hasActiveColFilters ? /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: resetColFilters,
+        className: "px-1.5 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 text-[9px] font-mono cursor-pointer",
+        title: "Limpiar filtros de columna"
+      },
+      "\u2715"
+    ) : /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-zinc-500 font-normal" }, "filtro")), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-2" }), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-2" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.file,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, file: e.target.value })),
+        placeholder: "Filtrar t\xEDtulo/archivo...",
+        className: "w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-2" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.artist,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, artist: e.target.value })),
+        placeholder: "Artista...",
+        className: "w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.genre,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, genre: e.target.value })),
+        placeholder: "G\xE9nero...",
+        className: "w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: colFilters.format,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, format: e.target.value })),
+        className: "w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white outline-none cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ALL" }, "Todos"),
+      availableFormats.map((fmt) => /* @__PURE__ */ React.createElement("option", { key: fmt, value: fmt }, fmt))
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.bpm,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, bpm: e.target.value })),
+        placeholder: "128...",
+        title: "Ej: 128, 126-132, >=135",
+        className: "w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.key,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, key: e.target.value })),
+        placeholder: "8A...",
+        className: "w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.energy,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, energy: e.target.value })),
+        placeholder: ">=75...",
+        className: "w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.dance,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, dance: e.target.value })),
+        placeholder: ">=70...",
+        className: "w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+      }
+    )), /* @__PURE__ */ React.createElement("th", { className: "py-1.5 px-1.5" }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: colFilters.intensity,
+        onChange: (e) => setColFilters((prev) => ({ ...prev, intensity: e.target.value })),
+        placeholder: ">=70...",
+        className: "w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+      }
+    )))), /* @__PURE__ */ React.createElement("tbody", null, filteredTracks.map((tr, tIdx) => {
       const trKey = tr.id || tr.file_path || tr.path || tIdx;
       const isSelected = selectedTrackKeys.has(trKey);
       const trTitle = tr.title || tr.t || tr.filename || (tr.path ? tr.path.split("/").pop() : "Desconocido");
@@ -7266,20 +7573,6 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       },
       /* @__PURE__ */ React.createElement(Icons.Save, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Crear en Disco (Copia F\xEDsica Estructurada)")
-    ), onNavigateTab && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => {
-          if (setAuditTracks && allLibTracks.length > 0) {
-            setAuditTracks(allLibTracks);
-          }
-          onNavigateTab("audit");
-        },
-        className: "px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-mono font-bold text-xs cursor-pointer transition-colors flex items-center gap-1.5"
-      },
-      /* @__PURE__ */ React.createElement(Icons.AuditEye, { size: 14 }),
-      /* @__PURE__ */ React.createElement("span", null, "Auditar esta Colecci\xF3n")
     ))), fsBrowserOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-sans animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#0c0c12] border border-zinc-800 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 border-b border-zinc-800 bg-zinc-950 flex justify-between items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold text-sm uppercase tracking-wider font-mono flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 16 }), " Explorador de Colecci\xF3n & Carga Universal")), /* @__PURE__ */ React.createElement("button", { onClick: () => setFsBrowserOpen(false), className: "w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 15 }))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-3 bg-zinc-900/90 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 shrink-0 font-bold" }, "Ruta:"), /* @__PURE__ */ React.createElement("span", { className: "text-cyan-400 font-bold truncate", title: fsCurrentPath }, fsCurrentPath || "Cargando...")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" }, fsCurrentPath && /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -29595,19 +29888,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const saveCustomLibraries = (newLibs, newActiveId = null) => {
       setCustomLibraries(newLibs);
       const activeIdToSave = newActiveId || activeCustomLibId;
+      if (newActiveId) {
+        setActiveCustomLibId(newActiveId);
+        try {
+          localStorage.setItem("bw_user_active_library_id", newActiveId);
+        } catch (_) {
+        }
+      }
+      fetch("/api/biblioteca/guardar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ libraries: newLibs, active_id: activeIdToSave })
+      }).catch((err) => console.error("[Biblioteca] Error guardando en backend:", err));
       try {
         localStorage.setItem("bw_user_custom_libraries", JSON.stringify(newLibs));
-        if (newActiveId) {
-          setActiveCustomLibId(newActiveId);
-          localStorage.setItem("bw_user_active_library_id", newActiveId);
-        }
-        fetch("/api/biblioteca/guardar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ libraries: newLibs, active_id: activeIdToSave })
-        }).catch(() => {
-        });
-      } catch (_) {
+      } catch (err) {
+        console.warn("[Biblioteca] localStorage lleno (usando persistencia en backend):", (err == null ? void 0 : err.name) || err);
       }
     };
     const handleMaterializarBibliotecaEnDisco = async (lib) => {

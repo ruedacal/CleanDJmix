@@ -414,18 +414,23 @@ const App = () => {
     const saveCustomLibraries = (newLibs, newActiveId = null) => {
         setCustomLibraries(newLibs);
         const activeIdToSave = newActiveId || activeCustomLibId;
+        if (newActiveId) {
+            setActiveCustomLibId(newActiveId);
+            try { localStorage.setItem('bw_user_active_library_id', newActiveId); } catch (_) {}
+        }
+        // 1. Siempre persistir en backend (sin límite de 5MB de localStorage)
+        fetch('/api/biblioteca/guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ libraries: newLibs, active_id: activeIdToSave })
+        }).catch((err) => console.error('[Biblioteca] Error guardando en backend:', err));
+
+        // 2. Caché local best-effort (si excede cuota, no bloquea el guardado en backend)
         try {
             localStorage.setItem('bw_user_custom_libraries', JSON.stringify(newLibs));
-            if (newActiveId) {
-                setActiveCustomLibId(newActiveId);
-                localStorage.setItem('bw_user_active_library_id', newActiveId);
-            }
-            fetch('/api/biblioteca/guardar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ libraries: newLibs, active_id: activeIdToSave })
-            }).catch(() => {});
-        } catch (_) {}
+        } catch (err) {
+            console.warn('[Biblioteca] localStorage lleno (usando persistencia en backend):', err?.name || err);
+        }
     };
 
     const handleMaterializarBibliotecaEnDisco = async (lib) => {
