@@ -630,126 +630,250 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
             ? 'bg-gradient-to-b from-[#0c0d1c] to-[#06060c] border-djcyan-500/70 shadow-[0_0_25px_rgba(6,182,212,0.2)]' 
             : 'bg-[#07070f] border-zinc-800 hover:border-zinc-700'
         }`}>
-            {/* FILA 1: CABECERA DEL DECK (DECK 1 + EN CUE/MASTER + CUE/PLAY + FLAC + DEFAULT DSP) */}
-            <div className="dk-top-bar select-none">
-                <div className="dk-id-group">
-                    <span className="dk-id">DECK {side}</span>
-                    {isEmptyDeck ? (
-                        <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-500">
-                            STANDBY (VACÍO)
-                        </span>
-                    ) : (
-                        <>
-                            <button
-                                type="button"
-                                onClick={() => onSetMaster && onSetMaster(side)}
-                                className={`dk-pill-btn ${isMaster ? 'is-master' : ''}`}
-                                title={`Haz clic para alternar DECK ${side} como MASTER (o pulsa 'M')`}
-                            >
-                                <span>{isMaster ? '🔊' : '🎧'}</span>
-                                <span>{isMaster ? 'MASTER' : 'EN CUE'}</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => onTogglePlay && onTogglePlay(side)}
-                                className={`dk-pill-btn ${deck.is_playing ? 'is-playing' : ''}`}
-                                title={`Haz clic para alternar Play/Pausa en DECK ${side} (o pulsa tecla '${side}')`}
-                            >
-                                <span className={`w-1.5 h-1.5 rounded-full ${deck.is_playing ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`}></span>
-                                <span>{deck.is_playing ? 'EN VIVO' : 'CUE'}</span>
-                            </button>
-                        </>
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="dk-format-badge">{deck.format || 'FLAC'}</span>
-                    <span className="dk-dsp-lbl">{isEmptyDeck ? 'STANDBY' : (deck.is_audited ? '✓ DSP BEATWAVE' : 'DEFAULT DSP')}</span>
-                </div>
-            </div>
+            {/* CABECERA ADAPTATIVA: COMPACTA EN LIVE (CON PANEL) / EXPANDIDA CON BARRAS EN PARADO (SIN PANEL) */}
+            {(() => {
+                const trackFormat = (() => {
+                    const fp = String(deck.filepath || '').toLowerCase();
+                    if (fp.startsWith('/streaming://') || fp.startsWith('streaming://')) return 'STREAM';
+                    const ext = fp.match(/\.([a-z0-9]{2,5})$/);
+                    if (ext) return ext[1].toUpperCase();
+                    if (deck.format && String(deck.format).trim()) return String(deck.format).trim().toUpperCase();
+                    return isEmptyDeck ? '--' : 'FLAC';
+                })();
+                const energyVal = isEmptyDeck ? 0 : (deck.energy || 90);
+                const grooveVal = isEmptyDeck ? 0 : (deck.groove || 86);
+                const danceVal = isEmptyDeck ? 0 : (deck.danceability || 85);
+                const valenceVal = isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62));
+                const camelotVal = isEmptyDeck ? '--' : (deck.camelot || deck.raw_key || (side === '1' || side === 'A' ? '6A' : '8A'));
+                const camelotBg = isEmptyDeck ? '#27272a' : (deck.camelot_color || '#10b981');
+                const bpmText = deck.bpm ? Number(deck.bpm).toFixed(2) : (isEmptyDeck ? '--.--' : '136.00');
+                const vibeText = isEmptyDeck ? 'STANDBY' : (deck.subgenre || deck.vibe || deck.energy_label || 'Peak Time Climax');
 
-            {/* FILA 2: BARRA HORIZONTAL UNIFICADA DE PISTA (VINILO + TITULO + ARTISTA | 136.00 BPM | 6A | METRICAS) */}
-            <div className="dk-track-row select-none">
-                <div className="dk-track-left">
-                    <div 
-                        onClick={() => !isEmptyDeck && onTogglePlay && onTogglePlay(side)}
-                        className="dk-vinyl-avatar"
-                        title={!isEmptyDeck ? `Reproducir / Pausar DECK ${side}` : ''}
-                    >
-                        {deck.cover && !isEmptyDeck ? (
-                            <img 
-                                src={getValidCover(deck.cover)} 
-                                alt="Cover" 
-                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
-                            />
-                        ) : (
-                            <span className="text-[7px] font-mono font-black text-black select-none">AEPX</span>
-                        )}
+                if (isCompact) {
+                    return (
+                        <div className="flex items-center justify-between gap-3 mb-2.5 pb-2 border-b border-zinc-800/70 select-none">
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div className="rounded-xl overflow-hidden shrink-0 border border-zinc-700/80 bg-zinc-950 flex items-center justify-center shadow-md" style={{ width: "84px", height: "84px", minWidth: "84px", minHeight: "84px" }}>
+                                    {deck.cover && !isEmptyDeck ? (
+                                        <img 
+                                            src={getValidCover(deck.cover)} 
+                                            alt="Cover" 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                                        />
+                                    ) : (
+                                        <img src={DEFAULT_VINYL_SVG} alt="Sin pista" className="w-7 h-7 opacity-40" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                    <span className="font-syne font-bold text-[13px] text-white leading-snug line-clamp-2 break-words" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={deck.title || 'Track'}>
+                                        {deck.title || (isEmptyDeck ? '-- Esperando Pista --' : 'Whip')}
+                                    </span>
+                                    <span className="font-mono text-[11px] text-zinc-400 leading-tight truncate mt-0.5" title={deck.artist || 'Artista'}>
+                                        {deck.artist || (isEmptyDeck ? 'Conecta Serato o mesa' : 'Mark Broom')}
+                                    </span>
+                                    {!isEmptyDeck && deck.genre && (
+                                        <div className="mt-1">
+                                            <span className="inline-block px-1.5 py-0.2 rounded bg-zinc-900/90 border border-zinc-800 text-[9px] font-mono text-zinc-400 truncate max-w-[140px]">
+                                                {deck.genre}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 border-l border-zinc-800/80 pl-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="font-orbitron font-black text-base text-white tracking-tight">
+                                            {bpmText}
+                                        </span>
+                                        <span className="font-mono text-[9px] text-zinc-500 uppercase">BPM</span>
+                                    </div>
+                                    <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/80 font-mono text-[9px] font-bold text-zinc-300 uppercase">
+                                        {trackFormat}
+                                    </span>
+                                    <span className="font-orbitron font-black text-sm text-white tracking-wider">
+                                        DECK {side}
+                                    </span>
+                                    {isEmptyDeck && (
+                                        <span className="px-2 py-0.5 rounded-full font-mono text-[8px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
+                                            STANDBY
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold">
+                                        <span className="flex items-center gap-0.5 text-amber-400" title="Energía">
+                                            <Icons.Zap size={10} /> {energyVal}%
+                                        </span>
+                                        <span className="flex items-center gap-0.5 text-emerald-400" title="Groove / Intensidad">
+                                            <Icons.Activity size={10} /> {grooveVal}%
+                                        </span>
+                                        <span className="flex items-center gap-0.5 text-purple-400" title="Danzabilidad">
+                                            <Icons.Sliders size={10} /> {danceVal}%
+                                        </span>
+                                        <span className="flex items-center gap-0.5 text-cyan-400" title="Positividad / Brillo">
+                                            <Icons.Sparkles size={10} /> {valenceVal}%
+                                        </span>
+                                    </div>
+                                    <span 
+                                        className="px-2 py-0.5 rounded-md font-orbitron font-black text-[11px] text-black shadow-sm"
+                                        style={{ backgroundColor: camelotBg }}
+                                    >
+                                        {camelotVal}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+
+                /* VISTA PARADA (SIN PANEL CENTRAL): Carátula 80px + Separador + Tono/Tempo/Vibe + 4 Barras + DECK N alineado a la derecha */
+                return (
+                    <div className="flex flex-col gap-2 mb-2.5 pb-2.5 border-b border-zinc-800/70 select-none">
+                        <div className="flex items-stretch justify-between gap-3">
+                            {/* Izquierda: Carátula grande + Título/Artista/Género */}
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="rounded-xl overflow-hidden shrink-0 border border-zinc-700/80 bg-zinc-950 flex items-center justify-center shadow-md" style={{ width: "116px", height: "116px", minWidth: "116px", minHeight: "116px" }}>
+                                    {deck.cover && !isEmptyDeck ? (
+                                        <img 
+                                            src={getValidCover(deck.cover)} 
+                                            alt="Cover" 
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
+                                        />
+                                    ) : (
+                                        <img src={DEFAULT_VINYL_SVG} alt="Sin pista" className="w-9 h-9 opacity-40" />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1 flex flex-col justify-center">
+                                    <span className="font-syne font-bold text-[14px] text-white leading-snug line-clamp-2 break-words" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={deck.title || 'Track'}>
+                                        {deck.title || (isEmptyDeck ? '-- Esperando Pista --' : 'Whip')}
+                                    </span>
+                                    <span className="font-mono text-[11.5px] text-zinc-400 leading-tight truncate mt-0.5" title={deck.artist || 'Artista'}>
+                                        {deck.artist || (isEmptyDeck ? 'Deck Vacío' : 'Mark Broom')}
+                                    </span>
+                                    <div className="mt-1.5">
+                                        <span className="inline-block px-2 py-0.5 rounded bg-cyan-950/30 border border-cyan-500/35 text-[9.5px] font-mono text-cyan-200 truncate max-w-[160px]">
+                                            {!isEmptyDeck && deck.genre ? deck.genre : '-- GÉNERO --'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Centro + Derecha con separador vertical */}
+                            <div className="flex items-stretch gap-4 border-l border-zinc-800/80 pl-3.5 shrink-0">
+                                {/* Bloque TONO / TEMPO / VIBE integrado sin bordes ni fondos */}
+                                <div className="flex flex-col justify-between gap-1.5 py-0.5 min-w-[144px] self-stretch">
+                                    <div className="flex-1 flex items-center gap-2">
+                                        <span 
+                                            className="px-2 py-0.5 rounded-md font-orbitron font-black text-[11px] text-black shadow-sm"
+                                            style={{ backgroundColor: camelotBg }}
+                                        >
+                                            {camelotVal}
+                                        </span>
+                                        <span className="text-[9px] font-mono uppercase text-zinc-400 font-bold">TONO</span>
+                                        <span className="font-orbitron font-black text-[15px] text-white ml-auto tracking-tight">{camelotVal}</span>
+                                    </div>
+                                    <div className="flex-1 flex items-center gap-2">
+                                        <span className="text-[9px] font-mono uppercase text-zinc-400 font-bold">TEMPO</span>
+                                        <span className="font-orbitron font-black text-[16px] text-white tracking-tight">{bpmText}</span>
+                                        <span className="text-[9px] font-mono text-zinc-500 ml-auto font-bold">BPM</span>
+                                    </div>
+                                    <div className="px-2.5 py-0.5 rounded-full bg-purple-950/50 border border-purple-500/50 text-[9px] font-mono text-purple-200 text-center truncate max-w-[150px]">
+                                        ✨ {vibeText}
+                                    </div>
+                                </div>
+
+
+
+
+
+                                {/* Derecha: Formato + DECK N arriba alineado a la derecha + 4 Barras de energía */}
+                                <div className="w-[175px] flex flex-col justify-between gap-1">
+                                    <div className="flex items-center justify-end gap-1.5 mb-0.5">
+                                        <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/80 font-mono text-[8.5px] font-bold text-zinc-300 uppercase">
+                                            {trackFormat}
+                                        </span>
+                                        <span className="font-orbitron font-black text-[12px] text-white tracking-wider">
+                                            DECK {side}
+                                        </span>
+                                        {isEmptyDeck && (
+                                            <span className="px-1.5 py-0.2 rounded-full font-mono text-[7.5px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
+                                                STANDBY
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                            <span className="text-amber-400 flex items-center gap-1"><Icons.Zap size={9} /> ENERGÍA</span>
+                                            <span className="text-amber-400">{energyVal}%</span>
+                                        </div>
+                                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-300" style={{ width: `${energyVal}%` }} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                            <span className="text-emerald-400 flex items-center gap-1"><Icons.Activity size={9} /> INTENSIDAD</span>
+                                            <span className="text-emerald-400">{grooveVal}%</span>
+                                        </div>
+                                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-300" style={{ width: `${grooveVal}%` }} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                            <span className="text-purple-400 flex items-center gap-1"><Icons.Sliders size={9} /> DANZABILIDAD</span>
+                                            <span className="text-purple-400">{danceVal}%</span>
+                                        </div>
+                                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-400 transition-all duration-300" style={{ width: `${danceVal}%` }} />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                            <span className="text-cyan-400 flex items-center gap-1"><Icons.Sparkles size={9} /> POSITIVIDAD</span>
+                                            <span className="text-cyan-400">{valenceVal}%</span>
+                                        </div>
+                                        <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-400 transition-all duration-300" style={{ width: `${valenceVal}%` }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="dk-track-titles">
-                        <span className="dk-title" title={deck.title || 'Track'}>
-                            {deck.title || (isEmptyDeck ? '-- Esperando Pista --' : 'Whip')}
-                        </span>
-                        <span className="dk-artist" title={deck.artist || 'Artista'}>
-                            {deck.artist || (isEmptyDeck ? 'Conecta Serato o mesa' : 'Mark Broom')}
-                        </span>
-                    </div>
-                </div>
+                );
+            })()}
 
-                <div className="dk-track-right">
-                    <div className="dk-bpm-wrap">
-                        <span className="dk-bpm-val">
-                            {deck.bpm ? Number(deck.bpm).toFixed(2) : (isEmptyDeck ? '--.--' : '136.00')}
-                        </span>
-                        <span className="dk-bpm-unit">BPM</span>
-                    </div>
-
-                    <span 
-                        className={`dk-key-pill ${side === '2' || side === 'B' ? 'd2' : ''}`}
-                        style={deck.camelot_color ? { backgroundColor: deck.camelot_color, borderColor: `${deck.camelot_color}cc` } : {}}
-                    >
-                        {deck.camelot || deck.raw_key || (side === '1' || side === 'A' ? '6A' : '8A')}
-                    </span>
-
-                    <div className="dk-metrics-strip">
-                        <span className="dk-metric-item energy" title="Energía">
-                            <Icons.Zap size={11} className="text-amber-400" /> {isEmptyDeck ? 0 : (deck.energy || 90)}%
-                        </span>
-                        <span className="dk-metric-item groove" title="Groove / Intensidad">
-                            <Icons.Activity size={11} className="text-emerald-400" /> {isEmptyDeck ? 0 : (deck.groove || 86)}%
-                        </span>
-                        <span className="dk-metric-item dance" title="Danzabilidad">
-                            <Icons.Sliders size={11} className="text-purple-400" /> {isEmptyDeck ? 0 : (deck.danceability || 85)}%
-                        </span>
-                        <span className="dk-metric-item valence" title="Positividad / Brillo">
-                            <Icons.Sparkles size={11} className="text-cyan-400" /> {isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62))}%
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* FILA 3: 8 HOT CUES DE CABINA */}
-            <div className="dk-hotcues-box select-none">
-                <div className="dk-hc-lbl">
+            {/* FILA 3: 8 HOT CUES DE CABINA (FLUJO CONTINUO EN 2 LÍNEAS) */}
+            <div className="dk-hotcues-box select-none !flex !flex-wrap !items-center !gap-1.5 !py-1.5 !px-2">
+                <div className="dk-hc-lbl !mb-0 !mr-1 shrink-0">
                     <span className="dk-hc-dot"></span>
                     <span>8 HOT CUES DE CABINA</span>
                 </div>
-                <div className="dk-hc-strip">
-                    {cabinaHotCues.map((cue, idx) => (
+                {cabinaHotCues.map((cue, idx) => (
+                    <span 
+                        key={cue.id || idx}
+                        className="hc-chip shrink-0"
+                        style={{ borderColor: cue.color || '#00F0FF' }}
+                    >
                         <span 
-                            key={cue.id || idx}
-                            className="hc-chip"
-                            style={{ borderColor: cue.color || '#00F0FF' }}
+                            className="hc-badge"
+                            style={{ backgroundColor: cue.color || '#00F0FF' }}
                         >
-                            <span 
-                                className="hc-badge"
-                                style={{ backgroundColor: cue.color || '#00F0FF' }}
-                            >
-                                {cue.id || (idx + 1)}
-                            </span>
-                            <span>{cue.time}</span>
+                            {cue.id || (idx + 1)}
                         </span>
-                    ))}
-                </div>
+                        <span>{cue.time}</span>
+                    </span>
+                ))}
             </div>
 
             {/* WAVEFORM SERATO EN TIEMPO REAL CON ZOOM Y AYUDAS TÁCTICAS */}
@@ -763,28 +887,60 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 />
             </div>
 
-            {/* Densidad Sub-Graves y Espectro */}
-            <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[11px]">
-                <div className="flex items-center justify-between text-zinc-400">
-                    <span>Densidad Sub-Graves (Sub-Bass)</span>
-                    <span className={deck.low_ratio >= 44 ? 'text-red-400 font-bold' : 'text-zinc-200'}>{deck.low_ratio}%</span>
-                </div>
-                <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
-                    <div className={`h-full transition-all duration-300 ${deck.low_ratio >= 44 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-djcyan-400'}`} style={{ width: `${Math.min(100, deck.low_ratio * 1.5)}%` }}></div>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
-                    <span>Medios: {deck.mid_ratio}%</span>
-                    <span>Agudos: {deck.high_ratio}%</span>
-                    <span>LUFS: <strong className="text-zinc-300">{deck.lufs} dB</strong></span>
-                </div>
-            </div>
+            {/* Densidad Sub-Graves y Espectro 3-Band (Azul · Ámbar · Blanco) */}
+            {(() => {
+                const rawLow = deck.low_ratio != null ? Number(deck.low_ratio) : (deck.low_energy_level != null ? Number(deck.low_energy_level) * 100 : 0);
+                const lowPct = isEmptyDeck ? 0 : Math.round(Math.max(0, Math.min(100, rawLow)));
+                const rawMid = deck.mid_ratio != null ? Number(deck.mid_ratio) : (100 - lowPct) * 0.62;
+                const midPct = isEmptyDeck ? 0 : Math.round(Math.max(0, Math.min(100 - lowPct, rawMid)));
+                const rawHigh = deck.high_ratio != null ? Number(deck.high_ratio) : Math.max(0, 100 - lowPct - midPct);
+                const highPct = isEmptyDeck ? 0 : Math.round(Math.max(0, rawHigh));
+                const total = Math.max(1, lowPct + midPct + highPct);
+                const lufsRaw = deck.lufs != null ? deck.lufs : deck.lufs_short_term;
+                const lufsTxt = (!isEmptyDeck && lufsRaw != null && Number(lufsRaw) > -90) ? `${Number(lufsRaw).toFixed(1)} dB` : '-- dB';
+
+                return (
+                    <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[11px]">
+                        <div className="flex items-center justify-between text-zinc-400">
+                            <span>Espectro 3-Band</span>
+                            <span>LUFS: <strong className="text-zinc-200">{lufsTxt}</strong></span>
+                        </div>
+                        <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden flex">
+                            {!isEmptyDeck && (
+                                <>
+                                    <div
+                                        className="h-full transition-all duration-300"
+                                        style={{ width: `${(lowPct / total) * 100}%`, backgroundColor: '#2563eb' }}
+                                        title={`Graves: ${lowPct}%`}
+                                    />
+                                    <div
+                                        className="h-full transition-all duration-300"
+                                        style={{ width: `${(midPct / total) * 100}%`, backgroundColor: '#f59e0b' }}
+                                        title={`Medios: ${midPct}%`}
+                                    />
+                                    <div
+                                        className="h-full transition-all duration-300"
+                                        style={{ width: `${(highPct / total) * 100}%`, backgroundColor: '#f8fafc' }}
+                                        title={`Agudos: ${highPct}%`}
+                                    />
+                                </>
+                            )}
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-0.5">
+                            <span>Graves: <strong style={{ color: '#60a5fa' }}>{lowPct}%</strong></span>
+                            <span>Medios: <strong style={{ color: '#f59e0b' }}>{midPct}%</strong></span>
+                            <span>Agudos: <strong style={{ color: '#f8fafc' }}>{highPct}%</strong></span>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Comentario Táctico DJ */}
             <div className="mt-2 p-2 rounded-xl bg-black/50 border border-zinc-800/80 flex items-start gap-2">
                 <Icons.MessageSquare size={13} className="inline-block text-emerald-400 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                     <div className="text-[8px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ (Tag ID3)</div>
-                    <div className="font-mono text-[11px] text-zinc-200 truncate" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
+                    <div className="font-mono text-[11px] text-zinc-200 whitespace-normal break-words leading-snug" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
                         {deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}
                     </div>
                 </div>
@@ -1342,13 +1498,21 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     const isStandby = state.source && state.source.endsWith('_STANDBY');
     const displayRecommendations = tracksList.length > 0 ? tracksList : (state.recommendations || []);
 
-    const hasActiveTrack = Boolean(
-        (deck_1?.title && deck_1.title !== 'Deck Vacío') || 
-        (deck_2?.title && deck_2.title !== 'Deck Vacío') || 
-        deck_1?.is_playing || 
-        deck_2?.is_playing
-    );
-    const isLiveStage = forceLiveStage || hasActiveTrack;
+    const isAnyDeckPlaying = Boolean(deck_1?.is_playing || deck_2?.is_playing);
+    const [liveStageSticky, setLiveStageSticky] = useState(false);
+
+    useEffect(() => {
+        if (isAnyDeckPlaying) {
+            setLiveStageSticky(true);
+            return;
+        }
+        const closeTimer = setTimeout(() => {
+            setLiveStageSticky(false);
+        }, 3500);
+        return () => clearTimeout(closeTimer);
+    }, [isAnyDeckPlaying]);
+
+    const isLiveStage = forceLiveStage || isAnyDeckPlaying || liveStageSticky;
 
     // Detección de software DJ abierto (Serato, Rekordbox, Traktor, VirtualDJ) o modo prueba
     const isAppRunning = state.is_app_open !== undefined ? state.is_app_open : (state.dj_app ? state.dj_app.is_open : false);
@@ -1371,13 +1535,6 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                     <div className="flex flex-col gap-1.5 shrink-0">
                         <div className="flex items-center gap-2.5 flex-wrap">
                             <div className="flex items-center gap-2 shrink-0">
-                                <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${
-                                    isLive 
-                                    ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse' 
-                                    : isStandby
-                                    ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse'
-                                    : 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]'
-                                }`}></span>
                                 <span className="w-8 h-8 rounded-lg bg-djcyan-500/10 border border-djcyan-500/30 flex items-center justify-center text-djcyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
                                     <Icons.Turntable size={17} />
                                 </span>

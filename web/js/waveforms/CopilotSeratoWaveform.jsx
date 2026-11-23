@@ -637,7 +637,7 @@ export const CopilotSeratoWaveform = ({
     return (
         <div className="flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner">
             {/* TACTICAL ANTICIPATION HUD BOX: CONTADOR Y PUNTOS CLAVE CON TOOLTIP DETALLADO (SUPRIMIDO EN MODO COMPACTO CON PANEL CENTRAL) */}
-            {(!isCompact && showTacticalAids) && (
+            {false && (!isCompact && showTacticalAids) && (
                 <div className="relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md">
                     {isEmptyDeck ? (
                         <div className="flex items-center justify-between gap-2">
@@ -759,14 +759,14 @@ export const CopilotSeratoWaveform = ({
                         </button>
                     )}
 
-                    {/* LEYENDA VISUAL DE FRECUENCIAS REKORDBOX 3BAND (CDJ-3000) */}
-                    <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400">
+                    {/* BADGE INDEPENDIENTE 3BAND HD + LEYENDA COMPACTA SIN HERCIOS */}
+                    <div className="hidden sm:flex items-center gap-2 shrink-0">
                         {hdWave?.realFft && (
                             <span
-                                className="flex items-center gap-1 font-mono font-black px-1.5 py-0.2 rounded"
+                                className="flex items-center gap-1.5 font-mono font-black px-2 py-0.5 rounded-md shrink-0"
                                 style={{
-                                    fontSize: '8.5px',
-                                    backgroundColor: 'rgba(34, 211, 238, 0.14)',
+                                    fontSize: '9px',
+                                    backgroundColor: 'rgba(34, 211, 238, 0.12)',
                                     border: '1px solid rgba(34, 211, 238, 0.45)',
                                     color: '#22d3ee',
                                 }}
@@ -775,23 +775,25 @@ export const CopilotSeratoWaveform = ({
                                 3BAND HD
                             </span>
                         )}
-                        <span className="flex items-center gap-1">
-                            <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#2563eb', display: 'inline-block' }} />
-                            Graves (&lt;250Hz)
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
-                            Medios (250Hz-2.5kHz)
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#ffffff', display: 'inline-block' }} />
-                            Agudos (&gt;2.5kHz)
-                        </span>
+                        <div className="flex items-center gap-2.5 px-2.5 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9.5px] font-mono text-zinc-400 shrink-0">
+                            <span className="flex items-center gap-1">
+                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#2563eb', display: 'inline-block' }} />
+                                Graves
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                                Medios
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#ffffff', display: 'inline-block' }} />
+                                Agudos
+                            </span>
+                        </div>
                     </div>
                 </div>
 
                 {/* CONTROLES DE ZOOM Y TIEMPOS */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 order-first shrink-0">
                     <div className="flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]">
                         {[2, 4, 8, 16].map(z => (
                             <button
