@@ -641,11 +641,11 @@ export const CopilotSeratoWaveform = ({
                 <div className="relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md">
                     {isEmptyDeck ? (
                         <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800 text-zinc-400 font-mono text-[11px] font-medium">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900/70 border border-zinc-800 text-zinc-400 font-mono text-[12px] font-medium">
                                 <span className="text-sm">⏹️</span>
                                 <span>DECK VACÍO ➔ Arrastrar canción aquí para activar análisis</span>
                             </div>
-                            <div className="text-[10px] font-mono text-zinc-600">
+                            <div className="text-[11px] font-mono text-zinc-600">
                                 STANDBY
                             </div>
                         </div>
@@ -654,29 +654,29 @@ export const CopilotSeratoWaveform = ({
                         {/* CONTADOR DE ANTICIPACIÓN (URGENCIA EN ROJO < 5s) */}
                         <div className="flex items-center gap-2">
                             {!deck.is_playing ? (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/70 text-indigo-200 font-mono text-[11px] font-bold shadow-[0_0_12px_rgba(99,102,241,0.3)]">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/70 text-indigo-200 font-mono text-[12px] font-bold shadow-[0_0_12px_rgba(99,102,241,0.3)]">
                                     <span className="text-sm">🎧</span>
                                     <span>EN CUE (PREPARADO) ➔ Listo para soltar en primer bombo (Bar 1)</span>
                                 </div>
                             ) : isBassClashDanger ? (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-500 text-red-200 font-mono text-[11px] font-bold shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse ring-1 ring-red-400">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-950/80 border border-red-500 text-red-200 font-mono text-[12px] font-bold shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse ring-1 ring-red-400">
                                     <span className="text-sm">⚠️</span>
                                     <span>EN {barsToNextCue || 8} COMPASES ({formatSec(timeToNextCue || 16)}) ➔ BASS CLASH: Cortar Low EQ</span>
                                 </div>
                             ) : nextCue ? (
                                 (timeToNextCue <= 5.0 && timeToNextCue > 0) ? (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-600 text-white font-mono text-[11px] font-black shadow-[0_0_25px_rgba(239,68,68,1)] ring-2 ring-red-400 border border-white animate-pulse scale-105">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-600 text-white font-mono text-[12px] font-black shadow-[0_0_25px_rgba(239,68,68,1)] ring-2 ring-red-400 border border-white animate-pulse scale-105">
                                         <span className="text-sm animate-bounce">🚨</span>
                                         <span>¡ATENCIÓN! EN <strong className="text-yellow-300 font-orbitron">{formatSec(timeToNextCue)}</strong> ➔ <span className="uppercase tracking-wider">{nextCue.name}</span></span>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djcyan-950/60 border border-djcyan-500/60 text-djcyan-300 font-mono text-[11px] font-bold">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-djcyan-950/60 border border-djcyan-500/60 text-djcyan-300 font-mono text-[12px] font-bold">
                                         <span>⏳</span>
                                         <span>EN <strong className="text-white font-orbitron">{barsToNextCue}</strong> BARS ({formatSec(timeToNextCue)}) ➔ <span className="text-white uppercase">{nextCue.name}</span></span>
                                     </div>
                                 )
                             ) : (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-mono text-[11px] font-bold">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-mono text-[12px] font-bold">
                                     <span>🟢</span>
                                     <span>EN ZONA SEGURA DE MEZCLA (OUTRO)</span>
                                 </div>
@@ -685,7 +685,7 @@ export const CopilotSeratoWaveform = ({
 
                         {/* HITOS DE AYUDA TÁCTICOS DIFERENCIADOS CLARAMENTE DE LOS CUES */}
                         <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-[9px] font-mono uppercase text-amber-400 font-bold mr-1 hidden md:inline">🎯 Hitos:</span>
+                            <span className="text-[11px] font-mono uppercase text-amber-400 font-bold mr-1 hidden md:inline">🎯 Hitos:</span>
                             {phases.map((ph) => {
                                 const phStart = ph.start_pct || 0;
                                 const isPassed = phStart <= progress;
@@ -703,7 +703,7 @@ export const CopilotSeratoWaveform = ({
                                             directive: ph.directive || ph.label
                                         })}
                                         onMouseLeave={() => setHoveredMilestone(null)}
-                                        className={`relative px-1.5 py-0.5 rounded cursor-pointer transition-all text-[9px] font-mono font-bold flex items-center gap-1 border ${
+                                        className={`relative px-1.5 py-0.5 rounded cursor-pointer transition-all text-[11px] font-mono font-bold flex items-center gap-1 border ${
                                             isCurrent
                                                 ? 'bg-amber-400 text-black border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)] scale-105 ring-1 ring-white'
                                                 : isPassed
@@ -728,11 +728,11 @@ export const CopilotSeratoWaveform = ({
                                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: hoveredMilestone.color }}></span>
                                     {hoveredMilestone.name} ({hoveredMilestone.time})
                                 </span>
-                                <span className="text-[10px] text-djcyan-400 font-mono">
+                                <span className="text-[11px] text-djcyan-400 font-mono">
                                     Compás {Math.round((hoveredMilestone.pct * durSec) / (60 / (deck.bpm || 130)) / 4)}
                                 </span>
                             </div>
-                            <p className="text-[11px] text-zinc-300 leading-relaxed">
+                            <p className="text-[12px] text-zinc-300 leading-relaxed">
                                 <strong className="text-emerald-400">Acción DJ:</strong> {hoveredMilestone.directive || "Ajuste de ganancia y sincronía armónica antes del drop."}
                             </p>
                         </div>
@@ -747,7 +747,7 @@ export const CopilotSeratoWaveform = ({
                         <button
                             type="button"
                             onClick={() => setShowTacticalAids(!showTacticalAids)}
-                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[11px] sm:text-[12px] ${
                                 showTacticalAids
                                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
                                 : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
@@ -775,7 +775,7 @@ export const CopilotSeratoWaveform = ({
                                 3BAND HD
                             </span>
                         )}
-                        <div className="flex items-center gap-2.5 px-2.5 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9.5px] font-mono text-zinc-400 shrink-0">
+                        <div className="flex items-center gap-2.5 px-2.5 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[11px] font-mono text-zinc-400 shrink-0">
                             <span className="flex items-center gap-1">
                                 <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#2563eb', display: 'inline-block' }} />
                                 Graves
@@ -794,7 +794,7 @@ export const CopilotSeratoWaveform = ({
 
                 {/* CONTROLES DE ZOOM Y TIEMPOS */}
                 <div className="flex items-center gap-2 order-first shrink-0">
-                    <div className="flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]">
+                    <div className="flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px]">
                         {[2, 4, 8, 16].map(z => (
                             <button
                                 key={z}
@@ -809,7 +809,7 @@ export const CopilotSeratoWaveform = ({
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[11px] sm:text-[12px]">
                         <span className={isEmptyDeck ? 'text-zinc-500 font-bold' : 'text-white font-bold'}>{isEmptyDeck ? '00:00' : formatSec(elapsedSec)}</span>
                         <span className="text-zinc-600">/</span>
                         <span className="text-zinc-500">-{isEmptyDeck ? '00:00' : formatSec(remainSec)}</span>

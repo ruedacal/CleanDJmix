@@ -54,7 +54,7 @@ export const CopilotCleanMixBanner = memo(({
                             <span className="bw-p-bar"></span>
                             <span className="bw-p-bar"></span>
                         </div>
-                        <div className="font-mono text-[10px] leading-none flex items-center gap-1.5 select-none">
+                        <div className="font-mono text-[11px] leading-none flex items-center gap-1.5 select-none">
                             <span className="text-zinc-400 font-bold">SUB-BASS</span>
                             <span className={`font-black ${isDanger ? 'text-[#ff6b88]' : 'text-emerald-400'}`}>
                                 {!isAppOpen ? 'STANDBY' : isDanger ? 'COLISIÓN 142°' : 'FASE 0° OK'}
@@ -72,7 +72,7 @@ export const CopilotCleanMixBanner = memo(({
                             : 'MEZCLA LIMPIA'}
                     </span>
 
-                    <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full tracking-wider leading-none ${
+                    <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-full tracking-wider leading-none ${
                         !isAppOpen
                             ? 'bg-zinc-800 text-zinc-400'
                             : isDanger
@@ -91,18 +91,18 @@ export const CopilotCleanMixBanner = memo(({
 
                 {/* Chips de telemetría compactos */}
                 <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
-                    <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[10px] text-cyan-300">
+                    <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/50 font-mono text-[11px] text-cyan-300">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
                         <span className="font-bold tracking-tight">⚡ <strong className="text-white font-extrabold">{latency}ms</strong> • SYNC</span>
                     </span>
 
                     {controllerState?.detected && (
-                        <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#0F172A] border border-cyan-500/40 text-cyan-300">
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#0F172A] border border-cyan-500/40 text-cyan-300">
                             {isDanger ? `${controllerName} · LOW CH2 ACTIVO` : controllerName}
                         </span>
                     )}
 
-                    <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#26354F] text-zinc-300">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#26354F] text-zinc-300">
                         CAMELOT: <strong style={{ color: harmonic?.color || '#38bdf8' }}>{camelotLabel}</strong>
                         {' · '}
                         {lufsDelta != null ? `${lufsDelta > 0 ? '+' : ''}${lufsDelta} dB` : '-8.4 LUFS'}
@@ -112,7 +112,7 @@ export const CopilotCleanMixBanner = memo(({
 
             {/* FILA 2: Explicación completa a ancho completo + Acción Táctica */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-white/5 flex-wrap sm:flex-nowrap">
-                <div className={`text-[11px] font-syne whitespace-normal leading-snug min-w-0 flex-1 ${
+                <div className={`text-[13px] font-sans whitespace-normal leading-snug min-w-0 flex-1 ${
                     isDanger ? 'text-[#ffe4e6] font-semibold' : 'text-zinc-300 font-medium'
                 }`}>
                     {!isAppOpen
@@ -126,7 +126,7 @@ export const CopilotCleanMixBanner = memo(({
                     <button
                         type="button"
                         onClick={onApplyCorrection}
-                        className={`font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-md border transition-all cursor-pointer shrink-0 ${
+                        className={`font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-md border transition-all cursor-pointer shrink-0 ${
                             lowEqApplied
                                 ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500 text-emerald-300'
                                 : isDanger
@@ -138,7 +138,7 @@ export const CopilotCleanMixBanner = memo(({
                         {actionText}
                     </button>
                 ) : (
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-500 shrink-0">
+                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-500 shrink-0">
                         EQ STANDBY
                     </span>
                 )}

@@ -492,11 +492,11 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-zinc-800/60">
                     <div className="flex items-center gap-2">
                         <span className="font-orbitron font-black text-sm sm:text-base text-zinc-500">DECK {side}</span>
-                        <span className="px-2.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300">
+                        <span className="px-2.5 py-0.5 rounded-full font-mono text-[11px] font-black uppercase tracking-wider bg-red-950/60 border border-red-500/40 text-red-300">
                             STANDBY • SIN CONEXIÓN
                         </span>
                     </div>
-                    <div className="flex items-center gap-2 font-mono text-[11px] text-zinc-600 uppercase">
+                    <div className="flex items-center gap-2 font-mono text-[12px] text-zinc-600 uppercase">
                         <span>STANDBY SKIN</span>
                     </div>
                 </div>
@@ -509,7 +509,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                             style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
                         >
                             <img src={DEFAULT_VINYL_SVG} alt="Sin pista" className="w-10 h-10 opacity-30" />
-                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono text-zinc-500">--:--</span>
+                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[10px] font-mono text-zinc-500">--:--</span>
                         </div>
                         <div className="min-w-0 flex-1 flex flex-col justify-center">
                             <h2 className="font-syne font-bold text-xs sm:text-sm text-zinc-400 tracking-tight leading-tight truncate">
@@ -519,7 +519,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                 Conecta Serato, Rekordbox, Traktor o VirtualDJ
                             </p>
                             <div className="flex items-center gap-1.5 mt-1">
-                                <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-[9px] font-mono text-zinc-600">
+                                <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-600">
                                     -- GÉNERO --
                                 </span>
                             </div>
@@ -529,41 +529,41 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                     <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 border-t md:border-t-0 md:border-l border-zinc-800/60 pt-2 md:pt-0 md:pl-3">
                         <div className="flex flex-col gap-1 p-1 rounded-xl bg-zinc-950/90 border border-zinc-800 shrink-0 min-w-[100px]">
                             <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/60 text-zinc-600">
-                                <div className="w-5 h-4 rounded text-[9px] font-orbitron font-black bg-zinc-800 text-zinc-500 flex items-center justify-center">--</div>
-                                <span className="text-[7px] font-mono uppercase font-bold">TONO</span>
-                                <span className="font-syne font-bold text-[10px]">--</span>
+                                <div className="w-5 h-4 rounded text-[11px] font-orbitron font-black bg-zinc-800 text-zinc-500 flex items-center justify-center">--</div>
+                                <span className="text-[10px] font-mono uppercase font-bold">TONO</span>
+                                <span className="font-syne font-bold text-[11px]">--</span>
                             </div>
                             <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg bg-zinc-900/60 text-zinc-600">
-                                <span className="text-[7px] font-mono uppercase font-bold">TEMPO</span>
-                                <span className="font-orbitron font-black text-[10px]">--.--</span>
-                                <span className="text-[7px] font-mono">BPM</span>
+                                <span className="text-[10px] font-mono uppercase font-bold">TEMPO</span>
+                                <span className="font-orbitron font-black text-[11px]">--.--</span>
+                                <span className="text-[10px] font-mono">BPM</span>
                             </div>
-                            <div className="px-1.5 py-0.5 rounded-lg bg-zinc-900/40 border border-zinc-800/40 text-[8px] font-mono text-zinc-600 text-center">
+                            <div className="px-1.5 py-0.5 rounded-lg bg-zinc-900/40 border border-zinc-800/40 text-[10px] font-mono text-zinc-600 text-center">
                                 STANDBY
                             </div>
                         </div>
 
                         <div className="flex-1 min-w-[130px] flex flex-col justify-center gap-1 opacity-40">
                             <div>
-                                <div className="flex items-center justify-between text-[8px] font-mono mb-0.5 text-zinc-500">
+                                <div className="flex items-center justify-between text-[10px] font-mono mb-0.5 text-zinc-500">
                                     <span>ENERGÍA</span><span>0%</span>
                                 </div>
                                 <div className="w-full bg-zinc-900 rounded-full h-1"></div>
                             </div>
                             <div>
-                                <div className="flex items-center justify-between text-[8px] font-mono mb-0.5 text-zinc-500">
+                                <div className="flex items-center justify-between text-[10px] font-mono mb-0.5 text-zinc-500">
                                     <span>INTENSIDAD</span><span>0%</span>
                                 </div>
                                 <div className="w-full bg-zinc-900 rounded-full h-1"></div>
                             </div>
                             <div>
-                                <div className="flex items-center justify-between text-[8px] font-mono mb-0.5 text-zinc-500">
+                                <div className="flex items-center justify-between text-[10px] font-mono mb-0.5 text-zinc-500">
                                     <span>DANZABILIDAD</span><span>0%</span>
                                 </div>
                                 <div className="w-full bg-zinc-900 rounded-full h-1"></div>
                             </div>
                             <div>
-                                <div className="flex items-center justify-between text-[8px] font-mono mb-0.5 text-zinc-500">
+                                <div className="flex items-center justify-between text-[10px] font-mono mb-0.5 text-zinc-500">
                                     <span>POSITIVIDAD</span><span>0%</span>
                                 </div>
                                 <div className="w-full bg-zinc-900 rounded-full h-1"></div>
@@ -575,19 +575,19 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 {/* Hot Cues Standby */}
                 <div className="mb-2.5 p-2 rounded-2xl bg-black/60 border border-zinc-800/60 opacity-50">
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-mono uppercase text-zinc-500 font-bold flex items-center gap-1">
+                        <span className="text-[11px] font-mono uppercase text-zinc-500 font-bold flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-zinc-600"></span> 8 HOT CUES DE CABINA
                         </span>
-                        <span className="text-[8px] font-mono text-zinc-600">En espera de enlace</span>
+                        <span className="text-[10px] font-mono text-zinc-600">En espera de enlace</span>
                     </div>
                     <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
                         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                             <div key={i} className="p-1 rounded-xl border border-zinc-800/60 bg-zinc-950/60 flex flex-col justify-between">
                                 <div className="flex items-center justify-between">
-                                    <span className="w-3 h-3 rounded-full flex items-center justify-center text-[7px] font-mono text-zinc-500 bg-zinc-900">{i}</span>
-                                    <span className="text-[7px] font-mono text-zinc-600">--:--</span>
+                                    <span className="w-3 h-3 rounded-full flex items-center justify-center text-[10px] font-mono text-zinc-500 bg-zinc-900">{i}</span>
+                                    <span className="text-[10px] font-mono text-zinc-600">--:--</span>
                                 </div>
-                                <div className="text-[7px] font-syne text-zinc-600 truncate mt-0.5">Cue {i}</div>
+                                <div className="text-[10px] font-syne text-zinc-600 truncate mt-0.5">Cue {i}</div>
                             </div>
                         ))}
                     </div>
@@ -595,15 +595,15 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
 
                 {/* Waveform Skin Standby */}
                 <div className="mb-2 h-16 rounded-2xl bg-black/70 border border-dashed border-red-500/40 flex flex-col items-center justify-center gap-1 p-2">
-                    <span className="font-syne font-bold text-[10px] text-red-400/90 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="font-syne font-bold text-[11px] text-red-400/90 uppercase tracking-wider flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
                         STANDBY • ESPERANDO SEÑAL DE AUDIO DE CABINA
                     </span>
-                    <span className="font-mono text-[9px] text-zinc-600">Puntos de cuantización y forma de onda en espera</span>
+                    <span className="font-mono text-[11px] text-zinc-600">Puntos de cuantización y forma de onda en espera</span>
                 </div>
 
                 {/* Espectro y Comentario Standby */}
-                <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[11px] text-zinc-600">
+                <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[12px] text-zinc-600">
                     <div className="flex items-center justify-between">
                         <span>Densidad Sub-Graves (Sub-Bass)</span>
                         <span>0%</span>
@@ -612,7 +612,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 </div>
                 <div className="mt-2 p-2 rounded-xl bg-black/40 border border-zinc-800/60 flex items-start gap-2">
                     <Icons.MessageSquare size={13} className="inline-block text-zinc-600 shrink-0 mt-0.5" />
-                    <div className="text-zinc-600 font-mono text-[11px] truncate">
+                    <div className="text-zinc-600 font-mono text-[12px] truncate">
                         Esperando enlace de software DJ y controladora para telemetría en tiempo real.
                     </div>
                 </div>
@@ -645,7 +645,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 const danceVal = isEmptyDeck ? 0 : (deck.danceability || 85);
                 const valenceVal = isEmptyDeck ? 0 : (deck.valence != null ? deck.valence : (side === '1' || side === 'A' ? 55 : 62));
                 const camelotVal = isEmptyDeck ? '--' : (deck.camelot || deck.raw_key || (side === '1' || side === 'A' ? '6A' : '8A'));
-                const camelotBg = isEmptyDeck ? '#27272a' : (deck.camelot_color || '#10b981');
+                const camelotBg = isEmptyDeck ? '#27272a' : '#e4e4e7';
                 const bpmText = deck.bpm ? Number(deck.bpm).toFixed(2) : (isEmptyDeck ? '--.--' : '136.00');
                 const vibeText = isEmptyDeck ? 'STANDBY' : (deck.subgenre || deck.vibe || deck.energy_label || 'Peak Time Climax');
 
@@ -666,15 +666,15 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                     )}
                                 </div>
                                 <div className="min-w-0 flex-1 flex flex-col justify-center">
-                                    <span className="font-syne font-bold text-[13px] text-white leading-snug line-clamp-2 break-words" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={deck.title || 'Track'}>
+                                    <span className="font-sans font-bold text-[13px] text-white leading-snug line-clamp-2 break-words" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={deck.title || 'Track'}>
                                         {deck.title || (isEmptyDeck ? '-- Esperando Pista --' : 'Whip')}
                                     </span>
-                                    <span className="font-mono text-[11px] text-zinc-400 leading-tight truncate mt-0.5" title={deck.artist || 'Artista'}>
+                                    <span className="font-mono text-[12px] text-zinc-400 leading-tight truncate mt-0.5" title={deck.artist || 'Artista'}>
                                         {deck.artist || (isEmptyDeck ? 'Conecta Serato o mesa' : 'Mark Broom')}
                                     </span>
                                     {!isEmptyDeck && deck.genre && (
                                         <div className="mt-1">
-                                            <span className="inline-block px-1.5 py-0.2 rounded bg-zinc-900/90 border border-zinc-800 text-[9px] font-mono text-zinc-400 truncate max-w-[140px]">
+                                            <span className="inline-block px-1.5 py-0.2 rounded bg-zinc-900/90 border border-zinc-800 text-[11px] font-mono text-zinc-400 truncate max-w-[140px]">
                                                 {deck.genre}
                                             </span>
                                         </div>
@@ -688,23 +688,23 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                         <span className="font-orbitron font-black text-base text-white tracking-tight">
                                             {bpmText}
                                         </span>
-                                        <span className="font-mono text-[9px] text-zinc-500 uppercase">BPM</span>
+                                        <span className="font-mono text-[11px] text-zinc-500 uppercase">BPM</span>
                                     </div>
-                                    <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/80 font-mono text-[9px] font-bold text-zinc-300 uppercase">
+                                    <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-700/80 font-mono text-[11px] font-bold text-zinc-300 uppercase">
                                         {trackFormat}
                                     </span>
                                     <span className="font-orbitron font-black text-sm text-white tracking-wider">
                                         DECK {side}
                                     </span>
                                     {isEmptyDeck && (
-                                        <span className="px-2 py-0.5 rounded-full font-mono text-[8px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
+                                        <span className="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
                                             STANDBY
                                         </span>
                                     )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold">
+                                    <div className="flex items-center gap-2 font-mono text-[11px] font-bold">
                                         <span className="flex items-center gap-0.5 text-amber-400" title="Energía">
                                             <Icons.Zap size={10} /> {energyVal}%
                                         </span>
@@ -719,7 +719,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                         </span>
                                     </div>
                                     <span 
-                                        className="px-2 py-0.5 rounded-md font-orbitron font-black text-[11px] text-black shadow-sm"
+                                        className="px-2 py-0.5 rounded-md font-orbitron font-black text-[12px] text-black shadow-sm"
                                         style={{ backgroundColor: camelotBg }}
                                     >
                                         {camelotVal}
@@ -749,14 +749,14 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                     )}
                                 </div>
                                 <div className="min-w-0 flex-1 flex flex-col justify-center">
-                                    <span className="font-syne font-bold text-[14px] text-white leading-snug line-clamp-2 break-words" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={deck.title || 'Track'}>
+                                    <span className="font-sans font-bold text-[14px] text-white leading-snug line-clamp-2 break-words" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={deck.title || 'Track'}>
                                         {deck.title || (isEmptyDeck ? '-- Esperando Pista --' : 'Whip')}
                                     </span>
                                     <span className="font-mono text-[11.5px] text-zinc-400 leading-tight truncate mt-0.5" title={deck.artist || 'Artista'}>
                                         {deck.artist || (isEmptyDeck ? 'Deck Vacío' : 'Mark Broom')}
                                     </span>
                                     <div className="mt-1.5">
-                                        <span className="inline-block px-2 py-0.5 rounded bg-cyan-950/30 border border-cyan-500/35 text-[9.5px] font-mono text-cyan-200 truncate max-w-[160px]">
+                                        <span className="inline-block px-2 py-0.5 rounded bg-cyan-950/30 border border-cyan-500/35 text-[11px] font-mono text-cyan-200 truncate max-w-[160px]">
                                             {!isEmptyDeck && deck.genre ? deck.genre : '-- GÉNERO --'}
                                         </span>
                                     </div>
@@ -769,20 +769,20 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                 <div className="flex flex-col justify-between gap-1.5 py-0.5 min-w-[144px] self-stretch">
                                     <div className="flex-1 flex items-center gap-2">
                                         <span 
-                                            className="px-2 py-0.5 rounded-md font-orbitron font-black text-[11px] text-black shadow-sm"
+                                            className="px-2 py-0.5 rounded-md font-orbitron font-black text-[12px] text-black shadow-sm"
                                             style={{ backgroundColor: camelotBg }}
                                         >
                                             {camelotVal}
                                         </span>
-                                        <span className="text-[9px] font-mono uppercase text-zinc-400 font-bold">TONO</span>
+                                        <span className="text-[11px] font-mono uppercase text-zinc-400 font-bold">TONO</span>
                                         <span className="font-orbitron font-black text-[15px] text-white ml-auto tracking-tight">{camelotVal}</span>
                                     </div>
                                     <div className="flex-1 flex items-center gap-2">
-                                        <span className="text-[9px] font-mono uppercase text-zinc-400 font-bold">TEMPO</span>
+                                        <span className="text-[11px] font-mono uppercase text-zinc-400 font-bold">TEMPO</span>
                                         <span className="font-orbitron font-black text-[16px] text-white tracking-tight">{bpmText}</span>
-                                        <span className="text-[9px] font-mono text-zinc-500 ml-auto font-bold">BPM</span>
+                                        <span className="text-[11px] font-mono text-zinc-500 ml-auto font-bold">BPM</span>
                                     </div>
-                                    <div className="px-2.5 py-0.5 rounded-full bg-purple-950/50 border border-purple-500/50 text-[9px] font-mono text-purple-200 text-center truncate max-w-[150px]">
+                                    <div className="px-2.5 py-0.5 rounded-full bg-purple-950/50 border border-purple-500/50 text-[11px] font-mono text-purple-200 text-center truncate max-w-[150px]">
                                         ✨ {vibeText}
                                     </div>
                                 </div>
@@ -794,21 +794,21 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                 {/* Derecha: Formato + DECK N arriba alineado a la derecha + 4 Barras de energía */}
                                 <div className="w-[175px] flex flex-col justify-between gap-1">
                                     <div className="flex items-center justify-end gap-1.5 mb-0.5">
-                                        <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/80 font-mono text-[8.5px] font-bold text-zinc-300 uppercase">
+                                        <span className="px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-700/80 font-mono text-[10px] font-bold text-zinc-300 uppercase">
                                             {trackFormat}
                                         </span>
                                         <span className="font-orbitron font-black text-[12px] text-white tracking-wider">
                                             DECK {side}
                                         </span>
                                         {isEmptyDeck && (
-                                            <span className="px-1.5 py-0.2 rounded-full font-mono text-[7.5px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
+                                            <span className="px-1.5 py-0.2 rounded-full font-mono text-[10px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
                                                 STANDBY
                                             </span>
                                         )}
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                        <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-0.5">
                                             <span className="text-amber-400 flex items-center gap-1"><Icons.Zap size={9} /> ENERGÍA</span>
                                             <span className="text-amber-400">{energyVal}%</span>
                                         </div>
@@ -818,7 +818,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                        <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-0.5">
                                             <span className="text-emerald-400 flex items-center gap-1"><Icons.Activity size={9} /> INTENSIDAD</span>
                                             <span className="text-emerald-400">{grooveVal}%</span>
                                         </div>
@@ -828,7 +828,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                        <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-0.5">
                                             <span className="text-purple-400 flex items-center gap-1"><Icons.Sliders size={9} /> DANZABILIDAD</span>
                                             <span className="text-purple-400">{danceVal}%</span>
                                         </div>
@@ -838,7 +838,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                     </div>
 
                                     <div>
-                                        <div className="flex items-center justify-between text-[8.5px] font-mono font-bold mb-0.5">
+                                        <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-0.5">
                                             <span className="text-cyan-400 flex items-center gap-1"><Icons.Sparkles size={9} /> POSITIVIDAD</span>
                                             <span className="text-cyan-400">{valenceVal}%</span>
                                         </div>
@@ -900,7 +900,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 const lufsTxt = (!isEmptyDeck && lufsRaw != null && Number(lufsRaw) > -90) ? `${Number(lufsRaw).toFixed(1)} dB` : '-- dB';
 
                 return (
-                    <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[11px]">
+                    <div className="space-y-1 pt-1.5 border-t border-zinc-800/60 font-mono text-[12px]">
                         <div className="flex items-center justify-between text-zinc-400">
                             <span>Espectro 3-Band</span>
                             <span>LUFS: <strong className="text-zinc-200">{lufsTxt}</strong></span>
@@ -926,7 +926,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                 </>
                             )}
                         </div>
-                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-0.5">
+                        <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-0.5">
                             <span>Graves: <strong style={{ color: '#60a5fa' }}>{lowPct}%</strong></span>
                             <span>Medios: <strong style={{ color: '#f59e0b' }}>{midPct}%</strong></span>
                             <span>Agudos: <strong style={{ color: '#f8fafc' }}>{highPct}%</strong></span>
@@ -939,8 +939,8 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
             <div className="mt-2 p-2 rounded-xl bg-black/50 border border-zinc-800/80 flex items-start gap-2">
                 <Icons.MessageSquare size={13} className="inline-block text-emerald-400 shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
-                    <div className="text-[8px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ (Tag ID3)</div>
-                    <div className="font-mono text-[11px] text-zinc-200 whitespace-normal break-words leading-snug" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
+                    <div className="text-[10px] font-mono uppercase text-zinc-500 tracking-wider">Comentario Táctico DJ (Tag ID3)</div>
+                    <div className="font-mono text-[12px] text-zinc-200 whitespace-normal break-words leading-snug" title={deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}>
                         {deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : '--'} BPM | ${deck.camelot}] Intro 32b • Drop contundente • Outro 64b`}
                     </div>
                 </div>
@@ -1544,7 +1544,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             </div>
 
                             {/* BADGE DEL SOFTWARE ACTIVO CON LOGO VECTORIAL */}
-                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[10px]">
+                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700/60 font-mono text-[11px]">
                                 {renderPlatformLogo(state.platform || 'serato', 13)}
                                 <strong style={{ color: state.platform_color || '#00d1e8' }}>{state.platform_name || 'Serato DJ Pro'}</strong>
                                 <span className="text-zinc-600">|</span>
@@ -1629,7 +1629,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                         title={`Conectar con ${p.label}`}
                                     >
                                         {renderPlatformLogo(p.id, 13)}
-                                        <span className="hidden sm:inline text-[10px]">{p.label}</span>
+                                        <span className="hidden sm:inline text-[11px]">{p.label}</span>
                                     </button>
                                 );
                             })}
@@ -1664,12 +1664,12 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             <h4 className="font-syne font-bold text-xs sm:text-sm text-red-100 uppercase tracking-wide">
                                 Es necesario conectar la aplicación y la controladora
                             </h4>
-                            <p className="font-syne text-[11px] text-red-200/90 mt-0.5">
+                            <p className="font-syne text-[12px] text-red-200/90 mt-0.5">
                                 Conecta la aplicación de música (Serato, Rekordbox, Traktor o VirtualDJ) y la controladora DJ para activar el análisis en vivo.
                             </p>
                         </div>
                     </div>
-                    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-900/60 border border-red-500/50 font-mono text-[9px] text-red-300 uppercase shrink-0">
+                    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-900/60 border border-red-500/50 font-mono text-[11px] text-red-300 uppercase shrink-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></span>
                         <span>SKIN STANDBY</span>
                     </div>
@@ -1737,7 +1737,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             <Icons.Bulb size={14} className="text-amber-400 inline-block" />
                             <span>PRÓXIMAS PISTAS SUGERIDAS ({isAppOpen ? displayRecommendations.length : 0})</span>
                         </h4>
-                        <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">
+                        <span className="text-[11px] font-mono text-zinc-500 hidden sm:inline">
                             {isAppOpen ? '• Arrastra para reordenar la secuencia' : '• Modo Standby Skin'}
                         </span>
                     </div>
@@ -1758,11 +1758,10 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                             <button
                                 type="button"
                                 onClick={handleRandomLoad}
-                                className="px-2.5 py-1 rounded-lg bg-purple-950/70 hover:bg-purple-900 border border-purple-500/60 text-xs font-mono font-bold text-purple-300 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-mono font-bold text-zinc-200 transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
                                 title="Cargar selección aleatoria de candidatos de la biblioteca"
                             >
-                                <span>🎲</span>
-                                <span>Carga Aleatoria</span>
+                                                                <span>Carga Aleatoria</span>
                             </button>
 
                             {/* BOTÓN CARGA MANUAL */}
@@ -1787,20 +1786,20 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 <div className="flex items-start gap-2.5 mb-2">
                                     <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-800 bg-black flex items-center justify-center">
                                         <img src={DEFAULT_VINYL_SVG} alt="Standby" className="w-6 h-6 opacity-25" />
-                                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[8px] font-mono font-bold text-zinc-600 flex items-center justify-center">
+                                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[10px] font-mono font-bold text-zinc-600 flex items-center justify-center">
                                             #{slot}
                                         </span>
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <span className="font-syne font-bold text-xs text-zinc-500 truncate block">-- Esperando Pista --</span>
-                                        <span className="text-[10px] text-zinc-600 truncate font-mono block">Standby</span>
-                                        <div className="flex items-center gap-1.5 mt-0.5 text-[9px] font-mono text-zinc-600">
+                                        <span className="font-sans font-bold text-xs text-zinc-500 truncate block">-- Esperando Pista --</span>
+                                        <span className="text-[11px] text-zinc-600 truncate font-mono block">Standby</span>
+                                        <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-mono text-zinc-600">
                                             <span>-- BPM</span>
                                             <span>• -- Camelot</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-[9.5px] font-mono text-zinc-600 pt-1.5 border-t border-zinc-800/60">
+                                <div className="text-[11px] font-mono text-zinc-600 pt-1.5 border-t border-zinc-800/60">
                                     Conecta software DJ y controladora
                                 </div>
                             </div>
@@ -1814,7 +1813,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-base">⚡</span>
                                     <span className="text-zinc-300">Transición con <strong className="text-white">{transitionAnalysis.trackTitle}</strong>:</span>
-                                    <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                    <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
                                         transitionAnalysis.isHarmonic ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40'
                                     }`}>
                                         {transitionAnalysis.matchType}
@@ -1822,7 +1821,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                     <span className="text-zinc-400">Δ BPM: <strong className="text-white">{transitionAnalysis.bpmDelta}</strong></span>
                                     <span className="text-zinc-400">Sub-Graves: <strong className={transitionAnalysis.safeBass ? 'text-emerald-400' : 'text-amber-400'}>{transitionAnalysis.lowRatio}%</strong></span>
                                 </div>
-                                <div className="text-[11px] text-zinc-300 truncate">
+                                <div className="text-[12px] text-zinc-300 truncate">
                                     <strong className="text-djcyan-400">Acción:</strong> {transitionAnalysis.advice}
                                 </div>
                             </div>
@@ -1855,30 +1854,30 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                                     onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
                                                     className="w-full h-full object-cover"
                                                 />
-                                                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[8px] font-mono font-bold text-zinc-300 flex items-center justify-center">
+                                                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[10px] font-mono font-bold text-zinc-300 flex items-center justify-center">
                                                     #{idx + 1}
                                                 </span>
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <span className="font-syne font-bold text-xs text-white group-hover:text-djcyan-300 transition-colors truncate">{rec.title}</span>
-                                                    <span className="w-6 h-6 rounded flex items-center justify-center font-orbitron font-black text-[10px] text-black shadow shrink-0" style={{ backgroundColor: rec.camelot_color }}>
+                                                    <span className="font-sans font-bold text-xs text-white group-hover:text-djcyan-300 transition-colors truncate">{rec.title}</span>
+                                                    <span className="w-6 h-6 rounded flex items-center justify-center font-orbitron font-black text-[11px] text-black shadow shrink-0" style={{ backgroundColor: rec.camelot_color }}>
                                                         {rec.camelot}
                                                     </span>
                                                 </div>
-                                                <div className="text-[11px] text-zinc-400 truncate font-mono">{rec.artist}</div>
-                                                <div className="flex items-center gap-1.5 mt-0.5 text-[9px] font-mono">
+                                                <div className="text-[12px] text-zinc-400 truncate font-mono">{rec.artist}</div>
+                                                <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-mono">
                                                     <span className="text-djcyan-400 font-bold">{rec.bpm} BPM</span>
                                                     {rec.mood && <span className="text-purple-400 truncate">• {rec.mood}</span>}
                                                     {rec.energy && <span className="text-amber-400 font-bold shrink-0">• {rec.energy}%</span>}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 pt-1.5 border-t border-zinc-800/60">
+                                        <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1.5 border-t border-zinc-800/60">
                                             <span className="text-djcyan-400 font-semibold truncate max-w-[130px]">{rec.strategy}</span>
                                             <span className="text-zinc-500 shrink-0">Sub: {rec.low_ratio}%</span>
                                         </div>
-                                        <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{rec.reason}</p>
+                                        <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{rec.reason}</p>
                                     </div>
                                 );
                             })}
@@ -1933,14 +1932,14 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                         <div key={t.id} className="flex items-center justify-between p-2 rounded-xl bg-zinc-950/80 border border-zinc-800/80 hover:border-zinc-700 transition-all gap-2">
                                             <div className="flex items-center gap-2.5 min-w-0">
                                                 <div 
-                                                    className="w-7 h-7 rounded text-[10px] font-orbitron font-black text-black flex items-center justify-center shrink-0"
+                                                    className="w-7 h-7 rounded text-[11px] font-orbitron font-black text-black flex items-center justify-center shrink-0"
                                                     style={{ backgroundColor: t.camelot_color || '#f472b6' }}
                                                 >
                                                     {t.camelot}
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <div className="font-syne font-bold text-xs text-white truncate">{t.title}</div>
-                                                    <div className="text-[10px] font-mono text-zinc-400">{t.artist} • {t.bpm} BPM • {t.genre}</div>
+                                                    <div className="font-sans font-bold text-xs text-white truncate">{t.title}</div>
+                                                    <div className="text-[11px] font-mono text-zinc-400">{t.artist} • {t.bpm} BPM • {t.genre}</div>
                                                 </div>
                                             </div>
 
@@ -2081,7 +2080,7 @@ export const CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
                         <button 
                             type="button" 
                             onClick={() => selectPlatform('auto')} 
-                            className={`text-[11px] font-mono transition-colors cursor-pointer ${copilotInfo.platform_mode === 'auto' || !copilotInfo.platform_mode ? 'text-cyan-400 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`text-[12px] font-mono transition-colors cursor-pointer ${copilotInfo.platform_mode === 'auto' || !copilotInfo.platform_mode ? 'text-cyan-400 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}`}
                             title="Alternar modo detección automática en cabina"
                         >
                             {copilotInfo.platform_mode === 'auto' || !copilotInfo.platform_mode ? '● Auto-detectar activo' : 'Modo Auto'}
@@ -2751,7 +2750,7 @@ export const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister
                 <div className="relative z-10 flex items-center justify-between gap-4 px-5 sm:px-8 pt-5 shrink-0">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                        <span className="bw-eyebrow text-cyan-300 font-mono text-[11px] font-black uppercase tracking-widest hidden sm:inline">
+                        <span className="bw-eyebrow text-cyan-300 font-mono text-[12px] font-black uppercase tracking-widest hidden sm:inline">
                             BeatWave Pro · Precision Audio Intelligence
                         </span>
                     </div>
@@ -2798,7 +2797,7 @@ export const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister
                                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/15 group-hover:scale-110 transition-transform text-black shrink-0">
                                     <Icons.Crown size={22} />
                                 </span>
-                                <div className="px-2.5 py-1 rounded bg-black/20 text-[9.5px] font-mono font-black uppercase tracking-wider text-black">
+                                <div className="px-2.5 py-1 rounded bg-black/20 text-[11px] font-mono font-black uppercase tracking-wider text-black">
                                     MÁS ELEGIDO
                                 </div>
                             </div>
@@ -2825,14 +2824,14 @@ export const AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister
                         </button>
                     </div>
 
-                    <p className="text-[11px] font-mono text-zinc-500 mt-3 flex items-center gap-1.5">
+                    <p className="text-[12px] font-mono text-zinc-500 mt-3 flex items-center gap-1.5">
                         <Icons.Check size={12} className="text-emerald-400" />
                         Garantía de rendimiento en directo · 100% Offline tras activación · Sin cuelgues
                     </p>
                 </main>
 
                 {/* Footer del Portal */}
-                <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-3.5 font-mono text-[11px] text-zinc-500 shrink-0">
+                <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-1.5 border-t border-white/5 px-5 sm:px-8 py-3.5 font-mono text-[12px] text-zinc-500 shrink-0">
                     <div className="flex items-center gap-3">
                         <span className="text-zinc-400 font-bold">ECOSISTEMA UNIVERSAL:</span>
                         <span>CDJ-3000 · Rekordbox · Serato DJ Pro · Traktor Pro 3 · VirtualDJ</span>
