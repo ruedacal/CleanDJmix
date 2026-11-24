@@ -1,3 +1,4 @@
+import { FilterMenu } from '../shell/workspace-ui.jsx';
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../waveforms/index.js';
@@ -470,6 +471,23 @@ export const LibraryWorkspace = ({
     const [selectedFolderId, setSelectedFolderId] = useState('__ALL__');
     const [feedbackMsg, setFeedbackMsg] = useState('');
     const [searchTrack, setSearchTrack] = useState('');
+    const [tableFilter, setTableFilter] = useState('all');
+    const [colFilters, setColFilters] = useState({
+        file: '',
+        artist: '',
+        genre: '',
+        format: 'ALL',
+        bpm: '',
+        key: '',
+        energy: '',
+        dance: '',
+        intensity: ''
+    });
+    const [sortConfig, setSortConfig] = useState({ key: null, dir: 'asc' });
+
+    const hasActiveColFilters = Object.entries(colFilters).some(([k, v]) => k === 'format' ? v !== 'ALL' : Boolean(String(v).trim()));
+    const resetColFilters = () => setColFilters({ file: '', artist: '', genre: '', format: 'ALL', bpm: '', key: '', energy: '', dance: '', intensity: '' });
+    const toggleSort = (key) => setSortConfig(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
     const [dragOverFolderId, setDragOverFolderId] = useState(null);
 
     // Selección múltiple para acciones por lote en la colección
@@ -531,11 +549,24 @@ export const LibraryWorkspace = ({
         folders: []
     };
 
+    // Sincronizar activeLibId cuando cambie la prop activeLibraryId o se hidrate libraries
+    useEffect(() => {
+        if (activeLibraryId && libraries.some(l => l.id === activeLibraryId)) {
+            if (activeLibId !== activeLibraryId) {
+                setActiveLibId(activeLibraryId);
+                setSelectedFolderId('__ALL__');
+            }
+        } else if (libraries.length > 0 && !libraries.some(l => l.id === activeLibId)) {
+            setActiveLibId(libraries[0].id);
+            setSelectedFolderId('__ALL__');
+        }
+    }, [activeLibraryId, libraries]);
+
     useEffect(() => {
         if (currentLib) {
             setLibNameInput(currentLib.name || '');
         }
-    }, [currentLib?.id]);
+    }, [currentLib?.id, currentLib?.name]);
 
     // Limpiar selección de tracks al cambiar de carpeta o librería
     useEffect(() => {
@@ -761,41 +792,64 @@ export const LibraryWorkspace = ({
         const byGenre = {};
         pool.forEach(t => {
             const rawBpm = parseFloat(t.bpm || t.b) || 126.0;
-            const rawEnergy = t.energy !== undefined ? (parseFloat(t.energy) > 1.0 ? parseFloat(t.energy)/100.0 : parseFloat(t.energy)) : 0.65;
+            const rawEnergy = t.energy !== undefined ? (parseFloat(t.energy) > 1.0 ? parseFloat(t.energy) / 100.0 : parseFloat(t.energy)) : 0.65;
             const rawIntensity = t.intensity !== undefined ? parseFloat(t.intensity) : (rawEnergy * 0.7 + 0.25);
             const rawAtmo = t.atmosphere !== undefined ? parseFloat(t.atmosphere) : 0.50;
             const camelot = t.camelot_key || t.key || t.k || "8A";
 
-            const classified = classifyTrackGenre({
-                bpm: rawBpm,
-                energy: rawEnergy,
-                intensity: rawIntensity,
-                atmosphere: rawAtmo,
-                camelotKey: camelot
-            });
+            let classified = null;
+            try {
+                if (typeof classifyTrackGenre === 'function') {
+                    classified = classifyTrackGenre({
+                        bpm: rawBpm,
+                        energy: rawEnergy,
+                        intensity: rawIntensity,
+                        atmosphere: rawAtmo,
+                        camelotKey: camelot
+                    });
+                }
+            } catch (err) {
+                console.warn("[AutoGenre] Fallback a metadata ID3:", err);
+            }
 
-            let g = (t.genre || t.subgenre || '').trim();
-            if (!g || ['electronic', 'electrónica', 'dance', 'club', 'pop', 'other', 'unknown', 'electrónica general'].includes(g.toLowerCase()) || classified.ruleApplied.startsWith("HARD_RULE")) {
+            let g = String(t.genre || t.subgenre || '').trim();
+            const genericGenres = ['electronic', 'electrónica', 'dance', 'club', 'pop', 'other', 'unknown', 'desconocido', 'electrónica general'];
+            const isHardRule = String(classified?.ruleApplied || '').startsWith("HARD_RULE");
+            if ((!g || genericGenres.includes(g.toLowerCase()) || isHardRule) && classified?.canonicalGenre) {
                 g = classified.canonicalGenre;
             }
+            if (!g) g = 'Sin Género';
 
             if (!byGenre[g]) byGenre[g] = [];
             byGenre[g].push(t);
         });
 
-        const newFolders = Object.entries(byGenre).map(([genreName, trList], idx) => ({
-            id: `f_auto_${idx}_${Date.now()}`,
-            name: genreName,
-            tracks: trList
-        }));
+        const baseTs = Date.now();
+        const newFolders = Object.entries(byGenre)
+            .sort((a, b) => b[1].length - a[1].length)
+            .map(([genreName, trList], idx) => ({
+                id: `f_auto_${idx}_${baseTs}`,
+                name: genreName,
+                tracks: trList
+            }));
 
-        const updated = libraries.map(l => {
-            if (l.id === activeLibId) {
-                return { ...l, folders: newFolders };
-            }
-            return l;
-        });
-        if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+        const targetId = currentLib.id;
+        const existsInList = libraries.some(l => l.id === targetId);
+        const updated = existsInList
+            ? libraries.map(l => {
+                if (l.id === targetId) {
+                    return {
+                        ...l,
+                        tracks: (l.tracks && l.tracks.length > 0) ? l.tracks : pool,
+                        folders: newFolders
+                    };
+                }
+                return l;
+            })
+            : [...libraries, { ...currentLib, id: targetId, tracks: pool, folders: newFolders }];
+
+        setActiveLibId(targetId);
+        if (onSaveLibraries) onSaveLibraries(updated, targetId);
         if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
         setFeedbackMsg(`✓ ${newFolders.length} carpetas generadas automáticamente por género (Motor BeatWave Neural)`);
         setTimeout(() => setFeedbackMsg(''), 3500);
@@ -1087,14 +1141,138 @@ export const LibraryWorkspace = ({
         ? (allLibTracks.length > 0 ? allLibTracks : (currentLib.tracks || []))
         : (activeFolder?.tracks || []);
 
-    const filteredTracks = displayedTracks.filter(t => {
+    const _filterSourceTracks = displayedTracks;
+
+    const matchesTableFilter = (t, filterId) => {
+        if (!filterId || filterId === 'all') return true;
+        const bpm = parseFloat(t.bpm || t.b || 0);
+        const key = String(t.camelot_key || t.key || t.k || '').trim();
+        const artist = String(t.artist || t.a || '').trim();
+        const title = String(t.title || t.t || '').trim();
+        const hasCover = Boolean(t.cover || t.has_cover || t.artwork);
+        const cues = t.hot_cues || t.cues || t.cue_points || [];
+        const fmt = String(t.format || t.ext || '').toUpperCase();
+        const bitrate = parseFloat(t.bitrate || t.kbps || 0);
+        const qStatus = String(t.quality_status || t.audit_status || t.quality || '').toLowerCase();
+        const isFake = Boolean(t.is_fake || t.fake || qStatus.includes('fake') || qStatus.includes('bad') || qStatus.includes('mala') || (bitrate > 0 && bitrate < 256));
+        const isLossless = ['FLAC', 'WAV', 'AIFF', 'ALAC'].some(x => fmt.includes(x));
+        const isExcellent = !isFake && (isLossless || bitrate >= 320 || qStatus.includes('excel') || qStatus.includes('lossless'));
+        const isTrimmed = Boolean(t.silence_trimmed || t.trimmed || t.silences_trimmed);
+        const rawEnergy = parseFloat(t.energy ?? 0);
+        const energyPct = rawEnergy > 1 ? rawEnergy : rawEnergy * 100;
+
+        switch (filterId) {
+            case 'missing': return !bpm || bpm <= 0 || !key || key === '-' || key === 'N/A';
+            case 'missing_meta': return !artist || !title || artist.toLowerCase() === 'desconocido' || artist.toLowerCase() === 'unknown';
+            case 'missing_cover': return !hasCover;
+            case 'missing_cues': return !Array.isArray(cues) || cues.length === 0;
+            case 'bad_quality': return isFake;
+            case 'excellent_quality': return isExcellent;
+            case 'silences_trimmed': return isTrimmed;
+            case 'high_energy': return energyPct >= 75;
+            default: return true;
+        }
+    };
+
+    const filterCounts = useMemo(() => ({
+        total: _filterSourceTracks.length,
+        missing: _filterSourceTracks.filter(t => matchesTableFilter(t, 'missing')).length,
+        missing_meta: _filterSourceTracks.filter(t => matchesTableFilter(t, 'missing_meta')).length,
+        missing_cover: _filterSourceTracks.filter(t => matchesTableFilter(t, 'missing_cover')).length,
+        missing_cues: _filterSourceTracks.filter(t => matchesTableFilter(t, 'missing_cues')).length,
+        bad_quality: _filterSourceTracks.filter(t => matchesTableFilter(t, 'bad_quality')).length,
+        excellent_quality: _filterSourceTracks.filter(t => matchesTableFilter(t, 'excellent_quality')).length,
+        silences_trimmed: _filterSourceTracks.filter(t => matchesTableFilter(t, 'silences_trimmed')).length,
+        high_energy: _filterSourceTracks.filter(t => matchesTableFilter(t, 'high_energy')).length,
+    }), [_filterSourceTracks]);
+
+    const filteredTracks = _filterSourceTracks.filter(t => {
+        if (!matchesTableFilter(t, tableFilter)) return false;
         if (!searchTrack.trim()) return true;
         const q = searchTrack.toLowerCase();
         const title = (t.title || t.t || t.filename || t.f || '').toLowerCase();
         const artist = (t.artist || t.a || '').toLowerCase();
         const genre = (t.genre || t.subgenre || '').toLowerCase();
         return title.includes(q) || artist.includes(q) || genre.includes(q);
+    }).filter(t => {
+        const matchNum = (val, query) => {
+            const q = String(query || '').trim();
+            if (!q) return true;
+            const n = parseFloat(val);
+            if (isNaN(n)) return false;
+            if (q.startsWith('>=')) return n >= parseFloat(q.slice(2));
+            if (q.startsWith('<=')) return n <= parseFloat(q.slice(2));
+            if (q.startsWith('>')) return n > parseFloat(q.slice(1));
+            if (q.startsWith('<')) return n < parseFloat(q.slice(1));
+            if (q.includes('-')) {
+                const [a, b] = q.split('-').map(x => parseFloat(x.trim()));
+                if (!isNaN(a) && !isNaN(b)) return n >= a && n <= b;
+            }
+            return String(Math.round(n)).includes(q) || String(val).includes(q);
+        };
+
+        if (colFilters.file.trim()) {
+            const q = colFilters.file.trim().toLowerCase();
+            const fStr = `${t.title || t.t || ''} ${t.filename || t.f || ''} ${t.path || ''}`.toLowerCase();
+            if (!fStr.includes(q)) return false;
+        }
+        if (colFilters.artist.trim()) {
+            const q = colFilters.artist.trim().toLowerCase();
+            if (!String(t.artist || t.a || '').toLowerCase().includes(q)) return false;
+        }
+        if (colFilters.genre.trim()) {
+            const q = colFilters.genre.trim().toLowerCase();
+            const gStr = `${t.genre || ''} ${t.subgenre || ''}`.toLowerCase();
+            if (!gStr.includes(q)) return false;
+        }
+        if (colFilters.format && colFilters.format !== 'ALL') {
+            const fmt = String(t.format || (t.filename || t.f || t.path || '').split('.').pop() || '').toUpperCase();
+            if (fmt !== colFilters.format) return false;
+        }
+        if (colFilters.bpm.trim() && !matchNum(t.bpm || t.b, colFilters.bpm)) return false;
+        if (colFilters.key.trim()) {
+            const q = colFilters.key.trim().toLowerCase();
+            const kStr = String(t.key || t.k || t.camelot || t.camelot_key || '').toLowerCase();
+            if (!kStr.includes(q)) return false;
+        }
+        const eVal = t.energy !== undefined ? Math.round(parseFloat(t.energy) > 1.0 ? parseFloat(t.energy) : parseFloat(t.energy) * 100) : (t.e ?? 80);
+        const dVal = t.dance !== undefined ? Math.round(parseFloat(t.dance) > 1.0 ? parseFloat(t.dance) : parseFloat(t.dance) * 100) : (t.danceability ?? 80);
+        const iVal = t.intensity !== undefined ? Math.round(parseFloat(t.intensity) > 1.0 ? parseFloat(t.intensity) : parseFloat(t.intensity) * 100) : (t.int ?? 75);
+        if (colFilters.energy.trim() && !matchNum(eVal, colFilters.energy)) return false;
+        if (colFilters.dance.trim() && !matchNum(dVal, colFilters.dance)) return false;
+        if (colFilters.intensity.trim() && !matchNum(iVal, colFilters.intensity)) return false;
+        return true;
+    }).sort((a, b) => {
+        if (!sortConfig.key) return 0;
+        const dir = sortConfig.dir === 'asc' ? 1 : -1;
+        const getVal = (t, k) => {
+            switch (k) {
+                case 'file': return String(t.title || t.t || t.filename || t.f || '').toLowerCase();
+                case 'artist': return String(t.artist || t.a || '').toLowerCase();
+                case 'genre': return String(t.genre || t.subgenre || '').toLowerCase();
+                case 'format': return String(t.format || (t.filename || t.f || t.path || '').split('.').pop() || '').toUpperCase();
+                case 'bpm': return parseFloat(t.bpm || t.b || 0);
+                case 'key': return String(t.key || t.k || t.camelot || t.camelot_key || '').toLowerCase();
+                case 'energy': return t.energy !== undefined ? (parseFloat(t.energy) > 1.0 ? parseFloat(t.energy) : parseFloat(t.energy) * 100) : (t.e || 0);
+                case 'dance': return t.dance !== undefined ? (parseFloat(t.dance) > 1.0 ? parseFloat(t.dance) : parseFloat(t.dance) * 100) : (t.danceability || 0);
+                case 'intensity': return t.intensity !== undefined ? (parseFloat(t.intensity) > 1.0 ? parseFloat(t.intensity) : parseFloat(t.intensity) * 100) : (t.int || 0);
+                default: return '';
+            }
+        };
+        const va = getVal(a, sortConfig.key);
+        const vb = getVal(b, sortConfig.key);
+        if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+        return String(va).localeCompare(String(vb)) * dir;
     });
+
+    const availableFormats = useMemo(() => {
+        const set = new Set();
+        _filterSourceTracks.forEach(t => {
+            const fmt = String(t.format || (t.filename || t.f || t.path || '').split('.').pop() || '').toUpperCase().trim();
+            if (fmt && fmt.length <= 6) set.add(fmt);
+        });
+        return Array.from(set).sort();
+    }, [_filterSourceTracks]);
 
     const totalTracksInLib = allLibTracks.length;
 
@@ -1142,10 +1320,13 @@ export const LibraryWorkspace = ({
                 <div className="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
                     <span className="text-[11px] font-mono uppercase font-bold text-gray-400">Biblioteca:</span>
                     <select
-                        value={activeLibId}
+                        value={currentLib.id}
                         onChange={(e) => {
                             const id = e.target.value;
                             setActiveLibId(id);
+                            setSelectedFolderId('__ALL__');
+                            setSearchTrack('');
+                            setSelectedTrackKeys(new Set());
                             if (onSelectLibrary) onSelectLibrary(id);
                         }}
                         className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
@@ -1212,7 +1393,34 @@ export const LibraryWorkspace = ({
                     }} 
                     className="p-4 flex flex-col gap-3 overflow-y-auto custom-scrollbar shrink-0 select-none"
                 >
-                    <div className="flex items-center justify-between">
+                    {/* Biblioteca Activa (raíz de la colección, siempre visible encima de Carpetas Creadas) */}
+                    <div
+                        onClick={() => setSelectedFolderId('__ALL__')}
+                        style={{
+                            backgroundColor: selectedFolderId === '__ALL__' ? 'rgba(39, 39, 42, 0.85)' : 'rgba(24, 24, 27, 0.55)'
+                        }}
+                        className={`p-3 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                            selectedFolderId === '__ALL__' ? 'text-white shadow-md' : 'text-gray-300 hover:bg-zinc-800/70'
+                        }`}
+                        title={`Ver todas las pistas de ${currentLib.name || 'Mi Biblioteca Principal'}`}
+                    >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <Icons.Library size={18} className="text-cyan-400 shrink-0" />
+                            <div className="min-w-0">
+                                <span className="text-[9px] font-mono uppercase tracking-wider text-cyan-400 font-bold block">
+                                    Biblioteca Activa
+                                </span>
+                                <span className="text-xs font-mono font-bold text-white block truncate">
+                                    {currentLib.name || 'Mi Biblioteca Principal'}
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-mono block">
+                                    {totalTracksInLib} pista(s) · Colección completa
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
                         <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
                             <Icons.Folder size={14} className="inline-block align-[-2px]" />
                             <span>Carpetas Creadas ({currentLib.folders?.length || 0})</span>
@@ -1223,28 +1431,8 @@ export const LibraryWorkspace = ({
                             className="px-2 py-0.5 rounded bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-700/60 text-[10px] font-mono font-bold cursor-pointer transition-colors"
                             title="Crea carpetas automáticamente a partir de los géneros musicales de tus pistas cargadas"
                         >
-                            <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auto por Género
+                            <Icons.Zap size={14} className="inline-block align-[-2px]" /> Auto género
                         </button>
-                    </div>
-
-                    {/* Opción Virtual: Todas las pistas de la colección */}
-                    <div
-                        onClick={() => setSelectedFolderId('__ALL__')}
-                        style={{
-                            backgroundColor: selectedFolderId === '__ALL__' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(24, 24, 27, 0.6)',
-                            borderColor: selectedFolderId === '__ALL__' ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.08)'
-                        }}
-                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
-                            selectedFolderId === '__ALL__' ? 'text-white shadow-md' : 'text-gray-300 hover:border-zinc-600'
-                        }`}
-                    >
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-base shrink-0">🗂️</span>
-                            <div className="truncate">
-                                <span className="text-xs font-mono font-bold block truncate">Todas las Pistas (Colección Completa)</span>
-                                <span className="text-[10px] text-gray-400 font-mono">{totalTracksInLib} pista(s) en total</span>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Input para añadir nueva carpeta (el usuario debe crearlas él) */}
@@ -1317,7 +1505,7 @@ export const LibraryWorkspace = ({
                                         }`}
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <span className="text-base shrink-0">{isDropOver ? '📥' : (isSelected ? '📂' : '📁')}</span>
+                                            <Icons.Folder size={15} className={`shrink-0 ${isDropOver || isSelected ? 'text-cyan-400' : 'text-cyan-500/70'}`} />
                                             <div className="truncate">
                                                 <span className="text-xs font-mono font-bold block truncate">{f.name}</span>
                                                 <span className="text-[10px] text-gray-400 font-mono">{trCount} pista(s) asignadas</span>
@@ -1327,11 +1515,36 @@ export const LibraryWorkspace = ({
                                         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 type="button"
-                                                onClick={() => handleAssignTracksToActiveFolder(f.id, false)}
-                                                className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-cyan-950 hover:text-cyan-300 text-gray-300 text-[10px] font-mono border border-zinc-700 cursor-pointer"
-                                                title={`Asignar todas las pistas cargadas actualmente (${currentTracks.length}) a esta carpeta`}
+                                                onClick={() => {
+                                                    let libsToSave = libraries;
+                                                    if (selectedTrackKeys && selectedTrackKeys.size > 0) {
+                                                        const picked = filteredTracks.filter(t => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
+                                                        if (picked.length > 0) {
+                                                            libsToSave = libraries.map(l => {
+                                                                if (l.id === currentLib.id) {
+                                                                    const newFolders = (l.folders || []).map(fld => {
+                                                                        if (fld.id === f.id) {
+                                                                            const existing = new Set((fld.tracks || []).map(t => t.id || t.file_path || t.path || t.filename));
+                                                                            const toAdd = picked.filter(t => !existing.has(t.id || t.file_path || t.path || t.filename));
+                                                                            return { ...fld, tracks: [...(fld.tracks || []), ...toAdd] };
+                                                                        }
+                                                                        return fld;
+                                                                    });
+                                                                    return { ...l, folders: newFolders };
+                                                                }
+                                                                return l;
+                                                            });
+                                                            setSelectedTrackKeys(new Set());
+                                                        }
+                                                    }
+                                                    if (onSaveLibraries) onSaveLibraries(libsToSave, currentLib.id);
+                                                    setFeedbackMsg(`✓ Carpeta "${f.name}" guardada`);
+                                                    setTimeout(() => setFeedbackMsg(''), 2500);
+                                                }}
+                                                className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-950 hover:text-emerald-300 text-gray-300 text-[10px] font-mono border border-zinc-700 hover:border-emerald-600/60 cursor-pointer transition-colors"
+                                                title="Guardar la información y pistas de esta carpeta"
                                             >
-                                                + Asignar
+                                                Guardar
                                             </button>
                                             <button
                                                 type="button"
@@ -1346,6 +1559,22 @@ export const LibraryWorkspace = ({
                                 );
                             })
                         )}
+                    </div>
+                
+                    {/* Botón Guardar Todo al final del listado de carpetas */}
+                    <div className="pt-2 border-t border-white/10 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (onSaveLibraries) onSaveLibraries(libraries, currentLib.id);
+                                setFeedbackMsg('✓ Cambios y carpetas guardados');
+                                setTimeout(() => setFeedbackMsg(''), 2500);
+                            }}
+                            className="w-full py-2 px-3 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                            title="Guardar toda la biblioteca y la clasificación de carpetas"
+                        >
+                            <span>Guardar Todo</span>
+                        </button>
                     </div>
                 </div>
 
@@ -1403,20 +1632,36 @@ export const LibraryWorkspace = ({
                                 </button>
                             )}
                             {onNavigateTab && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (setAuditTracks && allLibTracks.length > 0) {
-                                            setAuditTracks(allLibTracks);
-                                        }
-                                        onNavigateTab('map');
-                                    }}
-                                    className="px-3 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-600/70 text-cyan-300 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
-                                    title="Ver compatibilidad armónica y energía en el Mapa 2D"
-                                >
-                                    <Icons.Map size={13} />
-                                    <span>Auditar en Mapa</span>
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (setAuditTracks && allLibTracks.length > 0) {
+                                                setAuditTracks(allLibTracks);
+                                            }
+                                            onNavigateTab('audit');
+                                        }}
+                                        className="px-3 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-600/70 text-cyan-300 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                        title="Auditar las pistas de esta colección en la mesa de Auditoría"
+                                    >
+                                        <Icons.AuditEye size={13} />
+                                        <span>Auditar</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (setAuditTracks && allLibTracks.length > 0) {
+                                                setAuditTracks(allLibTracks);
+                                            }
+                                            onNavigateTab('map');
+                                        }}
+                                        className="px-3 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-600/70 text-cyan-300 text-[11px] font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                                        title="Ver compatibilidad armónica y energía en el Mapa 2D"
+                                    >
+                                        <Icons.Map size={13} />
+                                        <span>Ver el Mapa</span>
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
@@ -1543,15 +1788,135 @@ export const LibraryWorkspace = ({
                                             />
                                         </th>
                                         <th className="py-2.5 px-3 w-28 text-center text-cyan-400 font-bold">Waveform</th>
-                                        <th className="py-2.5 px-3 min-w-[200px]">File</th>
-                                        <th className="py-2.5 px-3 w-32">Artist</th>
-                                        <th className="py-2.5 px-2 text-center w-28">Género</th>
-                                        <th className="py-2.5 px-2 text-center w-20">Formato</th>
-                                        <th className="py-2.5 px-2 text-center w-20">BPM</th>
-                                        <th className="py-2.5 px-2 text-center w-20">Key</th>
-                                        <th className="py-2.5 px-3 text-center w-28">Energy</th>
-                                        <th className="py-2.5 px-3 text-center w-28">Dance</th>
-                                        <th className="py-2.5 px-3 text-center w-28">Intensidad</th>
+                                        <th onClick={() => toggleSort('file')} className="py-2.5 px-3 min-w-[200px] cursor-pointer hover:text-white select-none">
+                                            Archivo / Título <span className={sortConfig.key === 'file' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'file' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('artist')} className="py-2.5 px-3 w-32 cursor-pointer hover:text-white select-none">
+                                            Artista <span className={sortConfig.key === 'artist' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'artist' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('genre')} className="py-2.5 px-2 text-center w-28 cursor-pointer hover:text-white select-none">
+                                            Género <span className={sortConfig.key === 'genre' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'genre' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('format')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white select-none">
+                                            Formato <span className={sortConfig.key === 'format' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'format' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('bpm')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white select-none">
+                                            BPM <span className={sortConfig.key === 'bpm' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'bpm' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('key')} className="py-2.5 px-2 text-center w-20 cursor-pointer hover:text-white select-none">
+                                            Key <span className={sortConfig.key === 'key' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'key' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('energy')} className="py-2.5 px-3 text-center w-28 cursor-pointer hover:text-white select-none">
+                                            Energy <span className={sortConfig.key === 'energy' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'energy' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('dance')} className="py-2.5 px-3 text-center w-28 cursor-pointer hover:text-white select-none">
+                                            Dance <span className={sortConfig.key === 'dance' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'dance' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                        <th onClick={() => toggleSort('intensity')} className="py-2.5 px-3 text-center w-28 cursor-pointer hover:text-white select-none">
+                                            Intensidad <span className={sortConfig.key === 'intensity' ? 'text-cyan-400' : 'text-zinc-600'}>{sortConfig.key === 'intensity' ? (sortConfig.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+                                        </th>
+                                    </tr>
+                                    <tr className="bg-[#090a12] border-t border-white/5 normal-case">
+                                        <th className="py-1.5 px-1.5 text-center">
+                                            {hasActiveColFilters ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={resetColFilters}
+                                                    className="px-1.5 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 text-[9px] font-mono cursor-pointer"
+                                                    title="Limpiar filtros de columna"
+                                                >
+                                                    ✕
+                                                </button>
+                                            ) : (
+                                                <span className="text-[9px] font-mono text-zinc-500 font-normal">filtro</span>
+                                            )}
+                                        </th>
+                                        <th className="py-1.5 px-2"></th>
+                                        <th className="py-1.5 px-2">
+                                            <input
+                                                type="text"
+                                                value={colFilters.file}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, file: e.target.value }))}
+                                                placeholder="Filtrar título/archivo..."
+                                                className="w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-2">
+                                            <input
+                                                type="text"
+                                                value={colFilters.artist}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, artist: e.target.value }))}
+                                                placeholder="Artista..."
+                                                className="w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <input
+                                                type="text"
+                                                value={colFilters.genre}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, genre: e.target.value }))}
+                                                placeholder="Género..."
+                                                className="w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <select
+                                                value={colFilters.format}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, format: e.target.value }))}
+                                                className="w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white outline-none cursor-pointer"
+                                            >
+                                                <option value="ALL">Todos</option>
+                                                {availableFormats.map(fmt => (
+                                                    <option key={fmt} value={fmt}>{fmt}</option>
+                                                ))}
+                                            </select>
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <input
+                                                type="text"
+                                                value={colFilters.bpm}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, bpm: e.target.value }))}
+                                                placeholder="128..."
+                                                title="Ej: 128, 126-132, >=135"
+                                                className="w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <input
+                                                type="text"
+                                                value={colFilters.key}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, key: e.target.value }))}
+                                                placeholder="8A..."
+                                                className="w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <input
+                                                type="text"
+                                                value={colFilters.energy}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, energy: e.target.value }))}
+                                                placeholder=">=75..."
+                                                className="w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <input
+                                                type="text"
+                                                value={colFilters.dance}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, dance: e.target.value }))}
+                                                placeholder=">=70..."
+                                                className="w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+                                            />
+                                        </th>
+                                        <th className="py-1.5 px-1.5">
+                                            <input
+                                                type="text"
+                                                value={colFilters.intensity}
+                                                onChange={(e) => setColFilters(prev => ({ ...prev, intensity: e.target.value }))}
+                                                placeholder=">=70..."
+                                                className="w-full px-1.5 py-1 rounded bg-zinc-950 border border-zinc-800 focus:border-cyan-400 text-[10px] font-mono text-white placeholder-zinc-600 text-center outline-none"
+                                            />
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1748,24 +2113,10 @@ export const LibraryWorkspace = ({
                         title="Selecciona una carpeta o USB en disco para crear una copia física de tus pistas organizadas por carpetas"
                     >
                         <Icons.Save size={14} className="inline-block align-[-2px]" />
-                        <span>Crear en Disco (Copia Física Estructurada)</span>
+                        <span>Copia en disco</span>
                     </button>
 
-                    {onNavigateTab && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (setAuditTracks && allLibTracks.length > 0) {
-                                    setAuditTracks(allLibTracks);
-                                }
-                                onNavigateTab('audit');
-                            }}
-                            className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-mono font-bold text-xs cursor-pointer transition-colors flex items-center gap-1.5"
-                        >
-                            <Icons.AuditEye size={14} />
-                            <span>Auditar esta Colección</span>
-                        </button>
-                    )}
+
                 </div>
             </div>
 
