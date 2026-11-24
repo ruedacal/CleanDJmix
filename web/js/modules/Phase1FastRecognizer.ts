@@ -1,21 +1,22 @@
 /**
- * BeatWave PRO — Phase 1 Fast Recognizer (Edge & Native Orchestrator)
+ * BeatWave PRO — Phase 1 Fast Recognizer (Omnichannel Edge & Native Orchestrator)
  * ==============================================================================
- * Orchestrator service consuming native JSI / N-API DSP audio buffers and coordinating
- * concurrent local (Olaf LMDB) and remote (Cloudflare Worker Gateway) recognition.
+ * Orchestrator service consuming native JSI (iOS/Android) or N-API (Desktop) DSP
+ * buffers when available, coordinating concurrent local (Olaf LMDB) and remote
+ * (Cloudflare Worker Gateway) recognition without platform-locked bridges.
  *
  * Guarantees:
- * 1. Hard latency budget: strictly under 1,750 ms total execution via Promise.race.
- * 2. Temporal coherence mechanics: computes rho scale = (delta_db / delta_sample).
+ * 1. Hard latency budget: strictly under 1,750 ms via Promise.race + AbortController.
+ * 2. Temporal coherence mechanics: rho = delta_db / delta_sample anchored to capture timestamp.
  * 3. Escalation state machine:
  *    - rho outside [0.96, 1.04] -> ESCALATE_PHASE2 (pitch-shift / tempo fader moved)
- *    - Score > 88 (Studio) or > 92 (Club) -> MATCH_CONFIRMED
- *    - Score in [76, 91] -> PROBATION_BUFFER (requires confirmation on next 2s stride)
+ *    - Score >= 88 (Studio) or >= 92 (Club) -> MATCH_CONFIRMED
+ *    - Score in [76, minConfirmed - 1] -> PROBATION_BUFFER (requires confirmation on next stride)
  *    - Score < 76 -> NO_MATCH
- * 4. Parallel execution: queries local Olaf DB and Cloudflare Edge proxy simultaneously.
+ * 4. Zero fake fingerprints in production: simulation requires explicit allowSimulationFallback.
  */
 
-import { Phase2RescueClient, EscalationReason, Phase2RescueResult } from './Phase2RescueClient';
+import { Phase2RescueClient, EscalationReason } from './Phase2RescueClient';
 
 export type EnvironmentProfile = 'club' | 'studio';
 
@@ -38,13 +39,13 @@ export interface TrackMatch {
     acrid?: string;
     score: number;             // [0 - 100]
     playOffsetMs: number;       // Posición detectada dentro del tema (ms)
-    timestampQueryMs: number;   // Timestamp de la muestra analizada (ms)
+    timestampQueryMs: number;   // Timestamp de captura de la muestra analizada (ms)
     source: 'local_olaf' | 'remote_acrcloud' | 'gpu_neural_conformer' | 'gpu_grafprint_ann';
     label?: string;
     genres?: string[];
     bpmEstimated?: number;
     stemIsolated?: 'drums' | 'bass' | 'other' | 'vocals' | 'full_mix';
-    tempoWarpApplied?: number; // Variación especulativa aplicada por la GPU
+    tempoWarpApplied?: number;  // Variación especulativa aplicada por la GPU
 }
 
 export interface TelemetryData {
@@ -80,18 +81,20 @@ export interface NativeDspResult {
     olafFingerprint: Uint8Array | null;
     landmarksCount: number;
     isValid: boolean;
+    nativeAvailable?: boolean;
 }
 
 export interface RecognizerConfig {
     workerGatewayUrl: string;
     environment: EnvironmentProfile;
-    totalBudgetMs?: number;      // Default 1750 ms
-    minScoreStudio?: number;     // Default 88
-    minScoreClub?: number;       // Default 92
-    probationMinScore?: number;  // Default 76
-    rescueEndpoint?: string;     // Default '/v1/rescue' (Fase 2 GPU Cloud)
-    rescueTimeoutMs?: number;    // Default 8000 ms
-    autoRescuePhase2?: boolean;  // Default true (dispara rescate no bloqueante al emitir ESCALATE_PHASE2)
+    totalBudgetMs?: number;          // Default 1750 ms
+    minScoreStudio?: number;         // Default 88
+    minScoreClub?: number;           // Default 92
+    probationMinScore?: number;      // Default 76
+    rescueEndpoint?: string;         // Default '/v1/rescue' (Fase 2 GPU Cloud)
+    rescueTimeoutMs?: number;        // Default 8000 ms
+    autoRescuePhase2?: boolean;      // Default true
+    allowSimulationFallback?: boolean; // Default false (solo activar en unit tests)
     onStateChange?: (event: RecognitionEvent) => void;
 }
 
@@ -101,6 +104,8 @@ interface ProbationRecord {
     strideCount: number;
 }
 
+const PROBATION_TTL_MS = 10000;
+
 export class Phase1FastRecognizer {
     private readonly workerGatewayUrl: string;
     private environment: EnvironmentProfile;
@@ -108,13 +113,12 @@ export class Phase1FastRecognizer {
     private readonly minScoreStudio: number;
     private readonly minScoreClub: number;
     private readonly probationMinScore: number;
+    private readonly allowSimulationFallback: boolean;
     private readonly onStateChange?: (event: RecognitionEvent) => void;
 
-    // Cliente de Rescate Neuronal GPU (Fase 2)
     private readonly rescueClient: Phase2RescueClient;
     private readonly autoRescuePhase2: boolean;
 
-    // Buffer de probación para confirmación en el siguiente stride de 2.0s
     private probationBuffer: Map<string, ProbationRecord> = new Map();
     private lastConfirmedTrack: TrackMatch | null = null;
     private isBusy = false;
@@ -126,6 +130,7 @@ export class Phase1FastRecognizer {
         this.minScoreStudio = config.minScoreStudio || 88;
         this.minScoreClub = config.minScoreClub || 92;
         this.probationMinScore = config.probationMinScore || 76;
+        this.allowSimulationFallback = config.allowSimulationFallback === true;
         this.onStateChange = config.onStateChange;
 
         this.autoRescuePhase2 = config.autoRescuePhase2 !== false;
@@ -155,6 +160,42 @@ export class Phase1FastRecognizer {
         return this.environment;
     }
 
+    /**
+     * Comprueba si existe un puente DSP nativo real en el runtime actual
+     * (JSI en iOS/Android, N-API en shell de escritorio o addon Node compilado).
+     */
+    public isNativeDspAvailable(): boolean {
+        const globalJsi = (typeof globalThis !== 'undefined' ? (globalThis as any).BeatWaveCore : null);
+        if (globalJsi && typeof globalJsi.processAudioBuffer === 'function') {
+            return true;
+        }
+
+        if (typeof window !== 'undefined' && (window as any).beatwaveCore && typeof (window as any).beatwaveCore.processAudioBuffer === 'function') {
+            return true;
+        }
+
+        try {
+            // @ts-ignore
+            if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+                // @ts-ignore
+                const nodeRequire = (typeof require === 'function')
+                    // @ts-ignore
+                    ? require
+                    : ((typeof module !== 'undefined' && module.require) ? module.require : null);
+                if (nodeRequire) {
+                    const fsMod = nodeRequire('fs');
+                    const pathMod = nodeRequire('path');
+                    const nodeAddonPath = pathMod.resolve('native/build/beatwave_core.node');
+                    return Boolean(fsMod.existsSync(nodeAddonPath));
+                }
+            }
+        } catch {
+            return false;
+        }
+
+        return false;
+    }
+
     public reset(): void {
         this.probationBuffer.clear();
         this.lastConfirmedTrack = null;
@@ -163,8 +204,8 @@ export class Phase1FastRecognizer {
     }
 
     /**
-     * Orquesta el reconocimiento de un buffer Float32Array entrante de 10.0s (stride 2.0s).
-     * Aplica Promise.race con un presupuesto estricto de 1,750 ms y ejecución concurrente.
+     * Orquesta el reconocimiento de un buffer Float32Array entrante de hasta 10.0s (stride 2.0s).
+     * Aplica Promise.race + AbortController con presupuesto estricto de 1,750 ms.
      */
     public async recognizeBuffer(
         audioPcm: Float32Array,
@@ -183,27 +224,32 @@ export class Phase1FastRecognizer {
 
         this.isBusy = true;
         const startTime = Date.now();
+        const budgetController = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
         try {
-            // Presupuesto absoluto de tiempo (1,750 ms)
             const timeoutPromise = new Promise<never>((_, reject) => {
-                setTimeout(() => {
+                timeoutId = setTimeout(() => {
+                    budgetController.abort();
                     reject(new Error(`ABSOLUTE_TIMEOUT_EXCEEDED: Operación superó el límite de ${this.totalBudgetMs} ms`));
                 }, this.totalBudgetMs);
             });
 
-            const recognitionPromise = this.executePipeline(audioPcm, sampleRate, startTime);
+            const recognitionPromise = this.executePipeline(
+                audioPcm,
+                sampleRate,
+                startTime,
+                budgetController.signal
+            );
 
             const result = await Promise.race([recognitionPromise, timeoutPromise]);
-            this.isBusy = false;
             return result;
 
         } catch (err: unknown) {
-            this.isBusy = false;
             const error = err as Error;
             const elapsed = Date.now() - startTime;
 
-            if (error.message?.includes('ABSOLUTE_TIMEOUT_EXCEEDED')) {
+            if (error.message?.includes('ABSOLUTE_TIMEOUT_EXCEEDED') || error.name === 'AbortError') {
                 const event = this.buildEvent(
                     'TIMEOUT_FALLBACK',
                     null,
@@ -234,6 +280,11 @@ export class Phase1FastRecognizer {
             );
             this.notifyListener(errorEvent);
             return errorEvent;
+        } finally {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+            this.isBusy = false;
         }
     }
 
@@ -243,21 +294,36 @@ export class Phase1FastRecognizer {
     private async executePipeline(
         audioPcm: Float32Array,
         sampleRate: number,
-        startTime: number
+        captureTimestampMs: number,
+        signal: AbortSignal
     ): Promise<RecognitionEvent> {
         // 1. Invocación nativa Zero-Copy (JSI o N-API)
         const dspResult = await this.invokeNativeDsp(audioPcm, this.environment, sampleRate);
-        const dspDuration = Date.now() - startTime;
+        const dspDuration = Date.now() - captureTimestampMs;
 
         if (!dspResult || !dspResult.isValid) {
-            return this.buildEvent(
+            const reason = dspResult?.nativeAvailable === false
+                ? 'Bridge nativo C++ DSP no disponible en este runtime (requiere enrutamiento REST omnichannel)'
+                : 'El buffer procesado no contiene suficiente energía o huellas válidas';
+
+            const noMatchEv = this.buildEvent(
                 'NO_MATCH',
                 null,
                 1.0,
                 false,
-                null,
-                'El buffer procesado no contiene suficiente energía o huellas válidas'
+                dspResult ? {
+                    rmsDbfs: dspResult.telemetry.rmsDbfs,
+                    peakDbfs: dspResult.telemetry.peakDbfs,
+                    isClipping: dspResult.telemetry.isClipping,
+                    durationMs: dspResult.telemetry.durationMs,
+                    sampleRate: dspResult.telemetry.sampleRate,
+                    environment: this.environment,
+                    latencyMs: dspDuration
+                } : null,
+                reason
             );
+            this.notifyListener(noMatchEv);
+            return noMatchEv;
         }
 
         const telemetry: TelemetryData = {
@@ -271,17 +337,24 @@ export class Phase1FastRecognizer {
         };
 
         // 2. Ejecución Concurrente: Local Olaf DB y Remote Cloudflare Gateway
-        const localPromise = this.queryLocalOlaf(dspResult.olafFingerprint, dspResult.landmarksCount);
-        const remotePromise = this.queryRemoteGateway(dspResult.acrcloudFingerprint);
+        const localPromise = this.queryLocalOlaf(
+            dspResult.olafFingerprint,
+            dspResult.landmarksCount,
+            captureTimestampMs
+        );
+        const remotePromise = this.queryRemoteGateway(
+            dspResult.acrcloudFingerprint,
+            captureTimestampMs,
+            signal
+        );
 
         const [localSettled, remoteSettled] = await Promise.allSettled([localPromise, remotePromise]);
 
         const localMatch = localSettled.status === 'fulfilled' ? localSettled.value : null;
         const remoteMatch = remoteSettled.status === 'fulfilled' ? remoteSettled.value : null;
 
-        // Selección de mejor candidato ponderando confianza local vs remota
         const bestCandidate = this.selectBestCandidate(localMatch, remoteMatch);
-        telemetry.latencyMs = Date.now() - startTime;
+        telemetry.latencyMs = Date.now() - captureTimestampMs;
 
         if (!bestCandidate) {
             const event = this.buildEvent(
@@ -296,15 +369,14 @@ export class Phase1FastRecognizer {
             return event;
         }
 
-        // 3. Mecánica Temporal: Cálculo de Coherencia rho = delta_db / delta_sample
+        // 3. Mecánica Temporal: Cálculo de Coherencia rho = delta_db / delta_sample (sin jitter de red)
+        this.pruneStaleProbation(captureTimestampMs);
         const { rho, pitchShiftSuspected } = this.calculateTemporalCoherence(bestCandidate);
 
         // 4. Máquina de Estados con Escalado Táctico
-        const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry);
+        const event = this.evaluateStateMachine(bestCandidate, rho, pitchShiftSuspected, telemetry, captureTimestampMs);
         this.notifyListener(event);
 
-        // Si se emitió ESCALATE_PHASE2 y el auto-rescate está activo,
-        // lanzar el proceso de rescate en GPU en segundo plano sin bloquear el hilo UI
         if (event.state === 'ESCALATE_PHASE2' && this.autoRescuePhase2) {
             this.triggerPhase2Rescue(event, audioPcm).catch(err => {
                 console.error('[Phase1FastRecognizer] Error no capturado en rescate Fase 2:', err);
@@ -316,11 +388,10 @@ export class Phase1FastRecognizer {
 
     /**
      * Orquesta el Rescate Neuronal de Fase 2 (GPU Cloud)
-     * Puede invocarse de manera automática ante ESCALATE_PHASE2 o explícitamente desde la UI.
      */
     public async triggerPhase2Rescue(
         escalationEvent: RecognitionEvent,
-        fallbackAudio?: Float32Array
+        _fallbackAudio?: Float32Array
     ): Promise<RecognitionEvent> {
         const startTime = Date.now();
         let reason: EscalationReason = 'TIME_DRIFT_SUSPECTED_PITCH';
@@ -372,7 +443,7 @@ export class Phase1FastRecognizer {
                 label: rescueResult.match.label,
                 score: rescueResult.match.score,
                 playOffsetMs: rescueResult.match.playOffsetMs || 0,
-                timestampQueryMs: Date.now(),
+                timestampQueryMs: escalationEvent.timestamp,
                 source: rescueResult.match.source,
                 genres: rescueResult.match.genres,
                 stemIsolated: rescueResult.match.stemIsolated,
@@ -392,7 +463,6 @@ export class Phase1FastRecognizer {
             return confirmedEvent;
         }
 
-        // Si falló o agotó el tiempo: marcar definitivamente como UNIDENTIFIED_ID
         const unidentifiedEvent = this.buildEvent(
             'UNIDENTIFIED_ID',
             null,
@@ -405,41 +475,42 @@ export class Phase1FastRecognizer {
         return unidentifiedEvent;
     }
 
+    private pruneStaleProbation(nowMs: number): void {
+        for (const [key, record] of this.probationBuffer.entries()) {
+            if (nowMs - record.observedAtMs > PROBATION_TTL_MS) {
+                this.probationBuffer.delete(key);
+            }
+        }
+    }
+
     /**
-     * Cálculo de Coherencia Temporal rho:
-     * rho = delta_db / delta_sample
-     * Si el DJ varió el pitch/fader de tempo (ej. +/- 5%), delta_db se estira o comprime
-     * respecto a delta_sample, provocando que rho quede fuera de [0.96, 1.04].
+     * Cálculo de Coherencia Temporal rho = delta_db / delta_sample.
+     * Utiliza timestamps de captura para evitar distorsión por latencia de red.
+     * Descarta saltos negativos (cue/loop rewind) para no falsificar pitch-shift.
      */
     private calculateTemporalCoherence(candidate: TrackMatch): { rho: number; pitchShiftSuspected: boolean } {
         const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
         const existingRecord = this.probationBuffer.get(candidateKey);
 
-        if (!existingRecord) {
-            // Primer hallazgo: si coincide con la última confirmada, evaluar coherencia
-            if (this.lastConfirmedTrack && `${this.lastConfirmedTrack.artist} - ${this.lastConfirmedTrack.title}`.toLowerCase() === candidateKey) {
-                const deltaSample = candidate.timestampQueryMs - this.lastConfirmedTrack.timestampQueryMs;
-                const deltaDb = candidate.playOffsetMs - this.lastConfirmedTrack.playOffsetMs;
+        const referenceMatch: TrackMatch | null = existingRecord
+            ? existingRecord.candidate
+            : (this.lastConfirmedTrack && `${this.lastConfirmedTrack.artist} - ${this.lastConfirmedTrack.title}`.toLowerCase() === candidateKey
+                ? this.lastConfirmedTrack
+                : null);
 
-                if (deltaSample > 100) {
-                    const rho = Math.abs(deltaDb / deltaSample);
-                    const pitchShiftSuspected = (rho < 0.96 || rho > 1.04);
-                    return { rho: Number(rho.toFixed(4)), pitchShiftSuspected };
-                }
-            }
+        if (!referenceMatch) {
             return { rho: 1.000, pitchShiftSuspected: false };
         }
 
-        // Hallazgo previo en buffer de probación (stride previo de 2.0s)
-        const deltaSample = candidate.timestampQueryMs - existingRecord.candidate.timestampQueryMs;
-        const deltaDb = candidate.playOffsetMs - existingRecord.candidate.playOffsetMs;
+        const deltaSample = candidate.timestampQueryMs - referenceMatch.timestampQueryMs;
+        const deltaDb = candidate.playOffsetMs - referenceMatch.playOffsetMs;
 
-        if (deltaSample <= 0) {
+        // Requerir ventana mínima de 500ms y avance temporal positivo (evita falsos positivos en hot-cue/loop)
+        if (deltaSample < 500 || deltaDb <= 0) {
             return { rho: 1.000, pitchShiftSuspected: false };
         }
 
-        const rho = Math.abs(deltaDb / deltaSample);
-        // Si rho está fuera de [0.96, 1.04], se sospecha pitch-shift activo
+        const rho = deltaDb / deltaSample;
         const pitchShiftSuspected = (rho < 0.96 || rho > 1.04);
 
         return { rho: Number(rho.toFixed(4)), pitchShiftSuspected };
@@ -452,7 +523,8 @@ export class Phase1FastRecognizer {
         candidate: TrackMatch,
         rho: number,
         pitchShiftSuspected: boolean,
-        telemetry: TelemetryData
+        telemetry: TelemetryData,
+        nowMs: number
     ): RecognitionEvent {
         const candidateKey = `${candidate.artist} - ${candidate.title}`.toLowerCase();
         const minConfirmedScore = (this.environment === 'club') ? this.minScoreClub : this.minScoreStudio;
@@ -484,11 +556,10 @@ export class Phase1FastRecognizer {
             );
         }
 
-        // Regla 3: Buffer de Probación [76 - 91/87]
+        // Regla 3: Buffer de Probación [76 - minConfirmedScore)
         if (candidate.score >= this.probationMinScore) {
             const existing = this.probationBuffer.get(candidateKey);
             if (existing && existing.strideCount >= 1) {
-                // Confirmado en segundo stride consecutivo
                 this.probationBuffer.delete(candidateKey);
                 this.lastConfirmedTrack = candidate;
                 return this.buildEvent(
@@ -501,11 +572,10 @@ export class Phase1FastRecognizer {
                 );
             }
 
-            // Registrar en probación para el próximo stride de 2.0s
             this.probationBuffer.set(candidateKey, {
                 candidate,
-                observedAtMs: Date.now(),
-                strideCount: (existing ? existing.strideCount + 1 : 1)
+                observedAtMs: nowMs,
+                strideCount: existing ? existing.strideCount + 1 : 1
             });
 
             return this.buildEvent(
@@ -530,25 +600,64 @@ export class Phase1FastRecognizer {
     }
 
     /**
-     * Invocación del bridge nativo Zero-Copy JSI / N-API
+     * Cálculo real de telemetría PCM (RMS/Peak dBFS) en JS para diagnósticos sin nativo
+     */
+    private computePcmTelemetry(audio: Float32Array, sampleRate: number, profile: EnvironmentProfile) {
+        if (!audio || audio.length === 0) {
+            return {
+                rmsDbfs: -96.0,
+                peakDbfs: -96.0,
+                isClipping: false,
+                durationMs: 0,
+                sampleRate,
+                environment: profile
+            };
+        }
+        let sumSq = 0;
+        let peak = 0;
+        const step = Math.max(1, Math.floor(audio.length / 32768));
+        let count = 0;
+        for (let i = 0; i < audio.length; i += step) {
+            const v = Math.abs(audio[i]);
+            sumSq += v * v;
+            if (v > peak) peak = v;
+            count++;
+        }
+        const rms = count > 0 ? Math.sqrt(sumSq / count) : 0;
+        const rmsDbfs = rms > 1e-6 ? 20 * Math.log10(rms) : -96.0;
+        const peakDbfs = peak > 1e-6 ? 20 * Math.log10(peak) : -96.0;
+        return {
+            rmsDbfs: Number(rmsDbfs.toFixed(1)),
+            peakDbfs: Number(peakDbfs.toFixed(1)),
+            isClipping: peak >= 0.99,
+            durationMs: Math.round((audio.length / Math.max(1, sampleRate)) * 1000),
+            sampleRate,
+            environment: profile
+        };
+    }
+
+    /**
+     * Invocación del bridge nativo Zero-Copy JSI (iOS/Android) / N-API (Desktop)
      */
     private async invokeNativeDsp(
         audio: Float32Array,
         profile: EnvironmentProfile,
         sampleRate: number
     ): Promise<NativeDspResult> {
-        // Entorno 1: JSI en React Native (global.BeatWaveCore)
+        // Entorno 1: JSI en React Native / iOS / Android (global.BeatWaveCore)
         const globalJsi = (typeof globalThis !== 'undefined' ? (globalThis as any).BeatWaveCore : null);
         if (globalJsi && typeof globalJsi.processAudioBuffer === 'function') {
-            return globalJsi.processAudioBuffer(audio, profile, sampleRate);
+            const res = await globalJsi.processAudioBuffer(audio, profile, sampleRate);
+            return { ...res, nativeAvailable: true };
         }
 
-        // Entorno 2: N-API en Tauri / Electron / Node
-        if (typeof window !== 'undefined' && (window as any).beatwaveCore) {
-            return (window as any).beatwaveCore.processAudioBuffer(audio, profile, sampleRate);
+        // Entorno 2: N-API en Desktop shell (window.beatwaveCore)
+        if (typeof window !== 'undefined' && (window as any).beatwaveCore && typeof (window as any).beatwaveCore.processAudioBuffer === 'function') {
+            const res = await (window as any).beatwaveCore.processAudioBuffer(audio, profile, sampleRate);
+            return { ...res, nativeAvailable: true };
         }
 
-        // Entorno 3: Fallback Node directo si está disponible
+        // Entorno 3: Addon Node directo compilado localmente
         try {
             // @ts-ignore
             if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -558,31 +667,39 @@ export class Phase1FastRecognizer {
                     ? require
                     : ((typeof module !== 'undefined' && module.require) ? module.require : null);
                 if (nodeRequire) {
-                    const nodePath = 'path';
-                    const pathMod = nodeRequire(nodePath);
+                    const pathMod = nodeRequire('path');
                     const nodeAddonPath = pathMod.resolve('native/build/beatwave_core.node');
                     const napiModule = nodeRequire(nodeAddonPath);
-                    return napiModule.processAudioBuffer(audio, profile, sampleRate);
+                    const res = await napiModule.processAudioBuffer(audio, profile, sampleRate);
+                    return { ...res, nativeAvailable: true };
                 }
             }
         } catch {
-            // Fallback silencioso a simulación controlada si estamos en entorno Web sin binding compilado
+            // Sin addon nativo compilado en este entorno
         }
 
-        // Fallback Web puro: Simulación matemática congruente para tests de interfaz
+        const realTelemetry = this.computePcmTelemetry(audio, sampleRate, profile);
+
+        // Solo emitir huellas simuladas si se habilita explícitamente para unit tests
+        if (this.allowSimulationFallback) {
+            return {
+                telemetry: realTelemetry,
+                acrcloudFingerprint: new Uint8Array(2532).fill(0xAA),
+                olafFingerprint: new Uint8Array(4096).fill(0x55),
+                landmarksCount: 512,
+                isValid: true,
+                nativeAvailable: false
+            };
+        }
+
+        // En producción sin bridge nativo: nunca enviar bytes falsos a ACRCloud
         return {
-            telemetry: {
-                rmsDbfs: -16.0,
-                peakDbfs: -2.5,
-                isClipping: false,
-                durationMs: 10000,
-                sampleRate: 8000,
-                environment: profile
-            },
-            acrcloudFingerprint: new Uint8Array(2532).fill(0xAA),
-            olafFingerprint: new Uint8Array(4096).fill(0x55),
-            landmarksCount: 512,
-            isValid: true
+            telemetry: realTelemetry,
+            acrcloudFingerprint: null,
+            olafFingerprint: null,
+            landmarksCount: 0,
+            isValid: false,
+            nativeAvailable: false
         };
     }
 
@@ -591,17 +708,19 @@ export class Phase1FastRecognizer {
      */
     private async queryLocalOlaf(
         olafFingerprint: Uint8Array | null,
-        landmarksCount: number
+        landmarksCount: number,
+        captureTimestampMs: number
     ): Promise<TrackMatch | null> {
         if (!olafFingerprint || landmarksCount === 0) return null;
 
-        // Si existe binding nativo de Olaf LMDB:
         const globalCore = (typeof globalThis !== 'undefined' ? (globalThis as any).BeatWaveCore : null);
         if (globalCore && typeof globalCore.matchOlafLandmarks === 'function') {
-            return globalCore.matchOlafLandmarks(olafFingerprint);
+            const match = await globalCore.matchOlafLandmarks(olafFingerprint);
+            if (match) {
+                return { ...match, timestampQueryMs: captureTimestampMs };
+            }
         }
 
-        // Fallback local: resolución instantánea en memoria sin I/O
         return null;
     }
 
@@ -609,7 +728,9 @@ export class Phase1FastRecognizer {
      * Búsqueda en catálogo remoto vía Cloudflare Worker Gateway
      */
     private async queryRemoteGateway(
-        acrcloudFingerprint: Uint8Array | null
+        acrcloudFingerprint: Uint8Array | null,
+        captureTimestampMs: number,
+        signal: AbortSignal
     ): Promise<TrackMatch | null> {
         if (!acrcloudFingerprint || acrcloudFingerprint.byteLength === 0) return null;
 
@@ -617,9 +738,10 @@ export class Phase1FastRecognizer {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/octet-stream',
-                'X-Client-Platform': 'BeatWave-Hybrid-TS'
+                'X-Client-Platform': 'BeatWave-Omnichannel-TS'
             },
-            body: acrcloudFingerprint
+            body: acrcloudFingerprint,
+            signal
         });
 
         if (!response.ok) {
@@ -627,8 +749,11 @@ export class Phase1FastRecognizer {
         }
 
         const data: any = await response.json();
-        const music = data?.metadata?.music?.[0];
+        if (data?.status?.code !== undefined && data.status.code !== 0) {
+            return null;
+        }
 
+        const music = data?.metadata?.music?.[0];
         if (!music) {
             return null;
         }
@@ -638,9 +763,9 @@ export class Phase1FastRecognizer {
             artist: music.artists?.[0]?.name || 'Artista Desconocido',
             album: music.album?.name,
             acrid: music.acrid,
-            score: Number(music.score || 85),
-            playOffsetMs: Number(music.play_offset_ms || 30000),
-            timestampQueryMs: Date.now(),
+            score: Number(music.score ?? 85),
+            playOffsetMs: Number(music.play_offset_ms ?? 0),
+            timestampQueryMs: captureTimestampMs,
             source: 'remote_acrcloud',
             label: music.label,
             genres: music.genres?.map((g: any) => g.name) || []
@@ -655,9 +780,7 @@ export class Phase1FastRecognizer {
         if (!local && remote) return remote;
         if (!local && !remote) return null;
 
-        // Si ambos devuelven coincidencias, priorizar la de mayor score
-        // dando ventaja de +4 puntos al catálogo local por inmediatez de cabina
-        const adjustedLocalScore = (local!.score + 4);
+        const adjustedLocalScore = local!.score + 4;
         return (adjustedLocalScore >= remote!.score) ? local : remote;
     }
 

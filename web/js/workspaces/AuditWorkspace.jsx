@@ -654,6 +654,19 @@ export const AuditWorkspace = ({
     const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState(false);
     // Modal de confirmación de eliminación segura de pistas (lista y disco físico)
     const [deleteModalState, setDeleteModalState] = useState({ open: false, tracks: [], mode: 'trash' });
+    // Modal de confirmación previa para guardar metadatos en disco
+    const [saveModalState, setSaveModalState] = useState({
+        open: false,
+        tracks: [],
+        fields: {
+            bpm: true,
+            key: true,
+            cues: true,
+            comment: true,
+            genre_mood: true,
+            cover: true,
+        }
+    });
     const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState(() => {
         try {
             return localStorage.getItem('dj_metatagger_delete_originals') === 'true';
@@ -687,6 +700,8 @@ export const AuditWorkspace = ({
     const tapTimesRef = useRef([]);
     // PERF: ref del contenedor scrollable de la tabla para virtualización de filas
     const tableScrollRef = useRef(null);
+    const isProcessCancelledRef = useRef(false);
+    const activeAbortControllerRef = useRef(null);
 
     // UX CABINA: Estado de colapso de las 8 tarjetas de métricas (maximiza espacio vertical para ver más pistas y waveforms)
     const [metricsCollapsed, setMetricsCollapsed] = useState(() => {
@@ -804,18 +819,26 @@ export const AuditWorkspace = ({
     // Polling redundante de alta precisión para barra de progreso (/api/audit/progress)
     const startProgressPolling = () => {
         if (window._bw_audit_poll) clearInterval(window._bw_audit_poll);
+        isProcessCancelledRef.current = false;
         window._bw_audit_poll = setInterval(async () => {
+            if (isProcessCancelledRef.current) return;
             try {
                 const res = await fetch('/api/audit/progress');
+                if (isProcessCancelledRef.current) return;
                 if (res.ok) {
                     const data = await res.json();
+                    if (isProcessCancelledRef.current) return;
                     if (data && typeof data.pct === 'number') {
                         if (data.pct > 0) {
                             setBatchProgress(data.pct);
                             if (data.msg) setBatchStatusMsg(data.msg);
                             if (data.pct >= 100) {
-                                clearInterval(window._bw_audit_poll);
-                                window._bw_audit_poll = null;
+                                stopProgressPolling();
+                            }
+                        } else if (data.pct === 0 && !data.active) {
+                            if (isProcessCancelledRef.current) {
+                                stopProgressPolling();
+                                setBatchProgress(0);
                             }
                         }
                     }
@@ -2346,37 +2369,82 @@ export const AuditWorkspace = ({
         }
     };
 
-    const handleGuardarTodoEnFicheros = async () => {
-        if (!tracks || tracks.length === 0) {
-            alert("No hay pistas cargadas para guardar.");
+    const handleSolicitarGuardarTodo = (customTracks = null) => {
+        const targetTracks = customTracks || ((selectedAuditIds && selectedAuditIds.size > 0)
+            ? tracks.filter(t => selectedAuditIds.has(t.id))
+            : tracks);
+
+        if (!targetTracks || targetTracks.length === 0) {
+            alert(lang === 'en' ? "No tracks loaded to save." : "No hay pistas cargadas para guardar.");
             return;
         }
+
+        setSaveModalState({
+            open: true,
+            tracks: targetTracks,
+            fields: {
+                bpm: true,
+                key: true,
+                cues: true,
+                comment: true,
+                genre_mood: true,
+                cover: true,
+            }
+        });
+    };
+
+    const handleGuardarTodoEnFicheros = async (customTracks = null, customFields = null) => {
+        const targetTracks = customTracks || ((selectedAuditIds && selectedAuditIds.size > 0)
+            ? tracks.filter(t => selectedAuditIds.has(t.id))
+            : tracks);
+
+        if (!targetTracks || targetTracks.length === 0) {
+            alert(lang === 'en' ? "No tracks loaded to save." : "No hay pistas cargadas para guardar.");
+            return;
+        }
+
+        const fields = customFields || {
+            bpm: true,
+            key: true,
+            cues: true,
+            comment: true,
+            genre_mood: true,
+            cover: true,
+        };
+
+        isProcessCancelledRef.current = false;
+        activeAbortControllerRef.current = new AbortController();
+        const signal = activeAbortControllerRef.current.signal;
+
         setIsInjecting(true);
         setBatchProgress(5);
-        setBatchStatusMsg(`Guardando todos los metadatos en ${tracks.length} archivos físicos...`);
+        setBatchStatusMsg(`Guardando metadatos seleccionados en ${targetTracks.length} archivos físicos...`);
         startProgressPolling();
+
         try {
             // Sanitizar carga útil para transferencias HTTP ultraligeras y seguras (sin buffers de audio pesados)
-            const sanitizedTracks = tracks.map(t => ({
+            const sanitizedTracks = targetTracks.map(t => ({
                 id: t.id,
                 path: t.path || t.filepath || t.f || '',
                 filename: t.filename || t.f || '',
                 title: t.title || t.t || '',
                 artist: t.artist || t.a || '',
                 album: t.album || '',
-                bpm: t.bpm || t.b || 128.0,
-                key: t.key || t.k || t.initialkey || '',
-                genre: t.genre || '',
-                subgenre: t.subgenre || '',
+                bpm: fields.bpm ? (t.bpm || t.b || 128.0) : null,
+                key: fields.key ? (t.key || t.k || t.initialkey || '') : null,
+                genre: fields.genre_mood ? (t.genre || '') : null,
+                subgenre: fields.genre_mood ? (t.subgenre || '') : null,
                 energy: t.energy || 80,
                 danceability: t.danceability || 80,
-                comment: t.comment || '',
-                grouping: t.grouping || t.mood || '',
+                comment: fields.comment ? (t.comment || '') : null,
+                grouping: fields.genre_mood ? (t.grouping || t.mood || '') : null,
                 label: t.label || '',
                 remixer: t.remixer || '',
                 composer: t.composer || '',
                 year: t.year || '',
-                cues: t.cues || [],
+                cues: fields.cues ? (t.cues || []) : null,
+                skip_cues: !fields.cues,
+                skip_cover: !fields.cover,
                 first_downbeat_ms: t.first_downbeat_ms || t.downbeat_ms || 0,
                 trim_start_ms: t.trim_start_ms || 0,
                 trim_end_ms: t.trim_end_ms || 0,
@@ -2384,20 +2452,22 @@ export const AuditWorkspace = ({
                 modo_rapido: true
             }));
 
-            let res = null;
-            if (window.eel && window.eel.inyectar_lote_metadatos) {
-                res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
-            } else {
-                const response = await fetch('/api/metadata/save_batch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tracks: sanitizedTracks })
-                });
-                const data = await response.json();
-                res = data.result || data;
-            }
+            // REST API con soporte nativo de AbortSignal y sin límite de tamaño de websocket (cross-platform compatible)
+            const response = await fetch('/api/metadata/save_batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tracks: sanitizedTracks }),
+                signal
+            });
+
+            if (isProcessCancelledRef.current) return;
+
+            const data = await response.json();
+            const res = data.result || data;
 
             stopProgressPolling();
+            if (isProcessCancelledRef.current) return;
+
             setBatchProgress(100);
             if (res && (res.status === 'ok' || res.inyectados > 0)) {
                 setBatchStatusMsg(`✓ Guardado completo: ${res.inyectados} archivos actualizados en disco con éxito.`);
@@ -2409,9 +2479,15 @@ export const AuditWorkspace = ({
                 setBatchStatusMsg("Error durante el guardado de archivos.");
             }
         } catch (e) {
-            console.error("Error al guardar todo en ficheros:", e);
-            setBatchStatusMsg("Error al guardar metadatos.");
+            if (e.name === 'AbortError' || isProcessCancelledRef.current) {
+                console.log("Guardado abortado por el usuario.");
+                setBatchStatusMsg("Proceso cancelado por el usuario.");
+            } else {
+                console.error("Error al guardar todo en ficheros:", e);
+                setBatchStatusMsg("Error al guardar metadatos.");
+            }
         } finally {
+            activeAbortControllerRef.current = null;
             stopProgressPolling();
             setTimeout(() => {
                 setIsInjecting(false);
@@ -2444,7 +2520,12 @@ export const AuditWorkspace = ({
     };
 
     const handleCancelarProceso = async () => {
+        isProcessCancelledRef.current = true;
         stopProgressPolling();
+        if (activeAbortControllerRef.current) {
+            try { activeAbortControllerRef.current.abort(); } catch (_) {}
+            activeAbortControllerRef.current = null;
+        }
         setIsAuditPaused(false);
         setIsAuditing(false);
         setIsLoadingDir(false);
@@ -2456,16 +2537,18 @@ export const AuditWorkspace = ({
             onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: '' });
         }
         try {
-            await fetch('/api/cancelar_procesos', { method: 'POST' });
+            fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
         } catch (e) {}
         if (window.eel && window.eel.cancelar_procesos_activos) {
             try {
-                await window.eel.cancelar_procesos_activos()();
-            } catch (e) {
-                console.error("Error al cancelar procesos:", e);
-            }
+                window.eel.cancelar_procesos_activos()();
+            } catch (e) {}
         }
-        setTimeout(() => setBatchStatusMsg(''), 2000);
+        setTimeout(() => {
+            if (isProcessCancelledRef.current) {
+                setBatchStatusMsg('');
+            }
+        }, 2000);
     };
 
     // Estado de Ordenación y Filtros por Cabecera de Tabla
@@ -3536,7 +3619,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                             disabled={tracks.length === 0}
                             busy={isExporting || isInjecting}
                             onSyncAll={handleSincronizarPasaporteUniversal}
-                            onSaveTags={handleGuardarTodoEnFicheros}
+                            onSaveTags={handleSolicitarGuardarTodo}
                             targets={[
                                 { id: 'rekordbox', label: 'Rekordbox', ext: '.XML', desc: 'Hot Cues A–H y beatgrid', Logo: PlatformRekordboxLogo, onClick: handleExportarRekordboxXml },
                                 { id: 'serato', label: 'Serato DJ Pro', ext: 'CRATES', desc: 'Markers2, BPM y key en tags', Logo: PlatformSeratoLogo, onClick: handleExportarSerato },
@@ -5865,7 +5948,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         {/* Guardar en Disco */}
                         <button 
                             type="button"
-                            onClick={handleGuardarTodoEnFicheros}
+                            onClick={() => handleSolicitarGuardarTodo()}
                             disabled={isInjecting}
                             className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20 cursor-pointer transition-all active:scale-95"
                             title="Persistir cambios físicamente en disco"
@@ -6115,6 +6198,211 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         setSidebarOpen(true);
                     }}
                 />
+            )}
+
+            {/* 💾 Modal de Diálogo Previo de Confirmación para Guardado de Metadatos */}
+            {saveModalState.open && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn"
+                    onClick={() => setSaveModalState(prev => ({ ...prev, open: false }))}
+                >
+                    <div 
+                        className="bg-[#0f0f18] border border-emerald-500/40 rounded-2xl w-full max-w-xl shadow-[0_0_50px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Cabecera */}
+                        <div className="p-4 bg-gradient-to-r from-emerald-950 via-[#0a1810] to-zinc-950 border-b border-emerald-800/40 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center text-emerald-300 shadow-md">
+                                    <Icons.Save size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="font-syne font-black text-white text-base tracking-wide flex items-center gap-2">
+                                        <span>GUARDAR METADATOS EN DISCO</span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
+                                            {saveModalState.tracks.length} {saveModalState.tracks.length === 1 ? 'pista' : 'pistas'}
+                                        </span>
+                                    </h3>
+                                    <p className="text-xs text-emerald-300/80 font-mono mt-0.5">
+                                        Revisa los campos ID3v2.3 / Vorbis que se escribirán directamente en los archivos físicos
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setSaveModalState(prev => ({ ...prev, open: false }))}
+                                className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 flex items-center justify-center text-xs cursor-pointer transition-colors"
+                            >
+                                <Icons.Close size={14} />
+                            </button>
+                        </div>
+
+                        {/* Checklist de Campos a Persistir */}
+                        <div className="p-4 bg-[#0a0a12] border-b border-zinc-800 space-y-2">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 font-mono">
+                                <span>CAMPOS A SOBREESCRIBIR EN DISCO:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const allOn = Object.values(saveModalState.fields).every(Boolean);
+                                        setSaveModalState(prev => ({
+                                            ...prev,
+                                            fields: {
+                                                bpm: !allOn,
+                                                key: !allOn,
+                                                cues: !allOn,
+                                                comment: !allOn,
+                                                genre_mood: !allOn,
+                                                cover: !allOn
+                                            }
+                                        }));
+                                    }}
+                                    className="text-emerald-400 hover:underline cursor-pointer"
+                                >
+                                    {Object.values(saveModalState.fields).every(Boolean) ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                                {/* BPM */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.bpm ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.bpm} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, bpm: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Activity size={13} className="text-emerald-400" /> BPM & Beatgrid</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Tempo cuantizado y BeatGrid Serato</p>
+                                    </div>
+                                </label>
+
+                                {/* Key Camelot */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.key ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.key} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, key: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Music size={13} className="text-purple-400" /> Tonalidad Armónica</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Notación Camelot (TKEY / INITIALKEY)</p>
+                                    </div>
+                                </label>
+
+                                {/* Hot Cues */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.cues ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.cues} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, cues: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Play size={13} className="text-amber-400" /> Hot Cues (1–8)</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Serato Markers2 oficial y colores</p>
+                                    </div>
+                                </label>
+
+                                {/* Comentario */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.comment ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.comment} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, comment: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.FileText size={13} className="text-cyan-400" /> Comentario Táctico</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Mix armónico y estructura (COMM)</p>
+                                    </div>
+                                </label>
+
+                                {/* Género & Mood */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.genre_mood ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.genre_mood} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, genre_mood: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Sliders size={13} className="text-pink-400" /> Taxonomía & Mood</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Genre, Grouping (Mood) y Subgénero</p>
+                                    </div>
+                                </label>
+
+                                {/* Carátula */}
+                                <label className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${saveModalState.fields.cover ? 'bg-emerald-950/30 border-emerald-500/50 text-white' : 'bg-zinc-900/50 border-zinc-800 text-gray-400'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={saveModalState.fields.cover} 
+                                        onChange={e => setSaveModalState(p => ({ ...p, fields: { ...p.fields, cover: e.target.checked } }))}
+                                        className="accent-emerald-500 rounded"
+                                    />
+                                    <div className="min-w-0">
+                                        <span className="font-bold flex items-center gap-1.5"><Icons.Image size={13} className="text-blue-400" /> Carátula 1:1 HD</span>
+                                        <p className="text-[10px] text-gray-400 font-sans truncate">Incrustar Artwork cuadrado en tags</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Muestra previa de pistas afectadas */}
+                        <div className="p-4 bg-[#0d0d16] border-b border-zinc-800 max-h-40 overflow-y-auto space-y-1.5 font-mono text-xs">
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex justify-between">
+                                <span>MUESTRA DE ARCHIVOS OBJETIVO:</span>
+                                <span>Mostrando {Math.min(5, saveModalState.tracks.length)} de {saveModalState.tracks.length}</span>
+                            </div>
+                            {saveModalState.tracks.slice(0, 5).map((t, idx) => (
+                                <div key={t.id || idx} className="flex items-center justify-between p-2 rounded bg-zinc-900/70 border border-zinc-800/80">
+                                    <div className="min-w-0 flex-1 pr-2">
+                                        <div className="text-white font-bold truncate">{t.title || t.t || t.f}</div>
+                                        <div className="text-[11px] text-gray-400 truncate">{t.artist || t.a} • {t.format || 'FLAC'}</div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0 text-[11px]">
+                                        {t.bpm && <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-emerald-400 font-bold">{t.bpm} BPM</span>}
+                                        {t.key && <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-purple-300 font-bold">{t.key}</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Aviso de Seguridad No Destructiva */}
+                        <div className="px-4 py-3 bg-[#0a120e] border-b border-emerald-950/60 flex items-center gap-2.5 text-xs text-emerald-300/90 font-mono">
+                            <Icons.Check size={14} className="text-emerald-400 shrink-0" />
+                            <span>
+                                Escritura segura no destructiva. El audio PCM original permanece intacto y la caché SQLite se sincroniza automáticamente.
+                            </span>
+                        </div>
+
+                        {/* Botones de Acción */}
+                        <div className="p-4 bg-[#0f0f18] flex items-center justify-between gap-3">
+                            <button 
+                                type="button"
+                                onClick={() => setSaveModalState(prev => ({ ...prev, open: false }))}
+                                className="px-4 py-2 rounded-xl text-xs font-bold font-mono bg-zinc-800 hover:bg-zinc-700 text-gray-300 cursor-pointer transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    const targetTracks = saveModalState.tracks;
+                                    const targetFields = saveModalState.fields;
+                                    setSaveModalState(prev => ({ ...prev, open: false }));
+                                    handleGuardarTodoEnFicheros(targetTracks, targetFields);
+                                }}
+                                className="px-5 py-2 rounded-xl text-xs font-black font-sans bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-black shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+                            >
+                                <Icons.Save size={14} />
+                                <span>Confirmar y Guardar ({saveModalState.tracks.length} pistas)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* 🗑️ Modal de Confirmación de Eliminación de Pistas (Seguridad DJ de Cabina) */}

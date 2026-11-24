@@ -1,25 +1,84 @@
 const { useState, useEffect, useRef, useMemo } = React;
 import { computeTrackStructuralBands } from './waveformUtils.js';
 
+// Caché en memoria de picos reales Rekordbox 3Band HD (400 cols/s) para evitar re-descargas
+const RB3BAND_HD_CACHE = new Map();
+
+function decodeBase64ToU8(b64) {
+    if (!b64 || typeof b64 !== 'string') return null;
+    try {
+        const bin = atob(b64);
+        const len = bin.length;
+        const u8 = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            u8[i] = bin.charCodeAt(i);
+        }
+        return u8;
+    } catch (_) {
+        return null;
+    }
+}
+
+// Muestreo HD sin aliasing ni escalones: range-max en zoom alejado + interpolación lineal en zoom cercano
+function sample3BandHD(bands, totalCols, fStart, fEnd) {
+    if (fEnd < 0 || fStart >= totalCols) return [0, 0, 0];
+    const s0 = Math.max(0, Math.min(totalCols - 1, fStart));
+    const s1 = Math.max(s0, Math.min(totalCols - 1, fEnd));
+    const span = s1 - s0;
+
+    if (span <= 1.0) {
+        const i0 = Math.floor(s0);
+        const i1 = Math.min(totalCols - 1, i0 + 1);
+        const frac = s0 - i0;
+        const o0 = i0 * 3;
+        const o1 = i1 * 3;
+        return [
+            (bands[o0] + (bands[o1] - bands[o0]) * frac) / 255.0,
+            (bands[o0 + 1] + (bands[o1 + 1] - bands[o0 + 1]) * frac) / 255.0,
+            (bands[o0 + 2] + (bands[o1 + 2] - bands[o0 + 2]) * frac) / 255.0,
+        ];
+    }
+
+    const iStart = Math.floor(s0);
+    const iEnd = Math.min(totalCols - 1, Math.ceil(s1));
+    const step = Math.max(1, Math.floor((iEnd - iStart) / 16));
+    let maxL = 0;
+    let maxM = 0;
+    let maxH = 0;
+    for (let idx = iStart; idx <= iEnd; idx += step) {
+        const off = idx * 3;
+        if (bands[off] > maxL) maxL = bands[off];
+        if (bands[off + 1] > maxM) maxM = bands[off + 1];
+        if (bands[off + 2] > maxH) maxH = bands[off + 2];
+    }
+    return [maxL / 255.0, maxM / 255.0, maxH / 255.0];
+}
+
 // =======================================================
 export const CopilotSeratoWaveform = ({
     deck,
     side = "1",
     antiMuddy = null,
-    partnerDeck = null
+    partnerDeck = null,
+    isCompact = false
 }) => {
     const canvasRef = useRef(null);
     const minimapRef = useRef(null);
     const minimapCacheRef = useRef(null);
-    const [zoom, setZoom] = useState(4); // 2x, 4x, 8x, 16x
+    const [zoom, setZoom] = useState(4); // 2x (32s), 4x (16s), 8x (8s), 16x (4s)
     const [showTacticalAids, setShowTacticalAids] = useState(true);
     const [hoveredMilestone, setHoveredMilestone] = useState(null);
+    const [hdWave, setHdWave] = useState(null);
     const initialProgress = (typeof deck.play_progress === 'number' && !isNaN(deck.play_progress)) ? deck.play_progress : 0.0;
     const [progress, setProgress] = useState(initialProgress);
     const progressRef = useRef(initialProgress);
     const isPlayingRef = useRef(Boolean(deck.is_playing));
     const bpmRef = useRef(deck.bpm || 130.0);
     const durationSecRef = useRef(deck.duration_sec || 390.0);
+
+    const deckNum = (side === "2" || side === 2 || deck?.deck_num === 2) ? 2 : 1;
+    const trackFilePath = deck?.filepath || deck?.file_path || "";
+    const isEmptyDeck = !deck || !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
 
     useEffect(() => {
         if (deck.play_progress !== undefined && deck.play_progress !== null) {
@@ -33,6 +92,76 @@ export const CopilotSeratoWaveform = ({
         bpmRef.current = parseFloat(deck.bpm) || 130.0;
         durationSecRef.current = parseFloat(deck.duration_sec) || 390.0;
     }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
+
+    // Descarga no bloqueante de picos reales 3Band HD (400 cols/s) desde el backend local
+    const hdTrackKey = isEmptyDeck
+        ? ""
+        : `${deckNum}|${trackFilePath || deck.title}|${deck.artist || ''}|${deck.duration_sec || 0}`;
+
+    useEffect(() => {
+        if (!hdTrackKey) {
+            setHdWave(null);
+            return;
+        }
+        if (RB3BAND_HD_CACHE.has(hdTrackKey)) {
+            setHdWave(RB3BAND_HD_CACHE.get(hdTrackKey));
+            return;
+        }
+
+        const isLocalHost =
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (!isLocalHost) {
+            setHdWave(null);
+            return;
+        }
+
+        let cancelled = false;
+        setHdWave(null);
+
+        const fetchHD = async (attempt = 0) => {
+            try {
+                const res = await fetch(`/api/copilot/waveform/${deckNum}?k=${encodeURIComponent(hdTrackKey)}`);
+                if (!res.ok) return;
+                const payload = await res.json();
+                if (cancelled) return;
+
+                if (payload && payload.ready && payload.bands_b64) {
+                    const bands = decodeBase64ToU8(payload.bands_b64);
+                    const overview = decodeBase64ToU8(payload.overview_b64);
+                    if (bands && bands.length >= 3) {
+                        const parsed = {
+                            cacheKey: payload.cache_key || hdTrackKey,
+                            version: payload.version || 'rb3b',
+                            columns: payload.columns || Math.floor(bands.length / 3),
+                            overviewColumns: payload.overview_columns || (overview ? Math.floor(overview.length / 3) : 0),
+                            durationSec: payload.duration_sec || deck.duration_sec || 240,
+                            bands,
+                            overview,
+                            realFft: Boolean(payload.real_fft),
+                        };
+                        RB3BAND_HD_CACHE.set(hdTrackKey, parsed);
+                        if (RB3BAND_HD_CACHE.size > 16) {
+                            const oldest = RB3BAND_HD_CACHE.keys().next().value;
+                            RB3BAND_HD_CACHE.delete(oldest);
+                        }
+                        setHdWave(parsed);
+                        return;
+                    }
+                }
+                if (payload && payload.pending && attempt < 24 && !cancelled) {
+                    setTimeout(() => fetchHD(attempt + 1), 320);
+                }
+            } catch (_) {
+                // Mantiene fallback a Serato Overview o síntesis en modo offline
+            }
+        };
+
+        fetchHD(0);
+        return () => {
+            cancelled = true;
+        };
+    }, [deckNum, hdTrackKey]);
 
     // Reproducción optimizada en tiempo real: solo corre rAF cuando deck.is_playing es verdadero
     useEffect(() => {
@@ -49,8 +178,8 @@ export const CopilotSeratoWaveform = ({
                 const next = (progressRef.current + advance) % 1.0;
                 progressRef.current = next;
 
-                // Throttled UI state updates a ~30fps para mantener el hilo principal ágil
-                if (now - lastUiUpdate >= 33) {
+                // Throttled UI state updates a ~60fps fluidos para el canvas
+                if (now - lastUiUpdate >= 16) {
                     lastUiUpdate = now;
                     setProgress(next);
                 }
@@ -68,25 +197,16 @@ export const CopilotSeratoWaveform = ({
         };
     }, [deck.is_playing]);
 
-    const rawId = deck.file_path || deck.title || "1";
+    const rawId = trackFilePath || deck.title || "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-    const durSec = deck.duration_sec || 390.0;
+    const durSec = deck.duration_sec || hdWave?.durationSec || 390.0;
     const elapsedSec = progress * durSec;
     const remainSec = Math.max(0, durSec - elapsedSec);
 
-    // Decodificación de la silueta espectral real Serato Overview (1280 columnas x 3 bandas)
+    // Fallback: decodificación de silueta Serato Overview (1280 columnas x 3 bandas)
     const overviewBytes = useMemo(() => {
         if (!deck.serato_overview) return null;
-        try {
-            const bin = atob(deck.serato_overview);
-            const u8 = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) {
-                u8[i] = bin.charCodeAt(i);
-            }
-            return u8;
-        } catch (e) {
-            return null;
-        }
+        return decodeBase64ToU8(deck.serato_overview);
     }, [deck.serato_overview]);
 
     const formatSec = (s) => {
@@ -122,7 +242,6 @@ export const CopilotSeratoWaveform = ({
 
     const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
     const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44;
-    const isEmptyDeck = !deck || !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -130,31 +249,33 @@ export const CopilotSeratoWaveform = ({
         const rect = canvas.getBoundingClientRect();
         const w = rect.width || canvas.parentElement.clientWidth || 550;
         const h = 88;
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
         canvas.width = Math.round(w * dpr);
         canvas.height = Math.round(h * dpr);
         const ctx = canvas.getContext('2d');
         if (ctx.resetTransform) ctx.resetTransform(); else ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(dpr, dpr);
 
-        ctx.fillStyle = '#05050a';
+        // Fondo negro profundo estilo Rekordbox / CDJ-3000
+        ctx.fillStyle = '#050507';
         ctx.fillRect(0, 0, w, h);
 
         const midY = h / 2;
-        const playheadX = w / 2; // Aguja central Serato
+        const playheadX = w / 2;
+
+        // Línea horizontal central sutil
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, midY);
+        ctx.lineTo(w, midY);
+        ctx.stroke();
 
         if (isEmptyDeck) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, midY);
-            ctx.lineTo(w, midY);
-            ctx.stroke();
-
             ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
             ctx.font = 'bold 11px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText('ARRAS TRAR CANCIÓN AQUÍ (STANDBY)', w / 2, midY + 4);
+            ctx.fillText('ARRASTRAR CANCIÓN AQUÍ (STANDBY)', w / 2, midY + 4);
 
             const miniCanvas = minimapRef.current;
             if (miniCanvas) {
@@ -166,7 +287,7 @@ export const CopilotSeratoWaveform = ({
                 const mCtx = miniCanvas.getContext('2d');
                 if (mCtx.resetTransform) mCtx.resetTransform(); else mCtx.setTransform(1, 0, 0, 1, 0, 0);
                 mCtx.scale(dpr, dpr);
-                mCtx.fillStyle = '#06060e';
+                mCtx.fillStyle = '#050507';
                 mCtx.fillRect(0, 0, mw, mh);
                 mCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
                 mCtx.lineWidth = 1;
@@ -178,42 +299,14 @@ export const CopilotSeratoWaveform = ({
             return;
         }
 
-        const windowSec = durSec / zoom;
+        // Ventana calibrada a escala Rekordbox CDJ-3000: 2x=32s, 4x=16s, 8x=8s, 16x=4s
+        const windowSec = 64.0 / zoom;
         const halfWindowSec = windowSec / 2;
         const currentSec = progress * durSec;
         const startSec = currentSec - halfWindowSec;
         const endSec = currentSec + halfWindowSec;
 
-        // Rejilla de compases (Beatgrid Serato)
-        const bpm = deck.bpm || 130.0;
-        const beatSec = 60.0 / bpm;
-        const downbeatSec = (deck && deck.first_downbeat_ms) ? (parseFloat(deck.first_downbeat_ms) / 1000.0) : 0.0;
-        if (beatSec > 0) {
-            const firstBeatIdx = Math.floor((startSec - downbeatSec) / beatSec);
-            const lastBeatIdx = Math.ceil((endSec - downbeatSec) / beatSec);
-            for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
-                const bSec = downbeatSec + (b * beatSec);
-                const bx = playheadX + ((bSec - currentSec) / windowSec) * w;
-                if (bx >= 0 && bx <= w) {
-                    const isBar = (b % 4 === 0);
-                    const isPhrase = (b % 16 === 0);
-                    ctx.strokeStyle = isPhrase ? 'rgba(255, 255, 255, 0.45)' : isBar ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.08)';
-                    ctx.lineWidth = isPhrase ? 1.5 : 1;
-                    ctx.beginPath();
-                    ctx.moveTo(bx, isBar ? 6 : 14);
-                    ctx.lineTo(bx, h - (isBar ? 6 : 14));
-                    ctx.stroke();
-
-                    if (isBar && bx > 15 && bx < w - 25) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-                        ctx.font = '8px monospace';
-                        ctx.fillText(`${Math.floor(b / 4) + 1}`, bx + 2, 12);
-                    }
-                }
-            }
-        }
-
-        // Zonas de fases (Tintado suave)
+        // 1. Zonas de fases tácticas (tintado discreto superior cuando Ayudas DJ está activo)
         if (showTacticalAids) {
             phases.forEach(ph => {
                 const phStartSec = ph.start_pct * durSec;
@@ -222,16 +315,15 @@ export const CopilotSeratoWaveform = ({
                     const x1 = Math.max(0, playheadX + ((phStartSec - currentSec) / windowSec) * w);
                     const x2 = Math.min(w, playheadX + ((phEndSec - currentSec) / windowSec) * w);
                     if (x2 > x1) {
-                        ctx.fillStyle = `${ph.color}14`;
+                        ctx.fillStyle = `${ph.color}12`;
                         ctx.fillRect(x1, 0, x2 - x1, h);
 
-                        ctx.fillStyle = `${ph.color}88`;
+                        ctx.fillStyle = `${ph.color}99`;
                         ctx.fillRect(x1, 0, x2 - x1, 2);
                     }
                 }
             });
 
-            // Resaltado de Choque de Graves si Anti-Muddy está en peligro
             if (isBassClashDanger) {
                 ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
                 ctx.fillRect(playheadX - 60, 0, 120, h);
@@ -241,102 +333,175 @@ export const CopilotSeratoWaveform = ({
             }
         }
 
-        // Espectro Tricromático Serato Oficial (1280 columnas x 3 bandas reales o síntesis acústica de respaldo)
-        const stepPx = 2;
-        const totalSlices = Math.ceil(w / stepPx);
-        for (let i = 0; i < totalSlices; i++) {
-            const x = i * stepPx;
-            const sliceSec = startSec + (x / w) * windowSec;
-            const sliceNorm = sliceSec / durSec;
+        // 2. Espectro REKORDBOX 3BAND HD en resolución física Retina (Azul Graves -> Ámbar Medios -> Blanco Agudos)
+        const maxAmp = (h / 2) - 5;
+        const physCols = Math.max(1, Math.round(w * dpr));
+        const colW = w / physCols;
+        const hasRealHD = Boolean(hdWave && hdWave.bands && hdWave.columns > 0);
+        const waveDur = hasRealHD ? Math.max(1, hdWave.durationSec || durSec) : durSec;
+        const colsPerSec = hasRealHD ? (hdWave.columns / waveDur) : 0;
 
-            if (sliceNorm >= 0.0 && sliceNorm <= 1.0) {
-                let bass, mid, treble;
-                if (overviewBytes && overviewBytes.length >= 3840) {
-                    const colIdx = Math.min(1279, Math.max(0, Math.floor(sliceNorm * 1280)));
-                    const byteOffset = colIdx * 3;
-                    bass = Math.min(1.0, (overviewBytes[byteOffset] || 0) / 220.0);
-                    mid = Math.min(1.0, (overviewBytes[byteOffset + 1] || 0) / 120.0);
-                    treble = Math.min(1.0, (overviewBytes[byteOffset + 2] || 0) / 120.0);
-                } else {
-                    const bands = computeTrackStructuralBands(sliceNorm, seed, deck);
-                    bass = bands.bass;
-                    mid = Math.max(bands.drums, bands.vocals);
-                    treble = bands.treble;
-                }
-                const maxAmp = (h / 2) - 8;
+        for (let i = 0; i < physCols; i++) {
+            const x = i * colW;
+            const t0 = startSec + (i / physCols) * windowSec;
+            const t1 = startSec + ((i + 1) / physCols) * windowSec;
+            const sliceNorm = t0 / durSec;
 
-                // 1. Sub-Bass & Bombo (<200Hz) en Rojo Serato Canónico
-                const bassAmp = bass * maxAmp * 0.95;
-                ctx.fillStyle = '#ef4444';
-                ctx.fillRect(x, midY - bassAmp, stepPx - 0.4, bassAmp * 2);
+            if (t1 < 0.0 || t0 > waveDur) continue;
 
-                // 2. Medios y Vocales (200Hz - 2.5kHz) en Cian / Azul Eléctrico Serato
-                const midAmp = mid * maxAmp * 0.72;
-                ctx.fillStyle = '#06b6d4';
-                ctx.fillRect(x, midY - midAmp, stepPx - 0.4, midAmp * 2);
+            let low = 0;
+            let mid = 0;
+            let high = 0;
 
-                // 3. Agudos y Transientes (>2.5kHz) en Blanco Brillante Serato
-                const trebAmp = treble * maxAmp * 0.48;
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(x, midY - trebAmp, stepPx - 0.4, trebAmp * 2);
+            if (hasRealHD) {
+                const [l, m, hi] = sample3BandHD(hdWave.bands, hdWave.columns, t0 * colsPerSec, t1 * colsPerSec);
+                low = l;
+                mid = m;
+                high = hi;
+            } else if (overviewBytes && overviewBytes.length >= 3840 && sliceNorm >= 0 && sliceNorm <= 1) {
+                const colIdx = Math.min(1279, Math.max(0, Math.floor(sliceNorm * 1280)));
+                const byteOffset = colIdx * 3;
+                low = Math.min(1.0, (overviewBytes[byteOffset] || 0) / 220.0);
+                mid = Math.min(1.0, (overviewBytes[byteOffset + 1] || 0) / 140.0);
+                high = Math.min(1.0, (overviewBytes[byteOffset + 2] || 0) / 140.0);
+            } else if (sliceNorm >= 0 && sliceNorm <= 1) {
+                const bands = computeTrackStructuralBands(sliceNorm, seed, deck);
+                low = bands.bass;
+                mid = Math.max(bands.drums, bands.vocals);
+                high = bands.treble;
+            }
 
-                // Núcleo central amarillo en picos de pegada (>0.85)
-                if (bass > 0.85) {
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.fillRect(x, midY - 2, stepPx - 0.4, 4);
+            const isPlayed = x < playheadX;
+            const lowAmp = low * maxAmp * 0.96;
+            const midAmp = Math.pow(mid, 1.15) * maxAmp * 0.72;
+            const highAmp = Math.pow(high, 1.45) * maxAmp * 0.42;
+
+            // Capa 1: Graves (<250 Hz) — Azul profundo CDJ-3000
+            if (lowAmp >= 0.5) {
+                ctx.fillStyle = isPlayed ? 'rgba(29, 78, 216, 0.78)' : '#2563eb';
+                ctx.fillRect(x, midY - lowAmp, colW + 0.15, lowAmp * 2);
+            }
+
+            // Capa 2: Medios (250 Hz - 2.5 kHz) — Ámbar / Naranja Rekordbox
+            if (midAmp >= 0.5) {
+                ctx.fillStyle = isPlayed ? 'rgba(245, 158, 11, 0.80)' : '#f59e0b';
+                ctx.fillRect(x, midY - midAmp, colW + 0.15, midAmp * 2);
+            }
+
+            // Capa 3: Agudos (>2.5 kHz) — Blanco nítido en transitorios
+            if (highAmp >= 0.5) {
+                ctx.fillStyle = isPlayed ? 'rgba(248, 250, 252, 0.85)' : '#ffffff';
+                ctx.fillRect(x, midY - highAmp, colW + 0.15, highAmp * 2);
+            }
+        }
+
+        // 3. Beatgrid Rekordbox (Downbeat ROJO en Beat 1 + ticks blancos finos en Beats 2, 3, 4)
+        const bpm = deck.bpm || 130.0;
+        const beatSec = 60.0 / bpm;
+        const downbeatSec =
+            (deck && deck.first_downbeat_ms)
+                ? (parseFloat(deck.first_downbeat_ms) / 1000.0)
+                : (Array.isArray(deck.cues) && deck.cues.length > 0 && typeof deck.cues[0].pos_sec === 'number'
+                    ? deck.cues[0].pos_sec
+                    : 0.0);
+
+        if (beatSec > 0) {
+            const firstBeatIdx = Math.floor((startSec - downbeatSec) / beatSec);
+            const lastBeatIdx = Math.ceil((endSec - downbeatSec) / beatSec);
+            for (let b = firstBeatIdx; b <= lastBeatIdx; b++) {
+                const bSec = downbeatSec + (b * beatSec);
+                if (bSec < 0 || bSec > durSec) continue;
+                const bx = playheadX + ((bSec - currentSec) / windowSec) * w;
+                if (bx >= 0 && bx <= w) {
+                    const isDownbeat = (((b % 4) + 4) % 4) === 0;
+                    if (isDownbeat) {
+                        const barNum = Math.floor(b / 4) + 1;
+                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.82)';
+                        ctx.lineWidth = 1.2;
+                        ctx.beginPath();
+                        ctx.moveTo(bx, 0);
+                        ctx.lineTo(bx, h);
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(bx - 1.5, 0, 3, 5);
+
+                        if (barNum > 0 && bx > 14 && bx < w - 24) {
+                            ctx.fillStyle = 'rgba(248, 250, 252, 0.78)';
+                            ctx.font = 'bold 8.5px ui-monospace, SFMono-Regular, Menlo, monospace';
+                            ctx.textAlign = 'left';
+                            ctx.fillText(`${barNum}.1`, bx + 3, 11);
+                        }
+                    } else {
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(bx, 6);
+                        ctx.lineTo(bx, h - 4);
+                        ctx.stroke();
+
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.48)';
+                        ctx.fillRect(bx - 0.5, 0, 1, 3.5);
+                    }
                 }
             }
         }
 
-        // Pines y Banderines de Hot Cues (1 a 8) - Marcadores sin texto intrusivo
+        // 4. Banderas de Hot Cues (1 a 8) estilo Rekordbox
         if (showTacticalAids) {
             cues.forEach(cue => {
-                const cueSec = (cue.pct !== undefined ? cue.pct : 0) * durSec;
+                const cueSec = typeof cue.pos_sec === 'number'
+                    ? cue.pos_sec
+                    : (cue.pct !== undefined ? cue.pct : 0) * durSec;
                 if (cueSec >= startSec && cueSec <= endSec) {
                     const cx = playheadX + ((cueSec - currentSec) / windowSec) * w;
                     if (cx >= 0 && cx <= w) {
-                        ctx.strokeStyle = cue.color || '#06b6d4';
-                        ctx.lineWidth = 1.5;
+                        const color = cue.color || '#22d3ee';
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 1.4;
                         ctx.beginPath();
                         ctx.moveTo(cx, 0);
                         ctx.lineTo(cx, h);
                         ctx.stroke();
 
-                        ctx.fillStyle = cue.color || '#06b6d4';
-                        ctx.fillRect(cx - 1, 2, 16, 12);
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.moveTo(cx, 0);
+                        ctx.lineTo(cx + 15, 0);
+                        ctx.lineTo(cx + 15, 11);
+                        ctx.lineTo(cx + 4, 11);
+                        ctx.lineTo(cx, 15);
+                        ctx.closePath();
+                        ctx.fill();
 
-                        ctx.fillStyle = '#000000';
-                        ctx.font = 'bold 8px monospace';
-                        ctx.fillText(`C${cue.id || ''}`, cx + 2, 11);
+                        ctx.fillStyle = '#050507';
+                        ctx.font = 'bold 8px ui-monospace, SFMono-Regular, Menlo, monospace';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(`C${cue.id || ''}`, cx + 2, 8.5);
                     }
                 }
             });
         }
 
-        // Aguja Central Playhead Serato (Línea Blanca con Flechas)
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(playheadX, 0);
-        ctx.lineTo(playheadX, h);
-        ctx.stroke();
+        // 5. Aguja Central Playhead Rekordbox / CDJ-3000 (Roja con flechas triangulares)
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(playheadX - 0.85, 0, 1.7, h);
 
-        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.moveTo(playheadX - 5, 0);
-        ctx.lineTo(playheadX + 5, 0);
-        ctx.lineTo(playheadX, 8);
+        ctx.moveTo(playheadX - 5.5, 0);
+        ctx.lineTo(playheadX + 5.5, 0);
+        ctx.lineTo(playheadX, 7);
         ctx.closePath();
         ctx.fill();
 
         ctx.beginPath();
-        ctx.moveTo(playheadX - 5, h);
-        ctx.lineTo(playheadX + 5, h);
-        ctx.lineTo(playheadX, h - 8);
+        ctx.moveTo(playheadX - 5.5, h);
+        ctx.lineTo(playheadX + 5.5, h);
+        ctx.lineTo(playheadX, h - 7);
         ctx.closePath();
         ctx.fill();
 
-        // Minimapa Overview de la Pista Completa con Capa Pre-renderizada en Cache
+        // 6. Minimapa Overview Rekordbox 3Band HD (1200 columnas con caché offscreen)
         const miniCanvas = minimapRef.current;
         if (!miniCanvas) return;
         const mRect = miniCanvas.getBoundingClientRect();
@@ -348,7 +513,8 @@ export const CopilotSeratoWaveform = ({
         if (mCtx.resetTransform) mCtx.resetTransform(); else mCtx.setTransform(1, 0, 0, 1, 0, 0);
         mCtx.scale(dpr, dpr);
 
-        const cacheKey = `${rawId}_${mw}_${showTacticalAids}_${overviewBytes ? 'real' : 'synth'}`;
+        const dataTag = hdWave?.cacheKey ? `hd_${hdWave.cacheKey}` : (overviewBytes ? 'serato' : 'synth');
+        const cacheKey = `${rawId}_${Math.round(mw)}_${showTacticalAids}_${dataTag}`;
         if (!minimapCacheRef.current || minimapCacheRef.current.key !== cacheKey) {
             const off = document.createElement('canvas');
             off.width = Math.round(mw * dpr);
@@ -357,50 +523,68 @@ export const CopilotSeratoWaveform = ({
             if (oCtx.resetTransform) oCtx.resetTransform(); else oCtx.setTransform(1, 0, 0, 1, 0, 0);
             oCtx.scale(dpr, dpr);
 
-            oCtx.fillStyle = '#06060e';
+            oCtx.fillStyle = '#050507';
             oCtx.fillRect(0, 0, mw, mh);
 
-            const mStep = 2;
-            const mSlices = Math.ceil(mw / mStep);
-            for (let j = 0; j < mSlices; j++) {
-                const mx = j * mStep;
-                const mNorm = mx / mw;
-                let bVal, mVal, tVal;
-                if (overviewBytes && overviewBytes.length >= 3840) {
-                    const colIdx = Math.min(1279, Math.max(0, Math.floor(mNorm * 1280)));
+            const mHalf = mh / 2;
+            const mPhysCols = Math.max(1, Math.round(mw * dpr));
+            const mColW = mw / mPhysCols;
+            const hasOvHD = Boolean(hdWave && hdWave.overview && hdWave.overviewColumns > 0);
+
+            for (let j = 0; j < mPhysCols; j++) {
+                const mx = j * mColW;
+                const mNorm0 = j / mPhysCols;
+                const mNorm1 = (j + 1) / mPhysCols;
+                let bVal = 0;
+                let mVal = 0;
+                let tVal = 0;
+
+                if (hasOvHD) {
+                    const [l, m, hi] = sample3BandHD(
+                        hdWave.overview,
+                        hdWave.overviewColumns,
+                        mNorm0 * hdWave.overviewColumns,
+                        mNorm1 * hdWave.overviewColumns
+                    );
+                    bVal = l;
+                    mVal = m;
+                    tVal = hi;
+                } else if (overviewBytes && overviewBytes.length >= 3840) {
+                    const colIdx = Math.min(1279, Math.max(0, Math.floor(mNorm0 * 1280)));
                     const byteOffset = colIdx * 3;
                     bVal = Math.min(1.0, (overviewBytes[byteOffset] || 0) / 220.0);
-                    mVal = Math.min(1.0, (overviewBytes[byteOffset + 1] || 0) / 120.0);
-                    tVal = Math.min(1.0, (overviewBytes[byteOffset + 2] || 0) / 120.0);
+                    mVal = Math.min(1.0, (overviewBytes[byteOffset + 1] || 0) / 140.0);
+                    tVal = Math.min(1.0, (overviewBytes[byteOffset + 2] || 0) / 140.0);
                 } else {
-                    const bands = computeTrackStructuralBands(mNorm, seed, deck);
+                    const bands = computeTrackStructuralBands(mNorm0, seed, deck);
                     bVal = bands.bass;
                     mVal = Math.max(bands.drums, bands.vocals);
                     tVal = bands.treble;
                 }
-                const mHalf = mh / 2;
-                const bAmp = bVal * (mHalf - 2);
-                const mAmp = mVal * (mHalf - 3);
-                const tAmp = tVal * (mHalf - 4);
 
-                // 1. Capa Sub-Graves (Rojo Serato Canónico)
-                oCtx.fillStyle = '#ef4444';
-                oCtx.fillRect(mx, mHalf - bAmp, mStep - 0.4, bAmp * 2);
+                const bAmp = bVal * (mHalf - 1.5);
+                const mAmp = Math.pow(mVal, 1.2) * (mHalf - 3.0);
+                const tAmp = Math.pow(tVal, 1.65) * (mHalf - 5.0);
 
-                // 2. Capa Medios (Cian / Azul Serato)
-                oCtx.fillStyle = '#06b6d4';
-                oCtx.fillRect(mx, mHalf - mAmp, mStep - 0.4, mAmp * 2);
-
-                // 3. Capa Agudos (Blanco Serato)
-                oCtx.fillStyle = '#ffffff';
-                oCtx.fillRect(mx, mHalf - tAmp, mStep - 0.4, tAmp * 2);
+                if (bAmp >= 0.4) {
+                    oCtx.fillStyle = '#2563eb';
+                    oCtx.fillRect(mx, mHalf - bAmp, mColW + 0.15, bAmp * 2);
+                }
+                if (mAmp >= 0.4) {
+                    oCtx.fillStyle = '#f59e0b';
+                    oCtx.fillRect(mx, mHalf - mAmp, mColW + 0.15, mAmp * 2);
+                }
+                if (tAmp >= 0.4) {
+                    oCtx.fillStyle = '#ffffff';
+                    oCtx.fillRect(mx, mHalf - tAmp, mColW + 0.15, tAmp * 2);
+                }
             }
 
             if (showTacticalAids) {
                 phases.forEach(ph => {
                     const px1 = ph.start_pct * mw;
                     const px2 = ph.end_pct * mw;
-                    oCtx.fillStyle = `${ph.color}25`;
+                    oCtx.fillStyle = `${ph.color}20`;
                     oCtx.fillRect(px1, 0, px2 - px1, mh);
                     oCtx.fillStyle = ph.color;
                     oCtx.fillRect(px1, 0, px2 - px1, 1.5);
@@ -408,8 +592,8 @@ export const CopilotSeratoWaveform = ({
 
                 cues.forEach(cue => {
                     const cx = (cue.pct || 0) * mw;
-                    oCtx.fillStyle = cue.color || '#06b6d4';
-                    oCtx.fillRect(cx - 0.5, 0, 1.5, mh);
+                    oCtx.fillStyle = cue.color || '#22d3ee';
+                    oCtx.fillRect(cx - 0.5, 0, 1.2, mh);
                 });
             }
 
@@ -419,19 +603,26 @@ export const CopilotSeratoWaveform = ({
         // Dibujar el fondo estático precalculado instantáneamente
         mCtx.drawImage(minimapCacheRef.current.canvas, 0, 0, mw, mh);
 
-        // Aguja playhead y ventana de zoom visible
+        // Atenuar zona ya reproducida en el overview estilo CDJ-3000
+        const mPlayheadX = progress * mw;
+        if (mPlayheadX > 0) {
+            mCtx.fillStyle = 'rgba(5, 5, 8, 0.46)';
+            mCtx.fillRect(0, 0, mPlayheadX, mh);
+        }
+
+        // Ventana de zoom visible
         const vStart = Math.max(0, (startSec / durSec) * mw);
         const vEnd = Math.min(mw, (endSec / durSec) * mw);
-        mCtx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        mCtx.fillStyle = 'rgba(255, 255, 255, 0.12)';
         mCtx.fillRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
-        mCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        mCtx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
         mCtx.lineWidth = 1;
-        mCtx.strokeRect(vStart, 0, Math.max(4, vEnd - vStart), mh);
+        mCtx.strokeRect(vStart, 0.5, Math.max(4, vEnd - vStart), mh - 1);
 
-        const mPlayheadX = progress * mw;
-        mCtx.fillStyle = '#ffffff';
-        mCtx.fillRect(mPlayheadX - 1, 0, 2, mh);
-    }, [zoom, showTacticalAids, progress, deck, antiMuddy, isBassClashDanger]);
+        // Aguja playhead roja en el minimapa
+        mCtx.fillStyle = '#ef4444';
+        mCtx.fillRect(mPlayheadX - 0.85, 0, 1.7, mh);
+    }, [zoom, showTacticalAids, progress, deck, antiMuddy, isBassClashDanger, hdWave, overviewBytes]);
 
     const handleMinimapClick = (e) => {
         const miniCanvas = minimapRef.current;
@@ -445,8 +636,8 @@ export const CopilotSeratoWaveform = ({
 
     return (
         <div className="flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner">
-            {/* TACTICAL ANTICIPATION HUD BOX: CONTADOR Y PUNTOS CLAVE CON TOOLTIP DETALLADO */}
-            {showTacticalAids && (
+            {/* TACTICAL ANTICIPATION HUD BOX: CONTADOR Y PUNTOS CLAVE CON TOOLTIP DETALLADO (SUPRIMIDO EN MODO COMPACTO CON PANEL CENTRAL) */}
+            {false && (!isCompact && showTacticalAids) && (
                 <div className="relative p-2 rounded-xl bg-zinc-950/90 border border-zinc-800/80 shadow-md">
                     {isEmptyDeck ? (
                         <div className="flex items-center justify-between gap-2">
@@ -530,8 +721,6 @@ export const CopilotSeratoWaveform = ({
                     )}
 
                     {/* POPOVER CON INSTRUCCIÓN DETALLADA AL HACER HOVER */}
-
-                    {/* POPOVER CON INSTRUCCIÓN DETALLADA AL HACER HOVER */}
                     {hoveredMilestone && (
                         <div className="absolute left-2 right-2 top-full mt-1.5 z-30 p-2.5 rounded-xl bg-black/95 border border-djcyan-500/60 shadow-2xl backdrop-blur-md text-xs font-mono animate-fadeIn">
                             <div className="flex items-center justify-between border-b border-zinc-800 pb-1 mb-1.5">
@@ -551,41 +740,60 @@ export const CopilotSeratoWaveform = ({
                 </div>
             )}
 
-            {/* Barra de Control del Waveform + LEYENDA DE FRECUENCIAS */}
+            {/* Barra de Control del Waveform + LEYENDA REKORDBOX 3BAND */}
             <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-mono">
-                {/* BOTÓN TOGGLE DE AYUDAS TÁCTICAS DJ + LEYENDA 3-BANDAS */}
                 <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                        type="button"
-                        onClick={() => setShowTacticalAids(!showTacticalAids)}
-                        className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
-                            showTacticalAids
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
-                            : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
-                        }`}
-                        title="Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
-                    >
-                        <span>{showTacticalAids ? '🎯' : '⚪'}</span>
-                        <span>{showTacticalAids ? 'Ayudas DJ' : 'Puro Wave'}</span>
-                    </button>
+                    {!isCompact && (
+                        <button
+                            type="button"
+                            onClick={() => setShowTacticalAids(!showTacticalAids)}
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
+                                showTacticalAids
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
+                                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
+                            }`}
+                            title="Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
+                        >
+                            <span>{showTacticalAids ? '🎯' : '⚪'}</span>
+                            <span>{showTacticalAids ? 'Ayudas DJ' : 'Puro Wave'}</span>
+                        </button>
+                    )}
 
-                    {/* LEYENDA VISUAL DE FRECUENCIAS SERATO 3-BAND */}
-                    <div className="hidden sm:flex items-center gap-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] text-zinc-400">
-                        {overviewBytes && (
-                            <span className="flex items-center gap-1 font-mono text-[8.5px] font-black px-1.5 py-0.2 rounded bg-red-950/70 border border-red-500/50 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.3)]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
-                                SERATO OVERVIEW REAL
+                    {/* BADGE INDEPENDIENTE 3BAND HD + LEYENDA COMPACTA SIN HERCIOS */}
+                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                        {hdWave?.realFft && (
+                            <span
+                                className="flex items-center gap-1.5 font-mono font-black px-2 py-0.5 rounded-md shrink-0"
+                                style={{
+                                    fontSize: '9px',
+                                    backgroundColor: 'rgba(34, 211, 238, 0.12)',
+                                    border: '1px solid rgba(34, 211, 238, 0.45)',
+                                    color: '#22d3ee',
+                                }}
+                            >
+                                <span style={{ width: 5, height: 5, borderRadius: '9999px', backgroundColor: '#22d3ee', display: 'inline-block' }} />
+                                3BAND HD
                             </span>
                         )}
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span>Graves (&lt;200Hz)</span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#06b6d4]"></span>Medios (200Hz-2.5kHz)</span>
-                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#ffffff]"></span>Agudos (&gt;2.5kHz)</span>
+                        <div className="flex items-center gap-2.5 px-2.5 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9.5px] font-mono text-zinc-400 shrink-0">
+                            <span className="flex items-center gap-1">
+                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#2563eb', display: 'inline-block' }} />
+                                Graves
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+                                Medios
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#ffffff', display: 'inline-block' }} />
+                                Agudos
+                            </span>
+                        </div>
                     </div>
                 </div>
 
                 {/* CONTROLES DE ZOOM Y TIEMPOS */}
-                <div className="flex items-center gap-2">
-                    {/* Zoom Presets */}
+                <div className="flex items-center gap-2 order-first shrink-0">
                     <div className="flex items-center p-0.5 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px]">
                         {[2, 4, 8, 16].map(z => (
                             <button
@@ -601,7 +809,6 @@ export const CopilotSeratoWaveform = ({
                         ))}
                     </div>
 
-                    {/* Tiempo Transcurrido y Restante */}
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-zinc-950 border border-zinc-800/80 text-[10px] sm:text-[11px]">
                         <span className={isEmptyDeck ? 'text-zinc-500 font-bold' : 'text-white font-bold'}>{isEmptyDeck ? '00:00' : formatSec(elapsedSec)}</span>
                         <span className="text-zinc-600">/</span>
@@ -610,18 +817,18 @@ export const CopilotSeratoWaveform = ({
                 </div>
             </div>
 
-            {/* Canvas Waveform Zoom Serato (Centrado en Playhead) */}
-            <div className="relative w-full rounded-xl overflow-hidden border border-zinc-800/80 bg-[#05050b]">
+            {/* Canvas Waveform Zoom Rekordbox 3Band HD (Centrado en Playhead Rojo) */}
+            <div className="relative w-full rounded-xl overflow-hidden border border-zinc-800/80 bg-[#050507]">
                 <canvas
                     ref={canvasRef}
                     style={{ width: '100%', height: '88px', display: 'block' }}
                 />
             </div>
 
-            {/* Canvas Minimap Track Overview Completo (0-100%) */}
-            <div 
+            {/* Canvas Minimap Track Overview Completo 3Band HD (0-100%) */}
+            <div
                 onClick={handleMinimapClick}
-                className="relative w-full rounded-lg overflow-hidden border border-zinc-800/60 bg-[#06060e] cursor-pointer hover:border-zinc-700 transition-colors"
+                className="relative w-full rounded-lg overflow-hidden border border-zinc-800/60 bg-[#050507] cursor-pointer hover:border-zinc-700 transition-colors"
                 title="Haz clic en cualquier punto para saltar en la pista"
             >
                 <canvas
@@ -632,4 +839,3 @@ export const CopilotSeratoWaveform = ({
         </div>
     );
 };
-
