@@ -1,6 +1,7 @@
 const { useState, useEffect } = React;
 import { Icons } from '../shell/icons.jsx';
 
+import { apiClient } from '../services/apiClient.js';
 /**
  * Modal Unificada de Exploración de Bibliotecas & Archivos
  * Compartida de forma 100% idéntica entre Auditoría, Cues, Sets, Maps, Pool y Radar.
@@ -40,9 +41,9 @@ export const UnifiedLibraryBrowserModal = ({
     const fetchDirectoryListing = async (targetPath = "") => {
         setLoading(true);
         let res = null;
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        if (true) {
             try {
-                res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+                res = await apiClient.rpc('listar_subcarpetas_sistema', targetPath);
             } catch (err) {
                 console.warn("[UNIFIED MODAL] Fallo llamada Eel, recurriendo a HTTP:", err);
             }
@@ -73,8 +74,8 @@ export const UnifiedLibraryBrowserModal = ({
     const handleAbrirFinder = async () => {
         try {
             let res = null;
-            if (window.eel && window.eel.seleccionar_carpeta_dialogo) {
-                res = await window.eel.seleccionar_carpeta_dialogo()();
+            if (true) {
+                res = await apiClient.rpc('seleccionar_carpeta_dialogo');
             } else {
                 const resp = await fetch('/api/seleccionar_carpeta_dialogo');
                 if (resp.ok) res = await resp.json();
