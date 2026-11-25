@@ -27815,6 +27815,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
       return () => clearInterval(timer);
     }, []);
     useEffect29(() => {
+      if (!isWorkspaceActive) {
+        if (wsRef.current) {
+          try {
+            wsRef.current.close();
+          } catch (_) {
+          }
+          wsRef.current = null;
+        }
+        return;
+      }
       let isMounted = true;
       let ws = null;
       let fallbackInterval = null;
@@ -27904,13 +27914,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
           startPollingFallback();
         }
       };
+      fetch("/api/copilot/status").then((r) => r.ok ? r.json() : null).then((data) => {
+        if (!isMounted || !data) return;
+        setState(data);
+        if (data.controller && data.controller.name) {
+          setControllerState(data.controller);
+        }
+      }).catch(() => {
+      });
       connectWebSocket();
       return () => {
         isMounted = false;
         if (ws) ws.close();
         if (fallbackInterval) clearInterval(fallbackInterval);
       };
-    }, []);
+    }, [isWorkspaceActive]);
     const setMasterDeck = async (deckTarget) => {
       const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
       if (isLocalHost) {

@@ -1073,6 +1073,13 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
 
     // Conexión en tiempo real: WebSocket nativo 60 FPS (<25ms) con fallback a Polling reactivo
     useEffect(() => {
+        if (!isWorkspaceActive) {
+            if (wsRef.current) {
+                try { wsRef.current.close(); } catch (_) {}
+                wsRef.current = null;
+            }
+            return;
+        }
         let isMounted = true;
         let ws = null;
         let fallbackInterval = null;
@@ -1168,6 +1175,16 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             }
         };
 
+        fetch('/api/copilot/status')
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => {
+                if (!isMounted || !data) return;
+                setState(data);
+                if (data.controller && data.controller.name) {
+                    setControllerState(data.controller);
+                }
+            })
+            .catch(() => {});
         connectWebSocket();
 
         return () => {
@@ -1175,7 +1192,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             if (ws) ws.close();
             if (fallbackInterval) clearInterval(fallbackInterval);
         };
-    }, []);
+    }, [isWorkspaceActive]);
 
     const setMasterDeck = async (deckTarget) => {
         const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
