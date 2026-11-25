@@ -1,4 +1,5 @@
 import { ShellIcons } from './shell/icons.jsx';
+import { apiClient } from './services/apiClient.js';
 import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
@@ -291,9 +292,9 @@ const App = () => {
             window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
         };
 
-        if (window.eel && typeof window.eel.expose === 'function') {
+        if (true) {
             try {
-                window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+                apiClient.registerCallback("actualizar_progreso_batch", window.actualizar_progreso_batch);
             } catch (err) {}
         }
 
@@ -428,16 +429,16 @@ const App = () => {
             alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
             return;
         }
-        if (window.eel && window.eel.seleccionar_directorio) {
+        if (true) {
             try {
-                const destino = await window.eel.seleccionar_directorio(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`)();
+                const destino = await apiClient.rpc('seleccionar_directorio', `Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`);
                 if (!destino) return;
                 const estructura = lib.folders.map(f => ({
                     folder_name: f.name,
                     track_paths: (f.tracks || []).map(t => t.file_path || t.path || t.filepath).filter(Boolean)
                 }));
                 if (window.eel.exportar_biblioteca_a_disco) {
-                    const res = await window.eel.exportar_biblioteca_a_disco(destino, lib.name, estructura)();
+                    const res = await apiClient.rpc('exportar_biblioteca_a_disco', destino, lib.name, estructura);
                     if (res && res.success) {
                         alert(`✓ Biblioteca "${lib.name}" creada con éxito en:\n${res.path}`);
                     } else {
@@ -836,11 +837,11 @@ const App = () => {
 
         audioRef.current = audio;
 
-        if (window.eel && typeof window.eel.expose === 'function') {
+        if (true) {
             window.log_to_console = (msg) => {
                 setLogs(prev => [...prev, { type: 'info', text: `[${new Date().toLocaleTimeString()}] ${msg}` }]);
             };
-            window.eel.expose(window.log_to_console, "log_to_console");
+            apiClient.registerCallback("log_to_console", window.log_to_console);
 
             window.notificar_archivo_original_eliminado_global = (info) => {
                 if (info && info.original_path) {
@@ -851,7 +852,7 @@ const App = () => {
                     }));
                 }
             };
-            window.eel.expose(window.notificar_archivo_original_eliminado_global, "notificar_archivo_original_eliminado_global");
+            apiClient.registerCallback("notificar_archivo_original_eliminado_global", window.notificar_archivo_original_eliminado_global);
         }
 
         return () => {
@@ -959,8 +960,8 @@ const App = () => {
                         }
                     }
                 } else if (track.path || track.f) {
-                    if (window.eel && window.eel.reproducir_pista_mac) {
-                        window.eel.reproducir_pista_mac(track.path || track.f)();
+                    if (true) {
+                        apiClient.rpc('reproducir_pista_mac', track.path || track.f);
                         setIsPlaying(true);
                     }
                 } else {
@@ -992,8 +993,8 @@ const App = () => {
             }
             stopSynthPreview();
             setIsPlaying(false);
-            if (window.eel && window.eel.detener_audio_mac) {
-                window.eel.detener_audio_mac()();
+            if (true) {
+                apiClient.rpc('detener_audio_mac');
             }
         } else {
             if (audio && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
@@ -1021,9 +1022,9 @@ const App = () => {
         }
         setIsPlaying(false);
         setPlayProgress(0);
-        if (window.eel && window.eel.cue_audio_mac) {
+        if (true) {
             const trk = window.__bwCurrentTrack || nowPlayingTrack || {};
-            window.eel.cue_audio_mac(trk.path || trk.f || "")();
+            apiClient.rpc('cue_audio_mac', trk.path || trk.f || "");
         }
     };
 
@@ -1285,9 +1286,9 @@ const App = () => {
         try {
             let target = pathOverride;
             if (!target) {
-                if (window.eel && window.eel.seleccionar_directorio) {
+                if (true) {
                     try {
-                        target = await window.eel.seleccionar_directorio()();
+                        target = await apiClient.rpc('seleccionar_directorio');
                     } catch (e) {}
                 }
                 if (!target || target === 'cancelado') {
@@ -1310,9 +1311,9 @@ const App = () => {
             setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: 'Iniciando lectura de archivos en carpeta...' });
 
             let res = null;
-            if (window.eel && window.eel.cargar_metadatos_directorio) {
+            if (true) {
                 try {
-                    res = await window.eel.cargar_metadatos_directorio(target)();
+                    res = await apiClient.rpc('cargar_metadatos_directorio', target);
                 } catch (e) {}
             }
             if (!res) {

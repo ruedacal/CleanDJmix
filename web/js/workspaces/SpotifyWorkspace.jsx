@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover, DEFAULT_POOL_COLUMNS, POOL_COLUMN_CATEGORIES } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
@@ -143,8 +144,8 @@ export const SpotifyWorkspace = ({
             } : null;
 
             let res = null;
-            if (window.eel && window.eel.buscar_candidatos_manuales_spotify) {
-                res = await window.eel.buscar_candidatos_manuales_spotify(query, pistaOrigen)();
+            if (true) {
+                res = await apiClient.rpc('buscar_candidatos_manuales_spotify', query, pistaOrigen);
             } else {
                 const resp = await fetch('/api/buscar_candidatos_manuales_spotify', {
                     method: 'POST',
@@ -215,7 +216,7 @@ export const SpotifyWorkspace = ({
     const [fsLoading, setFsLoading] = useState(false);
 
     useEffect(() => {
-        if (window.eel && typeof window.eel.expose === 'function') {
+        if (true) {
             const updateDownload = (pct, msg) => {
                 if (!msg || msg.includes('detenid') || msg.includes('cancelad') || msg.includes('CANCELAD')) {
                     setDownloadProgress(0);
@@ -383,15 +384,15 @@ export const SpotifyWorkspace = ({
             window.notificar_fin_lote = finishBatch;
             window.notificar_archivo_original_eliminado = notifyOriginalPurged;
 
-            window.eel.expose(window.actualizar_estado_descarga, "actualizar_estado_descarga");
-            window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
-            window.eel.expose(window.actualizar_estado_fft, "actualizar_estado_fft");
-            window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
-            window.eel.expose(window.notificar_resultado_auditoria_post_descarga, "notificar_resultado_auditoria_post_descarga");
-            window.eel.expose(window.notificar_fin_auditoria_post_descarga, "notificar_fin_auditoria_post_descarga");
-            window.eel.expose(window.notificar_fallo_descarga, "notificar_fallo_descarga");
-            window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
-            window.eel.expose(window.notificar_archivo_original_eliminado, "notificar_archivo_original_eliminado");
+            apiClient.registerCallback("actualizar_estado_descarga", window.actualizar_estado_descarga);
+            apiClient.registerCallback("actualizar_progreso_descarga", window.actualizar_progreso_descarga);
+            apiClient.registerCallback("actualizar_estado_fft", window.actualizar_estado_fft);
+            apiClient.registerCallback("notificar_resultado_auditoria", window.notificar_resultado_auditoria);
+            apiClient.registerCallback("notificar_resultado_auditoria_post_descarga", window.notificar_resultado_auditoria_post_descarga);
+            apiClient.registerCallback("notificar_fin_auditoria_post_descarga", window.notificar_fin_auditoria_post_descarga);
+            apiClient.registerCallback("notificar_fallo_descarga", window.notificar_fallo_descarga);
+            apiClient.registerCallback("notificar_fin_lote", window.notificar_fin_lote);
+            apiClient.registerCallback("notificar_archivo_original_eliminado", window.notificar_archivo_original_eliminado);
         }
     }, []);
 
@@ -399,9 +400,9 @@ export const SpotifyWorkspace = ({
         try {
             fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
         } catch (e) {}
-        if (window.eel && window.eel.cancelar_procesos_activos) {
+        if (true) {
             try {
-                await window.eel.cancelar_procesos_activos()();
+                await apiClient.rpc('cancelar_procesos_activos');
             } catch (e) {
                 console.error("Error al cancelar procesos:", e);
             }
@@ -423,8 +424,8 @@ export const SpotifyWorkspace = ({
         setIsExportingXls(true);
         try {
             let res = null;
-            if (window.eel && window.eel.exportar_reporte_descargas_xls) {
-                res = await window.eel.exportar_reporte_descargas_xls(downloadSession, destDir)();
+            if (true) {
+                res = await apiClient.rpc('exportar_reporte_descargas_xls', downloadSession, destDir);
             } else {
                 const resp = await fetch('/api/descargar_reporte_xls', {
                     method: 'POST',
@@ -474,9 +475,9 @@ export const SpotifyWorkspace = ({
             const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(startPath)}`);
             if (resp.ok) res = await resp.json();
         } catch (httpErr) {}
-        if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
+        if (!res && true) {
             try {
-                res = await window.eel.listar_subcarpetas_sistema(startPath)();
+                res = await apiClient.rpc('listar_subcarpetas_sistema', startPath);
             } catch (err) {
                 console.warn("[EXPLORADOR] Fallo llamada Eel, recurriendo a HTTP:", err);
             }
@@ -504,9 +505,9 @@ export const SpotifyWorkspace = ({
             const resp = await fetch(`/api/listar_subcarpetas?ruta=${encodeURIComponent(targetPath)}`);
             if (resp.ok) res = await resp.json();
         } catch (httpErr) {}
-        if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
+        if (!res && true) {
             try {
-                res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+                res = await apiClient.rpc('listar_subcarpetas_sistema', targetPath);
             } catch (err) {
                 console.warn("[EXPLORADOR] Fallo llamada Eel al navegar:", err);
             }
@@ -841,9 +842,9 @@ export const SpotifyWorkspace = ({
         let coverHd = track.cover;
         if (!streamUrl) {
             setDownloadingMsg(`[PRE-ESCUCHA] Resolviendo stream para: ${track.artist} - ${track.title}...`);
-            if (window.eel && window.eel.resolver_stream_preescucha) {
+            if (true) {
                 try {
-                    const res = await window.eel.resolver_stream_preescucha(track.title, track.artist)();
+                    const res = await apiClient.rpc('resolver_stream_preescucha', track.title, track.artist);
                     if (res && res.stream_url) {
                         streamUrl = res.stream_url;
                         if (res.cover) coverHd = res.cover;
@@ -948,8 +949,8 @@ export const SpotifyWorkspace = ({
         if (!streamUrl) {
             setCandidateModal(prev => ({ ...prev, searchMsg: `Resolviendo audio de preescucha para: ${cand.title}...` }));
             try {
-                if (window.eel && window.eel.resolver_stream_preescucha) {
-                    const res = await window.eel.resolver_stream_preescucha(cand.title, cand.artist)();
+                if (true) {
+                    const res = await apiClient.rpc('resolver_stream_preescucha', cand.title, cand.artist);
                     if (res && res.stream_url) {
                         streamUrl = res.stream_url;
                         if (res.cover) coverHd = res.cover;
@@ -1013,9 +1014,9 @@ export const SpotifyWorkspace = ({
             let res = null;
 
             // 1. Intento primario vía Eel con timeout de seguridad (8 segundos)
-            if (window.eel && window.eel.analizar_catalogo_spotify) {
+            if (true) {
                 try {
-                    const eelCall = window.eel.analizar_catalogo_spotify(queryToSearch)();
+                    const eelCall = apiClient.rpc('analizar_catalogo_spotify', queryToSearch);
                     const timeoutPromise = new Promise((_, reject) =>
                         setTimeout(() => reject(new Error("Eel timeout")), 8000)
                     );
@@ -1092,9 +1093,9 @@ export const SpotifyWorkspace = ({
         const purgeTag = deleteOriginalsOnUpgrade ? " (🗑️ Con purga de baja calidad)" : "";
         setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${fmt.toUpperCase()}${purgeTag}...`);
         let descargadoVíaEel = false;
-        if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
+        if (true) {
             try {
-                await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, fmt, destDir, deleteOriginalsOnUpgrade)();
+                await apiClient.rpc('descargar_pistas_spotify_seleccionadas', pistasADescargar, fmt, destDir, deleteOriginalsOnUpgrade);
                 descargadoVíaEel = true;
             } catch (e) {
                 console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
@@ -1141,9 +1142,9 @@ export const SpotifyWorkspace = ({
         setFftMsg(`[AUDITORÍA FFT] Iniciando certificación espectral de ${targetList.length} pista(s)...`);
 
         let auditadoVíaEel = false;
-        if (window.eel && window.eel.auditar_descargas_fft) {
+        if (true) {
             try {
-                await window.eel.auditar_descargas_fft(targetList)();
+                await apiClient.rpc('auditar_descargas_fft', targetList);
                 auditadoVíaEel = true;
             } catch (e) {
                 console.warn("[SPOTIFY] Error en llamada Eel de auditoría, recurriendo a HTTP:", e);

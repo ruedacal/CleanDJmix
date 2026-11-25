@@ -32,6 +32,15 @@ async function request(url, { method = 'GET', body = undefined, timeoutMs = DEFA
 }
 
 export const apiClient = {
+    registerCallback: (name, fn) => {
+        if (!name || typeof fn !== 'function') return;
+        if (typeof window !== 'undefined') {
+            window[name] = fn;
+            if (window.__beatwave_transport_bridge && window.__beatwave_transport_bridge.callbacks) {
+                window.__beatwave_transport_bridge.callbacks[name] = fn;
+            }
+        }
+    },
     get: (url, opts = {}) => request(url, { ...opts, method: 'GET' }),
     post: (url, body, opts = {}) => request(url, { ...opts, method: 'POST', body }),
     rpc: async (methodName, ...args) => {

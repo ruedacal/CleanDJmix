@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { DJ_CURATED_CATALOG, TAXONOMY_TREE, CAMELOT_WHEEL_DATA, AI_PROMPT_CHIPS, parseAIDJQuery } from '../data/djCatalog.js';
 import { SectionTitle, CamelotKeyBadge } from '../shell/workspace-ui.jsx';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
@@ -169,8 +170,8 @@ export const TaxonomyWorkspace = ({
         setFeedbackMsg(`Buscando ${q ? `"${q}"` : "catálogo"} en ${scopeLabel}...`);
 
         try {
-            if (window.eel && window.eel.buscar_temas_taxonomia) {
-                const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 40)();
+            if (true) {
+                const res = await apiClient.rpc('buscar_temas_taxonomia', q, searchScope, rutaBase, 40);
                 if (res && res.status === 'ok') {
                     const onlineItems = (res.online || []).map(item => ({
                         ...item,
@@ -512,10 +513,10 @@ export const TaxonomyWorkspace = ({
         let coverHd = trk.displayCover || trk.cover;
 
         // Si es una pista de catálogo online o no tiene ruta local ni URL directa, resolver stream
-        if (!streamUrl && !trk.path && !trk.f && window.eel && window.eel.resolver_stream_preescucha) {
+        if (!streamUrl && !trk.path && !trk.f && true) {
             try {
                 setFeedbackMsg(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
-                const res = await window.eel.resolver_stream_preescucha(trk.displayTitle || trk.title, trk.displayArtist || trk.artist)();
+                const res = await apiClient.rpc('resolver_stream_preescucha', trk.displayTitle || trk.title, trk.displayArtist || trk.artist);
                 if (res && res.stream_url) {
                     streamUrl = res.stream_url;
                     if (res.cover) coverHd = res.cover;
@@ -594,8 +595,8 @@ export const TaxonomyWorkspace = ({
     const handleAsignarACrateIndividual = async (trk) => {
         if (!trk) return;
         try {
-            if (window.eel && window.eel.organizar_pista_en_crate) {
-                const res = await window.eel.organizar_pista_en_crate(trk, rutaBase, modo)();
+            if (true) {
+                const res = await apiClient.rpc('organizar_pista_en_crate', trk, rutaBase, modo);
                 if (res && res.status === 'ok') {
                     setFeedbackMsg(`✓ Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
                 } else {
@@ -611,8 +612,8 @@ export const TaxonomyWorkspace = ({
     // Manejadores de Ruteo de Lote a Serato Crates
     const handleSeleccionarDestino = async () => {
         try {
-            if (window.eel && window.eel.seleccionar_directorio) {
-                const dir = await window.eel.seleccionar_directorio()();
+            if (true) {
+                const dir = await apiClient.rpc('seleccionar_directorio');
                 if (dir) {
                     setRutaBase(dir);
                 }
@@ -630,8 +631,8 @@ export const TaxonomyWorkspace = ({
         setResultSummary(null);
 
         try {
-            if (window.eel && window.eel.organizar_lote_en_crates) {
-                const res = await window.eel.organizar_lote_en_crates(tracks, rutaBase, modo)();
+            if (true) {
+                const res = await apiClient.rpc('organizar_lote_en_crates', tracks, rutaBase, modo);
                 if (res && res.status === 'ok') {
                     setResultSummary(res);
                     setRouteProgress(100);
@@ -657,8 +658,8 @@ export const TaxonomyWorkspace = ({
         setRouteProgress(50);
         setRouteStatusMsg("Generando archivos binarios .crate para Serato DJ Pro...");
         try {
-            if (window.eel && window.eel.exportar_serato_crates) {
-                const res = await window.eel.exportar_serato_crates(tracks)();
+            if (true) {
+                const res = await apiClient.rpc('exportar_serato_crates', tracks);
                 setRouteProgress(100);
                 if (res && res.status === 'ok') {
                     setResultSummary({
@@ -686,8 +687,8 @@ export const TaxonomyWorkspace = ({
         setRouteProgress(50);
         setRouteStatusMsg("Generando archivo rekordbox.xml estándar Pioneer DJ...");
         try {
-            if (window.eel && window.eel.exportar_rekordbox_xml) {
-                const res = await window.eel.exportar_rekordbox_xml(tracks, rutaBase, "rekordbox.xml")();
+            if (true) {
+                const res = await apiClient.rpc('exportar_rekordbox_xml', tracks, rutaBase, "rekordbox.xml");
                 setRouteProgress(100);
                 if (res && res.status === 'ok') {
                     setResultSummary({
