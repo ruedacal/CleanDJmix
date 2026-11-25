@@ -68,6 +68,61 @@ const LibraryFolderSidebar = ({
     const [newFolderNameInput, setNewFolderNameInput] = useState('');
     const [isAddingRoot, setIsAddingRoot] = useState(false);
     const [dragOverFolderId, setDragOverFolderId] = useState(null);
+    const [draggedFolderId, setDraggedFolderId] = useState(null);
+
+        const containsId = (fld, id) => {
+            if (!fld) return false;
+            if (fld.id === id) return true;
+            return (fld.subfolders || []).some(s => containsId(s, id));
+        };
+
+        const updated = libraries.map(l => {
+            if (l.id !== currentLib.id) return l;
+            const rootFolders = l.folders || [];
+            const sourceObj = (() => {
+                const walk = (arr) => {
+                    for (const item of (arr || [])) {
+                        if (item.id === sourceFolderId) return item;
+                        const hit = walk(item.subfolders);
+                        if (hit) return hit;
+                    }
+                    return null;
+                };
+                return walk(rootFolders);
+            })();
+            if (!sourceObj || containsId(sourceObj, targetFolderId)) return l;
+
+            if (shiftReorder) {
+                const { extracted, remaining } = findAndExtract(rootFolders);
+                if (!extracted) return l;
+                const targetIdx = remaining.findIndex(f => f.id === targetFolderId);
+                if (targetIdx === -1) {
+                    return { ...l, folders: [...remaining, extracted] };
+                }
+                const reordered = [...remaining.slice(0, targetIdx), extracted, ...remaining.slice(targetIdx)];
+                return { ...l, folders: reordered };
+            } else {
+                const { extracted, remaining } = findAndExtract(rootFolders);
+                if (!extracted) return l;
+                const nestInto = (arr) => (arr || []).map(fld => {
+                    const nextSubs = fld.subfolders ? nestInto(fld.subfolders) : [];
+                    if (fld.id === targetFolderId) {
+                        const subs = [...nextSubs];
+                        const existingIdx = subs.findIndex(s => s.id === extracted.id);
+                        if (existingIdx >= 0) subs[existingIdx] = extracted;
+                        else subs.push(extracted);
+                        return { ...fld, subfolders: subs };
+                    }
+                    return { ...fld, subfolders: nextSubs };
+                });
+                return { ...l, folders: nestInto(remaining) };
+            }
+        });
+
+        if (onSaveLibraries) onSaveLibraries(updated, currentLib.id);
+        setFeedbackMsg(shiftReorder ? '✓ Carpeta reordenada' : '✓ Carpeta anidada como subcarpeta');
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    
 
     const startEditing = (f, e) => {
         if (e) e.stopPropagation();
@@ -90,6 +145,7 @@ const LibraryFolderSidebar = ({
             setIsAddingRoot(false);
         }
     };
+
 
     return (
         <aside className="w-[270px] shrink-0 bg-[#09090f] border-r border-djzinc-800 flex flex-col h-full select-none text-xs font-mono z-10">
@@ -444,7 +500,6 @@ const LibraryFolderSidebar = ({
         </aside>
     );
 };
-
 export const LibraryWorkspace = ({
     libraries = [],
     activeLibraryId,
@@ -465,6 +520,168 @@ export const LibraryWorkspace = ({
     setAuditTracks,
     setSelectedTrack
 }) => {
+
+    const getRowKey = (t, idx = 0) => t?.id || t?.file_path || t?.path || t?.f || t?.filename || idx;
+
+    const handleRowSelectClick = (e, tr, rowIdx) => {
+        const key = getRowKey(tr, rowIdx);
+        const isCmd = Boolean(e.metaKey || e.ctrlKey);
+        const isShift = Boolean(e.shiftKey);
+
+        if (isShift && lastClickedRowIdx !== null && filteredTracks.length > 0) {
+            const start = Math.max(0, Math.min(lastClickedRowIdx, rowIdx));
+            const end = Math.min(filteredTracks.length - 1, Math.max(lastClickedRowIdx, rowIdx));
+            setSelectedTrackKeys(prev => {
+                const next = new Set(isCmd ? prev : []);
+                for (let i = start; i <= end; i++) {
+                    next.add(getRowKey(filteredTracks[i], i));
+                }
+                return next;
+            });
+            return;
+        }
+
+        if (isCmd) {
+            setSelectedTrackKeys(prev => {
+                const next = new Set(prev);
+                if (next.has(key)) next.delete(key);
+                else next.add(key);
+                return next;
+            });
+            setLastClickedRowIdx(rowIdx);
+            return;
+        }
+
+        setSelectedTrackKeys(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+        setLastClickedRowIdx(rowIdx);
+    };
+
+    const handleRenameFolderCommit = (folderId) => {
+        const trimmed = String(editingFolderName || '').trim();
+        setEditingFolderId(null);
+        if (!trimmed) return;
+        const renameRecursive = (list) => (list || []).map(fld => ({
+            ...fld,
+            name: fld.id === folderId ? trimmed : fld.name,
+            subfolders: fld.subfolders ? renameRecursive(fld.subfolders) : []
+        }));
+        const updated = libraries.map(l => l.id === currentLib.id ? { ...l, folders: renameRecursive(l.folders) } : l);
+        if (onSaveLibraries) onSaveLibraries(updated, currentLib.id);
+    };
+
+    const handleDropMultipleTracksIntoFolder = (targetFolderId, draggedTrack) => {
+        if (!targetFolderId) return;
+        const draggedKey = draggedTrack ? (draggedTrack.id || draggedTrack.file_path || draggedTrack.path || draggedTrack.f || draggedTrack.filename) : null;
+        const useSelection = draggedKey && selectedTrackKeys && selectedTrackKeys.has(draggedKey) && selectedTrackKeys.size > 1;
+
+        const payloadTracks = useSelection
+            ? filteredTracks.filter((t, idx) => selectedTrackKeys.has(getRowKey(t, idx)))
+            : (draggedTrack ? [draggedTrack] : []);
+
+        if (payloadTracks.length === 0) return;
+
+        const addToTarget = (list) => (list || []).map(fld => {
+            const nextSub = fld.subfolders ? addToTarget(fld.subfolders) : [];
+            if (fld.id !== targetFolderId) return { ...fld, subfolders: nextSub };
+            const existing = new Set((fld.tracks || []).map(t => t.id || t.file_path || t.path || t.f || t.filename));
+            const fresh = payloadTracks.filter(t => {
+                const k = t.id || t.file_path || t.path || t.f || t.filename;
+                if (!k || existing.has(k)) return false;
+                existing.add(k);
+                return true;
+            });
+            return { ...fld, tracks: [...(fld.tracks || []), ...fresh], subfolders: nextSub };
+        });
+
+        const updated = libraries.map(l => l.id === currentLib.id ? { ...l, folders: addToTarget(l.folders) } : l);
+        if (onSaveLibraries) onSaveLibraries(updated, currentLib.id);
+        setFeedbackMsg(`✓ ${payloadTracks.length} pista(s) guardada(s) en carpeta`);
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+    const handleFolderDropAction = (sourceFolderId, targetFolderId, shiftReorder = false) => {
+        if (!sourceFolderId || !targetFolderId || sourceFolderId === targetFolderId) return;
+
+        const findAndExtract = (list) => {
+            let extracted = null;
+            const remaining = [];
+            for (const fld of (list || [])) {
+                if (fld.id === sourceFolderId) {
+                    extracted = fld;
+                    continue;
+                }
+                const subRes = fld.subfolders ? findAndExtract(fld.subfolders) : { extracted: null, remaining: [] };
+                if (subRes.extracted) extracted = subRes.extracted;
+                remaining.push({ ...fld, subfolders: subRes.remaining });
+            }
+            return { extracted, remaining };
+        };
+
+        const containsId = (fld, id) => {
+            if (!fld) return false;
+            if (fld.id === id) return true;
+            return (fld.subfolders || []).some(s => containsId(s, id));
+        };
+
+        const updated = libraries.map(l => {
+            if (l.id !== currentLib.id) return l;
+            const rootFolders = l.folders || [];
+            const sourceObj = (() => {
+                const walk = (arr) => {
+                    for (const item of (arr || [])) {
+                        if (item.id === sourceFolderId) return item;
+                        const hit = walk(item.subfolders);
+                        if (hit) return hit;
+                    }
+                    return null;
+                };
+                return walk(rootFolders);
+            })();
+            if (!sourceObj || containsId(sourceObj, targetFolderId)) return l;
+
+            if (shiftReorder) {
+                const { extracted, remaining } = findAndExtract(rootFolders);
+                if (!extracted) return l;
+                const targetIdx = remaining.findIndex(f => f.id === targetFolderId);
+                if (targetIdx === -1) {
+                    return { ...l, folders: [...remaining, extracted] };
+                }
+                const reordered = [...remaining.slice(0, targetIdx), extracted, ...remaining.slice(targetIdx)];
+                return { ...l, folders: reordered };
+            } else {
+                const { extracted, remaining } = findAndExtract(rootFolders);
+                if (!extracted) return l;
+                const nestInto = (arr) => (arr || []).map(fld => {
+                    const nextSubs = fld.subfolders ? nestInto(fld.subfolders) : [];
+                    if (fld.id === targetFolderId) {
+                        const subs = [...nextSubs];
+                        const existingIdx = subs.findIndex(s => s.id === extracted.id);
+                        if (existingIdx >= 0) subs[existingIdx] = extracted;
+                        else subs.push(extracted);
+                        return { ...fld, subfolders: subs };
+                    }
+                    return { ...fld, subfolders: nextSubs };
+                });
+                return { ...l, folders: nestInto(remaining) };
+            }
+        });
+
+        if (onSaveLibraries) onSaveLibraries(updated, currentLib.id);
+        setFeedbackMsg(shiftReorder ? '✓ Carpeta reordenada' : '✓ Carpeta anidada como subcarpeta');
+        setTimeout(() => setFeedbackMsg(''), 2500);
+    };
+
+
+    const [editingFolderId, setEditingFolderId] = useState(null);
+    const [editingFolderName, setEditingFolderName] = useState('');
+    const [draggedFolderId, setDraggedFolderId] = useState(null);
+    const [lastClickedRowIdx, setLastClickedRowIdx] = useState(null);
+
     const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
     const [libNameInput, setLibNameInput] = useState('');
     const [newFolderName, setNewFolderName] = useState('');
@@ -1461,104 +1678,154 @@ export const LibraryWorkspace = ({
                                 No hay carpetas creadas. Crea tu primera carpeta arriba o pulsa "Auto por Género".
                             </div>
                         ) : (
-                            currentLib.folders.map(f => {
-                                const isSelected = selectedFolderId === f.id;
-                                const isDropOver = dragOverFolderId === f.id;
-                                const trCount = f.tracks?.length || 0;
-                                return (
-                                    <div
-                                        key={f.id}
-                                        onClick={() => setSelectedFolderId(f.id)}
-                                        onDragOver={(e) => {
-                                            e.preventDefault();
-                                            e.dataTransfer.dropEffect = 'copy';
-                                            if (dragOverFolderId !== f.id) setDragOverFolderId(f.id);
-                                        }}
-                                        onDragLeave={(e) => {
-                                            if (e.currentTarget.contains(e.relatedTarget)) return;
-                                            setDragOverFolderId(null);
-                                        }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            setDragOverFolderId(null);
-                                            try {
-                                                const raw = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('application/json');
-                                                if (raw) {
-                                                    const trData = JSON.parse(raw);
-                                                    handleDropTrackIntoFolder(f.id, trData);
-                                                }
-                                            } catch (err) {}
-                                        }}
-                                        style={{
-                                            backgroundColor: isDropOver 
-                                                ? 'rgba(6, 182, 212, 0.25)' 
-                                                : (isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(24, 24, 27, 0.6)'),
-                                            borderColor: isDropOver 
-                                                ? '#06b6d4' 
-                                                : (isSelected ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.08)'),
-                                            boxShadow: isDropOver ? '0 0 16px rgba(6, 182, 212, 0.45)' : undefined
-                                        }}
-                                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
-                                            isSelected 
-                                                ? 'text-white shadow-md' 
-                                                : 'text-gray-300 hover:border-zinc-600'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <Icons.Folder size={15} className={`shrink-0 ${isDropOver || isSelected ? 'text-cyan-400' : 'text-cyan-500/70'}`} />
-                                            <div className="truncate">
-                                                <span className="text-xs font-mono font-bold block truncate">{f.name}</span>
-                                                <span className="text-[10px] text-gray-400 font-mono">{trCount} pista(s) asignadas</span>
-                                            </div>
-                                        </div>
+                            ((currentLib.folders || []).map(f => {
+                                const renderFolderNode = (fld, depth = 0) => {
+                                    const isSelected = selectedFolderId === fld.id;
+                                    const isDropOver = dragOverFolderId === fld.id;
+                                    const trCount = fld.tracks?.length || 0;
+                                    const subs = fld.subfolders || [];
 
-                                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    let libsToSave = libraries;
-                                                    if (selectedTrackKeys && selectedTrackKeys.size > 0) {
-                                                        const picked = filteredTracks.filter(t => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
-                                                        if (picked.length > 0) {
-                                                            libsToSave = libraries.map(l => {
-                                                                if (l.id === currentLib.id) {
-                                                                    const newFolders = (l.folders || []).map(fld => {
-                                                                        if (fld.id === f.id) {
-                                                                            const existing = new Set((fld.tracks || []).map(t => t.id || t.file_path || t.path || t.filename));
-                                                                            const toAdd = picked.filter(t => !existing.has(t.id || t.file_path || t.path || t.filename));
-                                                                            return { ...fld, tracks: [...(fld.tracks || []), ...toAdd] };
-                                                                        }
-                                                                        return fld;
-                                                                    });
-                                                                    return { ...l, folders: newFolders };
-                                                                }
-                                                                return l;
-                                                            });
-                                                            setSelectedTrackKeys(new Set());
-                                                        }
-                                                    }
-                                                    if (onSaveLibraries) onSaveLibraries(libsToSave, currentLib.id);
-                                                    setFeedbackMsg(`✓ Carpeta "${f.name}" guardada`);
-                                                    setTimeout(() => setFeedbackMsg(''), 2500);
+                                    return (
+                                        <div key={fld.id} className={depth > 0 ? 'ml-3.5 pl-2 border-l border-cyan-500/25 space-y-1' : 'space-y-1'}>
+                                            <div
+                                                draggable={editingFolderId !== fld.id}
+                                                onDragStart={(e) => {
+                                                    setDraggedFolderId(fld.id);
+                                                    e.dataTransfer.setData('application/x-bw-folder', fld.id);
+                                                    e.dataTransfer.effectAllowed = 'copyMove';
                                                 }}
-                                                className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-950 hover:text-emerald-300 text-gray-300 text-[10px] font-mono border border-zinc-700 hover:border-emerald-600/60 cursor-pointer transition-colors"
-                                                title="Guardar la información y pistas de esta carpeta"
+                                                onDragEnd={() => {
+                                                    setDraggedFolderId(null);
+                                                    setDragOverFolderId(null);
+                                                }}
+                                                onClick={() => setSelectedFolderId(fld.id)}
+                                                onDragOver={(e) => {
+                                                    e.preventDefault();
+                                                    e.dataTransfer.dropEffect = draggedFolderId ? 'move' : 'copy';
+                                                    if (dragOverFolderId !== fld.id) setDragOverFolderId(fld.id);
+                                                }}
+                                                onDragLeave={(e) => {
+                                                    if (e.currentTarget.contains(e.relatedTarget)) return;
+                                                    setDragOverFolderId(null);
+                                                }}
+                                                onDrop={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    const shiftReorder = Boolean(e.shiftKey);
+                                                    const folderSrcId = draggedFolderId || e.dataTransfer.getData('application/x-bw-folder');
+                                                    setDragOverFolderId(null);
+                                                    setDraggedFolderId(null);
+
+                                                    if (folderSrcId && folderSrcId !== fld.id) {
+                                                        handleFolderDropAction(folderSrcId, fld.id, shiftReorder);
+                                                        return;
+                                                    }
+                                                    try {
+                                                        const raw = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('application/json');
+                                                        if (raw) {
+                                                            const trData = JSON.parse(raw);
+                                                            handleDropMultipleTracksIntoFolder(fld.id, trData);
+                                                        }
+                                                    } catch (err) {}
+                                                }}
+                                                style={{
+                                                    backgroundColor: isDropOver
+                                                        ? 'rgba(6, 182, 212, 0.25)'
+                                                        : (isSelected ? 'rgba(6, 182, 212, 0.15)' : 'rgba(24, 24, 27, 0.6)'),
+                                                    borderColor: isDropOver
+                                                        ? '#06b6d4'
+                                                        : (isSelected ? 'rgba(6, 182, 212, 0.8)' : 'rgba(255, 255, 255, 0.08)'),
+                                                    boxShadow: isDropOver ? '0 0 16px rgba(6, 182, 212, 0.45)' : undefined
+                                                }}
+                                                className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                                                    isSelected ? 'text-white shadow-md' : 'text-gray-300 hover:border-zinc-600'
+                                                }`}
+                                                title="Arrastra pistas (o varias con Shift/Cmd) aquí, arrastra sobre otra carpeta para anidar o Shift+arrastra para reordenar"
                                             >
-                                                Guardar
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDeleteFolder(f.id)}
-                                                className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer"
-                                                title="Eliminar carpeta"
-                                            >
-                                                <Icons.Close size={14} className="inline-block align-[-2px]" />
-                                            </button>
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    <Icons.Folder size={15} className={`shrink-0 ${isDropOver || isSelected ? 'text-cyan-400' : 'text-cyan-500/70'}`} />
+                                                    <div className="truncate flex-1" onDoubleClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingFolderId(fld.id);
+                                                        setEditingFolderName(fld.name || '');
+                                                    }}>
+                                                        {editingFolderId === fld.id ? (
+                                                            <input
+                                                                type="text"
+                                                                autoFocus
+                                                                value={editingFolderName}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onChange={(e) => setEditingFolderName(e.target.value)}
+                                                                onBlur={() => handleRenameFolderCommit(fld.id)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') { e.preventDefault(); handleRenameFolderCommit(fld.id); }
+                                                                    if (e.key === 'Escape') { setEditingFolderId(null); }
+                                                                }}
+                                                                className="w-full px-1.5 py-0.5 rounded bg-zinc-950 border border-cyan-400 text-xs font-mono text-white outline-none"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs font-mono font-bold block truncate">{fld.name}</span>
+                                                        )}
+                                                        <span className="text-[10px] text-gray-400 font-mono">{trCount} pista(s) asignadas</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingFolderId(fld.id);
+                                                            setEditingFolderName(fld.name || '');
+                                                        }}
+                                                        className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-cyan-300 text-[10px] font-mono border border-zinc-700/80 cursor-pointer"
+                                                        title="Renombrar carpeta"
+                                                    >
+                                                        ✎
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            let libsToSave = libraries;
+                                                            if (selectedTrackKeys && selectedTrackKeys.size > 0) {
+                                                                const picked = filteredTracks.filter((t, idx) => selectedTrackKeys.has(getRowKey(t, idx)));
+                                                                if (picked.length > 0) {
+                                                                    const addPicked = (arr) => (arr || []).map(item => ({
+                                                                        ...item,
+                                                                        tracks: item.id === fld.id
+                                                                            ? [...(item.tracks || []), ...picked.filter(pk => !(item.tracks || []).some(ex => getRowKey(ex) === getRowKey(pk)))]
+                                                                            : (item.tracks || []),
+                                                                        subfolders: item.subfolders ? addPicked(item.subfolders) : []
+                                                                    }));
+                                                                    libsToSave = libraries.map(l => l.id === currentLib.id ? { ...l, folders: addPicked(l.folders) } : l);
+                                                                    setSelectedTrackKeys(new Set());
+                                                                }
+                                                            }
+                                                            if (onSaveLibraries) onSaveLibraries(libsToSave, currentLib.id);
+                                                            setFeedbackMsg(`✓ Carpeta "${fld.name}" guardada`);
+                                                            setTimeout(() => setFeedbackMsg(''), 2500);
+                                                        }}
+                                                        className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-950 hover:text-emerald-300 text-gray-300 text-[10px] font-mono border border-zinc-700 hover:border-emerald-600/60 cursor-pointer transition-colors"
+                                                        title="Guardar la información y pistas de esta carpeta"
+                                                    >
+                                                        Guardar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteFolder(fld.id)}
+                                                        className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer"
+                                                        title="Eliminar carpeta"
+                                                    >
+                                                        <Icons.Close size={14} className="inline-block align-[-2px]" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {subs.map(sub => renderFolderNode(sub, depth + 1))}
                                         </div>
-                                    </div>
-                                );
-                            })
-                        )}
+                                    );
+                                };
+                                return renderFolderNode(f, 0);
+                            }))                        )}
                     </div>
                 
                     {/* Botón Guardar Todo al final del listado de carpetas */}
@@ -1945,7 +2212,12 @@ export const LibraryWorkspace = ({
                                                     e.dataTransfer.setData('text/plain', JSON.stringify(tr));
                                                     e.dataTransfer.effectAllowed = 'copy';
                                                 }}
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                                                        e.preventDefault();
+                                                        handleRowSelectClick(e, tr, tIdx);
+                                                        return;
+                                                    }
                                                     if (onPlayTrack) onPlayTrack(tr);
                                                 }}
                                                 className={`border-b border-white/5 hover:bg-cyan-950/20 transition-colors group cursor-pointer ${

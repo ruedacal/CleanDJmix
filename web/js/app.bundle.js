@@ -6262,9 +6262,9 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
   // web/js/workspaces/LibraryWorkspace.jsx
   var { useState: useState9, useEffect: useEffect12, useRef: useRef12, useMemo: useMemo3, useCallback: useCallback5 } = React;
   var LibraryWorkspace = ({
-    libraries = [],
+    libraries: libraries2 = [],
     activeLibraryId,
-    onSaveLibraries,
+    onSaveLibraries: onSaveLibraries2,
     onSelectLibrary,
     currentTracks = [],
     selectedTrackIds = /* @__PURE__ */ new Set(),
@@ -6282,11 +6282,151 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     setSelectedTrack
   }) => {
     var _a;
-    const [activeLibId, setActiveLibId] = useState9(activeLibraryId || libraries[0] && libraries[0].id || "lib_default");
+    const getRowKey = (t, idx = 0) => (t == null ? void 0 : t.id) || (t == null ? void 0 : t.file_path) || (t == null ? void 0 : t.path) || (t == null ? void 0 : t.f) || (t == null ? void 0 : t.filename) || idx;
+    const handleRowSelectClick = (e, tr, rowIdx) => {
+      const key = getRowKey(tr, rowIdx);
+      const isCmd = Boolean(e.metaKey || e.ctrlKey);
+      const isShift = Boolean(e.shiftKey);
+      if (isShift && lastClickedRowIdx !== null && filteredTracks.length > 0) {
+        const start = Math.max(0, Math.min(lastClickedRowIdx, rowIdx));
+        const end = Math.min(filteredTracks.length - 1, Math.max(lastClickedRowIdx, rowIdx));
+        setSelectedTrackKeys((prev) => {
+          const next = new Set(isCmd ? prev : []);
+          for (let i = start; i <= end; i++) {
+            next.add(getRowKey(filteredTracks[i], i));
+          }
+          return next;
+        });
+        return;
+      }
+      if (isCmd) {
+        setSelectedTrackKeys((prev) => {
+          const next = new Set(prev);
+          if (next.has(key)) next.delete(key);
+          else next.add(key);
+          return next;
+        });
+        setLastClickedRowIdx(rowIdx);
+        return;
+      }
+      setSelectedTrackKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+      setLastClickedRowIdx(rowIdx);
+    };
+    const handleRenameFolderCommit = (folderId) => {
+      const trimmed = String(editingFolderName || "").trim();
+      setEditingFolderId(null);
+      if (!trimmed) return;
+      const renameRecursive = (list) => (list || []).map((fld) => ({
+        ...fld,
+        name: fld.id === folderId ? trimmed : fld.name,
+        subfolders: fld.subfolders ? renameRecursive(fld.subfolders) : []
+      }));
+      const updated = libraries2.map((l) => l.id === currentLib2.id ? { ...l, folders: renameRecursive(l.folders) } : l);
+      if (onSaveLibraries2) onSaveLibraries2(updated, currentLib2.id);
+    };
+    const handleDropMultipleTracksIntoFolder = (targetFolderId2, draggedTrack) => {
+      if (!targetFolderId2) return;
+      const draggedKey = draggedTrack ? draggedTrack.id || draggedTrack.file_path || draggedTrack.path || draggedTrack.f || draggedTrack.filename : null;
+      const useSelection = draggedKey && selectedTrackKeys && selectedTrackKeys.has(draggedKey) && selectedTrackKeys.size > 1;
+      const payloadTracks = useSelection ? filteredTracks.filter((t, idx) => selectedTrackKeys.has(getRowKey(t, idx))) : draggedTrack ? [draggedTrack] : [];
+      if (payloadTracks.length === 0) return;
+      const addToTarget = (list) => (list || []).map((fld) => {
+        const nextSub = fld.subfolders ? addToTarget(fld.subfolders) : [];
+        if (fld.id !== targetFolderId2) return { ...fld, subfolders: nextSub };
+        const existing = new Set((fld.tracks || []).map((t) => t.id || t.file_path || t.path || t.f || t.filename));
+        const fresh = payloadTracks.filter((t) => {
+          const k = t.id || t.file_path || t.path || t.f || t.filename;
+          if (!k || existing.has(k)) return false;
+          existing.add(k);
+          return true;
+        });
+        return { ...fld, tracks: [...fld.tracks || [], ...fresh], subfolders: nextSub };
+      });
+      const updated = libraries2.map((l) => l.id === currentLib2.id ? { ...l, folders: addToTarget(l.folders) } : l);
+      if (onSaveLibraries2) onSaveLibraries2(updated, currentLib2.id);
+      setFeedbackMsg2(`\u2713 ${payloadTracks.length} pista(s) guardada(s) en carpeta`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
+    };
+    const handleFolderDropAction = (sourceFolderId2, targetFolderId2, shiftReorder2 = false) => {
+      if (!sourceFolderId2 || !targetFolderId2 || sourceFolderId2 === targetFolderId2) return;
+      const findAndExtract2 = (list) => {
+        let extracted = null;
+        const remaining = [];
+        for (const fld of list || []) {
+          if (fld.id === sourceFolderId2) {
+            extracted = fld;
+            continue;
+          }
+          const subRes = fld.subfolders ? findAndExtract2(fld.subfolders) : { extracted: null, remaining: [] };
+          if (subRes.extracted) extracted = subRes.extracted;
+          remaining.push({ ...fld, subfolders: subRes.remaining });
+        }
+        return { extracted, remaining };
+      };
+      const containsId = (fld, id) => {
+        if (!fld) return false;
+        if (fld.id === id) return true;
+        return (fld.subfolders || []).some((s) => containsId(s, id));
+      };
+      const updated = libraries2.map((l) => {
+        if (l.id !== currentLib2.id) return l;
+        const rootFolders = l.folders || [];
+        const sourceObj = (() => {
+          const walk = (arr) => {
+            for (const item of arr || []) {
+              if (item.id === sourceFolderId2) return item;
+              const hit = walk(item.subfolders);
+              if (hit) return hit;
+            }
+            return null;
+          };
+          return walk(rootFolders);
+        })();
+        if (!sourceObj || containsId(sourceObj, targetFolderId2)) return l;
+        if (shiftReorder2) {
+          const { extracted, remaining } = findAndExtract2(rootFolders);
+          if (!extracted) return l;
+          const targetIdx = remaining.findIndex((f) => f.id === targetFolderId2);
+          if (targetIdx === -1) {
+            return { ...l, folders: [...remaining, extracted] };
+          }
+          const reordered = [...remaining.slice(0, targetIdx), extracted, ...remaining.slice(targetIdx)];
+          return { ...l, folders: reordered };
+        } else {
+          const { extracted, remaining } = findAndExtract2(rootFolders);
+          if (!extracted) return l;
+          const nestInto = (arr) => (arr || []).map((fld) => {
+            const nextSubs = fld.subfolders ? nestInto(fld.subfolders) : [];
+            if (fld.id === targetFolderId2) {
+              const subs = [...nextSubs];
+              const existingIdx = subs.findIndex((s) => s.id === extracted.id);
+              if (existingIdx >= 0) subs[existingIdx] = extracted;
+              else subs.push(extracted);
+              return { ...fld, subfolders: subs };
+            }
+            return { ...fld, subfolders: nextSubs };
+          });
+          return { ...l, folders: nestInto(remaining) };
+        }
+      });
+      if (onSaveLibraries2) onSaveLibraries2(updated, currentLib2.id);
+      setFeedbackMsg2(shiftReorder2 ? "\u2713 Carpeta reordenada" : "\u2713 Carpeta anidada como subcarpeta");
+      setTimeout(() => setFeedbackMsg2(""), 2500);
+    };
+    const [editingFolderId, setEditingFolderId] = useState9(null);
+    const [editingFolderName, setEditingFolderName] = useState9("");
+    const [draggedFolderId, setDraggedFolderId] = useState9(null);
+    const [lastClickedRowIdx, setLastClickedRowIdx] = useState9(null);
+    const [activeLibId, setActiveLibId] = useState9(activeLibraryId || libraries2[0] && libraries2[0].id || "lib_default");
     const [libNameInput, setLibNameInput] = useState9("");
     const [newFolderName, setNewFolderName] = useState9("");
     const [selectedFolderId, setSelectedFolderId] = useState9("__ALL__");
-    const [feedbackMsg, setFeedbackMsg] = useState9("");
+    const [feedbackMsg, setFeedbackMsg2] = useState9("");
     const [searchTrack, setSearchTrack] = useState9("");
     const [tableFilter, setTableFilter] = useState9("all");
     const [colFilters, setColFilters] = useState9({
@@ -6348,28 +6488,28 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
     };
-    const currentLib = libraries.find((l) => l.id === activeLibId) || libraries[0] || {
+    const currentLib2 = libraries2.find((l) => l.id === activeLibId) || libraries2[0] || {
       id: "lib_default",
       name: "Mi Biblioteca Principal",
       tracks: [],
       folders: []
     };
     useEffect12(() => {
-      if (activeLibraryId && libraries.some((l) => l.id === activeLibraryId)) {
+      if (activeLibraryId && libraries2.some((l) => l.id === activeLibraryId)) {
         if (activeLibId !== activeLibraryId) {
           setActiveLibId(activeLibraryId);
           setSelectedFolderId("__ALL__");
         }
-      } else if (libraries.length > 0 && !libraries.some((l) => l.id === activeLibId)) {
-        setActiveLibId(libraries[0].id);
+      } else if (libraries2.length > 0 && !libraries2.some((l) => l.id === activeLibId)) {
+        setActiveLibId(libraries2[0].id);
         setSelectedFolderId("__ALL__");
       }
-    }, [activeLibraryId, libraries]);
+    }, [activeLibraryId, libraries2]);
     useEffect12(() => {
-      if (currentLib) {
-        setLibNameInput(currentLib.name || "");
+      if (currentLib2) {
+        setLibNameInput(currentLib2.name || "");
       }
-    }, [currentLib == null ? void 0 : currentLib.id, currentLib == null ? void 0 : currentLib.name]);
+    }, [currentLib2 == null ? void 0 : currentLib2.id, currentLib2 == null ? void 0 : currentLib2.name]);
     useEffect12(() => {
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
     }, [selectedFolderId, activeLibId]);
@@ -6377,24 +6517,24 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       const newId = `lib_${Date.now()}`;
       const newLib = {
         id: newId,
-        name: `Nueva Biblioteca ${libraries.length + 1}`,
+        name: `Nueva Biblioteca ${libraries2.length + 1}`,
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
         tracks: [],
         folders: []
       };
-      const updated = [...libraries, newLib];
-      if (onSaveLibraries) onSaveLibraries(updated, newId);
+      const updated = [...libraries2, newLib];
+      if (onSaveLibraries2) onSaveLibraries2(updated, newId);
       setActiveLibId(newId);
       setSelectedFolderId("__ALL__");
-      setFeedbackMsg("\u2713 Nueva biblioteca en blanco creada");
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      setFeedbackMsg2("\u2713 Nueva biblioteca en blanco creada");
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const handleUpdateLibraryName = () => {
       if (!libNameInput.trim()) return;
-      const updated = libraries.map((l) => l.id === activeLibId ? { ...l, name: libNameInput.trim() } : l);
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 Nombre actualizado: ${libNameInput.trim()}`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      const updated = libraries2.map((l) => l.id === activeLibId ? { ...l, name: libNameInput.trim() } : l);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
+      setFeedbackMsg2(`\u2713 Nombre actualizado: ${libNameInput.trim()}`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const handleAddFolder = () => {
       if (!newFolderName.trim()) return;
@@ -6403,32 +6543,32 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         name: newFolderName.trim(),
         tracks: []
       };
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           return { ...l, folders: [...l.folders || [], newF] };
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       setNewFolderName("");
       setSelectedFolderId(newF.id);
-      setFeedbackMsg(`\u2713 Carpeta virtual "${newF.name}" creada`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      setFeedbackMsg2(`\u2713 Carpeta virtual "${newF.name}" creada`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const handleDeleteFolder = (folderId) => {
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           return { ...l, folders: (l.folders || []).filter((f) => f.id !== folderId) };
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       if (selectedFolderId === folderId) {
         setSelectedFolderId("__ALL__");
       }
     };
     const handleEmptyActiveFolder = () => {
-      const f = (currentLib.folders || []).find((x) => x.id === selectedFolderId);
+      const f = (currentLib2.folders || []).find((x) => x.id === selectedFolderId);
       if (!f) return;
       const trackCount = (f.tracks || []).length;
       if (trackCount === 0) {
@@ -6438,7 +6578,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       if (!window.confirm(`\xBFEst\xE1s seguro de que deseas vaciar las ${trackCount} pista(s) de la carpeta "${f.name}"? (Permanecer\xE1n en la colecci\xF3n general)`)) {
         return;
       }
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           return {
             ...l,
@@ -6447,33 +6587,33 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
-      setFeedbackMsg(`\u2713 Carpeta "${f.name}" vaciada`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      setFeedbackMsg2(`\u2713 Carpeta "${f.name}" vaciada`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const handleEmptyEntireLibrary = () => {
       var _a2;
       const total = allLibTracks.length;
-      if (total === 0 && (!currentLib.folders || currentLib.folders.length === 0)) {
-        alert(`La colecci\xF3n "${currentLib.name}" ya est\xE1 vac\xEDa.`);
+      if (total === 0 && (!currentLib2.folders || currentLib2.folders.length === 0)) {
+        alert(`La colecci\xF3n "${currentLib2.name}" ya est\xE1 vac\xEDa.`);
         return;
       }
-      if (!window.confirm(`\xBFEst\xE1s seguro de que deseas VACIAR TODA la colecci\xF3n "${currentLib.name}"?
-Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == null ? void 0 : _a2.length) || 0} carpeta(s).`)) {
+      if (!window.confirm(`\xBFEst\xE1s seguro de que deseas VACIAR TODA la colecci\xF3n "${currentLib2.name}"?
+Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) == null ? void 0 : _a2.length) || 0} carpeta(s).`)) {
         return;
       }
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           return { ...l, tracks: [], folders: [] };
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       setSelectedFolderId("__ALL__");
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
-      setFeedbackMsg(`\u2713 Colecci\xF3n "${currentLib.name}" vaciada por completo`);
-      setTimeout(() => setFeedbackMsg(""), 3e3);
+      setFeedbackMsg2(`\u2713 Colecci\xF3n "${currentLib2.name}" vaciada por completo`);
+      setTimeout(() => setFeedbackMsg2(""), 3e3);
     };
     const handleCargarDesdeAuditoria = () => {
       const sourceTracks = currentTracks || [];
@@ -6481,7 +6621,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         alert("No hay pistas cargadas en la Mesa de Auditor\xEDa para importar.");
         return;
       }
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           const existing = new Set((l.tracks || []).map((t) => t.id || t.path || t.file_path || t.f));
           let count = 0;
@@ -6509,9 +6649,9 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 ${sourceTracks.length} pista(s) sincronizadas desde Auditor\xEDa`);
-      setTimeout(() => setFeedbackMsg(""), 3e3);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
+      setFeedbackMsg2(`\u2713 ${sourceTracks.length} pista(s) sincronizadas desde Auditor\xEDa`);
+      setTimeout(() => setFeedbackMsg2(""), 3e3);
     };
     const handleAssignTracksToActiveFolder = (folderId, onlySelected = false) => {
       const tracksToAssign = onlySelected ? (currentTracks || []).filter((t) => selectedTrackIds.has(t.id)) : currentTracks || [];
@@ -6519,7 +6659,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         alert("No hay pistas cargadas para asignar.");
         return;
       }
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           const newFolders = (l.folders || []).map((f) => {
             if (f.id === folderId) {
@@ -6533,14 +6673,14 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 ${tracksToAssign.length} pista(s) asignadas`);
-      setTimeout(() => setFeedbackMsg(""), 3e3);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
+      setFeedbackMsg2(`\u2713 ${tracksToAssign.length} pista(s) asignadas`);
+      setTimeout(() => setFeedbackMsg2(""), 3e3);
     };
     const handleDropTrackIntoFolder = (folderId, trackData) => {
       if (!trackData) return;
       const trackKey = trackData.id || trackData.file_path || trackData.path || trackData.filename;
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           const newFolders = (l.folders || []).map((f) => {
             if (f.id === folderId) {
@@ -6555,9 +6695,9 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 Pista agregada a la carpeta`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
+      setFeedbackMsg2(`\u2713 Pista agregada a la carpeta`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const handleAutoGroupByGenre = () => {
       const pool = allLibTracks.length > 0 ? allLibTracks : currentTracks || [];
@@ -6602,9 +6742,9 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         name: genreName,
         tracks: trList
       }));
-      const targetId = currentLib.id;
-      const existsInList = libraries.some((l) => l.id === targetId);
-      const updated = existsInList ? libraries.map((l) => {
+      const targetId = currentLib2.id;
+      const existsInList = libraries2.some((l) => l.id === targetId);
+      const updated = existsInList ? libraries2.map((l) => {
         if (l.id === targetId) {
           return {
             ...l,
@@ -6613,15 +6753,15 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
           };
         }
         return l;
-      }) : [...libraries, { ...currentLib, id: targetId, tracks: pool, folders: newFolders }];
+      }) : [...libraries2, { ...currentLib2, id: targetId, tracks: pool, folders: newFolders }];
       setActiveLibId(targetId);
-      if (onSaveLibraries) onSaveLibraries(updated, targetId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, targetId);
       if (newFolders.length > 0) setSelectedFolderId(newFolders[0].id);
-      setFeedbackMsg(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero (Motor BeatWave Neural)`);
-      setTimeout(() => setFeedbackMsg(""), 3500);
+      setFeedbackMsg2(`\u2713 ${newFolders.length} carpetas generadas autom\xE1ticamente por g\xE9nero (Motor BeatWave Neural)`);
+      setTimeout(() => setFeedbackMsg2(""), 3500);
     };
     const handleRemoveTrack = (trackKey) => {
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           const newTracks = (l.tracks || []).filter((t) => (t.id || t.file_path || t.path) !== trackKey);
           const newFolders = (l.folders || []).map((f) => {
@@ -6634,7 +6774,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       setSelectedTrackKeys((prev) => {
         const next = new Set(prev);
         next.delete(trackKey);
@@ -6663,15 +6803,15 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         return next;
       });
     };
-    const handleBatchAssignToFolder = (targetFolderId) => {
+    const handleBatchAssignToFolder = (targetFolderId2) => {
       var _a2;
-      if (selectedTrackKeys.size === 0 || !targetFolderId) return;
+      if (selectedTrackKeys.size === 0 || !targetFolderId2) return;
       const tracksToAssign = displayedTracks.filter((t) => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
-      const targetFolderName = ((_a2 = (currentLib.folders || []).find((f) => f.id === targetFolderId)) == null ? void 0 : _a2.name) || "Carpeta";
-      const updated = libraries.map((l) => {
+      const targetFolderName = ((_a2 = (currentLib2.folders || []).find((f) => f.id === targetFolderId2)) == null ? void 0 : _a2.name) || "Carpeta";
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           const newFolders = (l.folders || []).map((f) => {
-            if (f.id === targetFolderId) {
+            if (f.id === targetFolderId2) {
               const existingIds = new Set((f.tracks || []).map((t) => t.id || t.file_path || t.path || t.f));
               const added = tracksToAssign.filter((t) => !existingIds.has(t.id || t.file_path || t.path || t.f));
               return { ...f, tracks: [...f.tracks || [], ...added] };
@@ -6682,17 +6822,17 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-      setFeedbackMsg(`\u2713 ${tracksToAssign.length} pista(s) asignadas a "${targetFolderName}"`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
+      setFeedbackMsg2(`\u2713 ${tracksToAssign.length} pista(s) asignadas a "${targetFolderName}"`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
     };
     const handleBatchRemoveFromActiveFolder = () => {
       if (selectedFolderId === "__ALL__" || selectedTrackKeys.size === 0) return;
-      const f = (currentLib.folders || []).find((x) => x.id === selectedFolderId);
+      const f = (currentLib2.folders || []).find((x) => x.id === selectedFolderId);
       if (!f) return;
       const count = selectedTrackKeys.size;
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           return {
             ...l,
@@ -6709,10 +6849,10 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
-      setFeedbackMsg(`\u2713 ${count} pista(s) sacadas de "${f.name}"`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      setFeedbackMsg2(`\u2713 ${count} pista(s) sacadas de "${f.name}"`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const handleBatchDeleteFromLibrary = () => {
       if (selectedTrackKeys.size === 0) return;
@@ -6720,7 +6860,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       if (!window.confirm(`\xBFEst\xE1s seguro de que deseas eliminar las ${count} pista(s) seleccionadas de toda la colecci\xF3n y sus carpetas?`)) {
         return;
       }
-      const updated = libraries.map((l) => {
+      const updated = libraries2.map((l) => {
         if (l.id === activeLibId) {
           const newRoot = (l.tracks || []).filter((t) => !selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
           const newFolders = (l.folders || []).map((folder) => ({
@@ -6731,10 +6871,10 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         }
         return l;
       });
-      if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
+      if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
-      setFeedbackMsg(`\u2713 ${count} pista(s) eliminadas de la colecci\xF3n`);
-      setTimeout(() => setFeedbackMsg(""), 2500);
+      setFeedbackMsg2(`\u2713 ${count} pista(s) eliminadas de la colecci\xF3n`);
+      setTimeout(() => setFeedbackMsg2(""), 2500);
     };
     const fetchDirListing = async (path) => {
       try {
@@ -6815,7 +6955,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       const combined = [...stagedFolders, ...stagedFiles];
       const targets = combined.length > 0 ? combined : [fsCurrentPath];
       setFsBrowserOpen(false);
-      setFeedbackMsg(`Cargando ${targets.length} elemento(s)...`);
+      setFeedbackMsg2(`Cargando ${targets.length} elemento(s)...`);
       try {
         const r = await fetch("/api/load_directory", {
           method: "POST",
@@ -6828,7 +6968,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
           if (rawTracks.length > 0) {
             if (setAuditTracks) setAuditTracks(rawTracks);
             if (setSelectedTrack && rawTracks[0]) setSelectedTrack(rawTracks[0].id);
-            const updated = libraries.map((l) => {
+            const updated = libraries2.map((l) => {
               if (l.id === activeLibId) {
                 const existing = new Set((l.tracks || []).map((t) => t.id || t.path || t.file_path || t.f));
                 const added = rawTracks.filter((t) => !existing.has(t.id || t.path || t.file_path || t.f));
@@ -6848,36 +6988,36 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
               }
               return l;
             });
-            if (onSaveLibraries) onSaveLibraries(updated, activeLibId);
-            setFeedbackMsg(`\u2713 ${rawTracks.length} pista(s) cargadas en tu Colecci\xF3n`);
-            setTimeout(() => setFeedbackMsg(""), 3e3);
+            if (onSaveLibraries2) onSaveLibraries2(updated, activeLibId);
+            setFeedbackMsg2(`\u2713 ${rawTracks.length} pista(s) cargadas en tu Colecci\xF3n`);
+            setTimeout(() => setFeedbackMsg2(""), 3e3);
           } else {
-            setFeedbackMsg("No se encontraron pistas de audio compatibles.");
-            setTimeout(() => setFeedbackMsg(""), 3e3);
+            setFeedbackMsg2("No se encontraron pistas de audio compatibles.");
+            setTimeout(() => setFeedbackMsg2(""), 3e3);
           }
         }
       } catch (e) {
         console.error("Error al cargar archivos:", e);
-        setFeedbackMsg("Error al comunicar con el motor de carga.");
-        setTimeout(() => setFeedbackMsg(""), 3e3);
+        setFeedbackMsg2("Error al comunicar con el motor de carga.");
+        setTimeout(() => setFeedbackMsg2(""), 3e3);
       }
     };
     const allLibTracks = useMemo3(() => {
       const map = /* @__PURE__ */ new Map();
-      (currentLib.tracks || []).forEach((t) => {
+      (currentLib2.tracks || []).forEach((t) => {
         const k = t.id || t.path || t.file_path || t.f || t.filename;
         if (k) map.set(k, t);
       });
-      (currentLib.folders || []).forEach((f) => {
+      (currentLib2.folders || []).forEach((f) => {
         (f.tracks || []).forEach((t) => {
           const k = t.id || t.path || t.file_path || t.f || t.filename;
           if (k && !map.has(k)) map.set(k, t);
         });
       });
       return Array.from(map.values());
-    }, [currentLib]);
-    const activeFolder = (currentLib.folders || []).find((f) => f.id === selectedFolderId);
-    const displayedTracks = selectedFolderId === "__ALL__" || !selectedFolderId || !activeFolder ? allLibTracks.length > 0 ? allLibTracks : currentLib.tracks || [] : (activeFolder == null ? void 0 : activeFolder.tracks) || [];
+    }, [currentLib2]);
+    const activeFolder = (currentLib2.folders || []).find((f) => f.id === selectedFolderId);
+    const displayedTracks = selectedFolderId === "__ALL__" || !selectedFolderId || !activeFolder ? allLibTracks.length > 0 ? allLibTracks : currentLib2.tracks || [] : (activeFolder == null ? void 0 : activeFolder.tracks) || [];
     const _filterSourceTracks = displayedTracks;
     const matchesTableFilter = (t, filterId) => {
       var _a2;
@@ -7049,7 +7189,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
     ))), /* @__PURE__ */ React.createElement("div", { className: "px-3.5 py-2 border-b border-djzinc-800 bg-[#0c0d14] flex flex-wrap items-center justify-between gap-3 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap flex-1 min-w-[280px]" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono uppercase font-bold text-gray-400" }, "Biblioteca:"), /* @__PURE__ */ React.createElement(
       "select",
       {
-        value: currentLib.id,
+        value: currentLib2.id,
         onChange: (e) => {
           const id = e.target.value;
           setActiveLibId(id);
@@ -7060,7 +7200,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         },
         className: "px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-white font-bold outline-none focus:border-cyan-400"
       },
-      libraries.map((lib) => {
+      libraries2.map((lib) => {
         var _a2;
         return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.length) || 0, " carpetas)");
       })
@@ -7122,11 +7262,11 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
             backgroundColor: selectedFolderId === "__ALL__" ? "rgba(39, 39, 42, 0.85)" : "rgba(24, 24, 27, 0.55)"
           },
           className: `p-3 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-all ${selectedFolderId === "__ALL__" ? "text-white shadow-md" : "text-gray-300 hover:bg-zinc-800/70"}`,
-          title: `Ver todas las pistas de ${currentLib.name || "Mi Biblioteca Principal"}`
+          title: `Ver todas las pistas de ${currentLib2.name || "Mi Biblioteca Principal"}`
         },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 18, className: "text-cyan-400 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase tracking-wider text-cyan-400 font-bold block" }, "Biblioteca Activa"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, currentLib.name || "Mi Biblioteca Principal"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono block" }, totalTracksInLib, " pista(s) \xB7 Colecci\xF3n completa")))
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Library, { size: 18, className: "text-cyan-400 shrink-0" }), /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono uppercase tracking-wider text-cyan-400 font-bold block" }, "Biblioteca Activa"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-white block truncate" }, currentLib2.name || "Mi Biblioteca Principal"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono block" }, totalTracksInLib, " pista(s) \xB7 Colecci\xF3n completa")))
       ),
-      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pt-1" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pt-1" }, /* @__PURE__ */ React.createElement("h4", { className: "text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, "Carpetas Creadas (", ((_a = currentLib2.folders) == null ? void 0 : _a.length) || 0, ")")), /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -7158,99 +7298,150 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         },
         "+ Crear"
       )),
-      /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib.folders || currentLib.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-5 text-center text-gray-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea tu primera carpeta arriba o pulsa "Auto por G\xE9nero".') : currentLib.folders.map((f) => {
-        var _a2;
-        const isSelected = selectedFolderId === f.id;
-        const isDropOver = dragOverFolderId === f.id;
-        const trCount = ((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0;
-        return /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            key: f.id,
-            onClick: () => setSelectedFolderId(f.id),
-            onDragOver: (e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
-              if (dragOverFolderId !== f.id) setDragOverFolderId(f.id);
-            },
-            onDragLeave: (e) => {
-              if (e.currentTarget.contains(e.relatedTarget)) return;
-              setDragOverFolderId(null);
-            },
-            onDrop: (e) => {
-              e.preventDefault();
-              setDragOverFolderId(null);
-              try {
-                const raw = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("application/json");
-                if (raw) {
-                  const trData = JSON.parse(raw);
-                  handleDropTrackIntoFolder(f.id, trData);
-                }
-              } catch (err) {
-              }
-            },
-            style: {
-              backgroundColor: isDropOver ? "rgba(6, 182, 212, 0.25)" : isSelected ? "rgba(6, 182, 212, 0.15)" : "rgba(24, 24, 27, 0.6)",
-              borderColor: isDropOver ? "#06b6d4" : isSelected ? "rgba(6, 182, 212, 0.8)" : "rgba(255, 255, 255, 0.08)",
-              boxShadow: isDropOver ? "0 0 16px rgba(6, 182, 212, 0.45)" : void 0
-            },
-            className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "text-white shadow-md" : "text-gray-300 hover:border-zinc-600"}`
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: `shrink-0 ${isDropOver || isSelected ? "text-cyan-400" : "text-cyan-500/70"}` }), /* @__PURE__ */ React.createElement("div", { className: "truncate" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, f.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, trCount, " pista(s) asignadas"))),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
-            "button",
+      /* @__PURE__ */ React.createElement("div", { className: "space-y-1.5 flex-1 overflow-y-auto pr-1" }, !currentLib2.folders || currentLib2.folders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "p-5 text-center text-gray-500 font-mono text-xs border border-dashed border-zinc-800 rounded-xl" }, 'No hay carpetas creadas. Crea tu primera carpeta arriba o pulsa "Auto por G\xE9nero".') : (currentLib2.folders || []).map((f) => {
+        const renderFolderNode = (fld, depth = 0) => {
+          var _a2;
+          const isSelected = selectedFolderId === fld.id;
+          const isDropOver = dragOverFolderId === fld.id;
+          const trCount = ((_a2 = fld.tracks) == null ? void 0 : _a2.length) || 0;
+          const subs = fld.subfolders || [];
+          return /* @__PURE__ */ React.createElement("div", { key: fld.id, className: depth > 0 ? "ml-3.5 pl-2 border-l border-cyan-500/25 space-y-1" : "space-y-1" }, /* @__PURE__ */ React.createElement(
+            "div",
             {
-              type: "button",
-              onClick: () => {
-                let libsToSave = libraries;
-                if (selectedTrackKeys && selectedTrackKeys.size > 0) {
-                  const picked = filteredTracks.filter((t) => selectedTrackKeys.has(t.id || t.file_path || t.path || t.f));
-                  if (picked.length > 0) {
-                    libsToSave = libraries.map((l) => {
-                      if (l.id === currentLib.id) {
-                        const newFolders = (l.folders || []).map((fld) => {
-                          if (fld.id === f.id) {
-                            const existing = new Set((fld.tracks || []).map((t) => t.id || t.file_path || t.path || t.filename));
-                            const toAdd = picked.filter((t) => !existing.has(t.id || t.file_path || t.path || t.filename));
-                            return { ...fld, tracks: [...fld.tracks || [], ...toAdd] };
-                          }
-                          return fld;
-                        });
-                        return { ...l, folders: newFolders };
-                      }
-                      return l;
-                    });
-                    setSelectedTrackKeys(/* @__PURE__ */ new Set());
-                  }
-                }
-                if (onSaveLibraries) onSaveLibraries(libsToSave, currentLib.id);
-                setFeedbackMsg(`\u2713 Carpeta "${f.name}" guardada`);
-                setTimeout(() => setFeedbackMsg(""), 2500);
+              draggable: editingFolderId !== fld.id,
+              onDragStart: (e) => {
+                setDraggedFolderId(fld.id);
+                e.dataTransfer.setData("application/x-bw-folder", fld.id);
+                e.dataTransfer.effectAllowed = "copyMove";
               },
-              className: "px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-950 hover:text-emerald-300 text-gray-300 text-[10px] font-mono border border-zinc-700 hover:border-emerald-600/60 cursor-pointer transition-colors",
-              title: "Guardar la informaci\xF3n y pistas de esta carpeta"
+              onDragEnd: () => {
+                setDraggedFolderId(null);
+                setDragOverFolderId(null);
+              },
+              onClick: () => setSelectedFolderId(fld.id),
+              onDragOver: (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = draggedFolderId ? "move" : "copy";
+                if (dragOverFolderId !== fld.id) setDragOverFolderId(fld.id);
+              },
+              onDragLeave: (e) => {
+                if (e.currentTarget.contains(e.relatedTarget)) return;
+                setDragOverFolderId(null);
+              },
+              onDrop: (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const shiftReorder2 = Boolean(e.shiftKey);
+                const folderSrcId = draggedFolderId || e.dataTransfer.getData("application/x-bw-folder");
+                setDragOverFolderId(null);
+                setDraggedFolderId(null);
+                if (folderSrcId && folderSrcId !== fld.id) {
+                  handleFolderDropAction(folderSrcId, fld.id, shiftReorder2);
+                  return;
+                }
+                try {
+                  const raw = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("application/json");
+                  if (raw) {
+                    const trData = JSON.parse(raw);
+                    handleDropMultipleTracksIntoFolder(fld.id, trData);
+                  }
+                } catch (err) {
+                }
+              },
+              style: {
+                backgroundColor: isDropOver ? "rgba(6, 182, 212, 0.25)" : isSelected ? "rgba(6, 182, 212, 0.15)" : "rgba(24, 24, 27, 0.6)",
+                borderColor: isDropOver ? "#06b6d4" : isSelected ? "rgba(6, 182, 212, 0.8)" : "rgba(255, 255, 255, 0.08)",
+                boxShadow: isDropOver ? "0 0 16px rgba(6, 182, 212, 0.45)" : void 0
+              },
+              className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "text-white shadow-md" : "text-gray-300 hover:border-zinc-600"}`,
+              title: "Arrastra pistas (o varias con Shift/Cmd) aqu\xED, arrastra sobre otra carpeta para anidar o Shift+arrastra para reordenar"
             },
-            "Guardar"
-          ), /* @__PURE__ */ React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: () => handleDeleteFolder(f.id),
-              className: "w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer",
-              title: "Eliminar carpeta"
-            },
-            /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
-          ))
-        );
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: `shrink-0 ${isDropOver || isSelected ? "text-cyan-400" : "text-cyan-500/70"}` }), /* @__PURE__ */ React.createElement("div", { className: "truncate flex-1", onDoubleClick: (e) => {
+              e.stopPropagation();
+              setEditingFolderId(fld.id);
+              setEditingFolderName(fld.name || "");
+            } }, editingFolderId === fld.id ? /* @__PURE__ */ React.createElement(
+              "input",
+              {
+                type: "text",
+                autoFocus: true,
+                value: editingFolderName,
+                onClick: (e) => e.stopPropagation(),
+                onChange: (e) => setEditingFolderName(e.target.value),
+                onBlur: () => handleRenameFolderCommit(fld.id),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleRenameFolderCommit(fld.id);
+                  }
+                  if (e.key === "Escape") {
+                    setEditingFolderId(null);
+                  }
+                },
+                className: "w-full px-1.5 py-0.5 rounded bg-zinc-950 border border-cyan-400 text-xs font-mono text-white outline-none"
+              }
+            ) : /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold block truncate" }, fld.name), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-400 font-mono" }, trCount, " pista(s) asignadas"))),
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 shrink-0", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  setEditingFolderId(fld.id);
+                  setEditingFolderName(fld.name || "");
+                },
+                className: "px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-cyan-300 text-[10px] font-mono border border-zinc-700/80 cursor-pointer",
+                title: "Renombrar carpeta"
+              },
+              "\u270E"
+            ), /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  let libsToSave = libraries2;
+                  if (selectedTrackKeys && selectedTrackKeys.size > 0) {
+                    const picked = filteredTracks.filter((t, idx) => selectedTrackKeys.has(getRowKey(t, idx)));
+                    if (picked.length > 0) {
+                      const addPicked = (arr) => (arr || []).map((item) => ({
+                        ...item,
+                        tracks: item.id === fld.id ? [...item.tracks || [], ...picked.filter((pk) => !(item.tracks || []).some((ex) => getRowKey(ex) === getRowKey(pk)))] : item.tracks || [],
+                        subfolders: item.subfolders ? addPicked(item.subfolders) : []
+                      }));
+                      libsToSave = libraries2.map((l) => l.id === currentLib2.id ? { ...l, folders: addPicked(l.folders) } : l);
+                      setSelectedTrackKeys(/* @__PURE__ */ new Set());
+                    }
+                  }
+                  if (onSaveLibraries2) onSaveLibraries2(libsToSave, currentLib2.id);
+                  setFeedbackMsg2(`\u2713 Carpeta "${fld.name}" guardada`);
+                  setTimeout(() => setFeedbackMsg2(""), 2500);
+                },
+                className: "px-2 py-0.5 rounded bg-zinc-800 hover:bg-emerald-950 hover:text-emerald-300 text-gray-300 text-[10px] font-mono border border-zinc-700 hover:border-emerald-600/60 cursor-pointer transition-colors",
+                title: "Guardar la informaci\xF3n y pistas de esta carpeta"
+              },
+              "Guardar"
+            ), /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: () => handleDeleteFolder(fld.id),
+                className: "w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-400 hover:bg-red-950/40 text-xs cursor-pointer",
+                title: "Eliminar carpeta"
+              },
+              /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
+            ))
+          ), subs.map((sub) => renderFolderNode(sub, depth + 1)));
+        };
+        return renderFolderNode(f, 0);
       })),
       /* @__PURE__ */ React.createElement("div", { className: "pt-2 border-t border-white/10 shrink-0" }, /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
           onClick: () => {
-            if (onSaveLibraries) onSaveLibraries(libraries, currentLib.id);
-            setFeedbackMsg("\u2713 Cambios y carpetas guardados");
-            setTimeout(() => setFeedbackMsg(""), 2500);
+            if (onSaveLibraries2) onSaveLibraries2(libraries2, currentLib2.id);
+            setFeedbackMsg2("\u2713 Cambios y carpetas guardados");
+            setTimeout(() => setFeedbackMsg2(""), 2500);
           },
           className: "w-full py-2 px-3 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60 text-xs font-mono font-bold cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5",
           title: "Guardar toda la biblioteca y la clasificaci\xF3n de carpetas"
@@ -7283,7 +7474,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       "button",
       {
         type: "button",
-        onClick: () => onAuditarCrate(activeFolder, currentLib),
+        onClick: () => onAuditarCrate(activeFolder, currentLib2),
         className: "px-3 py-1 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black text-[11px] font-mono font-bold shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5",
         title: "Filtrar la mesa de auditor\xEDa mostrando exclusivamente esta carpeta"
       },
@@ -7341,7 +7532,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
         className: "bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1 text-xs outline-none focus:border-cyan-400 cursor-pointer"
       },
       /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar carpeta..."),
-      (currentLib.folders || []).map((f) => /* @__PURE__ */ React.createElement("option", { key: f.id, value: f.id }, "\u{1F4C1} ", f.name))
+      (currentLib2.folders || []).map((f) => /* @__PURE__ */ React.createElement("option", { key: f.id, value: f.id }, "\u{1F4C1} ", f.name))
     )), selectedFolderId !== "__ALL__" && activeFolder && /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -7510,7 +7701,12 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
             e.dataTransfer.setData("text/plain", JSON.stringify(tr));
             e.dataTransfer.effectAllowed = "copy";
           },
-          onClick: () => {
+          onClick: (e) => {
+            if (e.shiftKey || e.metaKey || e.ctrlKey) {
+              e.preventDefault();
+              handleRowSelectClick(e, tr, tIdx);
+              return;
+            }
             if (onPlayTrack) onPlayTrack(tr);
           },
           className: `border-b border-white/5 hover:bg-cyan-950/20 transition-colors group cursor-pointer ${isSelected ? "bg-cyan-950/30" : ""}`,
@@ -7591,8 +7787,8 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib.folders) == 
       "button",
       {
         type: "button",
-        onClick: () => onMaterializarEnDisco && onMaterializarEnDisco(currentLib),
-        disabled: !currentLib.folders || currentLib.folders.length === 0,
+        onClick: () => onMaterializarEnDisco && onMaterializarEnDisco(currentLib2),
+        disabled: !currentLib2.folders || currentLib2.folders.length === 0,
         className: "px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:opacity-40 text-black font-mono font-bold text-xs shadow-lg shadow-emerald-500/25 border border-emerald-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95",
         title: "Selecciona una carpeta o USB en disco para crear una copia f\xEDsica de tus pistas organizadas por carpetas"
       },
@@ -13443,12 +13639,12 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       });
       saveFolders(updateTree(libraryFolders));
     };
-    const handleAssignTracksToFolder = (targetFolderId, trackKeys) => {
+    const handleAssignTracksToFolder = (targetFolderId2, trackKeys) => {
       var _a2;
       if (!trackKeys || trackKeys.length === 0) return;
       const keySet = new Set(trackKeys);
       const updateTree = (list) => list.map((f) => {
-        if (f.id === targetFolderId) {
+        if (f.id === targetFolderId2) {
           const currentSet = new Set(f.trackIds || []);
           keySet.forEach((k) => currentSet.add(k));
           return { ...f, trackIds: Array.from(currentSet) };
@@ -13457,7 +13653,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
           return {
             ...f,
             subfolders: f.subfolders.map((s) => {
-              if (s.id === targetFolderId) {
+              if (s.id === targetFolderId2) {
                 const currentSet = new Set(s.trackIds || []);
                 keySet.forEach((k) => currentSet.add(k));
                 return { ...s, trackIds: Array.from(currentSet) };
@@ -13469,7 +13665,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         return f;
       });
       saveFolders(updateTree(libraryFolders));
-      const target = findFolderOrSub(libraryFolders, targetFolderId);
+      const target = findFolderOrSub(libraryFolders, targetFolderId2);
       setSaveFeedback(`\u2713 ${trackKeys.length} pistas asignadas a "${((_a2 = target == null ? void 0 : target.folder) == null ? void 0 : _a2.name) || "carpeta"}"`);
     };
     const handleAutoGroupByGenre = () => {
@@ -20159,7 +20355,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     const [selectedMoodFilter, setSelectedMoodFilter] = useState23("ALL");
     const [isCamelotModalOpen, setIsCamelotModalOpen] = useState23(false);
     const [showAdvancedFilters, setShowAdvancedFilters] = useState23(false);
-    const [feedbackMsg, setFeedbackMsg] = useState23("");
+    const [feedbackMsg, setFeedbackMsg2] = useState23("");
     const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState23(false);
     const [activeTagTab, setActiveTagTab] = useState23("bpm");
     const handleRemoveToken = (tok) => {
@@ -20243,7 +20439,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setIsSearchingOnline(true);
       setHasExecutedSearch(true);
       const scopeLabel = searchScope === "local" ? "Biblioteca Local" : searchScope === "online" ? "Record Pool Online" : "Local y Pool Online";
-      setFeedbackMsg(`Buscando ${q ? `"${q}"` : "cat\xE1logo"} en ${scopeLabel}...`);
+      setFeedbackMsg2(`Buscando ${q ? `"${q}"` : "cat\xE1logo"} en ${scopeLabel}...`);
       try {
         if (window.eel && window.eel.buscar_temas_taxonomia) {
           const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 40)();
@@ -20284,15 +20480,15 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
             setOnlineResults(onlineItems);
             setSearchLocalResults(localItems);
             const totalFound = localItems.length + onlineItems.length;
-            setFeedbackMsg(`\u2713 Encontrados ${totalFound} temas (${localItems.length} en disco + ${onlineItems.length} en Record Pool)`);
+            setFeedbackMsg2(`\u2713 Encontrados ${totalFound} temas (${localItems.length} en disco + ${onlineItems.length} en Record Pool)`);
           }
         }
       } catch (err) {
         console.error("Error al buscar temas en taxonom\xEDa:", err);
-        setFeedbackMsg(`\u2713 B\xFAsqueda filtrada en pistas de biblioteca.`);
+        setFeedbackMsg2(`\u2713 B\xFAsqueda filtrada en pistas de biblioteca.`);
       } finally {
         setIsSearchingOnline(false);
-        setTimeout(() => setFeedbackMsg(""), 4500);
+        setTimeout(() => setFeedbackMsg2(""), 4500);
       }
     };
     const searchResults = useMemo9(() => {
@@ -20500,7 +20696,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
       if (addFn) {
         addFn([trk], "taxonomy");
-        setFeedbackMsg(`\u2713 "${trk.displayTitle || trk.title}" a\xF1adido a Descargas (Record Pool). Redirigiendo a descargas...`);
+        setFeedbackMsg2(`\u2713 "${trk.displayTitle || trk.title}" a\xF1adido a Descargas (Record Pool). Redirigiendo a descargas...`);
       } else if (onSendToSpotify) {
         onSendToSpotify(trk.displayTitle || trk.title);
       } else if (onNavigateTab) {
@@ -20513,7 +20709,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
       if (addFn) {
         addFn(seleccionadas, "taxonomy");
-        setFeedbackMsg(`\u2713 ${seleccionadas.length} pista(s) seleccionadas a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
+        setFeedbackMsg2(`\u2713 ${seleccionadas.length} pista(s) seleccionadas a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
       } else if (onNavigateTab) {
         onNavigateTab("spotify");
       }
@@ -20523,7 +20719,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       const addFn = onAddTracksToSpotify || onAddTrackToSpotify;
       if (addFn) {
         addFn(searchResults, "taxonomy");
-        setFeedbackMsg(`\u2713 ${searchResults.length} pista(s) a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
+        setFeedbackMsg2(`\u2713 ${searchResults.length} pista(s) a\xF1adidas a Descargas (Record Pool). Redirigiendo a descargas...`);
       } else if (onNavigateTab) {
         onNavigateTab("spotify");
       }
@@ -20539,7 +20735,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       let coverHd = trk.displayCover || trk.cover;
       if (!streamUrl && !trk.path && !trk.f && window.eel && window.eel.resolver_stream_preescucha) {
         try {
-          setFeedbackMsg(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
+          setFeedbackMsg2(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
           const res = await window.eel.resolver_stream_preescucha(trk.displayTitle || trk.title, trk.displayArtist || trk.artist)();
           if (res && res.stream_url) {
             streamUrl = res.stream_url;
@@ -20568,8 +20764,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       };
       if (onPlayTrack) {
         onPlayTrack(trackToPlay, 0, true);
-        setFeedbackMsg(`\u2713 "${trackToPlay.title}" reproduciendo en Deck 1`);
-        setTimeout(() => setFeedbackMsg(""), 3500);
+        setFeedbackMsg2(`\u2713 "${trackToPlay.title}" reproduciendo en Deck 1`);
+        setTimeout(() => setFeedbackMsg2(""), 3500);
       }
     };
     const handleAbrirEnHotCues = (trk) => {
@@ -20599,11 +20795,11 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
           };
           list.unshift(item);
           localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(list));
-          setFeedbackMsg(`\u2713 "${trk.displayTitle}" guardado en tu Libreta Digital.`);
+          setFeedbackMsg2(`\u2713 "${trk.displayTitle}" guardado en tu Libreta Digital.`);
         } else {
-          setFeedbackMsg(`\u2139 "${trk.displayTitle}" ya estaba en tu libreta.`);
+          setFeedbackMsg2(`\u2139 "${trk.displayTitle}" ya estaba en tu libreta.`);
         }
-        setTimeout(() => setFeedbackMsg(""), 3e3);
+        setTimeout(() => setFeedbackMsg2(""), 3e3);
       } catch (e) {
         console.error(e);
       }
@@ -20614,11 +20810,11 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         if (window.eel && window.eel.organizar_pista_en_crate) {
           const res = await window.eel.organizar_pista_en_crate(trk, rutaBase, modo)();
           if (res && res.status === "ok") {
-            setFeedbackMsg(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
+            setFeedbackMsg2(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
           } else {
-            setFeedbackMsg(`\u26A0 ${(res == null ? void 0 : res.msg) || "Error al enrutar pista"}`);
+            setFeedbackMsg2(`\u26A0 ${(res == null ? void 0 : res.msg) || "Error al enrutar pista"}`);
           }
-          setTimeout(() => setFeedbackMsg(""), 3500);
+          setTimeout(() => setFeedbackMsg2(""), 3500);
         }
       } catch (e) {
         console.error(e);
@@ -20771,7 +20967,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       },
       /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "inline-block align-[-2px]" }), " Serato Crates & Rekordbox"),
       /* @__PURE__ */ React.createElement("span", { className: "text-[9px] px-1.5 py-0.2 rounded font-mono bg-black/30 text-white font-black" }, totalCratesCount)
-    ))), feedbackMsg && /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "animate-pulse" }, "\u25CF"), /* @__PURE__ */ React.createElement("span", null, feedbackMsg)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setFeedbackMsg(""), className: "text-gray-400 hover:text-white cursor-pointer px-1" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })))), activeSubView === "search" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner overflow-x-auto no-scrollbar whitespace-nowrap shrink-0 max-w-full" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider shrink-0" }, "Buscar en:"), /* @__PURE__ */ React.createElement(
+    ))), feedbackMsg && /* @__PURE__ */ React.createElement("div", { className: "p-2.5 rounded-lg bg-djcyan-950/80 border border-djcyan-500/50 text-djcyan-300 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "animate-pulse" }, "\u25CF"), /* @__PURE__ */ React.createElement("span", null, feedbackMsg)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setFeedbackMsg2(""), className: "text-gray-400 hover:text-white cursor-pointer px-1" }, /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })))), activeSubView === "search" && /* @__PURE__ */ React.createElement("div", { className: "flex-1 flex flex-col overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-5 border-b border-djzinc-850 bg-[#09090e] shrink-0 space-y-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-[#050509] p-1 rounded-xl border border-djzinc-800 shadow-inner overflow-x-auto no-scrollbar whitespace-nowrap shrink-0 max-w-full" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-bold text-gray-400 px-2 uppercase tracking-wider shrink-0" }, "Buscar en:"), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
