@@ -23,6 +23,7 @@ import {
     parseCuencaDJQuery 
 } from './data/djCatalog.js';
 import { BEATWAVE_MASTER_GLOSSARY } from './data/glossary.js';
+import { WorkspaceSlot } from './shell/WorkspaceSlot.jsx';
 import {
     LibraryWorkspace,
     CustomLibraryModal,
@@ -1551,7 +1552,7 @@ const App = () => {
 
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
-                <div style={{ display: activeTab === 'library' ? 'flex' : 'none' }} className="w-full h-full flex flex-col">
+                <WorkspaceSlot isActive={activeTab === 'library'} className="w-full h-full flex flex-col">
                     <LibraryWorkspace 
                         libraries={customLibraries}
                         activeLibraryId={activeCustomLibId}
@@ -1575,8 +1576,8 @@ const App = () => {
                         setAuditTracks={setAuditTracks}
                         setSelectedTrack={setSelectedTrack}
                     />
-                </div>
-                <div style={{ display: activeTab === 'audit' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'audit'} className="w-full h-full">
                     <AuditWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1608,8 +1609,8 @@ const App = () => {
                         onClearCrateFilter={() => setActiveCrateFilter(null)}
                         onOpenBeatgridStudio={handleOpenBeatgridStudio}
                     />
-                </div>
-                <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'hotcues'} className="w-full h-full">
                     <HotCuesWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1635,8 +1636,8 @@ const App = () => {
                         studioMode={studioMode}
                         onSetStudioMode={setStudioMode}
                     />
-                </div>
-                <div style={{ display: activeTab === 'spotify' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'spotify'} className="w-full h-full">
                     <SpotifyWorkspace 
                         tracks={spotifyTracks}
                         setTracks={setSpotifyTracks}
@@ -1650,8 +1651,8 @@ const App = () => {
                         lang={lang}
                         t={t}
                     />
-                </div>
-                <div style={{ display: activeTab === 'shazam' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'shazam'} className="w-full h-full">
                     <ShazamWorkspace 
                         customLibraries={customLibraries}
                         onSaveCustomLibraries={saveCustomLibraries}
@@ -1672,8 +1673,8 @@ const App = () => {
                         onLoadFolderFromDisk={() => handleCargarDirectorioGlobal()}
                         currentFolder={currentFolder}
                     />
-                </div>
-                <div style={{ display: activeTab === 'taxonomy' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'taxonomy'} className="w-full h-full">
                     <TaxonomyWorkspace 
                         tracks={auditTracks} 
                         onTracksUpdated={setAuditTracks} 
@@ -1707,11 +1708,11 @@ const App = () => {
                         onAddTrackToSpotify={handleAddTracksToSpotify}
                         onAddTracksToSpotify={handleAddTracksToSpotify}
                     />
-                </div>
-                <div style={{ display: activeTab === 'trends' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'trends'} className="w-full h-full">
                     <TrendsWorkspace lang={lang} />
-                </div>
-                <div style={{ display: activeTab === 'setbuilder' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'setbuilder'} className="w-full h-full">
                     <SetBuilderWorkspace 
                         setTracks={setBuilderTracks}
                         setSetTracks={setSetBuilderTracks}
@@ -1727,8 +1728,8 @@ const App = () => {
                         onNavigateTab={setActiveTab}
                         lang={lang}
                     />
-                </div>
-                <div style={{ display: activeTab === 'map' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'map'} className="w-full h-full">
                     <MapWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1748,10 +1749,10 @@ const App = () => {
                         onSelectDirectory={() => handleCargarDirectorioGlobal()}
                         lang={lang}
                     />
-                </div>
-                <div style={{ display: activeTab === 'knowledge' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'knowledge'} className="w-full h-full">
                     <KnowledgeWorkspace lang={lang} />
-                </div>
+                </WorkspaceSlot>
                 {activeTab === 'copilot' && (
                     <div className="w-full h-full">
                         <CopilotWorkspace 
