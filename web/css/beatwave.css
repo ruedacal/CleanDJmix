@@ -1417,7 +1417,7 @@ body.club-mode,
 /* 3. CUERPO DE 3 COLUMNAS ENCAJADO: DK 1 (1fr) | HARDWARE MIXER (108px) | DK 2 (1fr) */
 .mx-body, .bw-mx-body {
   display: grid;
-  grid-template-columns: 1fr 108px 1fr;
+  grid-template-columns: 1fr 136px 1fr;
   gap: 6px;
   align-items: stretch;
 }
@@ -1702,9 +1702,9 @@ body.club-mode,
 }
 .ch-tag, .bw-ch-tag {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 900;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 3px;
 }
 .ch-tag.ch1, .bw-ch-tag.ch1 {
@@ -1719,33 +1719,35 @@ body.club-mode,
 }
 .ch-mid, .bw-ch-mid {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
-  color: #64748B;
+  color: #94A3B8;
 }
 
 .knob-row, .bw-knob-row {
   display: grid;
-  grid-template-columns: 1fr 28px 1fr;
+  grid-template-columns: 1fr 38px 1fr;
   align-items: center;
+  gap: 2px;
 }
 .knob-cell, .bw-knob-cell { display: flex; justify-content: center; align-items: center; }
 .dj-knob-svg, .bw-dj-knob-svg {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   display: block;
+  cursor: default;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
 }
 .knob-lbl, .bw-knob-lbl {
   text-align: center;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 7.5px;
+  font-size: 10px;
   font-weight: 800;
-  color: #94A3B8;
+  color: #CBD5E1;
   background: #0F1726;
   border: 1px solid #1C2940;
   border-radius: 3px;
-  padding: 1px 0;
+  padding: 2px 0;
 }
 .knob-lbl.fltr, .bw-knob-lbl.fltr {
   color: #38BDF8;
@@ -1760,13 +1762,13 @@ body.club-mode,
 }
 .pfl-btn, .bw-pfl-btn {
   appearance: none;
-  height: 16px;
+  height: 22px;
   border-radius: 3px;
   background: #131C2E;
   border: 1px solid #283854;
-  color: #64748B;
+  color: #94A3B8;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 7.5px;
+  font-size: 10px;
   font-weight: 800;
   cursor: pointer;
 }

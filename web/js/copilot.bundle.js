@@ -47,13 +47,16 @@
   }) => {
     const v = Math.max(0, Math.min(1, Number(value) || 0.5));
     const angle = Math.round((v - 0.5) * 270);
+    const readout = `${label}: ${v >= 0.5 ? "+" : ""}${Math.round((v - 0.5) * 200)}%`;
     return /* @__PURE__ */ React.createElement(
       "svg",
       {
         className: "dj-knob-svg bw-dj-knob-svg select-none",
         viewBox: "0 0 40 40",
-        title: `${label}: ${v >= 0.5 ? "+" : ""}${Math.round((v - 0.5) * 200)}%`
+        role: "img",
+        "aria-label": readout
       },
+      /* @__PURE__ */ React.createElement("title", null, readout),
       /* @__PURE__ */ React.createElement(
         "circle",
         {

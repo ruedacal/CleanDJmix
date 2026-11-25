@@ -648,6 +648,22 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 const camelotBg = isEmptyDeck ? '#27272a' : '#e4e4e7';
                 const bpmText = deck.bpm ? Number(deck.bpm).toFixed(2) : (isEmptyDeck ? '--.--' : '136.00');
                 const vibeText = isEmptyDeck ? 'STANDBY' : (deck.subgenre || deck.vibe || deck.energy_label || 'Peak Time Climax');
+                const deckStatus = isEmptyDeck
+                    ? { label: 'STANDBY', cls: 'bg-zinc-900 border-zinc-800 text-zinc-500', live: false }
+                    : isMaster && deck.is_playing
+                        ? { label: 'ON AIR', cls: 'bg-djcyan-400 border-djcyan-300 text-black shadow-[0_0_12px_rgba(34,211,238,0.55)]', live: true }
+                        : isMaster
+                            ? { label: 'PAUSA', cls: 'bg-zinc-900 border-djcyan-500/60 text-djcyan-300', live: false }
+                            : { label: 'CUE', cls: 'bg-zinc-900 border-zinc-600 text-zinc-200', live: false };
+                const statusBadge = (
+                    <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border font-mono text-[11px] font-black uppercase tracking-wider ${deckStatus.cls}`}
+                        aria-label={`Deck ${side}: ${deckStatus.label}`}
+                    >
+                        {deckStatus.live && <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" aria-hidden="true"></span>}
+                        {deckStatus.label}
+                    </span>
+                );
 
                 if (isCompact) {
                     return (
@@ -696,11 +712,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                     <span className="font-orbitron font-black text-sm text-white tracking-wider">
                                         DECK {side}
                                     </span>
-                                    {isEmptyDeck && (
-                                        <span className="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
-                                            STANDBY
-                                        </span>
-                                    )}
+                                    {statusBadge}
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -800,11 +812,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                         <span className="font-orbitron font-black text-[12px] text-white tracking-wider">
                                             DECK {side}
                                         </span>
-                                        {isEmptyDeck && (
-                                            <span className="px-1.5 py-0.2 rounded-full font-mono text-[10px] font-bold uppercase bg-zinc-900 border border-zinc-800 text-zinc-500">
-                                                STANDBY
-                                            </span>
-                                        )}
+                                        {statusBadge}
                                     </div>
 
                                     <div>
@@ -1841,10 +1849,18 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                         className={`p-2.5 rounded-2xl bg-[#090912] border transition-all shadow-md group flex flex-col justify-between cursor-grab active:cursor-grabbing ${
                                             isDragging 
                                             ? 'opacity-40 border-djcyan-400 scale-95' 
-                                            : 'border-zinc-800 hover:border-djcyan-500/50 hover:bg-[#0c0c17]'
+                                            : idx === 0
+                                                ? 'border-djcyan-400/70 bg-[#071419] ring-1 ring-djcyan-400/30 hover:border-djcyan-300'
+                                                : 'border-zinc-800 hover:border-djcyan-500/50 hover:bg-[#0c0c17]'
                                         }`}
                                         title="Arrastra para cambiar el orden de mezcla"
                                     >
+                                        {idx === 0 && (
+                                            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-mono font-bold tracking-wider text-djcyan-300">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-djcyan-400" aria-hidden="true"></span>
+                                                RECOMENDADA · SIGUIENTE
+                                            </div>
+                                        )}
                                         <div className="flex items-start gap-2.5 mb-1.5">
                                             {/* Thumbnail Carátula con orden numérico */}
                                             <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-700/60 bg-black">
@@ -1868,16 +1884,16 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
                                                 <div className="text-[12px] text-zinc-400 truncate font-mono">{rec.artist}</div>
                                                 <div className="flex items-center gap-1.5 mt-0.5 text-[11px] font-mono">
                                                     <span className="text-djcyan-400 font-bold">{rec.bpm} BPM</span>
-                                                    {rec.mood && <span className="text-purple-400 truncate">• {rec.mood}</span>}
-                                                    {rec.energy && <span className="text-amber-400 font-bold shrink-0">• {rec.energy}%</span>}
+                                                    {rec.mood && <span className="text-zinc-300 truncate">• {rec.mood}</span>}
+                                                    {rec.energy && <span className="text-zinc-300 font-bold shrink-0" title="Energía">• {rec.energy}%</span>}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 pt-1.5 border-t border-zinc-800/60">
-                                            <span className="text-djcyan-400 font-semibold truncate max-w-[130px]">{rec.strategy}</span>
+                                        <div className="flex items-start justify-between gap-2 text-[11px] font-mono text-zinc-400 pt-1.5 border-t border-zinc-800/60">
+                                            <span className="text-djcyan-400 font-semibold text-pretty">{rec.strategy}</span>
                                             <span className="text-zinc-500 shrink-0">Sub: {rec.low_ratio}%</span>
                                         </div>
-                                        <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{rec.reason}</p>
+                                        <p className={`mt-1 leading-relaxed text-pretty ${idx === 0 ? 'text-xs text-zinc-200' : 'text-[11px] text-zinc-400'}`}>{rec.reason}</p>
                                     </div>
                                 );
                             })}

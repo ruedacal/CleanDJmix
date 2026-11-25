@@ -14,13 +14,16 @@ const HardwareKnob = memo(({
     const v = Math.max(0, Math.min(1, Number(value) || 0.5));
     // Rotación: de -135° a +135° (270° de recorrido total)
     const angle = Math.round((v - 0.5) * 270);
+    const readout = `${label}: ${v >= 0.5 ? '+' : ''}${Math.round((v - 0.5) * 200)}%`;
 
     return (
         <svg 
             className="dj-knob-svg bw-dj-knob-svg select-none" 
             viewBox="0 0 40 40"
-            title={`${label}: ${v >= 0.5 ? '+' : ''}${Math.round((v - 0.5) * 200)}%`}
+            role="img"
+            aria-label={readout}
         >
+            <title>{readout}</title>
             <circle 
                 cx="20" cy="20" r="14" 
                 fill="none" 
