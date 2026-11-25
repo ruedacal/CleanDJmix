@@ -241,20 +241,11 @@ const App = () => {
     // PERF: playProgress para workspaces — se actualiza cada ~100ms via CustomEvent
     // (throttle), evitando re-renders a 60 fps. Los workspaces usan este valor
     // solo para el playhead de la fila activa, no en cada frame de audio.
-    const [playProgress, setPlayProgressForWorkspaces] = useState(0);
-    useEffect(() => {
-        let lastUpdate = 0;
-        const THROTTLE_MS = 100;
-        const onProgress = (e) => {
-            const now = Date.now();
-            if (now - lastUpdate >= THROTTLE_MS) {
-                lastUpdate = now;
-                setPlayProgressForWorkspaces(e.detail.pct);
-            }
-        };
-        window.addEventListener("bw:progress", onProgress);
-        return () => window.removeEventListener("bw:progress", onProgress);
-    }, []);
+    const playProgress = 0;
+    const selectedAuditTrackIds = useMemo(
+        () => new Set((auditTracks || []).filter(t => t.selected).map(t => t.id)),
+        [auditTracks]
+    );
 
     // Estado Global de Tareas en Background & Tutorial de Bienvenida (Deshabilitado a petición)
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
@@ -1559,7 +1550,7 @@ const App = () => {
                         onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
                         onSelectLibrary={(id) => saveCustomLibraries(customLibraries, id)}
                         currentTracks={auditTracks}
-                        selectedTrackIds={new Set((auditTracks || []).filter(t => t.selected).map(t => t.id))}
+                        selectedTrackIds={selectedAuditTrackIds}
                         onMaterializarEnDisco={handleMaterializarBibliotecaEnDisco}
                         onAuditarCrate={(folder, lib) => {
                             handleAuditarCrateDesdeModal(folder, lib);

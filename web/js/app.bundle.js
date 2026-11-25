@@ -4560,8 +4560,18 @@
         };
       }, [isCurrentPlaying, seed]);
       useEffect6(() => {
-        progressRef.current = playProgress;
-      }, [playProgress]);
+        if (!isCurrentPlaying) {
+          progressRef.current = 0;
+          return;
+        }
+        const onProgress = (e) => {
+          if (e && e.detail && typeof e.detail.pct === "number") {
+            progressRef.current = e.detail.pct;
+          }
+        };
+        window.addEventListener("bw:progress", onProgress);
+        return () => window.removeEventListener("bw:progress", onProgress);
+      }, [isCurrentPlaying]);
       return /* @__PURE__ */ React.createElement("div", { onClick: handleClickScrub, className: "ws-wave w-28 h-7 relative overflow-hidden group cursor-pointer flex items-center justify-center" }, /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "112px", height: "28px", display: "block" } }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-0.5 right-1 text-[9px] font-mono tabular-nums text-[var(--bw-text-2)] opacity-70 group-hover:opacity-100" }, duration), isCurrentPlaying && /* @__PURE__ */ React.createElement("span", { className: "absolute top-1 left-1 ws-dot ws-dot-live", "aria-hidden": "true" }));
     },
     // ── Función de comparación (areEqual): evita re-renders innecesarios ────────
@@ -29266,20 +29276,11 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState31(0);
-    useEffect30(() => {
-      let lastUpdate = 0;
-      const THROTTLE_MS = 100;
-      const onProgress = (e) => {
-        const now = Date.now();
-        if (now - lastUpdate >= THROTTLE_MS) {
-          lastUpdate = now;
-          setPlayProgressForWorkspaces(e.detail.pct);
-        }
-      };
-      window.addEventListener("bw:progress", onProgress);
-      return () => window.removeEventListener("bw:progress", onProgress);
-    }, []);
+    const playProgress = 0;
+    const selectedAuditTrackIds = useMemo16(
+      () => new Set((auditTracks || []).filter((t2) => t2.selected).map((t2) => t2.id)),
+      [auditTracks]
+    );
     const [globalAuditInfo, setGlobalAuditInfo] = useState31({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
     useEffect30(() => {
       fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
@@ -30506,7 +30507,7 @@ ${res.path}`);
         onSaveLibraries: (updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId),
         onSelectLibrary: (id) => saveCustomLibraries(customLibraries, id),
         currentTracks: auditTracks,
-        selectedTrackIds: new Set((auditTracks || []).filter((t2) => t2.selected).map((t2) => t2.id)),
+        selectedTrackIds: selectedAuditTrackIds,
         onMaterializarEnDisco: handleMaterializarBibliotecaEnDisco,
         onAuditarCrate: (folder, lib) => {
           handleAuditarCrateDesdeModal(folder, lib);
