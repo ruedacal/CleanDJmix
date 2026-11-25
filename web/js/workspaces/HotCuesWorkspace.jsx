@@ -4,6 +4,7 @@ import { CopilotSeratoWaveform, parseDurationMs, formatMsToTime, parseTimeToMs }
 import { NV2_COLORS, getValidCover } from '../data/constants.js';
 import { SectionTitle, InfoTip, RotaryKnob, getAudioEQNodes } from '../shell/workspace-ui.jsx';
 import { UnifiedLibraryBrowserModal } from '../modals/index.js';
+import { CollectionTreeSidebar } from '../shell/CollectionTreeSidebar.jsx';
 
 
 // =========================================================================
@@ -38,6 +39,35 @@ export const HotCuesWorkspace = ({
         if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
     const [tapTimes, setTapTimes] = useState([]);
+
+    // AUTO-HIDRATACIÓN DE COLECCIÓN GUARDADA POR DEFECTO
+    const autoLoadedColRef = useRef(false);
+    useEffect(() => {
+        if (autoLoadedColRef.current) return;
+        if (tracks && tracks.length > 0) {
+            autoLoadedColRef.current = true;
+            return;
+        }
+        const activeLib = (customLibraries || []).find((l) => String(l.id) === String(activeCustomLibId))
+            || (customLibraries && customLibraries[0]);
+        if (!activeLib || !Array.isArray(activeLib.folders)) return;
+        const colTracks = [];
+        const seen = new Set();
+        activeLib.folders.forEach((f) => {
+            (f.tracks || []).forEach((tr) => {
+                const key = tr.path || tr.filepath || tr.f || tr.id;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    colTracks.push(tr);
+                }
+            });
+        });
+        if (colTracks.length > 0 && setTracks) {
+            autoLoadedColRef.current = true;
+            setTracks(colTracks);
+            if (setSelectedTrack) setSelectedTrack(colTracks[0]?.id || null);
+        }
+    }, [customLibraries, activeCustomLibId, tracks]);
 
     const currentTrack = (tracks && tracks.length > 0)
         ? (tracks.find(t => String(t.id) === String(selectedTrack)) || tracks[0])
@@ -971,41 +1001,6 @@ export const HotCuesWorkspace = ({
                 <div className="w-full md:flex-1 md:min-w-0 md:max-w-xl flex items-center gap-2">
                     {filteredTracks && filteredTracks.length > 0 ? (
                         <>
-                            <div className="relative flex-1 min-w-0">
-                                <select
-                                    value={currentTrack ? String(currentTrack.id) : ''}
-                                    onChange={(e) => {
-                                        const targetId = e.target.value;
-                                        setSelectedTrack(targetId);
-                                        const found = tracks.find(t => String(t.id) === String(targetId));
-                                        if (found && onPlayTrack) {
-                                            onPlayTrack(found, 0, false);
-                                        }
-                                    }}
-                                    className="w-full bg-djzinc-900 border border-djzinc-750 text-white text-xs font-mono rounded-lg px-2.5 py-1.5 outline-none focus:border-djcyan-500 cursor-pointer truncate shadow-sm"
-                                    title="Selecciona la pista para editar sus Hot Cues"
-                                >
-                                    {filteredTracks.map((trk, idx) => (
-                                        <option key={trk.id} value={trk.id}>
-                                            {idx + 1}. {trk.artist || trk.a || 'Artista'} - {trk.title || trk.t || trk.filename} ({trk.bpm || trk.b || '--'} BPM • {trk.key || trk.k || '--'})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowTrackListDrawer(prev => !prev)}
-                                className={`px-2.5 sm:px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow ${
-                                    showTrackListDrawer
-                                        ? 'bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]'
-                                        : 'bg-djzinc-900 text-gray-300 border-djzinc-750 hover:bg-djzinc-850 hover:text-white'
-                                }`}
-                                title="Ver o esconder la tabla completa de pistas de la carpeta"
-                            >
-                                <Icons.Copy size={14} className="inline-block align-[-2px]" />
-                                <span className="hidden sm:inline">{showTrackListDrawer ? 'Ocultar Lista' : `Ver Lista (${filteredTracks.length})`}</span>
-                                <span className="sm:hidden">{filteredTracks.length}</span>
-                            </button>
                             {/* Botón rápido Guardar Pista visible en móvil en la fila superior */}
                             <button
                                 type="button"
@@ -1065,7 +1060,7 @@ export const HotCuesWorkspace = ({
                         className="px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0"
                         title="Auto-mapear los 8 pads con la Plantilla Club Extended"
                     >
-                        <Icons.Zap size={14} className="inline-block align-[-2px]" />
+                        <Icons.Zap size={11} className="inline-block align-[-1px]" />
                         <span>Auto-Cues Club</span>
                     </button>
                     {saveStatus && (
@@ -1103,126 +1098,27 @@ export const HotCuesWorkspace = ({
                     </button>
                 </div>
             </header>
+            <div className="flex-1 min-h-0 flex overflow-hidden">
+                <CollectionTreeSidebar
+                    tracks={tracks}
+                    customLibraries={customLibraries}
+                    activeCustomLibId={activeCustomLibId}
+                    onSaveCustomLibraries={onSaveCustomLibraries}
+                    selectedTrackId={currentTrack?.id ?? selectedTrack}
+                    onSelectTrack={(trk) => {
+                        if (setTracks && !(tracks || []).some((t) => String(t.id) === String(trk.id))) {
+                            setTracks((prev) => [trk, ...(prev || [])]);
+                        }
+                        setSelectedTrack(trk.id);
+                        if (onPlayTrack) onPlayTrack(trk, 0, false);
+                    }}
+                    title="Colección"
+                    onExploreFolder={() => handleAbrirNavegador(currentFolder)}
+                    className="hidden md:flex w-72"
+                />
+                <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
 
-            {/* LISTADO DE PISTAS DESPLEGABLE DE LA CARPETA */}
-            {showTrackListDrawer && filteredTracks && filteredTracks.length > 0 && (
-                <div className="bg-[#08080d] border-b border-djzinc-800 p-4 shadow-2xl animate-fadeIn max-h-72 overflow-hidden flex flex-col shrink-0">
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80">
-                        <div className="flex items-center gap-2">
-                            <Icons.Music size={14} className="inline-block align-[-2px]" />
-                            <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
-                                Pistas en Carpeta: {filteredTracks.length} archivos
-                            </h3>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <input
-                                type="text"
-                                value={filterQuery}
-                                onChange={(e) => setFilterQuery(e.target.value)}
-                                placeholder="Filtrar por título, artista, BPM..."
-                                className="w-56 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-gray-200 outline-none font-mono placeholder-gray-500"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowTrackListDrawer(false)}
-                                className="text-gray-400 hover:text-white text-xs font-mono px-2 py-1 bg-djzinc-900 rounded border border-djzinc-750 cursor-pointer"
-                            >
-                                <Icons.Close size={14} className="inline-block align-[-2px]" /> Cerrar
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 pr-1">
-                        <table className="w-full text-left text-xs font-mono">
-                            <thead>
-                                <tr className="text-gray-500 border-b border-djzinc-800 text-[10px] uppercase">
-                                    <th className="py-1 px-2 w-10">#</th>
-                                    <th className="py-1 px-2 w-12">Cover</th>
-                                    <th className="py-1 px-2">Título / Artista</th>
-                                    <th className="py-1 px-2 w-24 text-center">{t('th_genre') || 'Género'}</th>
-                                    <th className="py-1 px-2 w-28 text-center">{t('th_subgenre') || 'Subgénero'}</th>
-                                    <th className="py-1 px-2 w-20">BPM</th>
-                                    <th className="py-1 px-2 w-16">Tono</th>
-                                    <th className="py-1 px-2 w-20">Duración</th>
-                                    <th className="py-1 px-2 w-24 text-right">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredTracks.map((trk, idx) => {
-                                    const isSel = currentTrack && String(currentTrack.id) === String(trk.id);
-                                    return (
-                                        <tr
-                                            key={trk.id}
-                                            onClick={() => {
-                                                setSelectedTrack(trk.id);
-                                                if (onPlayTrack) onPlayTrack(trk, 0, false);
-                                            }}
-                                            className={`hover:bg-djzinc-900/80 cursor-pointer transition-colors ${
-                                                isSel ? 'bg-djcyan-950/40 text-djcyan-300 font-bold' : 'text-gray-300'
-                                            }`}
-                                        >
-                                            <td className="py-1.5 px-2 text-gray-500">{idx + 1}</td>
-                                            <td className="py-1.5 px-2">
-                                                <img
-                                                    src={getValidCover(trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : null))}
-                                                    alt="Cover"
-                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                                                    className="w-7 h-7 rounded object-cover border border-djzinc-750"
-                                                />
-                                            </td>
-                                            <td className="py-1.5 px-2">
-                                                <div className="truncate max-w-xs sm:max-w-md font-bold text-white">
-                                                    {trk.title || trk.t || trk.filename}
-                                                </div>
-                                                <div className="truncate max-w-xs text-[11px] text-gray-400">
-                                                    {trk.artist || trk.a || 'Artista Desconocido'}
-                                                </div>
-                                            </td>
-                                            <td className="py-1.5 px-2 text-center">
-                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[85px] inline-block">
-                                                    {trk.genre || 'House'}
-                                                </span>
-                                            </td>
-                                            <td className="py-1.5 px-2 text-center">
-                                                <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono text-gray-300 bg-djzinc-850 border border-djzinc-750 truncate max-w-[95px] inline-block">
-                                                    {trk.subgenre || (TAXONOMY_TREE[trk.genre || 'Tech House'] ? TAXONOMY_TREE[trk.genre || 'Tech House'][0] : 'Tech House')}
-                                                </span>
-                                            </td>
-                                            <td className="py-1.5 px-2 font-mono text-gray-300">{trk.bpm || trk.b || '--'}</td>
-                                            <td className="py-1.5 px-2 font-mono text-djcyan-400">{trk.key || trk.k || '--'}</td>
-                                            <td className="py-1.5 px-2 text-gray-400">{trk.duration || '--'}</td>
-                                            <td className="py-1.5 px-2 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedTrack(trk.id);
-                                                            setShowTrackListDrawer(false);
-                                                            if (onPlayTrack) onPlayTrack(trk, 0, true);
-                                                        }}
-                                                        className="px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
-                                                    >
-                                                        <Icons.Play size={14} className="inline-block align-[-2px]" /> Cargar
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => handleRemoveTrackFromHotCues(trk.id, e)}
-                                                        className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90"
-                                                        title="Quitar pista del análisis global"
-                                                    >
-                                                        <Icons.Trash size={14} className="inline-block align-[-2px]" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+            
 
             {/* CUERPO DEL ESTUDIO: WAVEFORM EXPANDIDO, CONTROLES DE TRANSPORTE Y PADS */}
             {currentTrack ? (
@@ -1247,17 +1143,6 @@ export const HotCuesWorkspace = ({
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setMobileDeckMode('eq_pitch')}
-                                className={`flex-1 py-2 rounded-lg text-xs font-mono font-black transition-all text-center cursor-pointer ${
-                                    mobileDeckMode === 'eq_pitch' 
-                                        ? 'bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-md scale-[1.02]' 
-                                        : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
-                                }`}
-                            >
-                                <Icons.Sliders size={14} className="inline-block align-[-2px]" /> EQ & TEMPO
-                            </button>
-                            <button
-                                type="button"
                                 onClick={() => setMobileDeckMode('vinyl')}
                                 className={`flex-1 py-2 rounded-lg text-xs font-mono font-black transition-all text-center cursor-pointer ${
                                     mobileDeckMode === 'vinyl' 
@@ -1265,71 +1150,24 @@ export const HotCuesWorkspace = ({
                                         : 'text-gray-400 hover:text-white hover:bg-djzinc-850'
                                 }`}
                             >
-                                <Icons.Disc size={14} className="inline-block align-[-2px]" /> VINILO 12"
+                                <Icons.Disc size={14} className="inline-block align-[-2px]" /> CARÁTULA
                             </button>
                         </div>
 
-                        <div className="flex flex-col xl:flex-row items-center justify-between gap-6">
+                        <div className="flex flex-col xl:flex-row items-center xl:items-stretch justify-between gap-3 xl:max-h-[200px]">
                             {/* LADO IZQUIERDO: DECK DE TOCADISCOS DJ PROFESIONAL CON VINILO GIRATORIO DE ALTA RESOLUCIÓN */}
                             <div className={`flex-wrap sm:flex-nowrap items-center gap-5 shrink-0 ${mobileDeckMode === 'vinyl' ? 'flex' : 'hidden md:flex'}`}>
-                                {/* PLATO GIRADISCOS DJ DIRECT DRIVE CON VINILO 12" A GRAN TAMAÑO */}
+                                {/* CARÁTULA CUADRADA ESTÁNDAR DE LA APLICACIÓN (165x165px) */}
                                 <div className="relative group shrink-0">
-                                    {/* Chasis Metálico Exterior del Plato con Bisel Estroboscópico */}
-                                    <div className="w-44 h-44 sm:w-52 sm:h-52 md:w-56 md:h-56 rounded-full bg-gradient-to-tr from-[#0a0a0f] via-[#161622] to-[#0c0c14] border-4 border-[#2c2c3e] shadow-[0_12px_40px_rgba(0,0,0,0.85),inset_0_2px_6px_rgba(255,255,255,0.18)] p-2.5 flex items-center justify-center relative select-none">
-                                        
-                                        {/* Puntos de Luz Estroboscópica del Borde Technics 1200 */}
-                                        <div className="absolute inset-1 rounded-full border border-dashed border-djzinc-650/40 pointer-events-none"></div>
-
-                                        {/* Disco de Vinilo 12" con Surcos Microacústicos y Giro Continuo Ultraligero (Sin Scratch ni Aguja) */}
-                                        <div 
-                                            className="w-full h-full rounded-full relative overflow-hidden flex items-center justify-center shadow-2xl select-none pointer-events-none"
-                                            title="Plato de Vinilo Direct-Drive (Visual)"
-                                            style={{
-                                                background: 'radial-gradient(circle, #22222a 0%, #121217 38%, #1a1a24 49%, #0d0d12 62%, #161620 78%, #08080c 100%)',
-                                                boxShadow: 'inset 0 0 18px rgba(0,0,0,0.95), 0 0 15px rgba(0,0,0,0.8)',
-                                                animation: isCurrentPlayingThis ? 'spinVinylContinuous 3s linear infinite' : 'none'
-                                            }}
-                                        >
-                                            {/* Surcos de Pistas de Audio en Vinilo (Grooves) */}
-                                            <div 
-                                                className="absolute inset-0 rounded-full pointer-events-none opacity-40"
-                                                style={{
-                                                    background: 'repeating-radial-gradient(circle, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3.5px)'
-                                                }}
-                                            ></div>
-
-                                            {/* Brillo Óptico de Refracción de Luz en el Vinilo */}
-                                            <div 
-                                                className="absolute inset-0 rounded-full pointer-events-none opacity-25"
-                                                style={{
-                                                    background: 'conic-gradient(from 45deg, transparent 0deg, rgba(255,255,255,0.12) 60deg, transparent 120deg, transparent 180deg, rgba(255,255,255,0.12) 240deg, transparent 300deg)'
-                                                }}
-                                            ></div>
-
-                                            {/* Galleta Central del Vinilo con Carátula Oficial a Gran Tamaño */}
-                                            <div className="w-[165px] h-[165px] sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-full border-2 border-djzinc-500/80 shadow-[0_0_12px_rgba(0,0,0,0.8),inset_0_0_8px_rgba(0,0,0,0.6)] relative overflow-hidden flex items-center justify-center z-10 bg-black">
-                                                <img 
-                                                    src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
-                                                    alt="Vinyl Label Cover"
-                                                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
-                                                    className="w-full h-full object-cover rounded-full"
-                                                />
-                                                
-                                                {/* Anillo Central y Agujero del Eje de Bronce (Spindle Hole) */}
-                                                <div className="absolute w-4 h-4 rounded-full bg-gradient-to-tr from-amber-700 via-amber-400 to-amber-200 border border-black shadow-[inset_0_1px_3px_rgba(0,0,0,0.9),0_0_4px_rgba(0,0,0,0.8)] z-20 flex items-center justify-center">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-black"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Badge de Velocidad 33 RPM & Motor Direct Drive */}
-                                        <div className="absolute bottom-1.5 left-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-gray-300 border border-djzinc-750 flex items-center gap-1.5 shadow-lg">
-                                            <span className={`w-1.5 h-1.5 rounded-full ${isCurrentPlayingThis ? 'bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse' : 'bg-gray-500'}`}></span>
-                                            <span>33⅓ RPM</span>
-                                        </div>
-
+                                    <div className={`w-[165px] h-[165px] rounded-xl overflow-hidden relative bg-[#0a0a0f] border shadow-xl select-none transition-all ${isCurrentPlayingThis ? 'border-djcyan-500/70 shadow-[0_0_16px_rgba(6,182,212,0.2)]' : 'border-djzinc-750'}`}>
+                                        <img
+                                            src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
+                                            alt={currentTrack.title || currentTrack.t || "Track Cover"}
+                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                            className="w-full h-full object-cover"
+                                        />
                                         {/* Formato del Archivo */}
-                                        <div className="absolute bottom-1.5 right-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750 shadow-lg">
+                                        <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded-md text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750/90 shadow-md">
                                             {currentTrack.format || 'FLAC'}
                                         </div>
                                     </div>
@@ -1375,7 +1213,7 @@ export const HotCuesWorkspace = ({
                                             <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[10px] font-mono font-black uppercase tracking-wider w-fit">
                                                 DECK 1 • MASTER
                                             </span>
-                                            <span className="text-[10px] font-mono text-gray-400">
+                                            <span className="text-[9px] font-mono text-gray-400">
                                                 {isCurrentPlayingThis ? '● REPRODUCIENDO' : '○ EN ESPERA'}
                                             </span>
                                         </div>
@@ -1408,119 +1246,17 @@ export const HotCuesWorkspace = ({
                                         </div>
                                     </div>
                                 </div>
-                            
-{/* MÓDULO CONJUNTO HARDWARE: EQ 3-BAND + TEMPO PITCH FADER */}
-                            <div className={`items-stretch bg-[#080811] rounded-xl border border-djzinc-800 shadow-inner shrink-0 overflow-hidden ${mobileDeckMode === 'eq_pitch' ? 'flex flex-col sm:flex-row w-full sm:w-auto' : 'hidden md:flex flex-row'}`}>
-                                {/* SUB-MÓDULO IZQUIERDO: EQ 3-BAND */}
-                                <div className="flex flex-col items-center justify-between p-2.5 border-b sm:border-b-0 sm:border-r border-djzinc-800/80 bg-[#090913]/80">
-                                    <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1.5 text-[9px] font-mono font-bold gap-3">
-                                        <span className="text-gray-400 tracking-wider">EQ 3-BAND</span>
-                                        <button
-                                            type="button"
-                                            onClick={handleResetEQ}
-                                            className="text-[8px] font-mono text-gray-400 hover:text-djcyan-400 px-1.5 py-0.5 rounded bg-[#141420] border border-djzinc-750 hover:border-djcyan-500/40 transition-colors cursor-pointer"
-                                            title="Resetear EQ a 0.0 dB"
-                                        >
-                                            FLAT
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-center gap-2 my-auto py-1">
-                                        <RotaryKnob label="HI" value={eqTreble} onChange={(v) => handleEqChange('treble', v)} color="#06b6d4" />
-                                        <RotaryKnob label="MID" value={eqMid} onChange={(v) => handleEqChange('mid', v)} color="#f59e0b" />
-                                        <RotaryKnob label="LOW" value={eqBass} onChange={(v) => handleEqChange('bass', v)} color="#ef4444" />
-                                    </div>
-                                    <div className="w-full pt-1.5 border-t border-djzinc-800/80 flex items-center justify-center text-[8px] font-mono text-gray-500 uppercase tracking-widest">
-                                        Isolator • ±12dB
-                                    </div>
-                                </div>
-
-                                {/* SUB-MÓDULO DERECHO: TEMPO / PITCH FADER */}
-                                <div className="flex flex-col items-center justify-between p-2.5 w-full sm:w-28 bg-[#07070c]/90">
-                                    <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold">
-                                        <span className="text-gray-400 tracking-wider">TEMPO</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPitchRange(r => r === 8 ? 16 : 8)}
-                                            className="text-[8px] px-1 rounded bg-[#151522] border border-djzinc-700 text-djcyan-400 hover:text-white cursor-pointer"
-                                            title="Alternar rango de pitch"
-                                        >
-                                            ±{pitchRange}%
-                                        </button>
-                                    </div>
-
-                                    {/* Pitch Offset & Live Dynamic BPM */}
-                                    <div className="text-center my-0.5">
-                                        <div className="text-[11px] font-mono font-black text-djcyan-300 tracking-tight">
-                                            {pitchPercent > 0 ? `+${pitchPercent.toFixed(2)}` : pitchPercent.toFixed(2)}%
-                                        </div>
-                                        <div className="text-[10px] font-mono font-extrabold text-amber-400">
-                                            {(bpm * (1 + pitchPercent / 100)).toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">BPM</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Vertical Fader Track & Slider */}
-                                    <div className="relative flex items-center justify-center my-1 h-24">
-                                        <div className="absolute w-5 h-0.5 bg-djcyan-500/60 top-1/2 -translate-y-1/2 pointer-events-none z-10 shadow-[0_0_6px_#06b6d4]"></div>
-                                        <input
-                                            type="range"
-                                            min={-pitchRange}
-                                            max={pitchRange}
-                                            step={0.05}
-                                            value={pitchPercent}
-                                            onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
-                                            className="pitch-slider-vertical"
-                                            style={{
-                                                writingMode: 'vertical-lr',
-                                                direction: 'rtl',
-                                                height: '95px',
-                                                width: '18px',
-                                                accentColor: '#06b6d4',
-                                                cursor: 'pointer'
-                                            }}
-                                            title="Pitch Fader: Ajusta velocidad y tempo dinámicamente"
-                                        />
-                                    </div>
-
-                                    {/* Micro-Nudge & Reset Buttons */}
-                                    <div className="flex items-center gap-1 w-full pt-1.5 border-t border-djzinc-800/80 justify-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleNudgePitch(-0.1)}
-                                            className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
-                                            title="Nudge BPM -"
-                                        >
-                                            -
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handlePitchChange(0)}
-                                            className="px-1.5 h-5 rounded bg-[#141420] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 font-mono font-bold text-[8px] flex items-center justify-center border border-djzinc-750 active:scale-95 shadow cursor-pointer"
-                                            title="Reset Tempo (0.0%)"
-                                        >
-                                            0%
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleNudgePitch(+0.1)}
-                                            className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
-                                            title="Nudge BPM +"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
                             </div>
 
                             {/* LADO DERECHO: PIONEER DDJ 8-PADS + PITCH FADER HARDWARE */}
                             <div className="flex-1 min-w-0 max-w-3xl flex flex-col md:flex-row items-stretch gap-3 w-full">
-                                <div data-tour="tour-hotcues-deck" className={`flex-1 min-w-0 bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner ${mobileDeckMode === 'pads' ? 'block' : 'hidden md:block'}`}>
+                                <div data-tour="tour-hotcues-deck" className={`flex-1 min-w-0 bg-[#09090f] p-1.5 rounded-xl border border-djzinc-800 shadow-inner flex flex-col justify-between min-h-0 overflow-hidden ${mobileDeckMode === 'pads' ? 'block' : 'hidden md:block'}`}>
                                 {/* Barra Superior del Pad Mode */}
-                                <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-2.5">
+                                <div className="flex items-center justify-between border-b border-djzinc-800/80 pb-1 mb-1.5">
                                     <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1 bg-[#12121c] px-2 py-0.5 rounded border border-djzinc-750">
+                                        <div className="flex items-center gap-1 bg-[#12121c] px-1.5 py-0 rounded border border-djzinc-750">
                                             <span className="w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]"></span>
-                                            <span className="text-[10px] font-mono font-black text-white uppercase tracking-wider">
+                                            <span className="text-[9px] font-mono font-black text-white uppercase tracking-wider">
                                                 HOT CUE MODE
                                             </span>
                                         </div>
@@ -1532,11 +1268,11 @@ export const HotCuesWorkspace = ({
                                         <button
                                             type="button"
                                             onClick={handleAutoGenerateClubTemplate}
-                                            className="px-2.5 sm:px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0"
+                                            className="px-2 py-0.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded text-[10px] font-mono font-black flex items-center gap-1 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0"
                                             title="Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
                                         >
                                             <Icons.Zap size={14} className="inline-block align-[-2px]" />
-                                            <span className="hidden sm:inline">Auto-Generate Cues (Club Template)</span>
+                                            <span className="hidden sm:inline">Auto-Cues (Club)</span>
                                             <span className="sm:hidden">Auto-Cues Club</span>
                                         </button>
                                         <span className="text-[10px] font-mono text-djcyan-400 font-bold shrink-0">
@@ -1552,7 +1288,7 @@ export const HotCuesWorkspace = ({
                                 )}
 
                                 {/* Matriz Adaptativa: 2 columnas en móvil táctil, 4 en tablet/desktop */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 flex-1 min-h-0">
                                     {activeCues.map((cue, idx) => {
                                         const padNum = cue.id !== undefined ? cue.id : (idx + 1);
                                         const isSelected = (selectedCueId === padNum);
@@ -1567,17 +1303,17 @@ export const HotCuesWorkspace = ({
                                                 <div
                                                     key={`${currentTrack?.id || 'cue'}_pad_${idx}`}
                                                     onClick={() => setSelectedCueId(padNum)}
-                                                    className={`p-2 pt-2.5 select-none rounded-xl border border-dashed border-djzinc-800 bg-[#07070b]/60 flex flex-col justify-between min-h-[68px] opacity-40 hover:opacity-75 transition-all cursor-pointer ${isSelected ? 'ring-1 ring-gray-500 opacity-80' : ''}`}
+                                                    className={`px-1.5 py-1 select-none rounded-lg border border-dashed border-djzinc-800 bg-[#07070b]/60 flex flex-col justify-between min-h-0 leading-tight opacity-40 hover:opacity-75 transition-all cursor-pointer ${isSelected ? 'ring-1 ring-gray-500 opacity-80' : ''}`}
                                                     title={`PAD ${padNum}: Libre (sin asignar)`}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[10px] font-mono text-gray-500 font-bold">PAD {padNum}</span>
                                                         <span className="w-2 h-2 rounded-full bg-gray-700/60"></span>
                                                     </div>
-                                                    <div className="text-center my-1 text-[11px] font-mono text-gray-500 font-bold tracking-wider">
+                                                    <div className="text-center my-0.5 text-[10px] font-mono text-gray-500 font-bold tracking-wider">
                                                         [ LIBRE ]
                                                     </div>
-                                                    <div className="flex items-center justify-between text-[9px] font-mono text-gray-600 border-t border-djzinc-800/50 pt-1">
+                                                    <div className="flex items-center justify-between text-[8.5px] font-mono text-gray-600 border-t border-djzinc-800/50 pt-0.5">
                                                         <span>--:--.--</span>
                                                         <span>Paso {padNum}</span>
                                                     </div>
@@ -1592,7 +1328,7 @@ export const HotCuesWorkspace = ({
                                                     setSelectedCueId(padNum);
                                                     handleJumpToCue(cue);
                                                 }}
-                                                className={`ws-pad p-2 pt-2.5 cursor-pointer select-none group min-h-[68px] ${isPlayingThisCue ? 'ws-pad-on ws-pad-live' : isSelected ? 'ws-pad-on' : 'ws-pad-set'}`}
+                                                className={`ws-pad px-1.5 py-1 cursor-pointer select-none group flex flex-col justify-between min-h-0 leading-tight ${isPlayingThisCue ? 'ws-pad-on ws-pad-live' : isSelected ? 'ws-pad-on' : 'ws-pad-set'}`}
                                                 style={{
                                                     animation: 'padHaloIgnite 0.65s cubic-bezier(0.16, 1, 0.3, 1) both',
                                                     animationDelay: staggerDelay,
@@ -1605,7 +1341,7 @@ export const HotCuesWorkspace = ({
                                                 {/* Resplandor ambiental de fondo del color del Cue */}
                                                 
 
-                                                <div className="flex items-center justify-between mt-0.5 relative z-10">
+                                                <div className="flex items-center justify-between relative z-10">
                                                     <span className={`ws-pad-num ${isPlayingThisCue ? 'ws-pad-num-on' : ''}`}>
                                                         PAD {padNum}
                                                     </span>
@@ -1615,13 +1351,13 @@ export const HotCuesWorkspace = ({
                                                     ></span>
                                                 </div>
 
-                                                <div className="my-1 truncate relative z-10">
-                                                    <span className="text-[11px] font-bold text-gray-200 block truncate group-hover:text-white" title={cue.name || cue.short_name}>
+                                                <div className="my-0.5 truncate relative z-10">
+                                                    <span className="text-[10px] font-bold text-gray-200 block truncate group-hover:text-white" title={cue.name || cue.short_name}>
                                                         {cue.name || cue.short_name || `Cue ${padNum}`}
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center justify-between text-[10px] font-mono pt-1 border-t border-djzinc-800/80 relative z-10">
+                                                <div className="flex items-center justify-between text-[9px] font-mono pt-0.5 border-t border-djzinc-800/80 relative z-10">
                                                     <span className="font-extrabold text-djcyan-300">{cue.time || "00:00.00"}</span>
                                                     <span className="text-gray-400 text-[9px] font-semibold">Bar {barNum}</span>
                                                 </div>
@@ -2469,6 +2205,8 @@ export const HotCuesWorkspace = ({
             )}
 
             {/* Modal Unificada de Exploración de Bibliotecas & Archivos */}
+                </div>
+            </div>
             <UnifiedLibraryBrowserModal
                 isOpen={fsBrowserOpen}
                 onClose={() => setFsBrowserOpen(false)}

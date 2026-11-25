@@ -680,6 +680,7 @@ export const LibraryWorkspace = ({
     const [editingFolderId, setEditingFolderId] = useState(null);
     const [editingFolderName, setEditingFolderName] = useState('');
     const [draggedFolderId, setDraggedFolderId] = useState(null);
+    const [collapsedTrackFolders, setCollapsedTrackFolders] = useState({});
     const [lastClickedRowIdx, setLastClickedRowIdx] = useState(null);
 
     const [activeLibId, setActiveLibId] = useState(activeLibraryId || (libraries[0] && libraries[0].id) || 'lib_default');
@@ -1743,6 +1744,17 @@ export const LibraryWorkspace = ({
                                                 title="Arrastra pistas (o varias con Shift/Cmd) aquí, arrastra sobre otra carpeta para anidar o Shift+arrastra para reordenar"
                                             >
                                                 <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setCollapsedTrackFolders(prev => ({ ...prev, [fld.id]: !prev[fld.id] }));
+                                                        }}
+                                                        className="w-5 h-5 flex items-center justify-center rounded bg-zinc-900/80 hover:bg-cyan-500/20 text-[11px] font-mono text-cyan-400 border border-zinc-700/70 shrink-0 cursor-pointer transition-colors"
+                                                        title={collapsedTrackFolders[fld.id] ? "Desplegar pistas" : "Ocultar pistas"}
+                                                    >
+                                                        {collapsedTrackFolders[fld.id] ? '▸' : '▾'}
+                                                    </button>
                                                     <Icons.Folder size={15} className={`shrink-0 ${isDropOver || isSelected ? 'text-cyan-400' : 'text-cyan-500/70'}`} />
                                                     <div className="truncate flex-1" onDoubleClick={(e) => {
                                                         e.stopPropagation();
@@ -1820,6 +1832,58 @@ export const LibraryWorkspace = ({
                                                     </button>
                                                 </div>
                                             </div>
+                                            {/* LISTADO INLINE DE PISTAS (COVER, TÍTULO, AUTOR) CON DRAG & DROP */}
+                                            {!collapsedTrackFolders[fld.id] && (
+                                                <div className="ml-3 pl-2 border-l border-zinc-800/90 space-y-1 py-1">
+                                                    {(fld.tracks || []).length === 0 ? (
+                                                        <div className="px-2 py-1 text-[10px] font-mono text-gray-500 italic">
+                                                            Carpeta vacía
+                                                        </div>
+                                                    ) : (
+                                                        (fld.tracks || []).map((trk, tIdx) => {
+                                                            const coverUrl = getValidCover(
+                                                                trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : (trk.f ? `/cover?path=${encodeURIComponent(trk.f)}` : null))
+                                                            );
+                                                            return (
+                                                                <div
+                                                                    key={trk.id ?? `${fld.id}_tr_${tIdx}`}
+                                                                    draggable={true}
+                                                                    onDragStart={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const payload = JSON.stringify(trk);
+                                                                        e.dataTransfer.setData('text/plain', payload);
+                                                                        e.dataTransfer.setData('application/json', payload);
+                                                                        e.dataTransfer.effectAllowed = 'copyMove';
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedFolderId(fld.id);
+                                                                        if (typeof setSelectedTrack === 'function') setSelectedTrack(trk.id);
+                                                                        if (typeof onPlayTrack === 'function') onPlayTrack(trk, 0, false);
+                                                                    }}
+                                                                    className="px-2 py-1 rounded-lg bg-[#0d0d16] hover:bg-djcyan-950/40 border border-zinc-800/70 hover:border-cyan-500/50 flex items-center gap-2 cursor-grab active:cursor-grabbing transition-colors"
+                                                                    title="Arrastra esta pista a otra carpeta o haz clic para seleccionarla"
+                                                                >
+                                                                    <img
+                                                                        src={coverUrl}
+                                                                        alt="Cover"
+                                                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
+                                                                        className="w-7 h-7 rounded object-cover border border-djzinc-750 shrink-0 bg-black pointer-events-none"
+                                                                    />
+                                                                    <div className="min-w-0 flex-1 pointer-events-none">
+                                                                        <div className="text-[11px] font-bold text-white truncate leading-tight">
+                                                                            {trk.title || trk.t || trk.filename || 'Sin título'}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-gray-400 truncate leading-tight mt-0.5">
+                                                                            {trk.artist || trk.a || 'Artista Desconocido'}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            )}
                                             {subs.map(sub => renderFolderNode(sub, depth + 1))}
                                         </div>
                                     );
