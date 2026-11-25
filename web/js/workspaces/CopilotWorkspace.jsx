@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons, renderPlatformLogo } from '../shell/icons.jsx';
+import { useWorkspaceActive } from '../shell/WorkspaceSlot.jsx';
 import { CopilotSeratoWaveform, computeTrackStructuralBands } from '../waveforms/index.js';
 import { CopilotMixerMirror } from './CopilotMixerMirror.jsx';
 import { CopilotCleanMixBanner } from './CopilotCleanMixBanner.jsx';
@@ -950,6 +951,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
 };
 
 export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
+    const isWorkspaceActive = useWorkspaceActive();
     const [state, setState] = useState(DEFAULT_COPILOT_STATE);
     const [clock, setClock] = useState('');
     const [latency, setLatency] = useState(2);
@@ -1061,12 +1063,13 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     }, []);
 
     useEffect(() => {
+        if (!isWorkspaceActive) return;
         const timer = setInterval(() => {
             const now = new Date();
             setClock(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
+    }, [isWorkspaceActive]);
 
     // Conexión en tiempo real: WebSocket nativo 60 FPS (<25ms) con fallback a Polling reactivo
     useEffect(() => {
