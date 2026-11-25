@@ -2,7 +2,7 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons, PlatformRekordboxLogo, PlatformSeratoLogo, PlatformTraktorLogo, PlatformVirtualDjLogo } from '../shell/icons.jsx';
 import { 
     TableHarmonicWaveform, 
-    RekordboxWaveform, 
+    CopilotSeratoWaveform, 
     formatMsToTime, 
     parseDurationMs, 
     parseTimeToMs, 
@@ -5431,7 +5431,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                         </div>
                     ) : null}
 
-                    <RekordboxWaveform 
+                    <CopilotSeratoWaveform 
                         track={currentTrack} 
                         cues={(currentTrack && currentTrack.cues && currentTrack.cues.length > 0) ? currentTrack.cues : NV2_COLORS} 
                         duration={currentTrack.duration || "05:00"} 

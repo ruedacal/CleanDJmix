@@ -2784,7 +2784,7 @@ export const SpotifyWorkspace = ({
                         </div>
 
                         {/* Waveform Rekordbox Estructural en Spotify Ingest */}
-                        <RekordboxWaveform track={currentTrack} duration={currentTrack.duration || "03:30"} onSeekTrack={(trk, pct) => handlePlayPreview(trk, null, pct)} />
+                        <CopilotSeratoWaveform track={currentTrack} duration={currentTrack.duration || "03:30"} onSeekTrack={(trk, pct) => handlePlayPreview(trk, null, pct)} />
 
                         <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                             <div className="bg-[#050508] p-2.5 rounded border border-djzinc-800">

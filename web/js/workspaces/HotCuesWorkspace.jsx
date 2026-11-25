@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
-import { ZoomableRekordboxWaveform, parseDurationMs, formatMsToTime, parseTimeToMs } from '../waveforms/index.js';
+import { CopilotSeratoWaveform, parseDurationMs, formatMsToTime, parseTimeToMs } from '../waveforms/index.js';
 import { NV2_COLORS, getValidCover } from '../data/constants.js';
 import { SectionTitle, InfoTip, RotaryKnob, getAudioEQNodes } from '../shell/workspace-ui.jsx';
 import { UnifiedLibraryBrowserModal } from '../modals/index.js';
@@ -1307,7 +1307,7 @@ export const HotCuesWorkspace = ({
                                             ></div>
 
                                             {/* Galleta Central del Vinilo con Carátula Oficial a Gran Tamaño */}
-                                            <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-full border-2 border-djzinc-500/80 shadow-[0_0_12px_rgba(0,0,0,0.8),inset_0_0_8px_rgba(0,0,0,0.6)] relative overflow-hidden flex items-center justify-center z-10 bg-black">
+                                            <div className="w-[165px] h-[165px] sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-full border-2 border-djzinc-500/80 shadow-[0_0_12px_rgba(0,0,0,0.8),inset_0_0_8px_rgba(0,0,0,0.6)] relative overflow-hidden flex items-center justify-center z-10 bg-black">
                                                 <img 
                                                     src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
                                                     alt="Vinyl Label Cover"
@@ -1408,26 +1408,108 @@ export const HotCuesWorkspace = ({
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* MÓDULO HARDWARE EQ DE 3 BANDAS (BASS, MID, TREBLE) */}
-                                <div className={`flex-col items-center justify-between bg-[#080811] p-2 rounded-xl border border-djzinc-800 shadow-inner shrink-0 ${mobileDeckMode === 'eq_pitch' ? 'flex w-full sm:w-auto' : 'hidden md:flex'}`}>
-                                    <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold">
-                                        <span className="text-gray-400">EQ 3-BAND</span>
+                            
+{/* MÓDULO CONJUNTO HARDWARE: EQ 3-BAND + TEMPO PITCH FADER */}
+                            <div className={`items-stretch bg-[#080811] rounded-xl border border-djzinc-800 shadow-inner shrink-0 overflow-hidden ${mobileDeckMode === 'eq_pitch' ? 'flex flex-col sm:flex-row w-full sm:w-auto' : 'hidden md:flex flex-row'}`}>
+                                {/* SUB-MÓDULO IZQUIERDO: EQ 3-BAND */}
+                                <div className="flex flex-col items-center justify-between p-2.5 border-b sm:border-b-0 sm:border-r border-djzinc-800/80 bg-[#090913]/80">
+                                    <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1.5 text-[9px] font-mono font-bold gap-3">
+                                        <span className="text-gray-400 tracking-wider">EQ 3-BAND</span>
                                         <button
                                             type="button"
                                             onClick={handleResetEQ}
-                                            className="text-[8px] font-mono text-gray-400 hover:text-djcyan-400 px-1 py-0.5 rounded hover:bg-djzinc-800 transition-colors"
+                                            className="text-[8px] font-mono text-gray-400 hover:text-djcyan-400 px-1.5 py-0.5 rounded bg-[#141420] border border-djzinc-750 hover:border-djcyan-500/40 transition-colors cursor-pointer"
                                             title="Resetear EQ a 0.0 dB"
                                         >
                                             FLAT
                                         </button>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-center gap-2 my-auto py-1">
                                         <RotaryKnob label="HI" value={eqTreble} onChange={(v) => handleEqChange('treble', v)} color="#06b6d4" />
                                         <RotaryKnob label="MID" value={eqMid} onChange={(v) => handleEqChange('mid', v)} color="#f59e0b" />
                                         <RotaryKnob label="LOW" value={eqBass} onChange={(v) => handleEqChange('bass', v)} color="#ef4444" />
                                     </div>
+                                    <div className="w-full pt-1.5 border-t border-djzinc-800/80 flex items-center justify-center text-[8px] font-mono text-gray-500 uppercase tracking-widest">
+                                        Isolator • ±12dB
+                                    </div>
                                 </div>
+
+                                {/* SUB-MÓDULO DERECHO: TEMPO / PITCH FADER */}
+                                <div className="flex flex-col items-center justify-between p-2.5 w-full sm:w-28 bg-[#07070c]/90">
+                                    <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold">
+                                        <span className="text-gray-400 tracking-wider">TEMPO</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPitchRange(r => r === 8 ? 16 : 8)}
+                                            className="text-[8px] px-1 rounded bg-[#151522] border border-djzinc-700 text-djcyan-400 hover:text-white cursor-pointer"
+                                            title="Alternar rango de pitch"
+                                        >
+                                            ±{pitchRange}%
+                                        </button>
+                                    </div>
+
+                                    {/* Pitch Offset & Live Dynamic BPM */}
+                                    <div className="text-center my-0.5">
+                                        <div className="text-[11px] font-mono font-black text-djcyan-300 tracking-tight">
+                                            {pitchPercent > 0 ? `+${pitchPercent.toFixed(2)}` : pitchPercent.toFixed(2)}%
+                                        </div>
+                                        <div className="text-[10px] font-mono font-extrabold text-amber-400">
+                                            {(bpm * (1 + pitchPercent / 100)).toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">BPM</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Vertical Fader Track & Slider */}
+                                    <div className="relative flex items-center justify-center my-1 h-24">
+                                        <div className="absolute w-5 h-0.5 bg-djcyan-500/60 top-1/2 -translate-y-1/2 pointer-events-none z-10 shadow-[0_0_6px_#06b6d4]"></div>
+                                        <input
+                                            type="range"
+                                            min={-pitchRange}
+                                            max={pitchRange}
+                                            step={0.05}
+                                            value={pitchPercent}
+                                            onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
+                                            className="pitch-slider-vertical"
+                                            style={{
+                                                writingMode: 'vertical-lr',
+                                                direction: 'rtl',
+                                                height: '95px',
+                                                width: '18px',
+                                                accentColor: '#06b6d4',
+                                                cursor: 'pointer'
+                                            }}
+                                            title="Pitch Fader: Ajusta velocidad y tempo dinámicamente"
+                                        />
+                                    </div>
+
+                                    {/* Micro-Nudge & Reset Buttons */}
+                                    <div className="flex items-center gap-1 w-full pt-1.5 border-t border-djzinc-800/80 justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleNudgePitch(-0.1)}
+                                            className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
+                                            title="Nudge BPM -"
+                                        >
+                                            -
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePitchChange(0)}
+                                            className="px-1.5 h-5 rounded bg-[#141420] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 font-mono font-bold text-[8px] flex items-center justify-center border border-djzinc-750 active:scale-95 shadow cursor-pointer"
+                                            title="Reset Tempo (0.0%)"
+                                        >
+                                            0%
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleNudgePitch(+0.1)}
+                                            className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
+                                            title="Nudge BPM +"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             </div>
 
                             {/* LADO DERECHO: PIONEER DDJ 8-PADS + PITCH FADER HARDWARE */}
@@ -1546,83 +1628,6 @@ export const HotCuesWorkspace = ({
                                             </div>
                                         );
                                     })}
-                                </div>
-                            </div>
-
-                            {/* PITCH FADER HARDWARE PROFESIONAL CON NUDGE Y REGULACIÓN LIVE */}
-                            <div className={`flex-col items-center bg-[#07070c] p-2.5 rounded-xl border border-djzinc-800 shadow-inner shrink-0 justify-between w-full md:w-28 ${mobileDeckMode === 'eq_pitch' ? 'flex' : 'hidden md:flex'}`}>
-                                <div className="flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold">
-                                    <span className="text-gray-400">TEMPO</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPitchRange(r => r === 8 ? 16 : 8)}
-                                        className="text-[8px] px-1 rounded bg-[#151522] border border-djzinc-700 text-djcyan-400 hover:text-white cursor-pointer"
-                                        title="Alternar rango de pitch"
-                                    >
-                                        ±{pitchRange}%
-                                    </button>
-                                </div>
-
-                                {/* Pitch Offset & Live Dynamic BPM */}
-                                <div className="text-center my-0.5">
-                                    <div className="text-[11px] font-mono font-black text-djcyan-300 tracking-tight">
-                                        {pitchPercent > 0 ? `+${pitchPercent.toFixed(2)}` : pitchPercent.toFixed(2)}%
-                                    </div>
-                                    <div className="text-[10px] font-mono font-extrabold text-amber-400">
-                                        {(bpm * (1 + pitchPercent / 100)).toFixed(1)} <span className="text-[7.5px] text-gray-500 font-normal">BPM</span>
-                                    </div>
-                                </div>
-
-                                {/* Vertical Fader Track & Slider */}
-                                <div className="relative flex items-center justify-center my-1 h-24">
-                                    {/* Marcador Central 0% Detent */}
-                                    <div className="absolute w-5 h-0.5 bg-djcyan-500/60 top-1/2 -translate-y-1/2 pointer-events-none z-10 shadow-[0_0_6px_#06b6d4]"></div>
-                                    <input
-                                        type="range"
-                                        min={-pitchRange}
-                                        max={pitchRange}
-                                        step={0.05}
-                                        value={pitchPercent}
-                                        onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
-                                        className="pitch-slider-vertical"
-                                        style={{
-                                            writingMode: 'vertical-lr',
-                                            direction: 'rtl',
-                                            height: '95px',
-                                            width: '18px',
-                                            accentColor: '#06b6d4',
-                                            cursor: 'pointer'
-                                        }}
-                                        title="Pitch Fader: Ajusta velocidad y tempo dinámicamente"
-                                    />
-                                </div>
-
-                                {/* Micro-Nudge & Reset Buttons */}
-                                <div className="flex items-center gap-1 w-full pt-1.5 border-t border-djzinc-800/80 justify-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleNudgePitch(-0.1)}
-                                        className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
-                                        title="Nudge BPM -"
-                                    >
-                                        -
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handlePitchChange(0)}
-                                        className="px-1.5 h-5 rounded bg-[#141420] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 font-mono font-bold text-[8px] flex items-center justify-center border border-djzinc-750 active:scale-95 shadow cursor-pointer"
-                                        title="Reset Tempo (0.0%)"
-                                    >
-                                        0%
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleNudgePitch(+0.1)}
-                                        className="w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer"
-                                        title="Nudge BPM +"
-                                    >
-                                        +
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1800,7 +1805,7 @@ export const HotCuesWorkspace = ({
                                             <span>Guardar Versión Estándar</span>
                                         </button>
                                     </div>
-                                    <ZoomableRekordboxWaveform
+                                    <CopilotSeratoWaveform
                                         track={currentTrack}
                                         cues={cuesEstandar || activeCues}
                                         duration={currentTrack.duration || "05:00"}
@@ -1841,7 +1846,7 @@ export const HotCuesWorkspace = ({
                                             <span>Guardar Versión Acústica</span>
                                         </button>
                                     </div>
-                                    <ZoomableRekordboxWaveform
+                                    <CopilotSeratoWaveform
                                         track={currentTrack}
                                         cues={cuesAcustico || activeCues}
                                         duration={currentTrack.duration || "05:00"}
@@ -1861,7 +1866,7 @@ export const HotCuesWorkspace = ({
                                 </div>
                             </div>
                         ) : (
-                            <ZoomableRekordboxWaveform
+                            <CopilotSeratoWaveform
                                 track={currentTrack}
                                 cues={cuesVersionMode === 'estandar' ? (cuesEstandar || activeCues) : (cuesAcustico || activeCues)}
                                 duration={currentTrack.duration || "05:00"}

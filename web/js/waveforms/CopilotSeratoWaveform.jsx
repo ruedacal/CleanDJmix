@@ -56,7 +56,7 @@ function sample3BandHD(bands, totalCols, fStart, fEnd) {
 
 // =======================================================
 export const CopilotSeratoWaveform = ({
-    deck,
+    deck = {},
     side = "1",
     antiMuddy = null,
     partnerDeck = null,
@@ -69,34 +69,34 @@ export const CopilotSeratoWaveform = ({
     const [showTacticalAids, setShowTacticalAids] = useState(true);
     const [hoveredMilestone, setHoveredMilestone] = useState(null);
     const [hdWave, setHdWave] = useState(null);
-    const initialProgress = (typeof deck.play_progress === 'number' && !isNaN(deck.play_progress)) ? deck.play_progress : 0.0;
+    const initialProgress = (typeof (deck?.play_progress ?? 0) === 'number' && !isNaN((deck?.play_progress ?? 0))) ? (deck?.play_progress ?? 0) : 0.0;
     const [progress, setProgress] = useState(initialProgress);
     const progressRef = useRef(initialProgress);
-    const isPlayingRef = useRef(Boolean(deck.is_playing));
-    const bpmRef = useRef(deck.bpm || 130.0);
-    const durationSecRef = useRef(deck.duration_sec || 390.0);
+    const isPlayingRef = useRef(Boolean(deck?.is_playing));
+    const bpmRef = useRef(deck?.bpm || 130.0);
+    const durationSecRef = useRef(deck?.duration_sec || 390.0);
 
     const deckNum = (side === "2" || side === 2 || deck?.deck_num === 2) ? 2 : 1;
     const trackFilePath = deck?.filepath || deck?.file_path || "";
-    const isEmptyDeck = !deck || !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === 'STANDBY (VACÍO)';
+    const isEmptyDeck = !deck || !deck?.title || !deck?.bpm || Number(deck?.bpm) <= 0 || deck?.status === 'STANDBY (VACÍO)';
 
     useEffect(() => {
-        if (deck.play_progress !== undefined && deck.play_progress !== null) {
-            const diff = Math.abs(progressRef.current - deck.play_progress);
-            if (diff > 0.002 || !deck.is_playing || deck.play_progress === 0) {
-                progressRef.current = deck.play_progress;
-                setProgress(deck.play_progress);
+        if ((deck?.play_progress ?? 0) !== undefined && (deck?.play_progress ?? 0) !== null) {
+            const diff = Math.abs(progressRef.current - (deck?.play_progress ?? 0));
+            if (diff > 0.002 || !deck?.is_playing || (deck?.play_progress ?? 0) === 0) {
+                progressRef.current = (deck?.play_progress ?? 0);
+                setProgress((deck?.play_progress ?? 0));
             }
         }
-        isPlayingRef.current = Boolean(deck.is_playing);
-        bpmRef.current = parseFloat(deck.bpm) || 130.0;
-        durationSecRef.current = parseFloat(deck.duration_sec) || 390.0;
-    }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
+        isPlayingRef.current = Boolean(deck?.is_playing);
+        bpmRef.current = parseFloat(deck?.bpm) || 130.0;
+        durationSecRef.current = parseFloat(deck?.duration_sec) || 390.0;
+    }, [(deck?.play_progress ?? 0), deck?.is_playing, deck?.bpm, deck?.duration_sec]);
 
     // Descarga no bloqueante de picos reales 3Band HD (400 cols/s) desde el backend local
     const hdTrackKey = isEmptyDeck
         ? ""
-        : `${deckNum}|${trackFilePath || deck.title}|${deck.artist || ''}|${deck.duration_sec || 0}`;
+        : `${deckNum}|${trackFilePath || deck?.title}|${deck?.artist || ''}|${deck?.duration_sec || 0}`;
 
     useEffect(() => {
         if (!hdTrackKey) {
@@ -135,7 +135,7 @@ export const CopilotSeratoWaveform = ({
                             version: payload.version || 'rb3b',
                             columns: payload.columns || Math.floor(bands.length / 3),
                             overviewColumns: payload.overview_columns || (overview ? Math.floor(overview.length / 3) : 0),
-                            durationSec: payload.duration_sec || deck.duration_sec || 240,
+                            durationSec: payload.duration_sec || deck?.duration_sec || 240,
                             bands,
                             overview,
                             realFft: Boolean(payload.real_fft),
@@ -163,7 +163,7 @@ export const CopilotSeratoWaveform = ({
         };
     }, [deckNum, hdTrackKey]);
 
-    // Reproducción optimizada en tiempo real: solo corre rAF cuando deck.is_playing es verdadero
+    // Reproducción optimizada en tiempo real: solo corre rAF cuando deck?.is_playing es verdadero
     useEffect(() => {
         let animId;
         let lastTime = performance.now();
@@ -195,19 +195,19 @@ export const CopilotSeratoWaveform = ({
         return () => {
             if (animId) cancelAnimationFrame(animId);
         };
-    }, [deck.is_playing]);
+    }, [deck?.is_playing]);
 
-    const rawId = trackFilePath || deck.title || "1";
+    const rawId = trackFilePath || deck?.title || "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-    const durSec = deck.duration_sec || hdWave?.durationSec || 390.0;
+    const durSec = deck?.duration_sec || hdWave?.durationSec || 390.0;
     const elapsedSec = progress * durSec;
     const remainSec = Math.max(0, durSec - elapsedSec);
 
     // Fallback: decodificación de silueta Serato Overview (1280 columnas x 3 bandas)
     const overviewBytes = useMemo(() => {
-        if (!deck.serato_overview) return null;
-        return decodeBase64ToU8(deck.serato_overview);
-    }, [deck.serato_overview]);
+        if (!deck?.serato_overview) return null;
+        return decodeBase64ToU8(deck?.serato_overview);
+    }, [deck?.serato_overview]);
 
     const formatSec = (s) => {
         const m = Math.floor(s / 60);
@@ -215,10 +215,10 @@ export const CopilotSeratoWaveform = ({
         return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     };
 
-    const cues = deck.cues || [
+    const cues = deck?.cues || [
         { id: 1, name: "Downbeat 1.0.0", color: "#ef4444", pct: 0.04, time: "00:00.25", directive: "Punto de anclaje inicial. Arranca beatmatching aquí." },
         { id: 2, name: "Intro Perc", color: "#f97316", pct: 0.16, time: "01:04.00", directive: "Entrada de caja y charles. Inicia subida gradual del fader." },
-        { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck." },
+        { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck?." },
         { id: 4, name: "MAIN DROP", color: "#10b981", pct: 0.48, time: "03:12.00", directive: "Clímax 100% de potencia. Corta totalmente los graves del deck saliente." },
         { id: 5, name: "Breakdown", color: "#06b6d4", pct: 0.62, time: "04:16.00", directive: "Parón melódico sin bombo. Ventana idónea para transiciones vocales." },
         { id: 6, name: "Climax 2", color: "#22d3ee", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mantén energía alta." },
@@ -226,7 +226,7 @@ export const CopilotSeratoWaveform = ({
         { id: 8, name: "Cut / Fade", color: "#ec4899", pct: 0.96, time: "07:15.00", directive: "Final de pista. Fade-out o corte antes del silencio." }
     ];
 
-    const phases = deck.structural_phases || [
+    const phases = deck?.structural_phases || [
         { id: "intro", name: "Intro", start_pct: 0.0, end_pct: 0.16, type: "intro", label: "Intro 32b • Mezcla In", color: "#06b6d4", directive: "32 compases de entrada. Sincroniza beatgrid." },
         { id: "build", name: "Bassline In", start_pct: 0.16, end_pct: 0.35, type: "build", label: "Bassline Activa", color: "#eab308", directive: "Filtra frecuencias sub con filtro High-Pass." },
         { id: "break", name: "Breakdown", start_pct: 0.35, end_pct: 0.48, type: "break", label: "Breakdown (Sin Graves)", color: "#38bdf8", directive: "Sin bombo. Oportunidad para cruce de leads o acapellas." },
@@ -236,12 +236,12 @@ export const CopilotSeratoWaveform = ({
     ];
 
     const nextCue = cues.find(c => (c.pct || 0) > progress);
-    const beatsToNextCue = nextCue && deck.bpm ? Math.round(((nextCue.pct - progress) * durSec) / (60.0 / deck.bpm)) : null;
+    const beatsToNextCue = nextCue && deck?.bpm ? Math.round(((nextCue.pct - progress) * durSec) / (60.0 / deck?.bpm)) : null;
     const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
     const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
 
-    const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
-    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === 'danger' && (deck.low_ratio || 0) >= 44;
+    const bothPlaying = Boolean(deck?.is_playing && partnerDeck && partnerDeck?.is_playing);
+    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === 'danger' && (deck?.low_ratio || 0) >= 44;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -396,13 +396,13 @@ export const CopilotSeratoWaveform = ({
         }
 
         // 3. Beatgrid Rekordbox (Downbeat ROJO en Beat 1 + ticks blancos finos en Beats 2, 3, 4)
-        const bpm = deck.bpm || 130.0;
+        const bpm = deck?.bpm || 130.0;
         const beatSec = 60.0 / bpm;
         const downbeatSec =
-            (deck && deck.first_downbeat_ms)
-                ? (parseFloat(deck.first_downbeat_ms) / 1000.0)
-                : (Array.isArray(deck.cues) && deck.cues.length > 0 && typeof deck.cues[0].pos_sec === 'number'
-                    ? deck.cues[0].pos_sec
+            (deck && deck?.first_downbeat_ms)
+                ? (parseFloat(deck?.first_downbeat_ms) / 1000.0)
+                : (Array.isArray(deck?.cues) && deck?.cues.length > 0 && typeof deck?.cues[0].pos_sec === 'number'
+                    ? deck?.cues[0].pos_sec
                     : 0.0);
 
         if (beatSec > 0) {
@@ -653,7 +653,7 @@ export const CopilotSeratoWaveform = ({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         {/* CONTADOR DE ANTICIPACIÓN (URGENCIA EN ROJO < 5s) */}
                         <div className="flex items-center gap-2">
-                            {!deck.is_playing ? (
+                            {!deck?.is_playing ? (
                                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-500/70 text-indigo-200 font-mono text-[11px] font-bold shadow-[0_0_12px_rgba(99,102,241,0.3)]">
                                     <span className="text-sm">🎧</span>
                                     <span>EN CUE (PREPARADO) ➔ Listo para soltar en primer bombo (Bar 1)</span>
@@ -729,7 +729,7 @@ export const CopilotSeratoWaveform = ({
                                     {hoveredMilestone.name} ({hoveredMilestone.time})
                                 </span>
                                 <span className="text-[10px] text-djcyan-400 font-mono">
-                                    Compás {Math.round((hoveredMilestone.pct * durSec) / (60 / (deck.bpm || 130)) / 4)}
+                                    Compás {Math.round((hoveredMilestone.pct * durSec) / (60 / (deck?.bpm || 130)) / 4)}
                                 </span>
                             </div>
                             <p className="text-[11px] text-zinc-300 leading-relaxed">

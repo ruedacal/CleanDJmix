@@ -43,10 +43,8 @@ import {
 } from './workspaces/index.js';
 import { 
     TableHarmonicWaveform, 
-    RekordboxWaveform, 
-    ZoomableRekordboxWaveform, 
+    CopilotSeratoWaveform, 
     FooterMasterWaveform, 
-    CopilotSeratoWaveform,
     getTrackHash,
     computeTrackStructuralBands,
     WAVEFORM_COLOR_LEGEND,
