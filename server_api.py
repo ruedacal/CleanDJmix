@@ -1,3 +1,4 @@
+from functools import lru_cache
 """
 BEATWAVE PRO - Modern High-Performance FastAPI & ASGI Backend.
 Motor local omnichannel de alto rendimiento: análisis de audio nativo (FFT/DSP, BPM, ID3v2.4, Serato)
@@ -325,11 +326,8 @@ async def handle_rpc(method_name: str, payload: RpcPayload):
         )
 
 
-@app.get("/cover")
-async def get_cover(path: str = Query(...)):
-    """Extrae la carátula incrustada localmente (MediaService + fallback nativo mutagen)."""
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+@lru_cache(maxsize=512)
+def _cached_extract_cover(path: str, mtime_ns: int):
     data = None
     try:
         data = MediaService.extract_embedded_cover(path)
@@ -354,7 +352,29 @@ async def get_cover(path: str = Query(...)):
             data = None
     if data:
         mime = "image/jpeg" if data.startswith(b'\xff\xd8') else "image/png"
-        return Response(content=data, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
+        return (data, mime)
+    return (None, None)
+
+
+@app.get("/cover")
+def get_cover(request: Request, path: str = Query(...)):
+    """Extrae carátula en threadpool con LRU cache, ETag/304 y fallback nativo mutagen."""
+    try:
+        st = os.stat(path)
+    except OSError:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    etag = f'W/"{st.st_size}-{st.st_mtime_ns}"'
+    headers = {
+        "Cache-Control": "public, max-age=86400",
+        "ETag": etag,
+    }
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+
+    data, mime = _cached_extract_cover(path, st.st_mtime_ns)
+    if data:
+        return Response(content=data, media_type=mime, headers=headers)
     return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
