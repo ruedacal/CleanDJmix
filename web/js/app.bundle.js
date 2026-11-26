@@ -4942,9 +4942,25 @@
     const trackFilePath = (deck == null ? void 0 : deck.filepath) || (deck == null ? void 0 : deck.file_path) || "";
     const isEmptyDeck = !deck || !(deck == null ? void 0 : deck.title) || !(deck == null ? void 0 : deck.bpm) || Number(deck == null ? void 0 : deck.bpm) <= 0 || (deck == null ? void 0 : deck.status) === "STANDBY (VAC\xCDO)";
     useEffect8(() => {
+      const onGlobalProgress = (ev) => {
+        var _a2, _b2;
+        const detail = (ev == null ? void 0 : ev.detail) || {};
+        const p = detail.progress;
+        if (typeof p !== "number" || isNaN(p)) return;
+        const currentId = (_b2 = (_a2 = track == null ? void 0 : track.id) != null ? _a2 : deck == null ? void 0 : deck.id) != null ? _b2 : null;
+        if (detail.trackId !== null && currentId !== null && String(detail.trackId) !== String(currentId)) {
+          return;
+        }
+        progressRef.current = p;
+        setProgress(p);
+      };
+      window.addEventListener("bw:play-progress", onGlobalProgress);
+      return () => window.removeEventListener("bw:play-progress", onGlobalProgress);
+    }, [track == null ? void 0 : track.id, deck == null ? void 0 : deck.id]);
+    useEffect8(() => {
       var _a2;
       const nextProg = typeof playProgress === "number" && !isNaN(playProgress) ? playProgress : (_a2 = deck == null ? void 0 : deck.play_progress) != null ? _a2 : 0;
-      if (nextProg !== void 0 && nextProg !== null) {
+      if (nextProg > 0) {
         progressRef.current = nextProg;
         setProgress(nextProg);
       }
@@ -30111,6 +30127,8 @@ ${res.path}`);
                 }
                 if (dur && !isNaN(dur) && dur > 0) {
                   setPlayProgress(safeOffset / dur);
+                } else if (seekPct > 0) {
+                  setPlayProgress(Math.min(0.99, Math.max(0, seekPct)));
                 }
               } else if (seekPct > 0) {
                 const safePct = Math.min(0.99, Math.max(0, seekPct));
@@ -30187,9 +30205,13 @@ ${res.path}`);
     };
     const togglePlayPause = () => {
       const audio = audioRef.current;
-      if (isPlaying) {
+      const isAudioActive = Boolean(audio && !audio.paused && !audio.ended && audio.readyState >= 1);
+      if (isPlaying || isAudioActive) {
         if (audio) {
           audio.pause();
+          if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+            setPlayProgress(audio.currentTime / audio.duration);
+          }
         }
         stopSynthPreview();
         setIsPlaying(false);

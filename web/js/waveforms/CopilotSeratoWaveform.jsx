@@ -115,10 +115,26 @@ export const CopilotSeratoWaveform = ({
     const isEmptyDeck = !deck || !deck?.title || !deck?.bpm || Number(deck?.bpm) <= 0 || deck?.status === 'STANDBY (VACÍO)';
 
     useEffect(() => {
+        const onGlobalProgress = (ev) => {
+            const detail = ev?.detail || {};
+            const p = detail.progress;
+            if (typeof p !== 'number' || isNaN(p)) return;
+            const currentId = track?.id ?? deck?.id ?? null;
+            if (detail.trackId !== null && currentId !== null && String(detail.trackId) !== String(currentId)) {
+                return;
+            }
+            progressRef.current = p;
+            setProgress(p);
+        };
+        window.addEventListener('bw:play-progress', onGlobalProgress);
+        return () => window.removeEventListener('bw:play-progress', onGlobalProgress);
+    }, [track?.id, deck?.id]);
+
+    useEffect(() => {
         const nextProg = typeof playProgress === 'number' && !isNaN(playProgress)
             ? playProgress
             : (deck?.play_progress ?? 0);
-        if (nextProg !== undefined && nextProg !== null) {
+        if (nextProg > 0) {
             progressRef.current = nextProg;
             setProgress(nextProg);
         }

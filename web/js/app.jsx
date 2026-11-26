@@ -920,6 +920,8 @@ const App = () => {
                             try { audio.currentTime = safeOffset; } catch (_) {}
                             if (dur && !isNaN(dur) && dur > 0) {
                                 setPlayProgress(safeOffset / dur);
+                            } else if (seekPct > 0) {
+                                setPlayProgress(Math.min(0.99, Math.max(0, seekPct)));
                             }
                         } else if (seekPct > 0) {
                             const safePct = Math.min(0.99, Math.max(0, seekPct));
@@ -995,9 +997,13 @@ const App = () => {
 
     const togglePlayPause = () => {
         const audio = audioRef.current;
-        if (isPlaying) {
+        const isAudioActive = Boolean(audio && !audio.paused && !audio.ended && audio.readyState >= 1);
+        if (isPlaying || isAudioActive) {
             if (audio) {
                 audio.pause();
+                if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+                    setPlayProgress(audio.currentTime / audio.duration);
+                }
             }
             stopSynthPreview();
             setIsPlaying(false);
