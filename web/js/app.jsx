@@ -1606,6 +1606,7 @@ const App = () => {
                     />
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'hotcues'} className="w-full h-full">
+                    <FeatureErrorBoundary feature="hotcues">
                     <HotCuesWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1631,6 +1632,7 @@ const App = () => {
                         studioMode={studioMode}
                         onSetStudioMode={setStudioMode}
                     />
+                    </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'spotify'} className="w-full h-full">
                     <SpotifyWorkspace 

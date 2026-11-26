@@ -30695,7 +30695,7 @@ ${res.path}`);
         onClearCrateFilter: () => setActiveCrateFilter(null),
         onOpenBeatgridStudio: handleOpenBeatgridStudio
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "hotcues", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "hotcues", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "hotcues" }, /* @__PURE__ */ React.createElement(
       HotCuesWorkspace,
       {
         tracks: auditTracks,
@@ -30722,7 +30722,7 @@ ${res.path}`);
         studioMode,
         onSetStudioMode: setStudioMode
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "spotify", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "spotify", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       SpotifyWorkspace,
       {
         tracks: spotifyTracks,
