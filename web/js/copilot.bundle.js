@@ -2091,7 +2091,7 @@
         },
         cue.id || idx + 1
       ),
-      /* @__PURE__ */ React.createElement("span", null, cue.time)
+      /* @__PURE__ */ React.createElement("span", null, String(cue.time || "00:00").split(".")[0])
     )))), /* @__PURE__ */ React.createElement("div", { className: "mb-3" }, /* @__PURE__ */ React.createElement(
       CopilotSeratoWaveform,
       {

@@ -2134,3 +2134,27 @@ body.club-mode,
   flex-shrink: 0;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 }
+
+/* COMPACT-HOTCUES-SINGLE-ROW */
+.dk-hotcues-box {
+  padding: 4px 8px !important;
+  gap: 4px !important;
+}
+.dk-hotcues-box .dk-hc-lbl {
+  font-size: 8.5px !important;
+  letter-spacing: 0.04em !important;
+  margin-right: 2px !important;
+}
+.dk-hotcues-box .hc-chip {
+  padding: 1px 5px 1px 2px !important;
+  gap: 3px !important;
+  font-size: 9.5px !important;
+  line-height: 1.2 !important;
+  border-width: 1px !important;
+}
+.dk-hotcues-box .hc-badge {
+  width: 13px !important;
+  height: 13px !important;
+  font-size: 8px !important;
+  line-height: 13px !important;
+}

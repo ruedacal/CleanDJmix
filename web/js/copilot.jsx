@@ -2374,7 +2374,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                             >
                                 {cue.id || (idx + 1)}
                             </span>
-                            <span>{cue.time}</span>
+                            <span>{String(cue.time || '00:00').split('.')[0]}</span>
                         </span>
                     ))}
                 </div>

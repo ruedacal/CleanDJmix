@@ -871,7 +871,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                         >
                             {cue.id || (idx + 1)}
                         </span>
-                        <span>{cue.time}</span>
+                        <span>{String(cue.time || '00:00').split('.')[0]}</span>
                     </span>
                 ))}
             </div>

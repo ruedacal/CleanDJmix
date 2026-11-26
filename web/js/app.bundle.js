@@ -28321,7 +28321,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         },
         cue.id || idx + 1
       ),
-      /* @__PURE__ */ React.createElement("span", null, cue.time)
+      /* @__PURE__ */ React.createElement("span", null, String(cue.time || "00:00").split(".")[0])
     ))), /* @__PURE__ */ React.createElement("div", { className: "mb-2" }, /* @__PURE__ */ React.createElement(
       CopilotSeratoWaveform2,
       {
