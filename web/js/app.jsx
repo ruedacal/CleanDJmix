@@ -1546,7 +1546,8 @@ const App = () => {
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
                 <WorkspaceSlot isActive={activeTab === 'library'} className="w-full h-full flex flex-col">
-                    <LibraryWorkspace 
+                    <FeatureErrorBoundary feature="library">
+                        <LibraryWorkspace 
                         libraries={customLibraries}
                         activeLibraryId={activeCustomLibId}
                         onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
@@ -1569,6 +1570,7 @@ const App = () => {
                         setAuditTracks={setAuditTracks}
                         setSelectedTrack={setSelectedTrack}
                     />
+                        </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'audit'} className="w-full h-full">
                     <AuditWorkspace 
