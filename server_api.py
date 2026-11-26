@@ -842,6 +842,10 @@ async def websocket_copilot(websocket: WebSocket):
         copilot_ws_mgr.disconnect(websocket)
 
 
+@app.get("/api/copilot/waveform/{deck_id}")
+async def api_copilot_waveform(deck_id: int):
+    return copilot_engine.get_deck_waveform_3band(deck_id)
+
 @app.get("/api/copilot/status")
 async def api_copilot_status():
     """Estado en tiempo real consolidado de cabina DJ (<1ms)."""
