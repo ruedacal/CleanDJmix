@@ -30803,7 +30803,7 @@ ${res.path}`);
         onLoadFolderFromDisk: () => handleCargarDirectorioGlobal(),
         currentFolder
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "taxonomy", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "taxonomy", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "crates" }, /* @__PURE__ */ React.createElement(
       TaxonomyWorkspace,
       {
         tracks: auditTracks,
@@ -30838,7 +30838,7 @@ ${res.path}`);
         onAddTrackToSpotify: handleAddTracksToSpotify,
         onAddTracksToSpotify: handleAddTracksToSpotify
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "trends", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "radar" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang }))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "setbuilder", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "sets" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "trends", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "radar" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "trends" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang })))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "setbuilder", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "sets" }, /* @__PURE__ */ React.createElement(
       SetBuilderWorkspace,
       {
         setTracks: setBuilderTracks,
@@ -30876,7 +30876,7 @@ ${res.path}`);
         onSelectDirectory: () => handleCargarDirectorioGlobal(),
         lang
       }
-    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "copilot" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "knowledge" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang }))), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "copilot" }, /* @__PURE__ */ React.createElement(
       CopilotWorkspace,
       {
         onOpenPopOut: () => {
@@ -30980,7 +30980,7 @@ ${res.path}`);
         setActiveTab,
         initialMode: tutorialInitialMode
       }
-    ), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "pricing" }, /* @__PURE__ */ React.createElement(
       PricingModal,
       {
         isOpen: pricingOpen,
@@ -30992,7 +30992,7 @@ ${res.path}`);
           setRegisterModalOpen(true);
         }
       }
-    ), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(
       CopilotLaunchModal,
       {
         isOpen: copilotModalOpen,
@@ -31010,7 +31010,7 @@ ${res.path}`);
         clubMode,
         onToggleClubMode: toggleClubMode
       }
-    ), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "manual" }, /* @__PURE__ */ React.createElement(
       InteractiveManualModal,
       {
         isOpen: manualModalOpen,
@@ -31022,7 +31022,7 @@ ${res.path}`);
         },
         lang
       }
-    ), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "login" }, /* @__PURE__ */ React.createElement(
       UserAccountModal,
       {
         isOpen: userModalOpen,
@@ -31049,7 +31049,7 @@ ${res.path}`);
           setRegisterModalOpen(true);
         }
       }
-    ), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(
       RegisterFlowModal,
       {
         isOpen: registerModalOpen,
@@ -31067,7 +31067,7 @@ ${res.path}`);
           setUserModalOpen(true);
         }
       }
-    ), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "bitacora" }, /* @__PURE__ */ React.createElement(
       BitacoraModal,
       {
         isOpen: bitacoraModalOpen,
@@ -31077,7 +31077,7 @@ ${res.path}`);
         onOpenBeatgridStudio: handleOpenBeatgridStudio,
         tracks: auditTracks
       }
-    ), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(
       AppCinematicIntro,
       {
         isOpen: cinematicIntroOpen,

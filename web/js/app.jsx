@@ -1683,7 +1683,8 @@ const App = () => {
                     />
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'taxonomy'} className="w-full h-full">
-                    <TaxonomyWorkspace 
+                    <FeatureErrorBoundary feature="crates">
+                <TaxonomyWorkspace 
                         tracks={auditTracks} 
                         onTracksUpdated={setAuditTracks} 
                         onNavigateTab={setActiveTab} 
@@ -1716,10 +1717,13 @@ const App = () => {
                         onAddTrackToSpotify={handleAddTracksToSpotify}
                         onAddTracksToSpotify={handleAddTracksToSpotify}
                     />
+                </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'trends'} className="w-full h-full">
                     <FeatureErrorBoundary feature="radar">
-                    <TrendsWorkspace lang={lang} />
+                    <FeatureErrorBoundary feature="trends">
+                <TrendsWorkspace lang={lang} />
+                </FeatureErrorBoundary>
                     </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'setbuilder'} className="w-full h-full">
@@ -1765,7 +1769,9 @@ const App = () => {
                     </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'knowledge'} className="w-full h-full">
-                    <KnowledgeWorkspace lang={lang} />
+                    <FeatureErrorBoundary feature="knowledge">
+                <KnowledgeWorkspace lang={lang} />
+                </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 {activeTab === 'copilot' && (
                     <div className="w-full h-full">
@@ -1927,7 +1933,8 @@ const App = () => {
             />
 
             {/* MODAL LANZADOR BEATWAVE LIVE COPILOT */}
-            <PricingModal 
+            <FeatureErrorBoundary feature="pricing">
+                <PricingModal 
                 isOpen={pricingOpen} 
                 onClose={() => setPricingOpen(false)} 
                 onSelectPlan={(plan) => { 
@@ -1937,6 +1944,7 @@ const App = () => {
                     setRegisterModalOpen(true); 
                 }} 
             />
+                </FeatureErrorBoundary>
             <CopilotLaunchModal 
                 isOpen={copilotModalOpen}
                 onClose={() => setCopilotModalOpen(false)}
@@ -1955,7 +1963,8 @@ const App = () => {
             />
 
             {/* MANUAL INTERACTIVO MAESTRO DE CABINA BEATWAVE PRO (8 SECCIONES & SIMULADOR) */}
-            <InteractiveManualModal
+            <FeatureErrorBoundary feature="manual">
+                <InteractiveManualModal
                 isOpen={manualModalOpen}
                 onClose={() => setManualModalOpen(false)}
                 initialSection={manualSection}
@@ -1965,9 +1974,11 @@ const App = () => {
                 }}
                 lang={lang}
             />
+                </FeatureErrorBoundary>
 
             {/* ESPACIO DE USUARIO, LOGIN & SESIONES GUARDADAS */}
-            <UserAccountModal 
+            <FeatureErrorBoundary feature="login">
+                <UserAccountModal 
                 isOpen={userModalOpen}
                 onClose={() => setUserModalOpen(false)}
                 userProfile={userProfile}
@@ -1992,6 +2003,7 @@ const App = () => {
                     setRegisterModalOpen(true);
                 }}
             />
+                </FeatureErrorBoundary>
 
             {/* MODAL DE REGISTRO & PASARELA DE PAGO COMPLETA */}
             <RegisterFlowModal
@@ -2012,7 +2024,8 @@ const App = () => {
             />
 
             {/* CUADERNO DE BITÁCORA Y REGISTRO DE CAMBIOS AUDITABLE (DRAWER LATERAL DERECHO) */}
-            <BitacoraModal 
+            <FeatureErrorBoundary feature="bitacora">
+                <BitacoraModal 
                 isOpen={bitacoraModalOpen}
                 onClose={() => setBitacoraModalOpen(false)}
                 entries={bitacoraEntries}
@@ -2020,6 +2033,7 @@ const App = () => {
                 onOpenBeatgridStudio={handleOpenBeatgridStudio}
                 tracks={auditTracks}
             />
+                </FeatureErrorBoundary>
 
 
             {/* PRESENTACIÓN CINEMÁTICA A PANTALLA COMPLETA CON VÍDEO DE FONDO */}
