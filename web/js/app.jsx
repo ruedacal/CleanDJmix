@@ -227,7 +227,8 @@ const App = () => {
     const setPlayProgress = useCallback((pct) => {
         const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
         playProgressRef.current = safe;
-        window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
+        const trackId = window.__bwCurrentTrack?.id ?? null;
+        window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe, progress: safe, trackId } }));
     }, []);
     const audioRef = useRef(null);
 
@@ -918,7 +919,7 @@ const App = () => {
                 }
 
                 if (targetSrc) {
-                    const isSameSrc = (audio.src === targetSrc || audio.src.endsWith(targetSrc));
+                    const isSameSrc = !audio.error && audio.networkState !== 3 && audio.readyState >= 1 && (audio.src === targetSrc || audio.src.endsWith(targetSrc));
                     const applyPosition = () => {
                         const dur = audio.duration;
                         if (startOffsetSec !== null && !isNaN(startOffsetSec)) {
@@ -1019,7 +1020,7 @@ const App = () => {
                 apiClient.rpc('detener_audio_mac');
             }
         } else {
-            if (audio && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
+            if (audio && !audio.error && audio.readyState >= 1 && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
                 const p = audio.play();
                 if (p && typeof p.then === 'function') {
                     p.then(() => setIsPlaying(true)).catch((err) => {

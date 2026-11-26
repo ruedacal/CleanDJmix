@@ -117,17 +117,17 @@ export const CopilotSeratoWaveform = ({
     useEffect(() => {
         const onGlobalProgress = (ev) => {
             const detail = ev?.detail || {};
-            const p = detail.progress;
+            const p = typeof detail.pct === 'number' ? detail.pct : detail.progress;
             if (typeof p !== 'number' || isNaN(p)) return;
             const currentId = track?.id ?? deck?.id ?? null;
-            if (detail.trackId !== null && currentId !== null && String(detail.trackId) !== String(currentId)) {
+            if (detail.trackId != null && currentId != null && String(detail.trackId) !== String(currentId)) {
                 return;
             }
             progressRef.current = p;
             setProgress(p);
         };
-        window.addEventListener('bw:play-progress', onGlobalProgress);
-        return () => window.removeEventListener('bw:play-progress', onGlobalProgress);
+        window.addEventListener('bw:progress', onGlobalProgress);
+        return () => window.removeEventListener('bw:progress', onGlobalProgress);
     }, [track?.id, deck?.id]);
 
     useEffect(() => {

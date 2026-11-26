@@ -4945,17 +4945,17 @@
       const onGlobalProgress = (ev) => {
         var _a2, _b2;
         const detail = (ev == null ? void 0 : ev.detail) || {};
-        const p = detail.progress;
+        const p = typeof detail.pct === "number" ? detail.pct : detail.progress;
         if (typeof p !== "number" || isNaN(p)) return;
         const currentId = (_b2 = (_a2 = track == null ? void 0 : track.id) != null ? _a2 : deck == null ? void 0 : deck.id) != null ? _b2 : null;
-        if (detail.trackId !== null && currentId !== null && String(detail.trackId) !== String(currentId)) {
+        if (detail.trackId != null && currentId != null && String(detail.trackId) !== String(currentId)) {
           return;
         }
         progressRef.current = p;
         setProgress(p);
       };
-      window.addEventListener("bw:play-progress", onGlobalProgress);
-      return () => window.removeEventListener("bw:play-progress", onGlobalProgress);
+      window.addEventListener("bw:progress", onGlobalProgress);
+      return () => window.removeEventListener("bw:progress", onGlobalProgress);
     }, [track == null ? void 0 : track.id, deck == null ? void 0 : deck.id]);
     useEffect8(() => {
       var _a2;
@@ -29476,9 +29476,11 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     const playProgressRef = useRef26(0);
     const setPlayProgress = useCallback14((pct) => {
+      var _a, _b;
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
-      window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
+      const trackId = (_b = (_a = window.__bwCurrentTrack) == null ? void 0 : _a.id) != null ? _b : null;
+      window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe, progress: safe, trackId } }));
     }, []);
     const audioRef = useRef26(null);
     const [mobileProgress, setMobileProgress] = useState31(0);
@@ -30125,7 +30127,7 @@ ${res.path}`);
             targetSrc = `/stream_audio?path=${encodeURIComponent(track.f)}`;
           }
           if (targetSrc) {
-            const isSameSrc = audio.src === targetSrc || audio.src.endsWith(targetSrc);
+            const isSameSrc = !audio.error && audio.networkState !== 3 && audio.readyState >= 1 && (audio.src === targetSrc || audio.src.endsWith(targetSrc));
             const applyPosition = () => {
               const dur = audio.duration;
               if (startOffsetSec !== null && !isNaN(startOffsetSec)) {
@@ -30228,7 +30230,7 @@ ${res.path}`);
           apiClient.rpc("detener_audio_mac");
         }
       } else {
-        if (audio && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
+        if (audio && !audio.error && audio.readyState >= 1 && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
           const p = audio.play();
           if (p && typeof p.then === "function") {
             p.then(() => setIsPlaying(true)).catch((err) => {
