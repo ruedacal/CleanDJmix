@@ -917,6 +917,7 @@ class CopilotEngine:
                                 # Carga manual: arrancar posicionado en CUE 1 sin extrapolar
                                 d.is_playing = False
                                 d._anchor_perf_ts = None
+                                d._anchor_elapsed_sec = cue_sec
                                 d.elapsed_sec = cue_sec
                                 d.remaining_sec = max(0.0, dur - cue_sec)
                                 d.status = "CUE (PREPARADO)"
@@ -924,6 +925,8 @@ class CopilotEngine:
                         else:
                             # SQLite nunca fuerza is_playing=True; solo actualiza estado informativo
                             d._last_serato_played = t["played"]
+                            if d.is_playing and getattr(d, "_anchor_perf_ts", None) is None:
+                                self._reset_deck_clock(d, d.elapsed_sec)
                     else:
                         d.title = ""
                         d.artist = ""
