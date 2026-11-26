@@ -16835,73 +16835,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         },
         className: "w-full h-full object-cover"
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded-md text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750/90 shadow-md" }, currentTrack.format || "FLAC"))), /* @__PURE__ */ React.createElement("div", { className: "w-full rounded-xl border border-cyan-500/30 bg-[#0d111a]/95 p-2.5 shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-2 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-bold uppercase tracking-wider text-cyan-300" }, "8 Hot Cues \u2022 Clic para saltar \xB7 Edita Nombre / Color / Tiempo"), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono text-gray-400" }, "Pad #", selectedCueId, " activo")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 mb-2.5" }, activeCues.map((c, idx) => {
-      const cid = c.id !== void 0 ? c.id : idx + 1;
-      const isSel = Number(selectedCueId) === Number(cid);
-      const cColor = c.color || "#06b6d4";
-      const cMs = c.pos_ms !== void 0 ? c.pos_ms : parseTimeToMs2(c.time || "00:00.00");
-      const cPct = durMs > 0 ? Math.max(0, Math.min(0.99, cMs / durMs)) : c.pct || 0;
-      return /* @__PURE__ */ React.createElement(
-        "button",
-        {
-          key: cid,
-          type: "button",
-          onClick: () => {
-            setSelectedCueId(cid);
-            if (onPlayTrack && currentTrack) {
-              onPlayTrack(currentTrack, cPct, true, cMs / 1e3);
-            }
-          },
-          style: {
-            borderColor: isSel ? "#ffffff" : cColor,
-            boxShadow: isSel ? `0 0 12px ${cColor}88` : "none"
-          },
-          className: `flex flex-col items-start rounded-lg border-2 px-2 py-1.5 text-left transition-all cursor-pointer ${isSel ? "bg-white/10 scale-[1.01]" : "bg-[#131926] hover:bg-white/5"}`
-        },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full gap-1" }, /* @__PURE__ */ React.createElement("span", { className: "inline-flex items-center gap-1 font-mono text-[11px] font-black text-white" }, /* @__PURE__ */ React.createElement(
-          "span",
-          {
-            className: "inline-block w-2.5 h-2.5 rounded-full shrink-0",
-            style: { backgroundColor: cColor }
-          }
-        ), "C", cid), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-[10px] text-cyan-300 truncate" }, c.time || formatMsToTime(cMs))),
-        /* @__PURE__ */ React.createElement("span", { className: "mt-0.5 w-full truncate text-[10px] font-medium text-gray-200" }, c.name || `Cue ${cid}`)
-      );
-    })), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-12 gap-2 items-center border-t border-white/10 pt-2" }, /* @__PURE__ */ React.createElement("div", { className: "sm:col-span-5 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] font-mono uppercase text-gray-400 shrink-0" }, "Nombre"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: cueNameInput,
-        onChange: (e) => {
-          setCueNameInput(e.target.value);
-          updateSingleCue({ name: e.target.value });
-        },
-        className: "w-full rounded bg-[#090c12] border border-cyan-500/40 px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-cyan-300",
-        placeholder: "Nombre del Hot Cue"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "sm:col-span-4 flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] font-mono uppercase text-gray-400 shrink-0" }, "Tiempo"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "text",
-        value: cueTimeInput,
-        onChange: handleTimeInputChange,
-        onBlur: (e) => commitCueTimeValue(e.target.value),
-        onKeyDown: (e) => {
-          if (e.key === "Enter") commitCueTimeValue(e.currentTarget.value);
-        },
-        className: "w-full rounded bg-[#090c12] border border-amber-400/50 px-2 py-1 text-xs text-amber-200 font-mono focus:outline-none focus:border-amber-300",
-        placeholder: "00:00.00"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "sm:col-span-3 flex items-center justify-between sm:justify-end gap-2" }, /* @__PURE__ */ React.createElement("label", { className: "text-[10px] font-mono uppercase text-gray-400" }, "Color"), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "color",
-        value: (currentCue == null ? void 0 : currentCue.color) || "#06b6d4",
-        onChange: (e) => handleCueColorChange(e.target.value),
-        className: "h-7 w-11 cursor-pointer rounded border border-white/20 bg-transparent p-0.5",
-        title: "Cambiar color del Hot Cue activo"
-      }
-    )))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded-md text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750/90 shadow-md" }, currentTrack.format || "FLAC"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
