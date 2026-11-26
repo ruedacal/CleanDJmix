@@ -11,7 +11,8 @@ const HardwareKnob = memo(({
     isFilter = false,
     onChange = null
 }) => {
-    const v = Math.max(0, Math.min(1, Number(value) || 0.5));
+    const parsedVal = Number(value);
+    const v = Number.isFinite(parsedVal) ? Math.max(0, Math.min(1, parsedVal)) : 0.5;
     // Rotación: de -135° a +135° (270° de recorrido total)
     const angle = Math.round((v - 0.5) * 270);
 
@@ -212,25 +213,25 @@ export const CopilotCenterMixer = memo(({
     const isCriticalAlert = d1IsAlert || d2IsAlert;
 
     // Extracción de valores de EQ y faders desde state.mixer
-    const ch1Mix = mixer?.ch1 || {};
-    const ch2Mix = mixer?.ch2 || {};
+    const ch1Mix = mixer?.deck_1 || mixer?.ch1 || {};
+    const ch2Mix = mixer?.deck_2 || mixer?.ch2 || {};
 
     const ch1Gain = ch1Mix.gain !== undefined ? ch1Mix.gain : 0.5;
     const ch2Gain = ch2Mix.gain !== undefined ? ch2Mix.gain : 0.52;
 
-    const ch1Hi = ch1Mix.eq_high !== undefined ? ch1Mix.eq_high : 0.5;
-    const ch2Hi = ch2Mix.eq_high !== undefined ? ch2Mix.eq_high : 0.45;
+    const ch1Hi = ch1Mix.high ?? ch1Mix.eq_high ?? 0.5;
+    const ch2Hi = ch2Mix.high ?? ch2Mix.eq_high ?? 0.45;
 
-    const ch1Mid = ch1Mix.eq_mid !== undefined ? ch1Mix.eq_mid : 0.53;
-    const ch2Mid = ch2Mix.eq_mid !== undefined ? ch2Mix.eq_mid : 0.40;
+    const ch1Mid = ch1Mix.mid ?? ch1Mix.eq_mid ?? 0.53;
+    const ch2Mid = ch2Mix.mid ?? ch2Mix.eq_mid ?? 0.40;
 
-    const ch1Low = ch1Mix.eq_low !== undefined ? ch1Mix.eq_low : 0.5;
-    const ch2Low = ch2Mix.eq_low !== undefined ? ch2Mix.eq_low : (isCriticalAlert ? 0.20 : 0.38);
+    const ch1Low = ch1Mix.low ?? ch1Mix.eq_low ?? 0.5;
+    const ch2Low = ch2Mix.low ?? ch2Mix.eq_low ?? (isCriticalAlert ? 0.20 : 0.38);
 
     const ch1Fltr = ch1Mix.filter !== undefined ? ch1Mix.filter : 0.5;
     const ch2Fltr = ch2Mix.filter !== undefined ? ch2Mix.filter : 0.58;
 
-    const ch1Fader = ch1Mix.fader !== undefined ? ch1Mix.fader : 0.88;
+    const ch1Fader = ch1Mix.volume ?? ch1Mix.fader ?? 0.88;
     const ch2Fader = ch2Mix.fader !== undefined ? ch2Mix.fader : 0.42;
 
     const crossfader = mixer?.crossfader !== undefined ? mixer.crossfader : 0.22;

@@ -27428,7 +27428,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
     isFilter = false,
     onChange = null
   }) => {
-    const v = Math.max(0, Math.min(1, Number(value) || 0.5));
+    const parsedVal = Number(value);
+    const v = Number.isFinite(parsedVal) ? Math.max(0, Math.min(1, parsedVal)) : 0.5;
     const angle = Math.round((v - 0.5) * 270);
     return /* @__PURE__ */ React.createElement(
       "svg",
@@ -27508,6 +27509,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     showInlineHud = true
     // HUD integrado en la mesa central slim
   }) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
     const [d1ActiveHito, setD1ActiveHito] = useState30(0);
     const [d2ActiveHito, setD2ActiveHito] = useState30(2);
     const [pflState, setPflState] = useState30({ ch1: false, ch2: true });
@@ -27523,13 +27525,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const hitosD1 = useMemo14(() => {
       if ((deck1 == null ? void 0 : deck1.cues) && deck1.cues.length >= 4) {
         return deck1.cues.map((c, i) => {
-          var _a, _b, _c, _d;
+          var _a2, _b2, _c2, _d2;
           return {
             id: c.id || i + 1,
-            key: ((_a = DEFAULT_HITOS_D1[i]) == null ? void 0 : _a.key) || "intro",
-            label: c.name || ((_b = DEFAULT_HITOS_D1[i]) == null ? void 0 : _b.label) || `CUE ${i + 1}`,
-            time: c.time || ((_c = DEFAULT_HITOS_D1[i]) == null ? void 0 : _c.time) || "00:00",
-            pos_sec: c.pos_sec !== void 0 ? c.pos_sec : ((_d = DEFAULT_HITOS_D1[i]) == null ? void 0 : _d.pos_sec) || 0
+            key: ((_a2 = DEFAULT_HITOS_D1[i]) == null ? void 0 : _a2.key) || "intro",
+            label: c.name || ((_b2 = DEFAULT_HITOS_D1[i]) == null ? void 0 : _b2.label) || `CUE ${i + 1}`,
+            time: c.time || ((_c2 = DEFAULT_HITOS_D1[i]) == null ? void 0 : _c2.time) || "00:00",
+            pos_sec: c.pos_sec !== void 0 ? c.pos_sec : ((_d2 = DEFAULT_HITOS_D1[i]) == null ? void 0 : _d2.pos_sec) || 0
           };
         });
       }
@@ -27538,13 +27540,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const hitosD2 = useMemo14(() => {
       if ((deck2 == null ? void 0 : deck2.cues) && deck2.cues.length >= 4) {
         return deck2.cues.map((c, i) => {
-          var _a, _b, _c, _d;
+          var _a2, _b2, _c2, _d2;
           return {
             id: c.id || i + 1,
-            key: ((_a = DEFAULT_HITOS_D2[i]) == null ? void 0 : _a.key) || "intro",
-            label: c.name || ((_b = DEFAULT_HITOS_D2[i]) == null ? void 0 : _b.label) || `CUE ${i + 1}`,
-            time: c.time || ((_c = DEFAULT_HITOS_D2[i]) == null ? void 0 : _c.time) || "00:00",
-            pos_sec: c.pos_sec !== void 0 ? c.pos_sec : ((_d = DEFAULT_HITOS_D2[i]) == null ? void 0 : _d.pos_sec) || 0
+            key: ((_a2 = DEFAULT_HITOS_D2[i]) == null ? void 0 : _a2.key) || "intro",
+            label: c.name || ((_b2 = DEFAULT_HITOS_D2[i]) == null ? void 0 : _b2.label) || `CUE ${i + 1}`,
+            time: c.time || ((_c2 = DEFAULT_HITOS_D2[i]) == null ? void 0 : _c2.time) || "00:00",
+            pos_sec: c.pos_sec !== void 0 ? c.pos_sec : ((_d2 = DEFAULT_HITOS_D2[i]) == null ? void 0 : _d2.pos_sec) || 0
           };
         });
       }
@@ -27605,19 +27607,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const d2IsAlert = (d2IsPlaying || d1IsPlaying && !d2IsPlaying) && d2RemainingSec <= 5 && d2RemainingSec > 0;
     const d2ProgressPct = Math.min(100, Math.max(0, Math.round((d2NextHito.pos_sec - d2RemainingSec) / (d2NextHito.pos_sec || 1) * 100)));
     const isCriticalAlert = d1IsAlert || d2IsAlert;
-    const ch1Mix = (mixer == null ? void 0 : mixer.ch1) || {};
-    const ch2Mix = (mixer == null ? void 0 : mixer.ch2) || {};
+    const ch1Mix = (mixer == null ? void 0 : mixer.deck_1) || (mixer == null ? void 0 : mixer.ch1) || {};
+    const ch2Mix = (mixer == null ? void 0 : mixer.deck_2) || (mixer == null ? void 0 : mixer.ch2) || {};
     const ch1Gain = ch1Mix.gain !== void 0 ? ch1Mix.gain : 0.5;
     const ch2Gain = ch2Mix.gain !== void 0 ? ch2Mix.gain : 0.52;
-    const ch1Hi = ch1Mix.eq_high !== void 0 ? ch1Mix.eq_high : 0.5;
-    const ch2Hi = ch2Mix.eq_high !== void 0 ? ch2Mix.eq_high : 0.45;
-    const ch1Mid = ch1Mix.eq_mid !== void 0 ? ch1Mix.eq_mid : 0.53;
-    const ch2Mid = ch2Mix.eq_mid !== void 0 ? ch2Mix.eq_mid : 0.4;
-    const ch1Low = ch1Mix.eq_low !== void 0 ? ch1Mix.eq_low : 0.5;
-    const ch2Low = ch2Mix.eq_low !== void 0 ? ch2Mix.eq_low : isCriticalAlert ? 0.2 : 0.38;
+    const ch1Hi = (_b = (_a = ch1Mix.high) != null ? _a : ch1Mix.eq_high) != null ? _b : 0.5;
+    const ch2Hi = (_d = (_c = ch2Mix.high) != null ? _c : ch2Mix.eq_high) != null ? _d : 0.45;
+    const ch1Mid = (_f = (_e = ch1Mix.mid) != null ? _e : ch1Mix.eq_mid) != null ? _f : 0.53;
+    const ch2Mid = (_h = (_g = ch2Mix.mid) != null ? _g : ch2Mix.eq_mid) != null ? _h : 0.4;
+    const ch1Low = (_j = (_i = ch1Mix.low) != null ? _i : ch1Mix.eq_low) != null ? _j : 0.5;
+    const ch2Low = (_l = (_k = ch2Mix.low) != null ? _k : ch2Mix.eq_low) != null ? _l : isCriticalAlert ? 0.2 : 0.38;
     const ch1Fltr = ch1Mix.filter !== void 0 ? ch1Mix.filter : 0.5;
     const ch2Fltr = ch2Mix.filter !== void 0 ? ch2Mix.filter : 0.58;
-    const ch1Fader = ch1Mix.fader !== void 0 ? ch1Mix.fader : 0.88;
+    const ch1Fader = (_n = (_m = ch1Mix.volume) != null ? _m : ch1Mix.fader) != null ? _n : 0.88;
     const ch2Fader = ch2Mix.fader !== void 0 ? ch2Mix.fader : 0.42;
     const crossfader = (mixer == null ? void 0 : mixer.crossfader) !== void 0 ? mixer.crossfader : 0.22;
     const auditScore = (audit == null ? void 0 : audit.score_pct) !== void 0 ? audit.score_pct : 100;
