@@ -327,17 +327,35 @@ async def handle_rpc(method_name: str, payload: RpcPayload):
 
 @app.get("/cover")
 async def get_cover(path: str = Query(...)):
-    """Extrae la carátula ID3 incrustada localmente sin transferir el audio."""
+    """Extrae la carátula incrustada localmente (MediaService + fallback nativo mutagen)."""
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    data = None
     try:
         data = MediaService.extract_embedded_cover(path)
-        if data:
-            mime = "image/jpeg" if data.startswith(b'\xff\xd8') else "image/png"
-            return Response(content=data, media_type=mime)
     except Exception:
-        pass
-    return Response(status_code=204)
+        data = None
+    if not data:
+        try:
+            import mutagen
+            audio = mutagen.File(path)
+            if audio is not None:
+                if hasattr(audio, "pictures") and audio.pictures:
+                    data = audio.pictures[0].data
+                elif getattr(audio, "tags", None):
+                    for k, v in audio.tags.items():
+                        if str(k).startswith("APIC") and hasattr(v, "data"):
+                            data = v.data
+                            break
+                        if str(k) == "covr" and v:
+                            data = bytes(v[0])
+                            break
+        except Exception:
+            data = None
+    if data:
+        mime = "image/jpeg" if data.startswith(b'\xff\xd8') else "image/png"
+        return Response(content=data, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/stream_audio")
@@ -844,7 +862,7 @@ async def websocket_copilot(websocket: WebSocket):
 
 @app.get("/api/copilot/waveform/{deck_id}")
 async def api_copilot_waveform(deck_id: int):
-    return copilot_engine.get_deck_waveform_3band(deck_id)
+    return copilot_service.get_deck_waveform_3band(deck_id)
 
 @app.get("/api/copilot/status")
 async def api_copilot_status():
