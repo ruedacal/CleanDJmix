@@ -56,12 +56,42 @@ function sample3BandHD(bands, totalCols, fStart, fEnd) {
 
 // =======================================================
 export const CopilotSeratoWaveform = ({
-    deck = {},
+    deck: rawDeck = null,
+    track = null,
+    cues = null,
+    duration = null,
+    playProgress = null,
+    isCurrentPlaying = null,
     side = "1",
     antiMuddy = null,
     partnerDeck = null,
     isCompact = false
 }) => {
+    const isStandaloneTrack = Boolean(track && !rawDeck);
+    const deck = useMemo(() => {
+        if (rawDeck) return rawDeck;
+        if (!track) return {};
+        const parseDurSec = (d) => {
+            if (typeof d === 'number' && Number.isFinite(d) && d > 0) return d;
+            if (typeof d === 'string' && d.includes(':')) {
+                const parts = d.split(':').map(Number);
+                if (parts.length === 2 && !parts.some(isNaN)) return parts[0] * 60 + parts[1];
+                if (parts.length === 3 && !parts.some(isNaN)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            }
+            return 300;
+        };
+        const durSec = Number(track.duration_sec) || parseDurSec(duration || track.duration);
+        return {
+            ...track,
+            title: track.title || track.filename || track.name || 'Track',
+            bpm: Number(track.bpm) > 0 ? Number(track.bpm) : 128,
+            duration_sec: durSec,
+            play_progress: typeof playProgress === 'number' ? playProgress : (track.play_progress ?? 0),
+            is_playing: isCurrentPlaying !== null ? Boolean(isCurrentPlaying) : Boolean(track.is_playing),
+            hot_cues: Array.isArray(cues) ? cues : (track.hot_cues || track.cues || []),
+            cues: Array.isArray(cues) ? cues : (track.cues || track.hot_cues || []),
+        };
+    }, [rawDeck, track, cues, duration, playProgress, isCurrentPlaying]);
     const canvasRef = useRef(null);
     const minimapRef = useRef(null);
     const minimapCacheRef = useRef(null);
@@ -94,7 +124,7 @@ export const CopilotSeratoWaveform = ({
     }, [(deck?.play_progress ?? 0), deck?.is_playing, deck?.bpm, deck?.duration_sec]);
 
     // Descarga no bloqueante de picos reales 3Band HD (400 cols/s) desde el backend local
-    const hdTrackKey = isEmptyDeck
+    const hdTrackKey = (isEmptyDeck || isStandaloneTrack)
         ? ""
         : `${deckNum}|${trackFilePath || deck?.title}|${deck?.artist || ''}|${deck?.duration_sec || 0}`;
 
