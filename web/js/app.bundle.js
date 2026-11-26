@@ -30766,7 +30766,7 @@ ${res.path}`);
         studioMode,
         onSetStudioMode: setStudioMode
       }
-    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "spotify", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "spotify", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "pool" }, /* @__PURE__ */ React.createElement(
       SpotifyWorkspace,
       {
         tracks: spotifyTracks,
@@ -30781,7 +30781,7 @@ ${res.path}`);
         lang,
         t
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "shazam", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "shazam", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       ShazamWorkspace,
       {
         customLibraries,
@@ -30838,7 +30838,7 @@ ${res.path}`);
         onAddTrackToSpotify: handleAddTracksToSpotify,
         onAddTracksToSpotify: handleAddTracksToSpotify
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "trends", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang })), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "setbuilder", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "trends", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "radar" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang }))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "setbuilder", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "sets" }, /* @__PURE__ */ React.createElement(
       SetBuilderWorkspace,
       {
         setTracks: setBuilderTracks,
@@ -30855,7 +30855,7 @@ ${res.path}`);
         onNavigateTab: setActiveTab,
         lang
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "map", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "map", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "map" }, /* @__PURE__ */ React.createElement(
       MapWorkspace,
       {
         tracks: auditTracks,
@@ -30876,7 +30876,7 @@ ${res.path}`);
         onSelectDirectory: () => handleCargarDirectorioGlobal(),
         lang
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "copilot" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "copilot" }, /* @__PURE__ */ React.createElement(
       CopilotWorkspace,
       {
         onOpenPopOut: () => {

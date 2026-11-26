@@ -1644,6 +1644,7 @@ const App = () => {
                     </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'spotify'} className="w-full h-full">
+                    <FeatureErrorBoundary feature="pool">
                     <SpotifyWorkspace 
                         tracks={spotifyTracks}
                         setTracks={setSpotifyTracks}
@@ -1657,6 +1658,7 @@ const App = () => {
                         lang={lang}
                         t={t}
                     />
+                    </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'shazam'} className="w-full h-full">
                     <ShazamWorkspace 
@@ -1716,9 +1718,12 @@ const App = () => {
                     />
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'trends'} className="w-full h-full">
+                    <FeatureErrorBoundary feature="radar">
                     <TrendsWorkspace lang={lang} />
+                    </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'setbuilder'} className="w-full h-full">
+                    <FeatureErrorBoundary feature="sets">
                     <SetBuilderWorkspace 
                         setTracks={setBuilderTracks}
                         setSetTracks={setSetBuilderTracks}
@@ -1734,8 +1739,10 @@ const App = () => {
                         onNavigateTab={setActiveTab}
                         lang={lang}
                     />
+                    </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'map'} className="w-full h-full">
+                    <FeatureErrorBoundary feature="map">
                     <MapWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1755,6 +1762,7 @@ const App = () => {
                         onSelectDirectory={() => handleCargarDirectorioGlobal()}
                         lang={lang}
                     />
+                    </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'knowledge'} className="w-full h-full">
                     <KnowledgeWorkspace lang={lang} />
