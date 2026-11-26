@@ -16147,11 +16147,11 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const handleDeckCue = () => {
       if (!currentTrack) return;
-      const firstCue = activeCues[0] || {};
-      const cueMs = firstCue.pos_ms !== void 0 ? firstCue.pos_ms : downbeatMs || 0;
-      const cuePct = durMs > 0 ? cueMs / durMs : 0;
+      const targetCue = currentCue && currentCue.pos_ms !== void 0 ? currentCue : activeCues[0] || {};
+      const cueMs = targetCue.pos_ms !== void 0 ? targetCue.pos_ms : downbeatMs || 0;
+      const cuePct = durMs > 0 ? Math.max(0, Math.min(0.99, cueMs / durMs)) : 0;
       if (onPlayTrack) {
-        onPlayTrack(currentTrack, cuePct, false);
+        onPlayTrack(currentTrack, cuePct, true, cueMs / 1e3);
       }
     };
     const CLUB_CUE_RATIOS = [5e-3, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 0.94];
@@ -16256,10 +16256,17 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const updateSingleCue = (updatedFields) => {
       const targetId = currentCue.id !== void 0 ? currentCue.id : selectedCueId;
+      const normalized = { ...updatedFields };
+      if (normalized.pos_ms !== void 0 && normalized.pct === void 0 && durMs > 0) {
+        normalized.pct = Math.max(0, Math.min(1, normalized.pos_ms / durMs));
+      }
+      if (normalized.pos_ms !== void 0 && normalized.time === void 0) {
+        normalized.time = formatMsToTime(normalized.pos_ms);
+      }
       const newCues = activeCues.map((c, idx) => {
         const cid = c.id !== void 0 ? c.id : idx + 1;
         if (cid === targetId) {
-          return { ...c, ...updatedFields };
+          return { ...c, ...normalized, is_empty: false };
         }
         return c;
       });

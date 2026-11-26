@@ -422,11 +422,11 @@ export const HotCuesWorkspace = ({
 
     const handleDeckCue = () => {
         if (!currentTrack) return;
-        const firstCue = activeCues[0] || {};
-        const cueMs = firstCue.pos_ms !== undefined ? firstCue.pos_ms : (downbeatMs || 0);
-        const cuePct = durMs > 0 ? (cueMs / durMs) : 0;
+        const targetCue = currentCue && currentCue.pos_ms !== undefined ? currentCue : (activeCues[0] || {});
+        const cueMs = targetCue.pos_ms !== undefined ? targetCue.pos_ms : (downbeatMs || 0);
+        const cuePct = durMs > 0 ? Math.max(0, Math.min(0.99, cueMs / durMs)) : 0;
         if (onPlayTrack) {
-            onPlayTrack(currentTrack, cuePct, false);
+            onPlayTrack(currentTrack, cuePct, true, cueMs / 1000.0);
         }
     };
 
@@ -547,10 +547,17 @@ export const HotCuesWorkspace = ({
     // Actualiza un Cue individual por su id
     const updateSingleCue = (updatedFields) => {
         const targetId = currentCue.id !== undefined ? currentCue.id : selectedCueId;
+        const normalized = { ...updatedFields };
+        if (normalized.pos_ms !== undefined && normalized.pct === undefined && durMs > 0) {
+            normalized.pct = Math.max(0, Math.min(1, normalized.pos_ms / durMs));
+        }
+        if (normalized.pos_ms !== undefined && normalized.time === undefined) {
+            normalized.time = formatMsToTime(normalized.pos_ms);
+        }
         const newCues = activeCues.map((c, idx) => {
             const cid = c.id !== undefined ? c.id : (idx + 1);
             if (cid === targetId) {
-                return { ...c, ...updatedFields };
+                return { ...c, ...normalized, is_empty: false };
             }
             return c;
         });
