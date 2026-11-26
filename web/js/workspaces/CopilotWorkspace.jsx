@@ -1220,25 +1220,26 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         const dKey = deckNum === 1 ? 'deck_1' : 'deck_2';
 
         setState(prev => {
-            if (!prev || !prev.decks) return prev;
-            const cur = prev.decks[dKey];
+            if (!prev || !prev[dKey]) return prev;
+            const cur = prev[dKey];
             if (!cur || !cur.title) return prev;
             const nextPlaying = !cur.is_playing;
             return {
                 ...prev,
-                decks: {
-                    ...prev.decks,
-                    [dKey]: {
-                        ...cur,
-                        is_playing: nextPlaying,
-                        status: nextPlaying ? (cur.is_master ? 'ON AIR (MASTER)' : 'REPRODUCIENDO') : 'PAUSA'
-                    }
+                [dKey]: {
+                    ...cur,
+                    is_playing: nextPlaying,
+                    status: nextPlaying ? (cur.is_master ? 'ON AIR (MASTER)' : 'REPRODUCIENDO') : 'PAUSA'
                 }
             };
         });
 
         try {
-            const res = await fetch(`/api/copilot/deck/${deckNum}/toggle_play`, { method: 'POST' });
+            const res = await fetch('/api/copilot/toggle_play', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deck: String(deckNum) })
+            });
             if (res.ok) {
                 const data = await res.json();
                 setState(data);
@@ -1251,29 +1252,30 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
         const dKey = deckNum === 1 ? 'deck_1' : 'deck_2';
 
         setState(prev => {
-            if (!prev || !prev.decks) return prev;
-            const cur = prev.decks[dKey];
+            if (!prev || !prev[dKey]) return prev;
+            const cur = prev[dKey];
             if (!cur || !cur.title) return prev;
             const cueSec = (cur.cues && cur.cues.length > 0 && cur.cues[0].pos_sec !== undefined) ? cur.cues[0].pos_sec : 0.0;
             const dur = cur.duration_sec || 240.0;
             const prog = dur > 0 ? Math.min(1.0, cueSec / dur) : 0.0;
             return {
                 ...prev,
-                decks: {
-                    ...prev.decks,
-                    [dKey]: {
-                        ...cur,
-                        is_playing: false,
-                        elapsed_sec: cueSec,
-                        play_progress: prog,
-                        status: 'CUE (PREPARADO)'
-                    }
+                [dKey]: {
+                    ...cur,
+                    is_playing: false,
+                    elapsed_sec: cueSec,
+                    play_progress: prog,
+                    status: 'CUE (PREPARADO)'
                 }
             };
         });
 
         try {
-            const res = await fetch(`/api/copilot/deck/${deckNum}/cue`, { method: 'POST' });
+            const res = await fetch('/api/copilot/cue_deck', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deck: String(deckNum) })
+            });
             if (res.ok) {
                 const data = await res.json();
                 setState(data);
