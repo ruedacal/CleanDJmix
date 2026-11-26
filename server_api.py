@@ -405,14 +405,26 @@ async def stream_audio(request: Request, path: str = Query(...)):
     }
     media_type = media_types.get(ext, "audio/mpeg")
 
-    if range_header:
-        byte1, byte2 = 0, None
-        range_str = range_header.replace("bytes=", "")
-        parts = range_str.split("-")
-        byte1 = int(parts[0]) if parts[0] else 0
-        if len(parts) > 1 and parts[1]:
-            byte2 = int(parts[1])
-        length = (byte2 - byte1 + 1) if byte2 is not None else (file_size - byte1)
+    if range_header and range_header.startswith("bytes="):
+        range_spec = range_header[6:].split(",")[0].strip()
+        parts = range_spec.split("-")
+        try:
+            byte1 = int(parts[0]) if parts[0] else 0
+            byte2 = int(parts[1]) if len(parts) > 1 and parts[1] else (file_size - 1)
+        except ValueError:
+            byte1, byte2 = 0, file_size - 1
+
+        if byte1 < 0:
+            byte1 = 0
+        if byte2 >= file_size:
+            byte2 = file_size - 1
+        if byte1 >= file_size or byte1 > byte2:
+            return Response(
+                status_code=416,
+                headers={"Content-Range": f"bytes */{file_size}", "Accept-Ranges": "bytes"},
+            )
+
+        length = byte2 - byte1 + 1
 
         def iter_file():
             with open(path, "rb") as f:
@@ -427,7 +439,7 @@ async def stream_audio(request: Request, path: str = Query(...)):
                     yield data
 
         headers = {
-            "Content-Range": f"bytes {byte1}-{byte2 if byte2 is not None else file_size - 1}/{file_size}",
+            "Content-Range": f"bytes {byte1}-{byte2}/{file_size}",
             "Accept-Ranges": "bytes",
             "Content-Length": str(length),
         }

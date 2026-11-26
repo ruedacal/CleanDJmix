@@ -30039,9 +30039,18 @@ ${res.path}`);
         setIsPlaying(false);
         setPlayProgress(0);
       };
-      audio.onerror = (err) => {
+      audio.onerror = () => {
+        var _a, _b;
         if (audio.src && audio.src !== window.location.href && !audio.src.endsWith("/")) {
-          console.warn("Global audio element error:", err);
+          console.warn("Global audio element error:", {
+            code: (_a = audio.error) == null ? void 0 : _a.code,
+            message: (_b = audio.error) == null ? void 0 : _b.message,
+            src: audio.src,
+            currentTime: audio.currentTime,
+            duration: audio.duration,
+            networkState: audio.networkState,
+            readyState: audio.readyState
+          });
         }
         setIsPlaying(false);
       };
