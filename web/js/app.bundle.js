@@ -4889,6 +4889,10 @@
     duration = null,
     playProgress = null,
     isCurrentPlaying = null,
+    onSeekTrack = null,
+    onSelectCue = null,
+    onUpdateCues = null,
+    selectedCueId = null,
     side = "1",
     antiMuddy = null,
     partnerDeck = null,
@@ -5043,6 +5047,19 @@
       if (!(deck == null ? void 0 : deck.serato_overview)) return null;
       return decodeBase64ToU8(deck == null ? void 0 : deck.serato_overview);
     }, [deck == null ? void 0 : deck.serato_overview]);
+    const handleTriggerCueJump = (cue) => {
+      var _a2, _b2;
+      if (!cue) return;
+      const cueId = (_b2 = (_a2 = cue.id) != null ? _a2 : cue.pad) != null ? _b2 : null;
+      if (typeof onSelectCue === "function" && cueId !== null) {
+        onSelectCue(cueId);
+      }
+      const secVal = typeof cue.pos_sec === "number" ? cue.pos_sec : typeof cue.pos_ms === "number" ? cue.pos_ms / 1e3 : (cue.pct || 0) * durSec;
+      const pctVal = durSec > 0 ? Math.max(0, Math.min(0.99, secVal / durSec)) : cue.pct || 0;
+      if (typeof onSeekTrack === "function" && track) {
+        onSeekTrack(track, pctVal, true, secVal);
+      }
+    };
     const formatSec = (s) => {
       const m = Math.floor(s / 60);
       const sec = Math.floor(s % 60);
@@ -16290,9 +16307,16 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         bar_str: `Bar ${barNum}`
       });
     };
+    const handleCueColorChange = (hexColor) => {
+      if (!hexColor) return;
+      updateSingleCue({ color: hexColor });
+      setSaveStatus(`\u{1F3A8} Color de Cue ${selectedCueId} actualizado`);
+      setTimeout(() => setSaveStatus(""), 2e3);
+    };
     const handleTimeInputChange = (e) => {
       const val = e.target.value;
       setCueTimeInput(val);
+      setSaveStatus(`\u270E Editando Cue ${selectedCueId} (${val.trim()})`);
       if (/^\d{1,2}:\d{2}(?:\.\d{1,3})?$/.test(val.trim())) {
         const ms = parseTimeToMs2(val.trim());
         if (!isNaN(ms) && ms >= 0) {

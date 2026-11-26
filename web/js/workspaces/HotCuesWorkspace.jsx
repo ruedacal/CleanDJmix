@@ -584,9 +584,17 @@ export const HotCuesWorkspace = ({
         });
     };
 
+    const handleCueColorChange = (hexColor) => {
+        if (!hexColor) return;
+        updateSingleCue({ color: hexColor });
+        setSaveStatus(`🎨 Color de Cue ${selectedCueId} actualizado`);
+        setTimeout(() => setSaveStatus(''), 2000);
+    };
+
     const handleTimeInputChange = (e) => {
         const val = e.target.value;
         setCueTimeInput(val);
+        setSaveStatus(`✎ Editando Cue ${selectedCueId} (${val.trim()})`);
         if (/^\d{1,2}:\d{2}(?:\.\d{1,3})?$/.test(val.trim())) {
             const ms = parseTimeToMs(val.trim());
             if (!isNaN(ms) && ms >= 0) {

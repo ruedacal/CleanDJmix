@@ -62,6 +62,10 @@ export const CopilotSeratoWaveform = ({
     duration = null,
     playProgress = null,
     isCurrentPlaying = null,
+    onSeekTrack = null,
+    onSelectCue = null,
+    onUpdateCues = null,
+    selectedCueId = null,
     side = "1",
     antiMuddy = null,
     partnerDeck = null,
@@ -238,6 +242,21 @@ export const CopilotSeratoWaveform = ({
         if (!deck?.serato_overview) return null;
         return decodeBase64ToU8(deck?.serato_overview);
     }, [deck?.serato_overview]);
+
+    const handleTriggerCueJump = (cue) => {
+        if (!cue) return;
+        const cueId = cue.id ?? cue.pad ?? null;
+        if (typeof onSelectCue === "function" && cueId !== null) {
+            onSelectCue(cueId);
+        }
+        const secVal = typeof cue.pos_sec === "number"
+            ? cue.pos_sec
+            : (typeof cue.pos_ms === "number" ? cue.pos_ms / 1000.0 : ((cue.pct || 0) * durSec));
+        const pctVal = durSec > 0 ? Math.max(0, Math.min(0.99, secVal / durSec)) : (cue.pct || 0);
+        if (typeof onSeekTrack === "function" && track) {
+            onSeekTrack(track, pctVal, true, secVal);
+        }
+    };
 
     const formatSec = (s) => {
         const m = Math.floor(s / 60);
