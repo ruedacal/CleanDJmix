@@ -36,9 +36,18 @@
     );
   });
 
+  // web/js/shell/WorkspaceSlot.jsx
+  var { useRef, memo: memo2, createContext, useContext } = React;
+  var WorkspaceActiveContext = createContext(true);
+  var useWorkspaceActive = () => useContext(WorkspaceActiveContext);
+  var FrozenWorkspace = memo2(
+    ({ children }) => children,
+    (prev, next) => !prev.isActive && !next.isActive
+  );
+
   // web/js/workspaces/CopilotCenterMixer.jsx
-  var { useState, useEffect, useRef, useMemo, memo: memo2 } = React;
-  var HardwareKnob = memo2(({
+  var { useState, useEffect, useRef: useRef2, useMemo, memo: memo3 } = React;
+  var HardwareKnob = memo3(({
     value = 0.5,
     color = "#00F0FF",
     label = "",
@@ -117,7 +126,7 @@
     { id: 7, key: "drop2", label: "DROP 2", time: "03:02", pos_sec: 182 },
     { id: 8, key: "outro", label: "OUTRO", time: "03:45", pos_sec: 225 }
   ];
-  var CopilotCenterMixer = memo2(({
+  var CopilotCenterMixer = memo3(({
     deck1 = null,
     deck2 = null,
     mixer = null,
@@ -127,18 +136,20 @@
     // HUD integrado en la mesa central slim
   }) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p;
+    const isWorkspaceActive = useWorkspaceActive();
     const [d1ActiveHito, setD1ActiveHito] = useState(0);
     const [d2ActiveHito, setD2ActiveHito] = useState(2);
     const [pflState, setPflState] = useState({ ch1: false, ch2: true });
     const [currentBeat, setCurrentBeat] = useState(1);
     useEffect(() => {
+      if (!isWorkspaceActive) return;
       const bpm = Number((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136);
       const beatMs = Math.round(60 / bpm * 1e3);
       const interval = setInterval(() => {
         setCurrentBeat((b) => b % 4 + 1);
       }, beatMs);
       return () => clearInterval(interval);
-    }, [deck1 == null ? void 0 : deck1.bpm, deck2 == null ? void 0 : deck2.bpm]);
+    }, [isWorkspaceActive, deck1 == null ? void 0 : deck1.bpm, deck2 == null ? void 0 : deck2.bpm]);
     const hitosD1 = useMemo(() => {
       if ((deck1 == null ? void 0 : deck1.cues) && deck1.cues.length >= 4) {
         return deck1.cues.map((c, i) => {
@@ -190,7 +201,7 @@
       }
     }, [deck2 == null ? void 0 : deck2.play_progress, d2Duration]);
     useEffect(() => {
-      if (!isAppOpen) return;
+      if (!isAppOpen || !isWorkspaceActive) return;
       const interval = setInterval(() => {
         if (deck1 == null ? void 0 : deck1.is_playing) {
           setD1PlayPos((p) => p + 1 > d1Duration ? 0 : p + 1);
@@ -200,7 +211,7 @@
         }
       }, 1e3);
       return () => clearInterval(interval);
-    }, [isAppOpen, deck1 == null ? void 0 : deck1.is_playing, deck2 == null ? void 0 : deck2.is_playing, d1Duration, d2Duration]);
+    }, [isWorkspaceActive, isAppOpen, deck1 == null ? void 0 : deck1.is_playing, deck2 == null ? void 0 : deck2.is_playing, d1Duration, d2Duration]);
     const d1Bpm = Number(deck1 == null ? void 0 : deck1.bpm) || 136;
     const d2Bpm = Number(deck2 == null ? void 0 : deck2.bpm) || 136;
     const d1BarSec = 60 / d1Bpm * 4;
@@ -381,7 +392,7 @@
   });
 
   // web/js/copilot.jsx
-  var { useState: useState2, useEffect: useEffect2, useRef: useRef2, useMemo: useMemo2 } = React;
+  var { useState: useState2, useEffect: useEffect2, useRef: useRef3, useMemo: useMemo2 } = React;
   var SlidersIcon = ({ size = 14, className = "" }) => /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className }, /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "21", x2: "4", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "4", y1: "10", x2: "4", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "21", x2: "12", y2: "12" }), /* @__PURE__ */ React.createElement("line", { x1: "12", y1: "8", x2: "12", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "21", x2: "20", y2: "16" }), /* @__PURE__ */ React.createElement("line", { x1: "20", y1: "12", x2: "20", y2: "3" }), /* @__PURE__ */ React.createElement("line", { x1: "1", y1: "14", x2: "7", y2: "14" }), /* @__PURE__ */ React.createElement("line", { x1: "9", y1: "8", x2: "15", y2: "8" }), /* @__PURE__ */ React.createElement("line", { x1: "17", y1: "16", x2: "23", y2: "16" }));
   var DEFAULT_VINYL_SVG = "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="12" fill="#0d0d14"/><circle cx="80" cy="80" r="58" fill="#14141f" stroke="#27273a" stroke-width="2"/><circle cx="80" cy="80" r="44" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/><circle cx="80" cy="80" r="30" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0.5"/><circle cx="80" cy="80" r="14" fill="#06b6d4"/><circle cx="80" cy="80" r="5" fill="#09090b"/></svg>');
   function getValidCover(c) {
@@ -469,17 +480,17 @@
     partnerDeck = null,
     isCompact = false
   }) => {
-    const canvasRef = useRef2(null);
-    const minimapRef = useRef2(null);
-    const minimapCacheRef = useRef2(null);
+    const canvasRef = useRef3(null);
+    const minimapRef = useRef3(null);
+    const minimapCacheRef = useRef3(null);
     const [zoom, setZoom] = useState2(4);
     const [showTacticalAids, setShowTacticalAids] = useState2(true);
     const [hoveredMilestone, setHoveredMilestone] = useState2(null);
     const [progress, setProgress] = useState2(deck.play_progress || 0.15);
-    const progressRef = useRef2(deck.play_progress || 0.15);
-    const isPlayingRef = useRef2(Boolean(deck.is_playing));
-    const bpmRef = useRef2(deck.bpm || 130);
-    const durationSecRef = useRef2(deck.duration_sec || 390);
+    const progressRef = useRef3(deck.play_progress || 0.15);
+    const isPlayingRef = useRef3(Boolean(deck.is_playing));
+    const bpmRef = useRef3(deck.bpm || 130);
+    const durationSecRef = useRef3(deck.duration_sec || 390);
     useEffect2(() => {
       if (deck.play_progress !== void 0) {
         const diff = Math.abs(progressRef.current - deck.play_progress);

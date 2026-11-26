@@ -155,6 +155,58 @@
     return /* @__PURE__ */ React.createElement(Comp, { size, className });
   };
 
+  // web/js/services/apiClient.js
+  var DEFAULT_TIMEOUT_MS = 3e4;
+  async function request(url, { method = "GET", body = void 0, timeoutMs = DEFAULT_TIMEOUT_MS, signal = void 0 } = {}) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const onAbort = () => controller.abort();
+    if (signal) signal.addEventListener("abort", onAbort, { once: true });
+    try {
+      const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+      const headers = { Accept: "application/json" };
+      if (body !== void 0 && !isFormData) {
+        headers["Content-Type"] = "application/json";
+      }
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: body === void 0 ? void 0 : isFormData ? body : JSON.stringify(body),
+        signal: controller.signal
+      });
+      const contentType = res.headers.get("content-type") || "";
+      const payload = contentType.includes("application/json") ? await res.json() : await res.text();
+      if (!res.ok) {
+        const msg = payload && (payload.detail || payload.error || payload.message) || `HTTP ${res.status}`;
+        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      }
+      return payload;
+    } finally {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", onAbort);
+    }
+  }
+  var apiClient = {
+    registerCallback: (name, fn) => {
+      if (!name || typeof fn !== "function") return;
+      if (typeof window !== "undefined") {
+        window[name] = fn;
+        if (window.__beatwave_transport_bridge && window.__beatwave_transport_bridge.callbacks) {
+          window.__beatwave_transport_bridge.callbacks[name] = fn;
+        }
+      }
+    },
+    get: (url, opts = {}) => request(url, { ...opts, method: "GET" }),
+    post: (url, body, opts = {}) => request(url, { ...opts, method: "POST", body }),
+    rpc: async (methodName, ...args) => {
+      const data = await request(`/api/rpc/${encodeURIComponent(methodName)}`, {
+        method: "POST",
+        body: { args }
+      });
+      return data && Object.prototype.hasOwnProperty.call(data, "result") ? data.result : data;
+    }
+  };
+
   // web/js/shell/navigation.js
   var NAV_GROUPS = [
     {
@@ -2227,12 +2279,12 @@
      * Orquesta la subida asíncrona del búfer FLAC al microservicio GPU Cloud.
      * No bloquea el hilo de renderizado (UI), aplica AbortController con timeout de 8s.
      */
-    async rescueTrack(request) {
+    async rescueTrack(request2) {
       var _a;
       const startTime = Date.now();
       this.isRescuing = true;
-      this.emitProgress("UPLOADING", `Preparando payload FLAC para rescate neuronal GPU (Motivo: ${request.reason})...`);
-      let flacBytes = request.flacBuffer;
+      this.emitProgress("UPLOADING", `Preparando payload FLAC para rescate neuronal GPU (Motivo: ${request2.reason})...`);
+      let flacBytes = request2.flacBuffer;
       if (!flacBytes || flacBytes.byteLength === 0) {
         flacBytes = _Phase2RescueClient.retrieveNativeFlacBuffer();
       }
@@ -2245,7 +2297,7 @@
           state: "UNIDENTIFIED_ID",
           match: null,
           latencyMs: Date.now() - startTime,
-          reason: request.reason,
+          reason: request2.reason,
           errorMessage: msg,
           diagnosticLog: `[Phase2RescueClient] Buffer FLAC vac\xEDo. Estado final marcado como UNIDENTIFIED_ID.`
         };
@@ -2259,19 +2311,19 @@
         const blobBytes = flacBytes.buffer.slice(flacBytes.byteOffset, flacBytes.byteOffset + flacBytes.byteLength);
         const flacBlob = new Blob([blobBytes], { type: "audio/flac" });
         formData.append("audio", flacBlob, "escalation_rescue.flac");
-        formData.append("reason", request.reason);
-        formData.append("rho", request.rho.toString());
-        formData.append("environment", request.environment);
-        formData.append("timestamp", (request.timestampQueryMs || Date.now()).toString());
-        if (request.candidateHint) {
-          formData.append("candidate_hint", JSON.stringify(request.candidateHint));
+        formData.append("reason", request2.reason);
+        formData.append("rho", request2.rho.toString());
+        formData.append("environment", request2.environment);
+        formData.append("timestamp", (request2.timestampQueryMs || Date.now()).toString());
+        if (request2.candidateHint) {
+          formData.append("candidate_hint", JSON.stringify(request2.candidateHint));
         }
         this.emitProgress("PROCESSING_GPU", `Audio FLAC transmitido (${(flacBytes.byteLength / 1024).toFixed(1)} KB). Inferencia Conformer + Source Separation en ejecuci\xF3n...`);
         const response = await fetch(this.rescueEndpoint, {
           method: "POST",
           headers: {
             "X-Client-Platform": "BeatWave-Hybrid-Phase2",
-            "X-Escalation-Reason": request.reason
+            "X-Escalation-Reason": request2.reason
           },
           body: formData,
           signal: controller.signal
@@ -2288,7 +2340,7 @@
             state: "UNIDENTIFIED_ID",
             match: null,
             latencyMs: elapsed,
-            reason: request.reason,
+            reason: request2.reason,
             errorMessage: msg,
             diagnosticLog: `[Phase2RescueClient] Error HTTP ${response.status} tras ${elapsed} ms. Marcado UNIDENTIFIED_ID.`
           };
@@ -2315,7 +2367,7 @@
             state: "RESCUED_MATCH",
             match,
             latencyMs: elapsed,
-            reason: request.reason,
+            reason: request2.reason,
             diagnosticLog: `[Phase2RescueClient] Coincidencia neuronal verificada: ${match.artist} - ${match.title} en ${elapsed} ms.`
           };
         }
@@ -2327,7 +2379,7 @@
           state: "UNIDENTIFIED_ID",
           match: null,
           latencyMs: elapsed,
-          reason: request.reason,
+          reason: request2.reason,
           errorMessage: notFoundMsg,
           diagnosticLog: `[Phase2RescueClient] ANN Search no arroj\xF3 vecinos cercanos suficientes. Marcado definitivamente como UNIDENTIFIED_ID.`
         };
@@ -2344,7 +2396,7 @@
           state: "UNIDENTIFIED_ID",
           match: null,
           latencyMs: elapsed,
-          reason: request.reason,
+          reason: request2.reason,
           errorMessage: errDescription,
           diagnosticLog: `[Phase2RescueClient] ${errDescription}. Pista marcada definitivamente como UNIDENTIFIED_ID.`
         };
@@ -4305,6 +4357,29 @@
     }
   ];
 
+  // web/js/shell/WorkspaceSlot.jsx
+  var { useRef: useRef6, memo, createContext, useContext } = React;
+  var WorkspaceActiveContext = createContext(true);
+  var useWorkspaceActive = () => useContext(WorkspaceActiveContext);
+  var FrozenWorkspace = memo(
+    ({ children }) => children,
+    (prev, next) => !prev.isActive && !next.isActive
+  );
+  var WorkspaceSlot = ({ isActive, className = "w-full h-full", children }) => {
+    const hasMountedRef = useRef6(false);
+    if (isActive) hasMountedRef.current = true;
+    if (!hasMountedRef.current) return null;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: { display: isActive ? "flex" : "none" },
+        className,
+        "aria-hidden": !isActive
+      },
+      /* @__PURE__ */ React.createElement(WorkspaceActiveContext.Provider, { value: isActive }, /* @__PURE__ */ React.createElement(FrozenWorkspace, { isActive }, children))
+    );
+  };
+
   // web/js/waveforms/waveformUtils.js
   var parseDurationMs = (dur) => {
     if (!dur || typeof dur !== "string") return 3e5;
@@ -4456,13 +4531,13 @@
   }
 
   // web/js/waveforms/TableHarmonicWaveform.jsx
-  var { useRef: useRef6, useEffect: useEffect6 } = React;
+  var { useRef: useRef7, useEffect: useEffect6 } = React;
   var TableHarmonicWaveform = React.memo(
     ({ track, duration = "05:00", onPlayTrack, isCurrentPlaying, onTogglePlay, playProgress = 0 }) => {
-      const canvasRef = useRef6(null);
-      const bgBitmapRef = useRef6(null);
-      const rafRef = useRef6(null);
-      const progressRef = useRef6(playProgress);
+      const canvasRef = useRef7(null);
+      const bgBitmapRef = useRef7(null);
+      const rafRef = useRef7(null);
+      const progressRef = useRef7(playProgress);
       const WIDTH = 112, HEIGHT = 28;
       const seed = getTrackHash(track);
       const handleClickScrub = (e) => {
@@ -4587,12 +4662,12 @@
   );
 
   // web/js/waveforms/FooterMasterWaveform.jsx
-  var { useEffect: useEffect7, useRef: useRef7, useCallback } = React;
+  var { useEffect: useEffect7, useRef: useRef8, useCallback } = React;
   var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS2, t = (k) => k }) => {
-    const canvasRef = useRef7(null);
-    const containerRef = useRef7(null);
-    const bitmapRef = useRef7(null);
-    const rafRef = useRef7(null);
+    const canvasRef = useRef8(null);
+    const containerRef = useRef8(null);
+    const bitmapRef = useRef8(null);
+    const rafRef = useRef8(null);
     const seed = getTrackHash(track);
     const buildBitmap = useCallback((width) => {
       const height = 42;
@@ -4723,7 +4798,7 @@
   };
 
   // web/js/waveforms/CopilotSeratoWaveform.jsx
-  var { useState: useState5, useEffect: useEffect8, useRef: useRef8, useMemo } = React;
+  var { useState: useState5, useEffect: useEffect8, useRef: useRef9, useMemo } = React;
   var RB3BAND_HD_CACHE = /* @__PURE__ */ new Map();
   function decodeBase64ToU8(b64) {
     if (!b64 || typeof b64 !== "string") return null;
@@ -4809,19 +4884,19 @@
         cues: Array.isArray(propCues) ? propCues : track.cues || track.hot_cues || []
       };
     }, [rawDeck, track, propCues, duration, playProgress, isCurrentPlaying]);
-    const canvasRef = useRef8(null);
-    const minimapRef = useRef8(null);
-    const minimapCacheRef = useRef8(null);
+    const canvasRef = useRef9(null);
+    const minimapRef = useRef9(null);
+    const minimapCacheRef = useRef9(null);
     const [zoom, setZoom] = useState5(4);
     const [showTacticalAids, setShowTacticalAids] = useState5(true);
     const [hoveredMilestone, setHoveredMilestone] = useState5(null);
     const [hdWave, setHdWave] = useState5(null);
     const initialProgress = typeof ((_a = deck == null ? void 0 : deck.play_progress) != null ? _a : 0) === "number" && !isNaN((_b = deck == null ? void 0 : deck.play_progress) != null ? _b : 0) ? (_c = deck == null ? void 0 : deck.play_progress) != null ? _c : 0 : 0;
     const [progress, setProgress] = useState5(initialProgress);
-    const progressRef = useRef8(initialProgress);
-    const isPlayingRef = useRef8(Boolean(deck == null ? void 0 : deck.is_playing));
-    const bpmRef = useRef8((deck == null ? void 0 : deck.bpm) || 130);
-    const durationSecRef = useRef8((deck == null ? void 0 : deck.duration_sec) || 390);
+    const progressRef = useRef9(initialProgress);
+    const isPlayingRef = useRef9(Boolean(deck == null ? void 0 : deck.is_playing));
+    const bpmRef = useRef9((deck == null ? void 0 : deck.bpm) || 130);
+    const durationSecRef = useRef9((deck == null ? void 0 : deck.duration_sec) || 390);
     const deckNum = side === "2" || side === 2 || (deck == null ? void 0 : deck.deck_num) === 2 ? 2 : 1;
     const trackFilePath = (deck == null ? void 0 : deck.filepath) || (deck == null ? void 0 : deck.file_path) || "";
     const isEmptyDeck = !deck || !(deck == null ? void 0 : deck.title) || !(deck == null ? void 0 : deck.bpm) || Number(deck == null ? void 0 : deck.bpm) <= 0 || (deck == null ? void 0 : deck.status) === "STANDBY (VAC\xCDO)";
@@ -5343,7 +5418,7 @@
   };
 
   // web/js/shell/hooks.js
-  var { useState: useState6, useEffect: useEffect9, useRef: useRef9, useCallback: useCallback2 } = React;
+  var { useState: useState6, useEffect: useEffect9, useRef: useRef10, useCallback: useCallback2 } = React;
   function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 10) {
     const [range, setRange] = useState6({ start: 0, end: 60 });
     useEffect9(() => {
@@ -5478,7 +5553,7 @@
   }
 
   // web/js/workspaces/LibraryWorkspace.jsx
-  var { useState: useState7, useEffect: useEffect10, useRef: useRef10, useMemo: useMemo2, useCallback: useCallback3 } = React;
+  var { useState: useState7, useEffect: useEffect10, useRef: useRef11, useMemo: useMemo2, useCallback: useCallback3 } = React;
   var LibraryWorkspace = ({
     libraries: libraries2 = [],
     activeLibraryId,
@@ -6104,9 +6179,9 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
         }
       } catch (_) {
       }
-      if (window.eel && window.eel.listar_subcarpetas_sistema) {
+      if (true) {
         try {
-          const res = await window.eel.listar_subcarpetas_sistema(path)();
+          const res = await apiClient.rpc("listar_subcarpetas_sistema", path);
           if (res && (res.folders || res.files || res.current)) return res;
         } catch (_) {
         }
@@ -7182,7 +7257,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
   };
 
   // web/js/modals/HotCueStudioModal.jsx
-  var { useState: useState8, useEffect: useEffect11, useRef: useRef11, useCallback: useCallback4 } = React;
+  var { useState: useState8, useEffect: useEffect11, useRef: useRef12, useCallback: useCallback4 } = React;
   var HotCueStudioModal = ({
     isOpen,
     onClose,
@@ -7780,8 +7855,8 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
       setLoading(true);
       setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
       try {
-        if (window.eel && window.eel.detectar_duplicados_biblioteca) {
-          const res = await window.eel.detectar_duplicados_biblioteca(tracks, protect)();
+        if (true) {
+          const res = await apiClient.rpc("detectar_duplicados_biblioteca", tracks, protect);
           setDupData(res);
           const initialSel = {};
           if (res && res.grupos) {
@@ -7853,8 +7928,8 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setDeleting(true);
       setStatusMsg(`Eliminando ${pathsToDelete.length} archivos duplicados del disco...`);
       try {
-        if (window.eel && window.eel.eliminar_pistas_duplicadas) {
-          const res = await window.eel.eliminar_pistas_duplicadas(pathsToDelete)();
+        if (true) {
+          const res = await apiClient.rpc("eliminar_pistas_duplicadas", pathsToDelete);
           if (res && res.status === "ok") {
             alert(`\u2713 Se eliminaron ${res.eliminados || pathsToDelete.length} pistas duplicadas con \xE9xito.`);
             if (onDuplicatesDeleted) {
@@ -7917,7 +7992,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
 
   // web/js/modals/UserAccountModal.jsx
-  var { useState: useState12, useEffect: useEffect13, useRef: useRef12, useCallback: useCallback5 } = React;
+  var { useState: useState12, useEffect: useEffect13, useRef: useRef13, useCallback: useCallback5 } = React;
   var UserAccountModal = ({
     isOpen,
     onClose,
@@ -8761,7 +8836,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
 
   // web/js/modals/BitacoraModal.jsx
-  var { useState: useState13, useEffect: useEffect14, useRef: useRef13 } = React;
+  var { useState: useState13, useEffect: useEffect14, useRef: useRef14 } = React;
   var BitacoraDetailContent = ({ entry, onBack, onClose, onOpenBeatgridStudio, tracks = [] }) => {
     if (!entry) return null;
     const [copied, setCopied] = useState13(false);
@@ -9283,7 +9358,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/InteractiveManualModal.jsx
-  var { useState: useState15, useEffect: useEffect16, useRef: useRef14 } = React;
+  var { useState: useState15, useEffect: useEffect16, useRef: useRef15 } = React;
   var MANUAL_SECTIONS = {
     copilot: {
       id: "copilot",
@@ -9595,7 +9670,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const [simSpeed, setSimSpeed] = useState15(1);
     const [zoomFocus, setZoomFocus] = useState15(null);
     const [activeManualTab, setActiveManualTab] = useState15("all");
-    const canvasRef = useRef14(null);
+    const canvasRef = useRef15(null);
     useEffect16(() => {
       if (initialSection && MANUAL_SECTIONS[initialSection]) {
         setActiveSectionKey(initialSection);
@@ -10556,9 +10631,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       var _a, _b;
       setLoading(true);
       let res = null;
-      if (window.eel && window.eel.listar_subcarpetas_sistema) {
+      if (true) {
         try {
-          res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+          res = await apiClient.rpc("listar_subcarpetas_sistema", targetPath);
         } catch (err) {
           console.warn("[UNIFIED MODAL] Fallo llamada Eel, recurriendo a HTTP:", err);
         }
@@ -10587,8 +10662,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const handleAbrirFinder = async () => {
       try {
         let res = null;
-        if (window.eel && window.eel.seleccionar_carpeta_dialogo) {
-          res = await window.eel.seleccionar_carpeta_dialogo()();
+        if (true) {
+          res = await apiClient.rpc("seleccionar_carpeta_dialogo");
         } else {
           const resp = await fetch("/api/seleccionar_carpeta_dialogo");
           if (resp.ok) res = await resp.json();
@@ -10817,7 +10892,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/workspaces/AuditWorkspace.jsx
-  var { useState: useState18, useEffect: useEffect19, useRef: useRef15, useCallback: useCallback6, useMemo: useMemo5 } = React;
+  var { useState: useState18, useEffect: useEffect19, useRef: useRef16, useCallback: useCallback6, useMemo: useMemo5 } = React;
   var CompactHotCuesSummary = ({ track, cues = NV2_COLORS2, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
     const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
@@ -10966,10 +11041,10 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const [fsActiveTab, setFsActiveTab] = useState18("folders");
     const [fsLoading, setFsLoading] = useState18(false);
     const [camelotModalOpen, setCamelotModalOpen] = useState18(false);
-    const tapTimesRef = useRef15([]);
-    const tableScrollRef = useRef15(null);
-    const isProcessCancelledRef = useRef15(false);
-    const activeAbortControllerRef = useRef15(null);
+    const tapTimesRef = useRef16([]);
+    const tableScrollRef = useRef16(null);
+    const isProcessCancelledRef = useRef16(false);
+    const activeAbortControllerRef = useRef16(null);
     const [metricsCollapsed, setMetricsCollapsed] = useState18(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
@@ -11063,12 +11138,12 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         setBatchStatusMsg(msg);
       };
       window.addEventListener("bw:audit_progress", handleAuditEvt);
-      if (window.eel && typeof window.eel.expose === "function") {
+      if (true) {
         window.actualizar_progreso_batch = (pct, msg) => {
           window.dispatchEvent(new CustomEvent("bw:audit_progress", { detail: { pct, msg } }));
         };
         try {
-          window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+          apiClient.registerCallback("actualizar_progreso_batch", window.actualizar_progreso_batch);
         } catch (err) {
         }
       }
@@ -11246,8 +11321,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       if (modo === "trash" || modo === "permanent") {
         const permanente = modo === "permanent";
         try {
-          if (window.eel && window.eel.eliminar_pistas_disco) {
-            await window.eel.eliminar_pistas_disco(pathsToRemove, permanente)();
+          if (true) {
+            await apiClient.rpc("eliminar_pistas_disco", pathsToRemove, permanente);
           } else {
             await fetch("/api/eliminar_pistas_disco", {
               method: "POST",
@@ -11452,9 +11527,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       setBatchStatusMsg(`Buscando reemplazos oficiales en Cat\xE1logo HD para ${targetTracks.length} pista(s)...`);
       try {
         let rawRes = null;
-        if (window.eel && window.eel.buscar_reemplazos_spotify_batch) {
+        if (true) {
           try {
-            rawRes = await window.eel.buscar_reemplazos_spotify_batch(targetTracks)();
+            rawRes = await apiClient.rpc("buscar_reemplazos_spotify_batch", targetTracks);
           } catch (eelErr) {
             console.warn("[REEMPLAZOS] Fallo llamada Eel, recurriendo a HTTP:", eelErr);
           }
@@ -11627,8 +11702,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       setBatchProgress(25);
       setBatchStatusMsg(`Calculando Zero-Crossing y Beat 1.0.0 en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
       try {
-        if (window.eel && window.eel.calcular_trim_downbeat_track) {
-          const res = await window.eel.calcular_trim_downbeat_track(targetPath, currentTrack.id)();
+        if (true) {
+          const res = await apiClient.rpc("calcular_trim_downbeat_track", targetPath, currentTrack.id);
           if (res && res.status === "ok") {
             updateCurrentTrackField("trim_start_ms", res.trim_start_ms);
             updateCurrentTrackField("first_downbeat_ms", res.first_downbeat_ms);
@@ -11659,8 +11734,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       setBatchProgress(40);
       setBatchStatusMsg(`Calculando 8 Hot Cues por frases musicales (16/32b) para ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
       try {
-        if (window.eel && window.eel.calcular_hot_cues_fraseo) {
-          const res = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, downbeatMs)();
+        if (true) {
+          const res = await apiClient.rpc("calcular_hot_cues_fraseo", durMs, bpm, downbeatMs);
           if (res && Array.isArray(res) && res.length > 0) {
             updateCurrentTrackField("cues", res);
             setBatchProgress(100);
@@ -11688,12 +11763,13 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       setBatchProgress(40);
       setBatchStatusMsg(`Enrutando ${currentTrack.t || currentTrack.title} a crate /${gen}/${subg}...`);
       try {
-        if (window.eel && window.eel.organizar_pista_en_crate) {
-          const res = await window.eel.organizar_pista_en_crate(
+        if (true) {
+          const res = await apiClient.rpc(
+            "organizar_pista_en_crate",
             { ...currentTrack, genre: gen, subgenre: subg },
             destinoDescarga || "/Users/admin/Music/mi musica",
             "copy"
-          )();
+          );
           if (res && res.status === "ok") {
             setBatchProgress(100);
             setBatchStatusMsg(`\u2713 Archivo enrutado con \xE9xito a /${gen}/${subg}`);
@@ -11735,9 +11811,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       } catch (e) {
         console.warn("HTTP listar_subcarpetas fall\xF3, intentando alternativa:", e);
       }
-      if (window.eel && window.eel.listar_subcarpetas_sistema) {
+      if (true) {
         try {
-          const eelPromise = window.eel.listar_subcarpetas_sistema(path)();
+          const eelPromise = apiClient.rpc("listar_subcarpetas_sistema", path);
           const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Eel timeout")), 1500));
           const res = await Promise.race([eelPromise, timeoutPromise]);
           if (res && (res.folders || res.files || res.current)) return res;
@@ -11766,9 +11842,9 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     const handleAbrirDialogoNativo = async () => {
       try {
         let target = null;
-        if (window.eel && window.eel.seleccionar_directorio) {
+        if (true) {
           try {
-            target = await window.eel.seleccionar_directorio()();
+            target = await apiClient.rpc("seleccionar_directorio");
           } catch (e) {
           }
         }
@@ -11941,14 +12017,14 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       if (!isAppend) {
         resetAuditWorkspace(true);
       }
-      if (window.eel && window.eel.cargar_metadatos_directorio) {
+      if (true) {
         setIsLoadingDir(true);
         setBatchProgress(0);
         startProgressPolling();
         const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
         setBatchStatusMsg(isAppend ? `A\xF1adiendo metadatos de ${targetDesc}...` : `Leyendo metadatos de ${targetDesc}...`);
         try {
-          const res = await window.eel.cargar_metadatos_directorio(target)();
+          const res = await apiClient.rpc("cargar_metadatos_directorio", target);
           if (res && Array.isArray(res.tracks)) {
             if (isAppend) {
               const existingPaths = new Set((tracks || []).map((t2) => String(t2.path || t2.f || t2.id)));
@@ -12013,14 +12089,14 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         alert("Por favor selecciona una carpeta o carga pistas sueltas primero.");
         return;
       }
-      if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
+      if (!isAuditing) {
         setIsAuditing(true);
         setBatchProgress(0);
         startProgressPolling();
         const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
         setBatchStatusMsg(`Iniciando auditor\xEDa ac\xFAstica avanzada en ${targetDesc}...`);
         try {
-          const res = await window.eel.iniciar_auditoria(target)();
+          const res = await apiClient.rpc("iniciar_auditoria", target);
           if (res && Array.isArray(res.tracks)) {
             setTracks(res.tracks);
             if (res.tracks.length > 0) {
@@ -12093,8 +12169,8 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
       const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
       setBatchStatusMsg(`Ejecutando auditor\xEDa avanzada con ajustes seleccionados en ${targetDesc}...`);
       try {
-        if (window.eel && window.eel.ejecutar_auditoria_lote) {
-          const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
+        if (true) {
+          const res = await apiClient.rpc("ejecutar_auditoria_lote", target, opts);
           if (res && res.tracks) {
             setTracks(res.tracks);
             const badDetected = res.tracks.filter((t2) => isBadQualityTrack(t2));
@@ -12113,15 +12189,15 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
             });
             if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
               setBatchStatusMsg("Inyectando car\xE1tulas 1:1 en archivos f\xEDsicos...");
-              await window.eel.inyectar_caratulas_lote(res.tracks)();
+              await apiClient.rpc("inyectar_caratulas_lote", res.tracks);
             }
             if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
               setBatchStatusMsg("Inyectando comentarios t\xE1cticos y tags en archivos f\xEDsicos...");
-              await window.eel.inyectar_lote_metadatos(res.tracks)();
+              await apiClient.rpc("inyectar_lote_metadatos", res.tracks);
             }
             if (opts.normalizeNames && window.eel.sanitizar_metadatos_pistas) {
               setBatchStatusMsg("Normalizando nombres de archivo y t\xEDtulos...");
-              await window.eel.sanitizar_metadatos_pistas(res.tracks, false)();
+              await apiClient.rpc("sanitizar_metadatos_pistas", res.tracks, false);
             }
             setBatchProgress(100);
             setSaveFeedback(`\u2713 An\xE1lisis completado con \xE9xito (${res.tracks.length} pistas)`);
@@ -12165,12 +12241,12 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar el Informe Excel (.xlsx):");
       if (!destino) return;
-      if (window.eel && window.eel.exportar_auditoria_xls) {
+      if (true) {
         setIsExporting(true);
         setBatchProgress(25);
         setBatchStatusMsg("Generando reporte de auditor\xEDa en formato Excel (XLSX)...");
         try {
-          const res = await window.eel.exportar_auditoria_xls(tracks, destino)();
+          const res = await apiClient.rpc("exportar_auditoria_xls", tracks, destino);
           setBatchProgress(100);
           if (res && res.status === "ok") {
             const nombreArchivo = res.path ? res.path.split("/").pop() : "CleanDJmix_Audit_Respaldo.xlsx";
@@ -12203,8 +12279,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchProgress(15);
       setBatchStatusMsg("Inyectando configuraci\xF3n y metadatos nativos para Serato DJ Pro en los archivos...");
       try {
-        if (window.eel && window.eel.inyectar_lote_metadatos) {
-          const res = await window.eel.inyectar_lote_metadatos(tracks)();
+        if (true) {
+          const res = await apiClient.rpc("inyectar_lote_metadatos", tracks);
           setBatchProgress(100);
           if (res && res.status === "ok") {
             const total = res.total_inyectadas || tracks.length;
@@ -12234,12 +12310,12 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar colecci\xF3n Traktor (.nml):");
       if (!destino) return;
-      if (window.eel && window.eel.exportar_traktor_nml) {
+      if (true) {
         setIsExporting(true);
         setBatchProgress(40);
         setBatchStatusMsg("Generando colecci\xF3n Traktor Pro (.nml)...");
         try {
-          const res = await window.eel.exportar_traktor_nml(tracks, destino)();
+          const res = await apiClient.rpc("exportar_traktor_nml", tracks, destino);
           setBatchProgress(100);
           if (res && res.status === "ok") {
             setBatchStatusMsg(`\u2713 Traktor NML generado en ${res.path}`);
@@ -12270,8 +12346,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchProgress(40);
       setBatchStatusMsg("Generando lista y metadatos para VirtualDJ...");
       try {
-        if (window.eel && window.eel.exportar_set_m3u) {
-          const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion", destino)();
+        if (true) {
+          const res = await apiClient.rpc("exportar_set_m3u", tracks, "VirtualDJ_Coleccion", destino);
           setBatchProgress(100);
           if (res && res.status === "ok") {
             setSaveFeedback(`\u2713 Colecci\xF3n VirtualDJ guardada en ${destino}`);
@@ -12298,12 +12374,12 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar rekordbox.xml:");
       if (!destino) return;
-      if (window.eel && window.eel.exportar_rekordbox_xml) {
+      if (true) {
         setIsExporting(true);
         setBatchProgress(40);
         setBatchStatusMsg("Generando archivo rekordbox.xml est\xE1ndar Pioneer DJ...");
         try {
-          const res = await window.eel.exportar_rekordbox_xml(tracks, destino, "rekordbox.xml")();
+          const res = await apiClient.rpc("exportar_rekordbox_xml", tracks, destino, "rekordbox.xml");
           setBatchProgress(100);
           if (res && res.status === "ok") {
             setBatchStatusMsg(`\u2713 rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists)`);
@@ -12337,8 +12413,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchStatusMsg("Ejecutando Pasaporte Universal: Serato, Rekordbox, Traktor y VirtualDJ...");
       try {
         let res = null;
-        if (window.eel && window.eel.sincronizar_pasaporte_universal) {
-          res = await window.eel.sincronizar_pasaporte_universal(tracks, destino)();
+        if (true) {
+          res = await apiClient.rpc("sincronizar_pasaporte_universal", tracks, destino);
         } else {
           const resp = await fetch("/api/export/universal_sync", {
             method: "POST",
@@ -12376,9 +12452,9 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setFftModalOpen(true);
       setIsAnalyzingFft(true);
       setFftAnalysisData(null);
-      if (window.eel && window.eel.analizar_espectro_fft) {
+      if (true) {
         try {
-          const res = await window.eel.analizar_espectro_fft(targetPath, trk.id)();
+          const res = await apiClient.rpc("analizar_espectro_fft", targetPath, trk.id);
           setFftAnalysisData(res);
           if (res && res.cutoff_khz !== void 0) {
             updateCurrentTrackField("cutoff_khz", res.cutoff_khz);
@@ -12401,8 +12477,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchProgress(30);
       setBatchStatusMsg(`Inyectando tags ID3v2.4 y marcas Serato en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
       try {
-        if (window.eel && window.eel.guardar_cambios_track) {
-          const res = await window.eel.guardar_cambios_track(currentTrack)();
+        if (true) {
+          const res = await apiClient.rpc("guardar_cambios_track", currentTrack);
           if (res && res.status === "ok") {
             setBatchProgress(100);
             setBatchStatusMsg("\u2713 Inyecci\xF3n completada y guardada en disco.");
@@ -12432,8 +12508,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchProgress(5);
       setBatchStatusMsg(`Buscando e inyectando car\xE1tulas 1:1 en ${tracks.length} pistas...`);
       try {
-        if (window.eel && window.eel.inyectar_caratulas_lote) {
-          const res = await window.eel.inyectar_caratulas_lote(tracks)();
+        if (true) {
+          const res = await apiClient.rpc("inyectar_caratulas_lote", tracks);
           setBatchProgress(100);
           if (res && res.status === "ok") {
             setBatchStatusMsg(`\u2713 Car\xE1tulas actualizadas: ${res.actualizadas} pistas con artwork.`);
@@ -12464,8 +12540,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchStatusMsg(`Higienizando metadatos, eliminando spam promocional y normalizando feats en ${tracks.length} pistas...`);
       try {
         let res = null;
-        if (window.eel && window.eel.sanitizar_metadatos_pistas) {
-          res = await window.eel.sanitizar_metadatos_pistas(tracks, false)();
+        if (true) {
+          res = await apiClient.rpc("sanitizar_metadatos_pistas", tracks, false);
         } else {
           const resp = await fetch("/api/sanitizar_metadatos", {
             method: "POST",
@@ -12616,9 +12692,9 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         });
         if (window.eel) {
           if (nextState && window.eel.pausar_auditoria) {
-            await window.eel.pausar_auditoria()();
+            await apiClient.rpc("pausar_auditoria");
           } else if (!nextState && window.eel.reanudar_auditoria) {
-            await window.eel.reanudar_auditoria()();
+            await apiClient.rpc("reanudar_auditoria");
           }
         }
       } catch (e) {
@@ -12650,9 +12726,9 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         });
       } catch (e) {
       }
-      if (window.eel && window.eel.cancelar_procesos_activos) {
+      if (true) {
         try {
-          window.eel.cancelar_procesos_activos()();
+          apiClient.rpc("cancelar_procesos_activos");
         } catch (e) {
         }
       }
@@ -13022,8 +13098,8 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       setBatchProgress(20);
       setBatchStatusMsg(`Copiando biblioteca estructurada en disco...`);
       try {
-        if (window.eel && window.eel.crear_biblioteca_en_disco) {
-          const res = await window.eel.crear_biblioteca_en_disco("Coleccion_Organizada", estructura, destino)();
+        if (true) {
+          const res = await apiClient.rpc("crear_biblioteca_en_disco", "Coleccion_Organizada", estructura, destino);
           setBatchProgress(100);
           if (res && res.status === "ok") {
             setBatchStatusMsg(`\u2713 Creada en: ${res.base_dir}`);
@@ -13186,7 +13262,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return tokenMap;
     }, [tracks]);
-    const searchBenchmarkRef = useRef15(0.2);
+    const searchBenchmarkRef = useRef16(0.2);
     const tracksFiltrados = useMemo5(() => {
       const benchStart = performance.now();
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
@@ -15671,7 +15747,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
   };
 
   // web/js/workspaces/HotCuesWorkspace.jsx
-  var { useState: useState20, useEffect: useEffect20, useRef: useRef16, useCallback: useCallback7, useMemo: useMemo7 } = React;
+  var { useState: useState20, useEffect: useEffect20, useRef: useRef17, useCallback: useCallback7, useMemo: useMemo7 } = React;
   var HotCuesWorkspace = ({
     tracks = [],
     setTracks,
@@ -15702,7 +15778,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
     const [tapTimes, setTapTimes] = useState20([]);
-    const autoLoadedColRef = useRef16(false);
+    const autoLoadedColRef = useRef17(false);
     useEffect20(() => {
       var _a2;
       if (autoLoadedColRef.current) return;
@@ -15784,8 +15860,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       try {
         const trackPath = currentTrack.path || currentTrack.f || "";
         let res = null;
-        if (window.eel && window.eel.calcular_comparativa_hot_cues) {
-          res = await window.eel.calcular_comparativa_hot_cues(trackPath, currentTrack.id)();
+        if (true) {
+          res = await apiClient.rpc("calcular_comparativa_hot_cues", trackPath, currentTrack.id);
         } else {
           const r = await fetch("/api/rpc/calcular_comparativa_hot_cues", {
             method: "POST",
@@ -15825,8 +15901,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         const trackPath = currentTrack.path || currentTrack.f || "";
         const cuesToSave = modo === "acustico" ? cuesAcustico || activeCues : cuesEstandar || activeCues;
         let res = null;
-        if (window.eel && window.eel.guardar_modo_hot_cues) {
-          res = await window.eel.guardar_modo_hot_cues(trackPath, modo, cuesToSave, currentTrack)();
+        if (true) {
+          res = await apiClient.rpc("guardar_modo_hot_cues", trackPath, modo, cuesToSave, currentTrack);
         } else {
           const r = await fetch("/api/rpc/guardar_modo_hot_cues", {
             method: "POST",
@@ -16230,9 +16306,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       if (!currentTrack) return;
       try {
         let calculated = null;
-        if (window.eel && window.eel.calcular_hot_cues_fraseo) {
+        if (true) {
           try {
-            calculated = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, Math.round(downbeatMs))();
+            calculated = await apiClient.rpc("calcular_hot_cues_fraseo", durMs, bpm, Math.round(downbeatMs));
           } catch (_) {
           }
         }
@@ -16277,8 +16353,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
           bpm
         };
         let res = null;
-        if (window.eel && window.eel.guardar_cambios_track) {
-          res = await window.eel.guardar_cambios_track(trackToSave)();
+        if (true) {
+          res = await apiClient.rpc("guardar_cambios_track", trackToSave);
         } else {
           const r = await fetch("/api/rpc/guardar_cambios_track", {
             method: "POST",
@@ -16355,8 +16431,8 @@ Inyecci\xF3n: GEOB:Serato BeatGrid, GEOB:Serato Markers2, ID3v2.4 / Vorbis Comme
           modo_rapido: true
         }));
         let res = null;
-        if (window.eel && window.eel.inyectar_lote_metadatos) {
-          res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
+        if (true) {
+          res = await apiClient.rpc("inyectar_lote_metadatos", sanitizedTracks);
         } else {
           const response = await fetch("/api/metadata/save_batch", {
             method: "POST",
@@ -16398,8 +16474,8 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       if (!currentTrack) return;
       setIsRegeneratingMood(true);
       try {
-        if (window.eel && window.eel.regenerar_mood_y_comentario) {
-          const res = await window.eel.regenerar_mood_y_comentario(currentTrack, lang)();
+        if (true) {
+          const res = await apiClient.rpc("regenerar_mood_y_comentario", currentTrack, lang);
           if (res && res.status === "ok") {
             updateCurrentTrackField("mood", res.mood);
             updateCurrentTrackField("mood_subtag", res.mood_subtag);
@@ -16459,8 +16535,8 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       if (setSelectedTrack) setSelectedTrack(null);
       setIsLoadingDir(true);
       try {
-        if (window.eel && window.eel.cargar_metadatos_directorio) {
-          const res = await window.eel.cargar_metadatos_directorio(nuevaRuta)();
+        if (true) {
+          const res = await apiClient.rpc("cargar_metadatos_directorio", nuevaRuta);
           if (res && Array.isArray(res.tracks)) {
             if (setTracks) setTracks(res.tracks);
             if (res.tracks.length > 0 && setSelectedTrack) {
@@ -17368,7 +17444,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
   };
 
   // web/js/workspaces/SpotifyWorkspace.jsx
-  var { useState: useState21, useEffect: useEffect21, useRef: useRef17, useCallback: useCallback8, useMemo: useMemo8 } = React;
+  var { useState: useState21, useEffect: useEffect21, useRef: useRef18, useCallback: useCallback8, useMemo: useMemo8 } = React;
   var SpotifyWorkspace = ({
     tracks: externalTracks,
     setTracks: externalSetTracks,
@@ -17486,8 +17562,8 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
           bpm: candidateModal.targetTrack.bpm
         } : null;
         let res = null;
-        if (window.eel && window.eel.buscar_candidatos_manuales_spotify) {
-          res = await window.eel.buscar_candidatos_manuales_spotify(query, pistaOrigen)();
+        if (true) {
+          res = await apiClient.rpc("buscar_candidatos_manuales_spotify", query, pistaOrigen);
         } else {
           const resp = await fetch("/api/buscar_candidatos_manuales_spotify", {
             method: "POST",
@@ -17551,7 +17627,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     const [fsFolders, setFsFolders] = useState21([]);
     const [fsLoading, setFsLoading] = useState21(false);
     useEffect21(() => {
-      if (window.eel && typeof window.eel.expose === "function") {
+      if (true) {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
             setDownloadProgress(0);
@@ -17711,15 +17787,15 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         window.notificar_fallo_descarga = notifyDownloadFailure;
         window.notificar_fin_lote = finishBatch;
         window.notificar_archivo_original_eliminado = notifyOriginalPurged;
-        window.eel.expose(window.actualizar_estado_descarga, "actualizar_estado_descarga");
-        window.eel.expose(window.actualizar_progreso_descarga, "actualizar_progreso_descarga");
-        window.eel.expose(window.actualizar_estado_fft, "actualizar_estado_fft");
-        window.eel.expose(window.notificar_resultado_auditoria, "notificar_resultado_auditoria");
-        window.eel.expose(window.notificar_resultado_auditoria_post_descarga, "notificar_resultado_auditoria_post_descarga");
-        window.eel.expose(window.notificar_fin_auditoria_post_descarga, "notificar_fin_auditoria_post_descarga");
-        window.eel.expose(window.notificar_fallo_descarga, "notificar_fallo_descarga");
-        window.eel.expose(window.notificar_fin_lote, "notificar_fin_lote");
-        window.eel.expose(window.notificar_archivo_original_eliminado, "notificar_archivo_original_eliminado");
+        apiClient.registerCallback("actualizar_estado_descarga", window.actualizar_estado_descarga);
+        apiClient.registerCallback("actualizar_progreso_descarga", window.actualizar_progreso_descarga);
+        apiClient.registerCallback("actualizar_estado_fft", window.actualizar_estado_fft);
+        apiClient.registerCallback("notificar_resultado_auditoria", window.notificar_resultado_auditoria);
+        apiClient.registerCallback("notificar_resultado_auditoria_post_descarga", window.notificar_resultado_auditoria_post_descarga);
+        apiClient.registerCallback("notificar_fin_auditoria_post_descarga", window.notificar_fin_auditoria_post_descarga);
+        apiClient.registerCallback("notificar_fallo_descarga", window.notificar_fallo_descarga);
+        apiClient.registerCallback("notificar_fin_lote", window.notificar_fin_lote);
+        apiClient.registerCallback("notificar_archivo_original_eliminado", window.notificar_archivo_original_eliminado);
       }
     }, []);
     const handleCancelarDescargas = async () => {
@@ -17728,9 +17804,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         });
       } catch (e) {
       }
-      if (window.eel && window.eel.cancelar_procesos_activos) {
+      if (true) {
         try {
-          await window.eel.cancelar_procesos_activos()();
+          await apiClient.rpc("cancelar_procesos_activos");
         } catch (e) {
           console.error("Error al cancelar procesos:", e);
         }
@@ -17751,8 +17827,8 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       setIsExportingXls(true);
       try {
         let res = null;
-        if (window.eel && window.eel.exportar_reporte_descargas_xls) {
-          res = await window.eel.exportar_reporte_descargas_xls(downloadSession, destDir)();
+        if (true) {
+          res = await apiClient.rpc("exportar_reporte_descargas_xls", downloadSession, destDir);
         } else {
           const resp = await fetch("/api/descargar_reporte_xls", {
             method: "POST",
@@ -17802,9 +17878,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         if (resp.ok) res = await resp.json();
       } catch (httpErr) {
       }
-      if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
+      if (!res && true) {
         try {
-          res = await window.eel.listar_subcarpetas_sistema(startPath)();
+          res = await apiClient.rpc("listar_subcarpetas_sistema", startPath);
         } catch (err) {
           console.warn("[EXPLORADOR] Fallo llamada Eel, recurriendo a HTTP:", err);
         }
@@ -17833,9 +17909,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         if (resp.ok) res = await resp.json();
       } catch (httpErr) {
       }
-      if (!res && window.eel && window.eel.listar_subcarpetas_sistema) {
+      if (!res && true) {
         try {
-          res = await window.eel.listar_subcarpetas_sistema(targetPath)();
+          res = await apiClient.rpc("listar_subcarpetas_sistema", targetPath);
         } catch (err) {
           console.warn("[EXPLORADOR] Fallo llamada Eel al navegar:", err);
         }
@@ -18158,9 +18234,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       let coverHd = track.cover;
       if (!streamUrl) {
         setDownloadingMsg(`[PRE-ESCUCHA] Resolviendo stream para: ${track.artist} - ${track.title}...`);
-        if (window.eel && window.eel.resolver_stream_preescucha) {
+        if (true) {
           try {
-            const res = await window.eel.resolver_stream_preescucha(track.title, track.artist)();
+            const res = await apiClient.rpc("resolver_stream_preescucha", track.title, track.artist);
             if (res && res.stream_url) {
               streamUrl = res.stream_url;
               if (res.cover) coverHd = res.cover;
@@ -18262,8 +18338,8 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       if (!streamUrl) {
         setCandidateModal((prev) => ({ ...prev, searchMsg: `Resolviendo audio de preescucha para: ${cand.title}...` }));
         try {
-          if (window.eel && window.eel.resolver_stream_preescucha) {
-            const res = await window.eel.resolver_stream_preescucha(cand.title, cand.artist)();
+          if (true) {
+            const res = await apiClient.rpc("resolver_stream_preescucha", cand.title, cand.artist);
             if (res && res.stream_url) {
               streamUrl = res.stream_url;
               if (res.cover) coverHd = res.cover;
@@ -18323,9 +18399,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       try {
         setDownloadProgress(45);
         let res = null;
-        if (window.eel && window.eel.analizar_catalogo_spotify) {
+        if (true) {
           try {
-            const eelCall = window.eel.analizar_catalogo_spotify(queryToSearch)();
+            const eelCall = apiClient.rpc("analizar_catalogo_spotify", queryToSearch);
             const timeoutPromise = new Promise(
               (_, reject) => setTimeout(() => reject(new Error("Eel timeout")), 8e3)
             );
@@ -18402,9 +18478,9 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
       const purgeTag = deleteOriginalsOnUpgrade ? " (\u{1F5D1}\uFE0F Con purga de baja calidad)" : "";
       setDownloadingMsg(`[DESCARGANDO] Iniciando lote de ${pistasADescargar.length} pista(s) en formato .${fmt.toUpperCase()}${purgeTag}...`);
       let descargadoV\u00EDaEel = false;
-      if (window.eel && window.eel.descargar_pistas_spotify_seleccionadas) {
+      if (true) {
         try {
-          await window.eel.descargar_pistas_spotify_seleccionadas(pistasADescargar, fmt, destDir, deleteOriginalsOnUpgrade)();
+          await apiClient.rpc("descargar_pistas_spotify_seleccionadas", pistasADescargar, fmt, destDir, deleteOriginalsOnUpgrade);
           descargadoV\u00EDaEel = true;
         } catch (e) {
           console.warn("[SPOTIFY] Error en llamada Eel de descarga, recurriendo a HTTP:", e);
@@ -18449,9 +18525,9 @@ Se detectaron ${dudosas.length} pista(s) con posible variaci\xF3n de versi\xF3n,
       setFftProgress(5);
       setFftMsg(`[AUDITOR\xCDA FFT] Iniciando certificaci\xF3n espectral de ${targetList.length} pista(s)...`);
       let auditadoV\u00EDaEel = false;
-      if (window.eel && window.eel.auditar_descargas_fft) {
+      if (true) {
         try {
-          await window.eel.auditar_descargas_fft(targetList)();
+          await apiClient.rpc("auditar_descargas_fft", targetList);
           auditadoV\u00EDaEel = true;
         } catch (e) {
           console.warn("[SPOTIFY] Error en llamada Eel de auditor\xEDa, recurriendo a HTTP:", e);
@@ -19648,7 +19724,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/TaxonomyWorkspace.jsx
-  var { useState: useState22, useEffect: useEffect22, useRef: useRef18, useMemo: useMemo9, useCallback: useCallback9 } = React;
+  var { useState: useState22, useEffect: useEffect22, useRef: useRef19, useMemo: useMemo9, useCallback: useCallback9 } = React;
   var TaxonomyWorkspace = ({
     tracks = [],
     onTracksUpdated,
@@ -19782,8 +19858,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       const scopeLabel = searchScope === "local" ? "Biblioteca Local" : searchScope === "online" ? "Record Pool Online" : "Local y Pool Online";
       setFeedbackMsg2(`Buscando ${q ? `"${q}"` : "cat\xE1logo"} en ${scopeLabel}...`);
       try {
-        if (window.eel && window.eel.buscar_temas_taxonomia) {
-          const res = await window.eel.buscar_temas_taxonomia(q, searchScope, rutaBase, 40)();
+        if (true) {
+          const res = await apiClient.rpc("buscar_temas_taxonomia", q, searchScope, rutaBase, 40);
           if (res && res.status === "ok") {
             const onlineItems = (res.online || []).map((item) => ({
               ...item,
@@ -20074,10 +20150,10 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       }
       let streamUrl = trk.preview_url || trk.previewUrl || (trk.path && (trk.path.startsWith("http://") || trk.path.startsWith("https://")) ? trk.path : "");
       let coverHd = trk.displayCover || trk.cover;
-      if (!streamUrl && !trk.path && !trk.f && window.eel && window.eel.resolver_stream_preescucha) {
+      if (!streamUrl && !trk.path && !trk.f && true) {
         try {
           setFeedbackMsg2(`[PRE-ESCUCHA] Resolviendo audio para: ${trk.displayArtist || trk.artist} - ${trk.displayTitle || trk.title}...`);
-          const res = await window.eel.resolver_stream_preescucha(trk.displayTitle || trk.title, trk.displayArtist || trk.artist)();
+          const res = await apiClient.rpc("resolver_stream_preescucha", trk.displayTitle || trk.title, trk.displayArtist || trk.artist);
           if (res && res.stream_url) {
             streamUrl = res.stream_url;
             if (res.cover) coverHd = res.cover;
@@ -20148,8 +20224,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     const handleAsignarACrateIndividual = async (trk) => {
       if (!trk) return;
       try {
-        if (window.eel && window.eel.organizar_pista_en_crate) {
-          const res = await window.eel.organizar_pista_en_crate(trk, rutaBase, modo)();
+        if (true) {
+          const res = await apiClient.rpc("organizar_pista_en_crate", trk, rutaBase, modo);
           if (res && res.status === "ok") {
             setFeedbackMsg2(`\u2713 Pista enrutada a Crate /${trk.displayGenre}/${trk.displaySubgenre}/`);
           } else {
@@ -20163,8 +20239,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     };
     const handleSeleccionarDestino = async () => {
       try {
-        if (window.eel && window.eel.seleccionar_directorio) {
-          const dir = await window.eel.seleccionar_directorio()();
+        if (true) {
+          const dir = await apiClient.rpc("seleccionar_directorio");
           if (dir) {
             setRutaBase(dir);
           }
@@ -20180,8 +20256,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setRouteStatusMsg(`Iniciando ruteo de ${tracks.length} pistas a ${rutaBase}...`);
       setResultSummary(null);
       try {
-        if (window.eel && window.eel.organizar_lote_en_crates) {
-          const res = await window.eel.organizar_lote_en_crates(tracks, rutaBase, modo)();
+        if (true) {
+          const res = await apiClient.rpc("organizar_lote_en_crates", tracks, rutaBase, modo);
           if (res && res.status === "ok") {
             setResultSummary(res);
             setRouteProgress(100);
@@ -20206,8 +20282,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setRouteProgress(50);
       setRouteStatusMsg("Generando archivos binarios .crate para Serato DJ Pro...");
       try {
-        if (window.eel && window.eel.exportar_serato_crates) {
-          const res = await window.eel.exportar_serato_crates(tracks)();
+        if (true) {
+          const res = await apiClient.rpc("exportar_serato_crates", tracks);
           setRouteProgress(100);
           if (res && res.status === "ok") {
             setResultSummary({
@@ -20234,8 +20310,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setRouteProgress(50);
       setRouteStatusMsg("Generando archivo rekordbox.xml est\xE1ndar Pioneer DJ...");
       try {
-        if (window.eel && window.eel.exportar_rekordbox_xml) {
-          const res = await window.eel.exportar_rekordbox_xml(tracks, rutaBase, "rekordbox.xml")();
+        if (true) {
+          const res = await apiClient.rpc("exportar_rekordbox_xml", tracks, rutaBase, "rekordbox.xml");
           setRouteProgress(100);
           if (res && res.status === "ok") {
             setResultSummary({
@@ -21236,7 +21312,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/ShazamWorkspace.jsx
-  var { useState: useState23, useEffect: useEffect23, useRef: useRef19, useCallback: useCallback10 } = React;
+  var { useState: useState23, useEffect: useEffect23, useRef: useRef20, useCallback: useCallback10 } = React;
   var MAX_UPLOAD_BYTES = 45 * 1024 * 1024;
   var ShazamWorkspace = ({
     onSendToSpotify,
@@ -21255,14 +21331,14 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     const [history, setHistory] = useState23([]);
     const [previewPlaying, setPreviewPlaying] = useState23(false);
     const [micLevel, setMicLevel] = useState23(0);
-    const audioRef = useRef19(new Audio());
-    const mediaRecorderRef = useRef19(null);
-    const audioStreamRef = useRef19(null);
-    const fileInputRef = useRef19(null);
+    const audioRef = useRef20(new Audio());
+    const mediaRecorderRef = useRef20(null);
+    const audioStreamRef = useRef20(null);
+    const fileInputRef = useRef20(null);
     const [fsBrowserOpen, setFsBrowserOpen] = useState23(false);
-    const timerRef = useRef19(null);
-    const animFrameRef = useRef19(null);
-    const audioCtxRef = useRef19(null);
+    const timerRef = useRef20(null);
+    const animFrameRef = useRef20(null);
+    const audioCtxRef = useRef20(null);
     const [dragOver, setDragOver] = useState23(false);
     const [selectedEngine, setSelectedEngine] = useState23(() => {
       try {
@@ -21279,7 +21355,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       }
     });
     const [radarEvent, setRadarEvent] = useState23(null);
-    const recognizerRef = useRef19(null);
+    const recognizerRef = useRef20(null);
     const [auddToken, setAuddToken] = useState23(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
@@ -22575,8 +22651,8 @@ ${text}`);
     const fetchTrends = async () => {
       try {
         setLoading(true);
-        if (window.eel && window.eel.obtener_tendencias_web) {
-          const res = await window.eel.obtener_tendencias_web()();
+        if (true) {
+          const res = await apiClient.rpc("obtener_tendencias_web");
           if (res && res.items) setTrendsData(res);
         } else {
           const resp = await fetch("/api/trends");
@@ -22597,8 +22673,8 @@ ${text}`);
     const handleRunCrawler = async () => {
       setIsCrawling(true);
       try {
-        if (window.eel && window.eel.ejecutar_crawler_tendencias) {
-          const res = await window.eel.ejecutar_crawler_tendencias()();
+        if (true) {
+          const res = await apiClient.rpc("ejecutar_crawler_tendencias");
           if (res && res.items) setTrendsData(res);
         } else {
           const resp = await fetch("/api/trends/crawl", { method: "POST" });
@@ -22995,7 +23071,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/SetBuilderWorkspace.jsx
-  var { useState: useState26, useEffect: useEffect25, useRef: useRef20, useMemo: useMemo11, useCallback: useCallback11 } = React;
+  var { useState: useState26, useEffect: useEffect25, useRef: useRef21, useMemo: useMemo11, useCallback: useCallback11 } = React;
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
@@ -23454,9 +23530,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
           }
         } catch (e) {
         }
-        if ((!rawTracks || rawTracks.length === 0) && window.eel && window.eel.cargar_metadatos_directorio) {
+        if ((!rawTracks || rawTracks.length === 0) && true) {
           try {
-            const resEel = await window.eel.cargar_metadatos_directorio(targets)();
+            const resEel = await apiClient.rpc("cargar_metadatos_directorio", targets);
             if (resEel && Array.isArray(resEel.tracks)) rawTracks = resEel.tracks;
           } catch (e) {
           }
@@ -23507,8 +23583,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       if (!setTracks || setTracks.length === 0) return;
       setIsLoadingGraph(true);
       try {
-        if (window.eel && window.eel.generar_grafo_playlist) {
-          const res = await window.eel.generar_grafo_playlist(setTracks, auditTracks)();
+        if (true) {
+          const res = await apiClient.rpc("generar_grafo_playlist", setTracks, auditTracks);
           if (res) setGraphData(res);
         } else {
           const resp = await fetch("/api/session/graph", {
@@ -23534,8 +23610,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setIsLoadingAiAudit(true);
       try {
-        if (window.eel && window.eel.auditar_calidad_sesion_ai) {
-          const res = await window.eel.auditar_calidad_sesion_ai(setTracks, auditTracks)();
+        if (true) {
+          const res = await apiClient.rpc("auditar_calidad_sesion_ai", setTracks, auditTracks);
           if (res) setAiAuditResult(res);
         } else {
           const resp = await fetch("/api/session/audit_ai", {
@@ -23726,8 +23802,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setAuditSetProgress(15);
       setExportStatus({ type: "loading", msg: `Iniciando auditor\xEDa ac\xFAstica DSP de ${paths.length} pistas del set...` });
       try {
-        if (window.eel && window.eel.iniciar_auditoria) {
-          const res = await window.eel.iniciar_auditoria(paths)();
+        if (true) {
+          const res = await apiClient.rpc("iniciar_auditoria", paths);
           if (res && res.tracks) {
             const mapRes = {};
             res.tracks.forEach((tr) => {
@@ -23773,8 +23849,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setExportStatus({ type: "loading", msg: `Auditando "${track.title || track.t || "pista"}"...` });
       try {
-        if (window.eel && window.eel.iniciar_auditoria) {
-          const res = await window.eel.iniciar_auditoria([pth])();
+        if (true) {
+          const res = await apiClient.rpc("iniciar_auditoria", [pth]);
           if (res && res.tracks && res.tracks.length > 0) {
             const audited = res.tracks[0];
             setSetTracks((prev) => prev.map((t) => t.id === track.id || t.path === pth ? { ...t, ...audited } : t));
@@ -23799,8 +23875,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setExportStatus({ type: "loading", msg: "Generando archivo M3U8..." });
       try {
         let res = null;
-        if (window.eel && window.eel.exportar_set_m3u) {
-          res = await window.eel.exportar_set_m3u(setTracks, setName, "/Users/admin/Music/mi musica")();
+        if (true) {
+          res = await apiClient.rpc("exportar_set_m3u", setTracks, setName, "/Users/admin/Music/mi musica");
         } else {
           const resp = await fetch("/api/setbuilder/export_m3u", {
             method: "POST",
@@ -24527,10 +24603,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
       {
         type: "button",
         onClick: async () => {
-          if (window.eel && window.eel.cargar_metadatos_directorio) {
+          if (true) {
             setExportStatus({ type: "loading", msg: 'Cargando pistas de "mi musica"...' });
             try {
-              const res = await window.eel.cargar_metadatos_directorio("/Users/admin/Music/mi musica")();
+              const res = await apiClient.rpc("cargar_metadatos_directorio", "/Users/admin/Music/mi musica");
               if (res && res.tracks && setAuditTracks) {
                 setAuditTracks(res.tracks);
                 setExportStatus({ type: "success", msg: `\u2713 ${res.tracks.length} pistas cargadas desde "mi musica".` });
@@ -24609,7 +24685,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/MapWorkspace.jsx
-  var { useState: useState27, useEffect: useEffect26, useRef: useRef21, useMemo: useMemo12, useCallback: useCallback12 } = React;
+  var { useState: useState27, useEffect: useEffect26, useRef: useRef22, useMemo: useMemo12, useCallback: useCallback12 } = React;
   var MAP_CAMELOT_COLORS2 = {
     "1A": "#00e5ff",
     "1B": "#00b4d8",
@@ -24739,6 +24815,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
+    const isWorkspaceActive = useWorkspaceActive();
     const [useDemo, setUseDemo] = useState27(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS2 : [];
     const [fsBrowserOpen, setFsBrowserOpen] = useState27(false);
@@ -24794,10 +24871,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [selectedTrack, setSelectedTrack] = useState27(null);
     const [selectedMapTracks, setSelectedMapTracks] = useState27([]);
     const [hoveredTrack, setHoveredTrack] = useState27(null);
-    const tooltipRef = useRef21(null);
-    const mousePosRef = useRef21({ x: -100, y: -100 });
-    const zoomThrottleRef = useRef21(null);
-    const zoomTrailingRef = useRef21(null);
+    const tooltipRef = useRef22(null);
+    const mousePosRef = useRef22({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef22(null);
+    const zoomTrailingRef = useRef22(null);
     const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState27(true);
     const [isNavOverlayOpen, setIsNavOverlayOpen] = useState27(true);
     const [zoomDisplay, setZoomDisplay] = useState27(1);
@@ -24828,15 +24905,15 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
     }, []);
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== "ALL" || selectedKeyFilter !== "ALL" || Boolean(searchQuery);
-    const canvasRef = useRef21(null);
-    const containerRef = useRef21(null);
-    const animRef = useRef21(null);
-    const imageCacheRef = useRef21(/* @__PURE__ */ new Map());
-    const panTimerRef = useRef21(null);
-    const spatialGridRef = useRef21(/* @__PURE__ */ new Map());
-    const mouseRafRef = useRef21(null);
-    const activeLoadingCountRef = useRef21(0);
-    const pendingLoadQueueRef = useRef21([]);
+    const canvasRef = useRef22(null);
+    const containerRef = useRef22(null);
+    const animRef = useRef22(null);
+    const imageCacheRef = useRef22(/* @__PURE__ */ new Map());
+    const panTimerRef = useRef22(null);
+    const spatialGridRef = useRef22(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef22(null);
+    const activeLoadingCountRef = useRef22(0);
+    const pendingLoadQueueRef = useRef22([]);
     const processCoverQueue = () => {
       const MAX_CONCURRENT = 8;
       while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
@@ -24882,7 +24959,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       processCoverQueue();
     };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
-    const transformRef = useRef21({
+    const transformRef = useRef22({
       scale: 1,
       panX: 0,
       panY: 0,
@@ -25028,12 +25105,12 @@ Respuesta: ${qa.a}`).join("\n\n"),
       tr.isContinuousPanning = false;
       setZoomDisplay(finalScale);
     }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
-    const selectionRef = useRef21({
+    const selectionRef = useRef22({
       isSelecting: false,
       points: [],
       boxStart: null
     });
-    const nodesRef = useRef21([]);
+    const nodesRef = useRef22([]);
     useEffect26(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
@@ -25129,6 +25206,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
     useEffect26(() => {
+      if (!isWorkspaceActive) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -25549,7 +25627,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         isRunning = false;
         if (animRef.current) cancelAnimationFrame(animRef.current);
       };
-    }, [projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
+    }, [isWorkspaceActive, projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
     const isPointInPoly = (px, py, poly) => {
       let inside = false;
       for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -26206,7 +26284,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/KnowledgeWorkspace.jsx
-  var { useState: useState28, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo13 } = React;
+  var { useState: useState28, useEffect: useEffect27, useRef: useRef23, useMemo: useMemo13 } = React;
   var KnowledgeWorkspace = ({ lang = "es" }) => {
     const [activeSection, setActiveSection] = useState28("courses");
     const [knowledgeData, setKnowledgeData] = useState28({
@@ -26223,8 +26301,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const fetchKnowledge = async () => {
       try {
         setLoading(true);
-        if (window.eel && window.eel.obtener_recursos_conocimiento) {
-          const res = await window.eel.obtener_recursos_conocimiento()();
+        if (true) {
+          const res = await apiClient.rpc("obtener_recursos_conocimiento");
           if (res) setKnowledgeData(res);
         } else {
           const resp = await fetch("/api/knowledge");
@@ -26485,8 +26563,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/CopilotMixerMirror.jsx
-  var { memo } = React;
-  var KnobSVG = memo(({
+  var { memo: memo2 } = React;
+  var KnobSVG = memo2(({
     label,
     value = 0.5,
     bipolar = true,
@@ -26590,7 +26668,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     );
   });
-  var ChannelStrip = memo(({ deckNum, ch, touched = {}, directive = null }) => {
+  var ChannelStrip = memo2(({ deckNum, ch, touched = {}, directive = null }) => {
     var _a, _b, _c, _d, _e, _f;
     const isTargetLow = Boolean(
       directive && directive.deck === deckNum && directive.control === "low" && directive.status !== "RESOLVED"
@@ -26651,7 +26729,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       )
     ), /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-zinc-400", style: { fontSize: 8, marginTop: 2 } }, "VOL")));
   });
-  var CopilotMixerMirror = memo(({ mixer = null, audit = null }) => {
+  var CopilotMixerMirror = memo2(({ mixer = null, audit = null }) => {
     var _a, _b, _c, _d;
     const d1 = (mixer == null ? void 0 : mixer.deck_1) || { gain: 0.5, high: 0.5, mid: 0.5, low: 0.5, filter: 0.5, volume: 1 };
     const d2 = (mixer == null ? void 0 : mixer.deck_2) || { gain: 0.5, high: 0.5, mid: 0.5, low: 0.5, filter: 0.5, volume: 1 };
@@ -26724,8 +26802,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
   });
 
   // web/js/workspaces/CopilotCleanMixBanner.jsx
-  var { memo: memo2 } = React;
-  var CopilotCleanMixBanner = memo2(({
+  var { memo: memo3 } = React;
+  var CopilotCleanMixBanner = memo3(({
     antiMuddy = null,
     harmonic = null,
     controllerState = null,
@@ -26761,8 +26839,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
   });
 
   // web/js/workspaces/CopilotCenterMixer.jsx
-  var { useState: useState29, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo14, memo: memo3 } = React;
-  var HardwareKnob = memo3(({
+  var { useState: useState29, useEffect: useEffect28, useRef: useRef24, useMemo: useMemo14, memo: memo4 } = React;
+  var HardwareKnob = memo4(({
     value = 0.5,
     color = "#00F0FF",
     label = "",
@@ -26841,7 +26919,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     { id: 7, key: "drop2", label: "DROP 2", time: "03:02", pos_sec: 182 },
     { id: 8, key: "outro", label: "OUTRO", time: "03:45", pos_sec: 225 }
   ];
-  var CopilotCenterMixer = memo3(({
+  var CopilotCenterMixer = memo4(({
     deck1 = null,
     deck2 = null,
     mixer = null,
@@ -26851,18 +26929,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
     // HUD integrado en la mesa central slim
   }) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p;
+    const isWorkspaceActive = useWorkspaceActive();
     const [d1ActiveHito, setD1ActiveHito] = useState29(0);
     const [d2ActiveHito, setD2ActiveHito] = useState29(2);
     const [pflState, setPflState] = useState29({ ch1: false, ch2: true });
     const [currentBeat, setCurrentBeat] = useState29(1);
     useEffect28(() => {
+      if (!isWorkspaceActive) return;
       const bpm = Number((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136);
       const beatMs = Math.round(60 / bpm * 1e3);
       const interval = setInterval(() => {
         setCurrentBeat((b) => b % 4 + 1);
       }, beatMs);
       return () => clearInterval(interval);
-    }, [deck1 == null ? void 0 : deck1.bpm, deck2 == null ? void 0 : deck2.bpm]);
+    }, [isWorkspaceActive, deck1 == null ? void 0 : deck1.bpm, deck2 == null ? void 0 : deck2.bpm]);
     const hitosD1 = useMemo14(() => {
       if ((deck1 == null ? void 0 : deck1.cues) && deck1.cues.length >= 4) {
         return deck1.cues.map((c, i) => {
@@ -26914,7 +26994,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     }, [deck2 == null ? void 0 : deck2.play_progress, d2Duration]);
     useEffect28(() => {
-      if (!isAppOpen) return;
+      if (!isAppOpen || !isWorkspaceActive) return;
       const interval = setInterval(() => {
         if (deck1 == null ? void 0 : deck1.is_playing) {
           setD1PlayPos((p) => p + 1 > d1Duration ? 0 : p + 1);
@@ -26924,7 +27004,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       }, 1e3);
       return () => clearInterval(interval);
-    }, [isAppOpen, deck1 == null ? void 0 : deck1.is_playing, deck2 == null ? void 0 : deck2.is_playing, d1Duration, d2Duration]);
+    }, [isWorkspaceActive, isAppOpen, deck1 == null ? void 0 : deck1.is_playing, deck2 == null ? void 0 : deck2.is_playing, d1Duration, d2Duration]);
     const d1Bpm = Number(deck1 == null ? void 0 : deck1.bpm) || 136;
     const d2Bpm = Number(deck2 == null ? void 0 : deck2.bpm) || 136;
     const d1BarSec = 60 / d1Bpm * 4;
@@ -27105,7 +27185,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   });
 
   // web/js/workspaces/CopilotWorkspace.jsx
-  var { useState: useState30, useEffect: useEffect29, useRef: useRef24, useMemo: useMemo15, useCallback: useCallback13 } = React;
+  var { useState: useState30, useEffect: useEffect29, useRef: useRef25, useMemo: useMemo15, useCallback: useCallback13 } = React;
   var MASTER_TRACKS_POOL = [
     {
       id: "rec_1",
@@ -27707,6 +27787,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })(), /* @__PURE__ */ React.createElement("div", { className: "mt-2 p-2 rounded-xl bg-black/50 border border-zinc-800/80 flex items-start gap-2" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 13, className: "inline-block text-emerald-400 shrink-0 mt-0.5" }), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-mono uppercase text-zinc-500 tracking-wider" }, "Comentario T\xE1ctico DJ (Tag ID3)"), /* @__PURE__ */ React.createElement("div", { className: "font-mono text-[11px] text-zinc-200 whitespace-normal break-words leading-snug", title: deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : "--"} BPM | ${deck.camelot}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b` }, deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : "--"} BPM | ${deck.camelot}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b`))));
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
+    const isWorkspaceActive = useWorkspaceActive();
     const [state, setState] = useState30(DEFAULT_COPILOT_STATE);
     const [clock, setClock] = useState30("");
     const [latency, setLatency] = useState30(2);
@@ -27717,7 +27798,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [lowEqApplied, setLowEqApplied] = useState30(false);
     const [manualPickerOpen, setManualPickerOpen] = useState30(false);
     const [manualSearchQuery, setManualSearchQuery] = useState30("");
-    const wsRef = useRef24(null);
+    const wsRef = useRef25(null);
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -27808,12 +27889,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     }, []);
     useEffect29(() => {
+      if (!isWorkspaceActive) return;
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
-    }, []);
+    }, [isWorkspaceActive]);
     useEffect29(() => {
       if (!isWorkspaceActive) {
         if (wsRef.current) {
@@ -28690,16 +28772,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
   var CleanLineKineticStudioStage = () => {
     const [currentIndex, setCurrentIndex] = useState30(0);
     const [isHovered, setIsHovered] = useState30(false);
-    const slideRef = useRef24(null);
-    const titleRef = useRef24(null);
-    const subtitleRef = useRef24(null);
-    const badgeRef = useRef24(null);
-    const trailRef = useRef24(null);
-    const timersRef = useRef24([]);
-    const intervalsRef = useRef24([]);
-    const isHoveredRef = useRef24(false);
+    const slideRef = useRef25(null);
+    const titleRef = useRef25(null);
+    const subtitleRef = useRef25(null);
+    const badgeRef = useRef25(null);
+    const trailRef = useRef25(null);
+    const timersRef = useRef25([]);
+    const intervalsRef = useRef25([]);
+    const isHoveredRef = useRef25(false);
     isHoveredRef.current = isHovered;
-    const isTransitioningRef = useRef24(false);
+    const isTransitioningRef = useRef25(false);
     const clearAsync = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
@@ -28914,8 +28996,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [selectedAlpha, setSelectedAlpha] = useState30(0.85);
     const [isMuted, setIsMuted] = useState30(false);
     const [isBassShaking, setIsBassShaking] = useState30(false);
-    const videoRef = useRef24(null);
-    const canvasRef = useRef24(null);
+    const videoRef = useRef25(null);
+    const canvasRef = useRef25(null);
     useEffect29(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
@@ -29150,8 +29232,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/app.jsx
-  var { useState: useState31, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo16, useCallback: useCallback14, createContext, useContext } = React;
-  var PlayerContext = createContext({
+  var { useState: useState31, useEffect: useEffect30, useRef: useRef26, useMemo: useMemo16, useCallback: useCallback14, createContext: createContext2, useContext: useContext2 } = React;
+  var PlayerContext = createContext2({
     playProgressRef: { current: 0 },
     isPlaying: false,
     nowPlayingTrack: null
@@ -29241,7 +29323,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const [nowPlayingTrack, setNowPlayingTrack] = useState31(null);
     const [isPlaying, setIsPlaying] = useState31(false);
     const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState31(false);
-    const localAudioInputRef = useRef25(null);
+    const localAudioInputRef = useRef26(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -29281,13 +29363,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setLoadTrackMenuOpen(false);
     };
-    const playProgressRef = useRef25(0);
+    const playProgressRef = useRef26(0);
     const setPlayProgress = useCallback14((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
-    const audioRef = useRef25(null);
+    const audioRef = useRef26(null);
     const [mobileProgress, setMobileProgress] = useState31(0);
     useEffect30(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
@@ -29333,9 +29415,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.actualizar_progreso_batch = (pct, msg) => {
         window.dispatchEvent(new CustomEvent("bw:audit_progress", { detail: { pct, msg } }));
       };
-      if (window.eel && typeof window.eel.expose === "function") {
+      if (true) {
         try {
-          window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+          apiClient.registerCallback("actualizar_progreso_batch", window.actualizar_progreso_batch);
         } catch (err) {
         }
       }
@@ -29466,16 +29548,16 @@ Respuesta: ${qa.a}`).join("\n\n"),
         alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
         return;
       }
-      if (window.eel && window.eel.seleccionar_directorio) {
+      if (true) {
         try {
-          const destino = await window.eel.seleccionar_directorio(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`)();
+          const destino = await apiClient.rpc("seleccionar_directorio", `Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`);
           if (!destino) return;
           const estructura = lib.folders.map((f) => ({
             folder_name: f.name,
             track_paths: (f.tracks || []).map((t2) => t2.file_path || t2.path || t2.filepath).filter(Boolean)
           }));
           if (window.eel.exportar_biblioteca_a_disco) {
-            const res = await window.eel.exportar_biblioteca_a_disco(destino, lib.name, estructura)();
+            const res = await apiClient.rpc("exportar_biblioteca_a_disco", destino, lib.name, estructura);
             if (res && res.success) {
               alert(`\u2713 Biblioteca "${lib.name}" creada con \xE9xito en:
 ${res.path}`);
@@ -29729,8 +29811,8 @@ ${res.path}`);
       };
     }, [speakerLogoMode]);
     const [isLogoTechnoActive, setIsLogoTechnoActive] = useState31(false);
-    const logoTechnoTimerRef = useRef25(null);
-    const initialTechnoPlayedRef = useRef25(false);
+    const logoTechnoTimerRef = useRef26(null);
+    const initialTechnoPlayedRef = useRef26(false);
     const triggerLogoTechno = () => {
       setIsLogoTechnoActive(true);
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
@@ -29820,8 +29902,8 @@ ${res.path}`);
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
-    const synthAudioCtxRef = useRef25(null);
-    const synthIntervalRef = useRef25(null);
+    const synthAudioCtxRef = useRef26(null);
+    const synthIntervalRef = useRef26(null);
     const stopSynthPreview = () => {
       if (synthIntervalRef.current) {
         clearInterval(synthIntervalRef.current);
@@ -29858,11 +29940,11 @@ ${res.path}`);
         }
       };
       audioRef.current = audio;
-      if (window.eel && typeof window.eel.expose === "function") {
+      if (true) {
         window.log_to_console = (msg) => {
           setLogs((prev) => [...prev, { type: "info", text: `[${(/* @__PURE__ */ new Date()).toLocaleTimeString()}] ${msg}` }]);
         };
-        window.eel.expose(window.log_to_console, "log_to_console");
+        apiClient.registerCallback("log_to_console", window.log_to_console);
         window.notificar_archivo_original_eliminado_global = (info) => {
           if (info && info.original_path) {
             const normPath = info.original_path.toLowerCase();
@@ -29872,7 +29954,7 @@ ${res.path}`);
             }));
           }
         };
-        window.eel.expose(window.notificar_archivo_original_eliminado_global, "notificar_archivo_original_eliminado_global");
+        apiClient.registerCallback("notificar_archivo_original_eliminado_global", window.notificar_archivo_original_eliminado_global);
       }
       return () => {
         stopSynthPreview();
@@ -29977,8 +30059,8 @@ ${res.path}`);
               }
             }
           } else if (track.path || track.f) {
-            if (window.eel && window.eel.reproducir_pista_mac) {
-              window.eel.reproducir_pista_mac(track.path || track.f)();
+            if (true) {
+              apiClient.rpc("reproducir_pista_mac", track.path || track.f);
               setIsPlaying(true);
             }
           } else {
@@ -30008,8 +30090,8 @@ ${res.path}`);
         }
         stopSynthPreview();
         setIsPlaying(false);
-        if (window.eel && window.eel.detener_audio_mac) {
-          window.eel.detener_audio_mac()();
+        if (true) {
+          apiClient.rpc("detener_audio_mac");
         }
       } else {
         if (audio && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
@@ -30036,9 +30118,9 @@ ${res.path}`);
       }
       setIsPlaying(false);
       setPlayProgress(0);
-      if (window.eel && window.eel.cue_audio_mac) {
+      if (true) {
         const trk = window.__bwCurrentTrack || nowPlayingTrack || {};
-        window.eel.cue_audio_mac(trk.path || trk.f || "")();
+        apiClient.rpc("cue_audio_mac", trk.path || trk.f || "");
       }
     };
     useEffect30(() => {
@@ -30265,9 +30347,9 @@ ${res.path}`);
       try {
         let target = pathOverride;
         if (!target) {
-          if (window.eel && window.eel.seleccionar_directorio) {
+          if (true) {
             try {
-              target = await window.eel.seleccionar_directorio()();
+              target = await apiClient.rpc("seleccionar_directorio");
             } catch (e) {
             }
           }
@@ -30291,9 +30373,9 @@ ${res.path}`);
         setSelectedTrack(null);
         setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: "Iniciando lectura de archivos en carpeta..." });
         let res = null;
-        if (window.eel && window.eel.cargar_metadatos_directorio) {
+        if (true) {
           try {
-            res = await window.eel.cargar_metadatos_directorio(target)();
+            res = await apiClient.rpc("cargar_metadatos_directorio", target);
           } catch (e) {
           }
         }
@@ -30517,7 +30599,7 @@ ${res.path}`);
         libraryCount: customLibraries.length,
         isLibraryOpen: activeTab === "library"
       }
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-1 min-w-0 min-h-0 flex-col" }, /* @__PURE__ */ React.createElement("main", { className: "flex-1 min-h-0 w-full overflow-hidden relative" }, /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "library" ? "flex" : "none" }, className: "w-full h-full flex flex-col" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-1 min-w-0 min-h-0 flex-col" }, /* @__PURE__ */ React.createElement("main", { className: "flex-1 min-h-0 w-full overflow-hidden relative" }, /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "library", className: "w-full h-full flex flex-col" }, /* @__PURE__ */ React.createElement(
       LibraryWorkspace,
       {
         libraries: customLibraries,
@@ -30542,7 +30624,7 @@ ${res.path}`);
         setAuditTracks,
         setSelectedTrack
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "audit" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "audit", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       AuditWorkspace,
       {
         tracks: auditTracks,
@@ -30575,7 +30657,7 @@ ${res.path}`);
         onClearCrateFilter: () => setActiveCrateFilter(null),
         onOpenBeatgridStudio: handleOpenBeatgridStudio
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "hotcues" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "hotcues", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       HotCuesWorkspace,
       {
         tracks: auditTracks,
@@ -30602,7 +30684,7 @@ ${res.path}`);
         studioMode,
         onSetStudioMode: setStudioMode
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "spotify" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "spotify", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       SpotifyWorkspace,
       {
         tracks: spotifyTracks,
@@ -30617,7 +30699,7 @@ ${res.path}`);
         lang,
         t
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "shazam" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "shazam", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       ShazamWorkspace,
       {
         customLibraries,
@@ -30639,7 +30721,7 @@ ${res.path}`);
         onLoadFolderFromDisk: () => handleCargarDirectorioGlobal(),
         currentFolder
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "taxonomy" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "taxonomy", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       TaxonomyWorkspace,
       {
         tracks: auditTracks,
@@ -30674,7 +30756,7 @@ ${res.path}`);
         onAddTrackToSpotify: handleAddTracksToSpotify,
         onAddTracksToSpotify: handleAddTracksToSpotify
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "trends" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang })), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "setbuilder" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "trends", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(TrendsWorkspace, { lang })), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "setbuilder", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       SetBuilderWorkspace,
       {
         setTracks: setBuilderTracks,
@@ -30691,7 +30773,7 @@ ${res.path}`);
         onNavigateTab: setActiveTab,
         lang
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "map" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "map", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       MapWorkspace,
       {
         tracks: auditTracks,
@@ -30712,7 +30794,7 @@ ${res.path}`);
         onSelectDirectory: () => handleCargarDirectorioGlobal(),
         lang
       }
-    )), /* @__PURE__ */ React.createElement("div", { style: { display: activeTab === "knowledge" ? "flex" : "none" }, className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
       CopilotWorkspace,
       {
         onOpenPopOut: () => {

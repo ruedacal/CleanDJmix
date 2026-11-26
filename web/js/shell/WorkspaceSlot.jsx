@@ -1,4 +1,11 @@
-const { useRef, memo } = React;
+const { useRef, memo, createContext, useContext } = React;
+
+export const WorkspaceActiveContext = createContext(true);
+
+/**
+ * Hook para pausar requestAnimationFrame / setInterval cuando la pestaña está oculta.
+ */
+export const useWorkspaceActive = () => useContext(WorkspaceActiveContext);
 
 const FrozenWorkspace = memo(
     ({ children }) => children,
@@ -9,7 +16,7 @@ const FrozenWorkspace = memo(
  * Contenedor de rendimiento para workspaces:
  * - Lazy-mount: no monta el árbol JSX hasta la primera visita.
  * - Freeze: bloquea re-renders provenientes de app.jsx mientras la pestaña está oculta,
- *   conservando intacto el estado interno del workspace.
+ *   permitiendo exactamente 1 render de transición (true -> false) para pausar loops.
  */
 export const WorkspaceSlot = ({ isActive, className = "w-full h-full", children }) => {
     const hasMountedRef = useRef(false);
@@ -23,9 +30,11 @@ export const WorkspaceSlot = ({ isActive, className = "w-full h-full", children 
             className={className}
             aria-hidden={!isActive}
         >
-            <FrozenWorkspace isActive={isActive}>
-                {children}
-            </FrozenWorkspace>
+            <WorkspaceActiveContext.Provider value={isActive}>
+                <FrozenWorkspace isActive={isActive}>
+                    {children}
+                </FrozenWorkspace>
+            </WorkspaceActiveContext.Provider>
         </div>
     );
 };
