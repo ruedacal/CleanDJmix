@@ -9,6 +9,43 @@
   });
   var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
+  // web/js/shared/FeatureErrorBoundary.jsx
+  var { Component } = React;
+  var FeatureErrorBoundary = class extends Component {
+    constructor(props) {
+      super(props);
+      __publicField(this, "handleRetry", () => {
+        this.setState({ hasError: false, errorMessage: "" });
+      });
+      this.state = { hasError: false, errorMessage: "" };
+    }
+    static getDerivedStateFromError(error) {
+      return {
+        hasError: true,
+        errorMessage: error && error.message ? String(error.message) : "Error inesperado en el m\xF3dulo"
+      };
+    }
+    componentDidCatch(error, info) {
+      if (typeof console !== "undefined" && typeof console.error === "function") {
+        console.error(`[FeatureErrorBoundary:${this.props.feature || "module"}]`, error, info);
+      }
+    }
+    render() {
+      if (this.state.hasError) {
+        return /* @__PURE__ */ React.createElement("div", { className: "p-4 m-3 rounded-xl border border-rose-500/40 bg-rose-950/30 text-rose-100 font-mono text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "font-bold uppercase tracking-wider text-rose-300 mb-1" }, "M\xF3dulo aislado por error: ", this.props.feature || "workspace"), /* @__PURE__ */ React.createElement("div", { className: "text-rose-200/80 mb-3 break-all" }, this.state.errorMessage), /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: this.handleRetry,
+            className: "px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold cursor-pointer"
+          },
+          "Reintentar m\xF3dulo"
+        ));
+      }
+      return this.props.children;
+    }
+  };
+
   // web/js/shell/icons.jsx
   var makeIcon = (children, { filled = false, defaultClass = "", defaultSize = 16 } = {}) => {
     const IconComponent = ({ size = defaultSize, strokeWidth = 1.75, className = "" }) => /* @__PURE__ */ React.createElement(
@@ -30795,7 +30832,7 @@ ${res.path}`);
         onSelectDirectory: () => handleCargarDirectorioGlobal(),
         lang
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "knowledge", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(KnowledgeWorkspace, { lang })), activeTab === "copilot" && /* @__PURE__ */ React.createElement("div", { className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "copilot" }, /* @__PURE__ */ React.createElement(
       CopilotWorkspace,
       {
         onOpenPopOut: () => {
@@ -30806,7 +30843,7 @@ ${res.path}`);
         },
         onOpenQr: () => setCopilotModalOpen(true)
       }
-    ))), /* @__PURE__ */ React.createElement(
+    )))), /* @__PURE__ */ React.createElement(
       "input",
       {
         ref: localAudioInputRef,

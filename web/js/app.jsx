@@ -1,3 +1,4 @@
+import { FeatureErrorBoundary } from './shared/FeatureErrorBoundary.jsx';
 import { ShellIcons } from './shell/icons.jsx';
 import { apiClient } from './services/apiClient.js';
 import { SideRail } from './shell/SideRail.jsx';
@@ -1747,6 +1748,7 @@ const App = () => {
                 </WorkspaceSlot>
                 {activeTab === 'copilot' && (
                     <div className="w-full h-full">
+                        <FeatureErrorBoundary feature="copilot">
                         <CopilotWorkspace 
                             onOpenPopOut={() => {
                                 const w = 1380, h = 880;
@@ -1756,6 +1758,7 @@ const App = () => {
                             }}
                             onOpenQr={() => setCopilotModalOpen(true)}
                         />
+                        </FeatureErrorBoundary>
                     </div>
                 )}
             </main>
