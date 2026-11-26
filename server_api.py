@@ -42,6 +42,9 @@ app = FastAPI(
     version="2.4.1"
 )
 
+from routers.copilot import router as copilot_router
+app.include_router(copilot_router)
+
 # CORS permisivo para operación omnichannel (Web, macOS, Windows, iOS, Android, iPad)
 app.add_middleware(
     CORSMiddleware,

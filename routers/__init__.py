@@ -1,7 +1,19 @@
-from flask import Flask
-from routers.spotify_router import spotify_bp
-from routers.superflac_router import superflac_bp
-from routers.itunes_router import itunes_bp
+try:
+    from flask import Flask
+except ImportError:
+    Flask = None
+try:
+    from routers.spotify_router import spotify_bp
+except ImportError:
+    spotify_bp = None
+try:
+    from routers.superflac_router import superflac_bp
+except ImportError:
+    superflac_bp = None
+try:
+    from routers.itunes_router import itunes_bp
+except ImportError:
+    itunes_bp = None
 
 def register_blueprints(app: Flask):
     app.register_blueprint(spotify_bp)
