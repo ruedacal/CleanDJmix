@@ -1577,7 +1577,7 @@ export const HotCuesWorkspace = ({
                                         cues={cuesEstandar || activeCues}
                                         duration={currentTrack.duration || "05:00"}
                                         onSeekTrack={onPlayTrack}
-                                        playProgress={isCurrentPlayingThis ? playProgress : 0}
+                                        playProgress={isCurrentPlayingThis ? playProgress : (nowPlayingTrack && String(nowPlayingTrack.id) === String(currentTrack?.id) ? playProgress : 0)}
                                         isCurrentPlaying={isCurrentPlayingThis}
                                         onUpdateCues={(newCues) => setCuesEstandar(newCues)}
                                         selectedCueId={selectedCueId}
@@ -1618,7 +1618,7 @@ export const HotCuesWorkspace = ({
                                         cues={cuesAcustico || activeCues}
                                         duration={currentTrack.duration || "05:00"}
                                         onSeekTrack={onPlayTrack}
-                                        playProgress={isCurrentPlayingThis ? playProgress : 0}
+                                        playProgress={isCurrentPlayingThis ? playProgress : (nowPlayingTrack && String(nowPlayingTrack.id) === String(currentTrack?.id) ? playProgress : 0)}
                                         isCurrentPlaying={isCurrentPlayingThis}
                                         onUpdateCues={(newCues) => setCuesAcustico(newCues)}
                                         selectedCueId={selectedCueId}
@@ -1638,7 +1638,7 @@ export const HotCuesWorkspace = ({
                                 cues={cuesVersionMode === 'estandar' ? (cuesEstandar || activeCues) : (cuesAcustico || activeCues)}
                                 duration={currentTrack.duration || "05:00"}
                                 onSeekTrack={onPlayTrack}
-                                playProgress={isCurrentPlayingThis ? playProgress : 0}
+                                playProgress={isCurrentPlayingThis ? playProgress : (nowPlayingTrack && String(nowPlayingTrack.id) === String(currentTrack?.id) ? playProgress : 0)}
                                 isCurrentPlaying={isCurrentPlayingThis}
                                 onUpdateCues={updateCues}
                                 selectedCueId={selectedCueId}
