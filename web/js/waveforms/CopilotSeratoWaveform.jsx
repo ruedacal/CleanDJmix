@@ -775,20 +775,6 @@ export const CopilotSeratoWaveform = ({
                                 3BAND HD
                             </span>
                         )}
-                        <div className="flex items-center gap-2.5 px-2.5 py-0.5 rounded-md bg-zinc-950/80 border border-zinc-800 text-[11px] font-mono text-zinc-400 shrink-0">
-                            <span className="flex items-center gap-1">
-                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#2563eb', display: 'inline-block' }} />
-                                Graves
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
-                                Medios
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <span style={{ width: 6, height: 6, borderRadius: '9999px', backgroundColor: '#ffffff', display: 'inline-block' }} />
-                                Agudos
-                            </span>
-                        </div>
                     </div>
                 </div>
 

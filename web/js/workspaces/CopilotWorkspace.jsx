@@ -716,20 +716,21 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-2 font-mono text-[11px] font-bold">
-                                        <span className="flex items-center gap-0.5 text-amber-400" title="Energía">
-                                            <Icons.Zap size={10} /> {energyVal}%
-                                        </span>
-                                        <span className="flex items-center gap-0.5 text-emerald-400" title="Groove / Intensidad">
-                                            <Icons.Activity size={10} /> {grooveVal}%
-                                        </span>
-                                        <span className="flex items-center gap-0.5 text-purple-400" title="Danzabilidad">
-                                            <Icons.Sliders size={10} /> {danceVal}%
-                                        </span>
-                                        <span className="flex items-center gap-0.5 text-cyan-400" title="Positividad / Brillo">
-                                            <Icons.Sparkles size={10} /> {valenceVal}%
-                                        </span>
-                                    </div>
+                                    <dl className="flex items-center gap-2.5 font-mono text-[11px]">
+                                        {[
+                                            { label: 'ENE', full: 'Energía', value: energyVal },
+                                            { label: 'INT', full: 'Intensidad / Groove', value: grooveVal },
+                                            { label: 'BAI', full: 'Danzabilidad', value: danceVal },
+                                            { label: 'BRI', full: 'Positividad / Brillo', value: valenceVal },
+                                        ].map(m => (
+                                            <div key={m.label} className="flex items-baseline gap-1" title={m.full}>
+                                                <dt className="text-zinc-500 font-bold tracking-wider">
+                                                    <abbr title={m.full} className="no-underline">{m.label}</abbr>
+                                                </dt>
+                                                <dd className="text-zinc-100 font-bold">{m.value}%</dd>
+                                            </div>
+                                        ))}
+                                    </dl>
                                     <span 
                                         className="px-2 py-0.5 rounded-md font-orbitron font-black text-[12px] text-black shadow-sm"
                                         style={{ backgroundColor: camelotBg }}
@@ -787,15 +788,14 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                                             {camelotVal}
                                         </span>
                                         <span className="text-[11px] font-mono uppercase text-zinc-400 font-bold">TONO</span>
-                                        <span className="font-orbitron font-black text-[15px] text-white ml-auto tracking-tight">{camelotVal}</span>
                                     </div>
                                     <div className="flex-1 flex items-center gap-2">
                                         <span className="text-[11px] font-mono uppercase text-zinc-400 font-bold">TEMPO</span>
                                         <span className="font-orbitron font-black text-[16px] text-white tracking-tight">{bpmText}</span>
                                         <span className="text-[11px] font-mono text-zinc-500 ml-auto font-bold">BPM</span>
                                     </div>
-                                    <div className="px-2.5 py-0.5 rounded-full bg-purple-950/50 border border-purple-500/50 text-[11px] font-mono text-purple-200 text-center truncate max-w-[150px]">
-                                        ✨ {vibeText}
+                                    <div className="px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700 text-[11px] font-mono text-zinc-200 text-center truncate max-w-[150px]" title={vibeText}>
+                                        {vibeText}
                                     </div>
                                 </div>
 
@@ -861,8 +861,8 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                 );
             })()}
 
-            {/* FILA 3: 8 HOT CUES DE CABINA (FLUJO CONTINUO EN 2 LÍNEAS) */}
-            <div className="dk-hotcues-box select-none !flex !flex-wrap !items-center !gap-1.5 !py-1.5 !px-2">
+            {/* FILA 3: 8 HOT CUES DE CABINA — en vista compacta el mezclador central ya lista los cues */}
+            {!isCompact && <div className="dk-hotcues-box select-none !flex !flex-wrap !items-center !gap-1.5 !py-1.5 !px-2">
                 <div className="dk-hc-lbl !mb-0 !mr-1 shrink-0">
                     <span className="dk-hc-dot"></span>
                     <span>8 HOT CUES DE CABINA</span>
@@ -882,7 +882,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
                         <span>{cue.time}</span>
                     </span>
                 ))}
-            </div>
+            </div>}
 
             {/* WAVEFORM SERATO EN TIEMPO REAL CON ZOOM Y AYUDAS TÁCTICAS */}
             <div className="mb-2">
