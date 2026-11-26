@@ -616,6 +616,23 @@ class CopilotEngine:
                 self.state.global_bpm = self.state.decks[target_id].effective_bpm
         return self.get_live_state()
 
+    def toggle_play(self, deck_id: Any = "master") -> Dict[str, Any]:
+        target = deck_id
+        if str(deck_id).lower() == "master":
+            with self._lock:
+                m = getattr(self.state, "master_deck", 1)
+                d1 = self.state.decks.get(1)
+                d2 = self.state.decks.get(2)
+                if m in (1, 2) and self.state.decks.get(m) and self.state.decks[m].title:
+                    target = m
+                elif d1 and d1.title:
+                    target = 1
+                elif d2 and d2.title:
+                    target = 2
+                else:
+                    target = 1
+        return self.toggle_deck_play(target)
+
     def toggle_deck_play(self, deck_id: Any) -> Dict[str, Any]:
         """Alterna el estado de reproducción (Play / Pausa) de un deck con sincronización en cabina."""
         with self._lock:
