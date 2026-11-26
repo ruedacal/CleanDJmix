@@ -232,7 +232,7 @@ export const CopilotCenterMixer = memo(({
     const ch2Fltr = ch2Mix.filter !== undefined ? ch2Mix.filter : 0.58;
 
     const ch1Fader = ch1Mix.volume ?? ch1Mix.fader ?? 0.88;
-    const ch2Fader = ch2Mix.fader !== undefined ? ch2Mix.fader : 0.42;
+    const ch2Fader = ch2Mix.volume ?? ch2Mix.fader ?? 0.42;
 
     const crossfader = mixer?.crossfader !== undefined ? mixer.crossfader : 0.22;
     const auditScore = audit?.score_pct !== undefined ? audit.score_pct : 100;
@@ -419,11 +419,11 @@ export const CopilotCenterMixer = memo(({
                     {/* Fila HI */}
                     <div className="knob-row bw-knob-row">
                         <div className="knob-cell bw-knob-cell">
-                            <HardwareKnob value={ch1Hi} color="#00F0FF" label="CH1 High" />
+                            <HardwareKnob value={ch1Hi} color="#00F0FF" label="CH1 Treb" />
                         </div>
-                        <div className="knob-lbl bw-knob-lbl">HI</div>
+                        <div className="knob-lbl bw-knob-lbl">TREB</div>
                         <div className="knob-cell bw-knob-cell">
-                            <HardwareKnob value={ch2Hi} color="#38BDF8" label="CH2 High" />
+                            <HardwareKnob value={ch2Hi} color="#38BDF8" label="CH2 Treb" />
                         </div>
                     </div>
 
@@ -441,14 +441,14 @@ export const CopilotCenterMixer = memo(({
                     {/* Fila LOW */}
                     <div className="knob-row bw-knob-row">
                         <div className="knob-cell bw-knob-cell">
-                            <HardwareKnob value={ch1Low} color="#00F0FF" label="CH1 Low" />
+                            <HardwareKnob value={ch1Low} color="#00F0FF" label="CH1 Bass" />
                         </div>
-                        <div className="knob-lbl bw-knob-lbl">LOW</div>
+                        <div className="knob-lbl bw-knob-lbl">BASS</div>
                         <div className="knob-cell bw-knob-cell">
                             <HardwareKnob 
                                 value={ch2Low} 
                                 color={isCriticalAlert ? '#FF2A54' : '#38BDF8'} 
-                                label="CH2 Low" 
+                                label="CH2 Bass" 
                             />
                         </div>
                     </div>
