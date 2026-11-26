@@ -1973,15 +1973,15 @@ export const AuditWorkspace = ({
                         ready: res.ready || 0,
                         errors: res.errors || 0
                     });
-                    if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
+                    if (opts.injectCovers) {
                         setBatchStatusMsg("Inyectando carátulas 1:1 en archivos físicos...");
                         await apiClient.rpc('inyectar_caratulas_lote', res.tracks);
                     }
-                    if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
+                    if (opts.tacticalComments) {
                         setBatchStatusMsg("Inyectando comentarios tácticos y tags en archivos físicos...");
                         await apiClient.rpc('inyectar_lote_metadatos', res.tracks);
                     }
-                    if (opts.normalizeNames && window.eel.sanitizar_metadatos_pistas) {
+                    if (opts.normalizeNames) {
                         setBatchStatusMsg("Normalizando nombres de archivo y títulos...");
                         await apiClient.rpc('sanitizar_metadatos_pistas', res.tracks, false);
                     }
@@ -2506,13 +2506,13 @@ export const AuditWorkspace = ({
         try {
             const endpoint = nextState ? '/api/audit/pause' : '/api/audit/resume';
             fetch(endpoint, { method: 'POST' }).catch(() => {});
-            if (window.eel) {
-                if (nextState && window.eel.pausar_auditoria) {
+            try {
+                if (nextState) {
                     await apiClient.rpc('pausar_auditoria');
-                } else if (!nextState && window.eel.reanudar_auditoria) {
+                } else {
                     await apiClient.rpc('reanudar_auditoria');
                 }
-            }
+            } catch (_) {}
         } catch (e) {
             console.error("Error al pausar/reanudar:", e);
         }

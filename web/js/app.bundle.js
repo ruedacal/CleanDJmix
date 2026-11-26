@@ -12187,15 +12187,15 @@ Fijaci\xF3n BeatGrid 1.0.0: Activa`
               ready: res.ready || 0,
               errors: res.errors || 0
             });
-            if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
+            if (opts.injectCovers) {
               setBatchStatusMsg("Inyectando car\xE1tulas 1:1 en archivos f\xEDsicos...");
               await apiClient.rpc("inyectar_caratulas_lote", res.tracks);
             }
-            if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
+            if (opts.tacticalComments) {
               setBatchStatusMsg("Inyectando comentarios t\xE1cticos y tags en archivos f\xEDsicos...");
               await apiClient.rpc("inyectar_lote_metadatos", res.tracks);
             }
-            if (opts.normalizeNames && window.eel.sanitizar_metadatos_pistas) {
+            if (opts.normalizeNames) {
               setBatchStatusMsg("Normalizando nombres de archivo y t\xEDtulos...");
               await apiClient.rpc("sanitizar_metadatos_pistas", res.tracks, false);
             }
@@ -12690,12 +12690,13 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         const endpoint = nextState ? "/api/audit/pause" : "/api/audit/resume";
         fetch(endpoint, { method: "POST" }).catch(() => {
         });
-        if (window.eel) {
-          if (nextState && window.eel.pausar_auditoria) {
+        try {
+          if (nextState) {
             await apiClient.rpc("pausar_auditoria");
-          } else if (!nextState && window.eel.reanudar_auditoria) {
+          } else {
             await apiClient.rpc("reanudar_auditoria");
           }
+        } catch (_) {
         }
       } catch (e) {
         console.error("Error al pausar/reanudar:", e);
