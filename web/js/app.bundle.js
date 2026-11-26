@@ -976,58 +976,6 @@
       return null;
     }
   }
-  var RotaryKnob = ({ label, value = 0, min = -24, max = 6, defaultValue = 0, onChange, color = "#06b6d4" }) => {
-    const normalized = Math.max(0, Math.min(1, (value - min) / (max - min)));
-    const angle = -135 + normalized * 270;
-    const handlePointerDown = (e) => {
-      e.preventDefault();
-      const startY = e.clientY || e.touches && e.touches[0].clientY || 0;
-      const startVal = value;
-      const onPointerMove = (me) => {
-        const currentY = me.clientY || me.touches && me.touches[0].clientY || 0;
-        const deltaY = startY - currentY;
-        const range = max - min;
-        const step = deltaY * (range / 120);
-        const newVal = Math.min(max, Math.max(min, Math.round((startVal + step) * 10) / 10));
-        if (onChange) onChange(newVal);
-      };
-      const onPointerUp = () => {
-        window.removeEventListener("mousemove", onPointerMove);
-        window.removeEventListener("mouseup", onPointerUp);
-        window.removeEventListener("touchmove", onPointerMove);
-        window.removeEventListener("touchend", onPointerUp);
-      };
-      window.addEventListener("mousemove", onPointerMove);
-      window.addEventListener("mouseup", onPointerUp);
-      window.addEventListener("touchmove", onPointerMove);
-      window.addEventListener("touchend", onPointerUp);
-    };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col items-center gap-1 select-none" }, /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-gray-400 tracking-wider uppercase" }, label), /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        onMouseDown: handlePointerDown,
-        onTouchStart: handlePointerDown,
-        onDoubleClick: () => onChange && onChange(defaultValue),
-        className: "w-10 h-10 rounded-full bg-gradient-to-b from-[#181826] to-[#0c0c14] border-2 border-djzinc-700 hover:border-gray-400 relative cursor-ns-resize shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_2px_6px_rgba(0,0,0,0.6)] flex items-center justify-center group active:scale-95 transition-transform",
-        title: `${label}: ${value > 0 ? "+" : ""}${value.toFixed(1)} dB (Doble clic para 0dB)`
-      },
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute w-full h-full rounded-full pointer-events-none",
-          style: { transform: `rotate(${angle}deg)` }
-        },
-        /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            className: "w-1 h-3 rounded-full mx-auto mt-0.5 shadow-sm",
-            style: { backgroundColor: color, boxShadow: `0 0 8px ${color}` }
-          }
-        )
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "w-4 h-4 rounded-full bg-[#1e1e2c] border border-djzinc-600 pointer-events-none flex items-center justify-center shadow-inner" }, /* @__PURE__ */ React.createElement("div", { className: "w-1 h-1 rounded-full bg-djzinc-500" }))
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-300 font-extrabold" }, value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7.5px] text-gray-500 font-normal" }, "dB")));
-  };
   var BeatWaveLogoBadge = ({ size = "sm", className = "" }) => {
     return /* @__PURE__ */ React.createElement(
       "div",
@@ -4628,788 +4576,15 @@
     }
   );
 
-  // web/js/waveforms/RekordboxWaveform.jsx
-  var { useState: useState5, useEffect: useEffect7, useRef: useRef7, useCallback } = React;
-  var RekordboxWaveform2 = ({
-    track,
-    cues = NV2_COLORS2,
-    duration = "06:12",
-    onSeekTrack,
-    playProgress = 0,
-    isCurrentPlaying = false,
-    onUpdateCues,
-    selectedCueId = 1,
-    onSelectCue,
-    snapToGrid = true,
-    showBeatgrid = true,
-    onToggleSnap,
-    onToggleGrid
-  }) => {
-    var _a, _b;
+  // web/js/waveforms/FooterMasterWaveform.jsx
+  var { useEffect: useEffect7, useRef: useRef7, useCallback } = React;
+  var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS2, t = (k) => k }) => {
     const canvasRef = useRef7(null);
     const containerRef = useRef7(null);
-    const [draggingCueIdx, setDraggingCueIdx] = useState5(null);
-    const [dragInfo, setDragInfo] = useState5(null);
-    const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-    const durMs = parseDurationMs(duration);
-    const bpm = track && (track.bpm || track.b) ? Math.max(30, parseFloat(track.bpm || track.b) || 128) : 128;
-    const beatMs = 6e4 / bpm;
-    const barMs = beatMs * 4;
-    const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
-    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
-    const downbeatPct = downbeatMs > 0 ? Math.max(0.4, Math.min(99, downbeatMs / durMs * 100)) : null;
-    const trimPct = trimMs > 0 ? Math.max(0.2, Math.min(99, trimMs / durMs * 100)) : null;
-    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
-    const handleCanvasClick = (e) => {
-      if (!containerRef.current || !onSeekTrack || draggingCueIdx !== null) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      onSeekTrack(track, pct, true);
-    };
-    const handleCueMouseDown = (e, idx) => {
-      e.stopPropagation();
-      e.preventDefault();
-      setDraggingCueIdx(idx);
-      if (onSelectCue && activeCues[idx]) {
-        onSelectCue(activeCues[idx].id || idx + 1);
-      }
-    };
-    useEffect7(() => {
-      if (draggingCueIdx === null) return;
-      const handleMouseMove = (e) => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        const rawPct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        const rawMs = rawPct * durMs;
-        let finalMs = rawMs;
-        if (snapToGrid) {
-          const beatOffset = Math.round((rawMs - downbeatMs) / beatMs);
-          finalMs = Math.max(0, Math.min(durMs, downbeatMs + beatOffset * beatMs));
-        }
-        const finalPct = durMs > 0 ? finalMs / durMs : 0;
-        const timeStr = formatMsToTime(finalMs);
-        const barNum = Math.max(1, Math.floor((finalMs - downbeatMs) / barMs) + 1);
-        const beatNum = Math.floor(Math.max(0, (finalMs - downbeatMs) % barMs) / beatMs) + 1;
-        const barStr = `Bar ${barNum}.${beatNum}`;
-        setDragInfo({
-          idx: draggingCueIdx,
-          pct: finalPct * 100,
-          time: timeStr,
-          bar: barStr,
-          posMs: Math.round(finalMs)
-        });
-        if (onUpdateCues) {
-          const updated = activeCues.map((c, i) => {
-            if (i === draggingCueIdx) {
-              return {
-                ...c,
-                pct: finalPct,
-                pos_ms: Math.round(finalMs),
-                time: timeStr,
-                bar: barNum,
-                bar_str: `Bar ${barNum}`
-              };
-            }
-            return c;
-          });
-          onUpdateCues(updated);
-        }
-      };
-      const handleMouseUp = () => {
-        setDraggingCueIdx(null);
-        setDragInfo(null);
-      };
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues]);
-    useEffect7(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const width = canvas.parentElement.clientWidth || 340;
-      const height = 114;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = "#030306";
-      ctx.fillRect(0, 0, width, height);
-      const centerY = height / 2;
-      if (showBeatgrid && bpm >= 40) {
-        for (let t = downbeatMs; t <= durMs; t += beatMs) {
-          const bx = t / durMs * width;
-          if (bx < 0 || bx > width) continue;
-          const bIdx = Math.round((t - downbeatMs) / beatMs);
-          const isBar = bIdx % 4 === 0;
-          const isPhrase16 = bIdx % 16 === 0;
-          ctx.beginPath();
-          if (isPhrase16) {
-            ctx.strokeStyle = "rgba(6, 182, 212, 0.45)";
-            ctx.lineWidth = 1.2;
-          } else if (isBar) {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
-            ctx.lineWidth = 1;
-          } else {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
-            ctx.lineWidth = 0.75;
-          }
-          ctx.moveTo(bx, 0);
-          ctx.lineTo(bx, height);
-          ctx.stroke();
-          if (isBar) {
-            ctx.fillStyle = isPhrase16 ? "#06b6d4" : "rgba(255, 255, 255, 0.4)";
-            ctx.fillRect(bx - 0.5, 0, 1.5, 5);
-          }
-        }
-        for (let t = downbeatMs - beatMs; t >= 0; t -= beatMs) {
-          const bx = t / durMs * width;
-          if (bx < 0 || bx > width) continue;
-          const bIdx = Math.round((t - downbeatMs) / beatMs);
-          const isBar = bIdx % 4 === 0;
-          const isSilent = trimMs > 0 && t < trimMs;
-          ctx.beginPath();
-          ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : isBar ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.05)";
-          ctx.lineWidth = isBar ? 1 : 0.75;
-          ctx.moveTo(bx, 0);
-          ctx.lineTo(bx, height);
-          ctx.stroke();
-        }
-      }
-      if (trimMs > 0 && durMs > 0) {
-        const trimX = trimMs / durMs * width;
-        if (trimX > 0) {
-          ctx.fillStyle = "rgba(239, 68, 68, 0.06)";
-          ctx.fillRect(0, 0, trimX, height);
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.45)";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(trimX, 0);
-          ctx.lineTo(trimX, height);
-          ctx.stroke();
-        }
-      }
-      for (let x = 0; x <= width; x += 1.5) {
-        const xNorm = x / width;
-        const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
-        if (isBreak) {
-          ctx.fillStyle = "rgba(16, 185, 129, 0.07)";
-          ctx.fillRect(x, 0, 1.5, height);
-        }
-        const hBass = height * 0.44 * bass;
-        ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.20)" : "rgba(37, 99, 235, 0.88)";
-        ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
-        const hDrums = height * 0.32 * drums;
-        ctx.fillStyle = "rgba(239, 68, 68, 0.86)";
-        ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
-        const hVocals = height * 0.22 * vocals;
-        ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.95)" : "rgba(245, 158, 11, 0.88)";
-        ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
-        const hTreble = height * 0.14 * treble;
-        ctx.fillStyle = "rgba(34, 211, 238, 0.95)";
-        ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
-      }
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(width, centerY);
-      ctx.stroke();
-      if (playProgress > 0) {
-        const px = width * Math.min(1, Math.max(0, playProgress));
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.shadowColor = "#ffffff";
-        ctx.shadowBlur = 6;
-        ctx.beginPath();
-        ctx.moveTo(px, 0);
-        ctx.lineTo(px, height);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
-    }, [track, seed, playProgress, isCurrentPlaying, showBeatgrid, bpm, downbeatMs, durMs, beatMs]);
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1 w-full bg-[#050508] p-2.5 rounded-lg border border-djzinc-800" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-[10px] font-mono text-gray-400 px-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-semibold flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-djcyan-400 animate-pulse" }), "WAVEFORM & BEATGRID REKORDBOX"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] text-gray-400 font-mono bg-djzinc-900 px-1.5 py-0.2 rounded border border-djzinc-750" }, bpm.toFixed(2), " BPM \u2022 Grid @ ", Math.round(downbeatMs), "ms")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 text-[9px]" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: onToggleGrid,
-        className: `px-1.5 py-0.5 rounded font-mono font-bold text-[8px] transition-colors border cursor-pointer ${showBeatgrid ? "bg-djcyan-950 text-djcyan-400 border-djcyan-700" : "bg-djzinc-900 text-gray-500 border-djzinc-800"}`,
-        title: "Activar/Desactivar visualizaci\xF3n de compases del Beatgrid"
-      },
-      showBeatgrid ? "\u{1F532} Grid: ON" : "\u{1F533} Grid: OFF"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: onToggleSnap,
-        className: `px-1.5 py-0.5 rounded font-mono font-bold text-[8px] transition-colors border cursor-pointer ${snapToGrid ? "bg-emerald-950 text-emerald-400 border-emerald-700" : "bg-djzinc-900 text-gray-500 border-djzinc-800"}`,
-        title: "Imantar / Snap magn\xE9tico al comp\xE1s al arrastrar cues"
-      },
-      snapToGrid ? "\u{1F9F2} Snap: ON" : "\u{1F9F2} Snap: OFF"
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 font-mono ml-1" }, duration))), /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        ref: containerRef,
-        onClick: handleCanvasClick,
-        className: "relative w-full h-[114px] bg-[#030306] rounded border border-djzinc-800/80 overflow-hidden cursor-pointer hover:border-djcyan-500/50 transition-colors select-none"
-      },
-      /* @__PURE__ */ React.createElement("canvas", { ref: canvasRef, style: { width: "100%", height: "114px", display: "block" } }),
-      trimPct !== null && /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-20", style: { left: `${trimPct}%` } }, /* @__PURE__ */ React.createElement("div", { className: "px-1 py-0.5 rounded-b text-[7px] font-mono font-black text-black bg-amber-400 flex items-center justify-center shadow" }, "TRIM"), /* @__PURE__ */ React.createElement("div", { className: "w-[1.5px] h-full bg-amber-400 opacity-90 shadow-[0_0_6px_rgba(251,191,36,0.9)]" })),
-      downbeatPct !== null && /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 bottom-0 flex flex-col items-center pointer-events-none z-20", style: { left: `${downbeatPct}%` } }, /* @__PURE__ */ React.createElement("div", { className: "px-1 py-0.5 rounded-b text-[7px] font-mono font-black text-black bg-djcyan-400 flex items-center justify-center shadow" }, "1.0.0"), /* @__PURE__ */ React.createElement("div", { className: "w-[1.5px] h-full bg-djcyan-400 opacity-90 shadow-[0_0_6px_rgba(34,211,238,0.9)]" })),
-      activeCues.map((c, idx) => {
-        let leftPos = c.pct !== void 0 ? c.pct * 100 : Math.min(94, Math.max(4, idx * 12.2 + 3));
-        if (idx === 0 && downbeatPct !== null && c.pct === void 0) {
-          leftPos = Math.min(94, Math.max(0.5, downbeatPct));
-        }
-        const isSelected = selectedCueId === (c.id || idx + 1);
-        const isDragging = draggingCueIdx === idx;
-        return /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            key: c.id || idx,
-            className: "absolute top-0 bottom-0 flex flex-col items-center z-30",
-            style: { left: `${leftPos}%`, transform: "translateX(-50%)" }
-          },
-          /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              onMouseDown: (e) => handleCueMouseDown(e, idx),
-              onClick: (e) => {
-                e.stopPropagation();
-                if (onSelectCue) onSelectCue(c.id || idx + 1);
-              },
-              onDoubleClick: (e) => {
-                e.stopPropagation();
-                if (onSeekTrack) onSeekTrack(track, c.pct !== void 0 ? c.pct : leftPos / 100, true);
-              },
-              title: `Pad ${c.id || idx + 1}: ${c.name || "Cue"} (${c.time || "00:00.0"}) \u2022 ${c.color || "#ef4444"}
-Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para reproducir`,
-              className: `w-4 h-4 rounded-b text-[8px] font-mono font-black text-black flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing select-none transition-all ${isSelected ? "ring-2 ring-white scale-125 z-40" : "hover:scale-115"}`,
-              style: { backgroundColor: c.color || "#ef4444" }
-            },
-            c.id || idx + 1
-          ),
-          /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              className: `w-[1.5px] h-full ${isSelected || isDragging ? "opacity-100 shadow-[0_0_8px]" : "opacity-65"}`,
-              style: { backgroundColor: c.color || "#ef4444", boxShadow: isSelected ? `0 0 8px ${c.color || "#ef4444"}` : void 0 }
-            }
-          )
-        );
-      }),
-      dragInfo && /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute top-1 pointer-events-none z-50 px-2 py-0.5 bg-black/90 border border-djcyan-400 rounded shadow-xl text-center transform -translate-x-1/2 flex items-center gap-1.5",
-          style: { left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }
-        },
-        /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: ((_a = activeCues[dragInfo.idx]) == null ? void 0 : _a.color) || "#ef4444" } }),
-        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", ((_b = activeCues[dragInfo.idx]) == null ? void 0 : _b.id) || dragInfo.idx + 1, ":"),
-        /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-djcyan-400" }, dragInfo.time),
-        /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-gray-300" }, "(", dragInfo.bar, ")"),
-        snapToGrid && /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded" }, "Snap")
-      )
-    ));
-  };
-
-  // web/js/waveforms/ZoomableRekordboxWaveform.jsx
-  var { useState: useState6, useEffect: useEffect8, useRef: useRef8, useCallback: useCallback2, useMemo } = React;
-  var ZoomableRekordboxWaveform = ({
-    track,
-    cues = NV2_COLORS2,
-    duration = "06:12",
-    onSeekTrack,
-    playProgress = 0,
-    isCurrentPlaying = false,
-    onUpdateCues,
-    selectedCueId = 1,
-    onSelectCue,
-    snapToGrid = true,
-    showBeatgrid = true,
-    zoom = 4,
-    followPlayhead = true,
-    height = 160,
-    lang = "es"
-  }) => {
-    var _a, _b;
-    const scrollContainerRef = useRef8(null);
-    const canvasRef = useRef8(null);
-    const minimapCanvasRef = useRef8(null);
-    const [containerWidth, setContainerWidth] = useState6(900);
-    const [scrollLeft, setScrollLeft] = useState6(0);
-    const [draggingCueIdx, setDraggingCueIdx] = useState6(null);
-    const [dragInfo, setDragInfo] = useState6(null);
-    const isMinimapDraggingRef = useRef8(false);
-    const rawId = track && track.id ? String(track.id) : "1";
-    const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-    const durMs = parseDurationMs(duration);
-    const bpm = track && (track.bpm || track.b) ? Math.max(30, parseFloat(track.bpm || track.b) || 128) : 128;
-    const beatMs = 6e4 / bpm;
-    const barMs = beatMs * 4;
-    const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
-    const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
-    const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
-    const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
-    const totalWidth = Math.max(containerWidth, Math.round(containerWidth * Math.max(1, zoom)));
-    useEffect8(() => {
-      const updateWidth = () => {
-        if (scrollContainerRef.current) {
-          const w = scrollContainerRef.current.clientWidth;
-          if (w > 100) setContainerWidth(w);
-        }
-      };
-      updateWidth();
-      window.addEventListener("resize", updateWidth);
-      return () => window.removeEventListener("resize", updateWidth);
-    }, []);
-    const handleScroll = (e) => {
-      setScrollLeft(e.target.scrollLeft);
-    };
-    useEffect8(() => {
-      if (!isCurrentPlaying || !followPlayhead || !scrollContainerRef.current) return;
-      const playheadPx = playProgress * totalWidth;
-      const targetScroll = playheadPx - containerWidth / 2;
-      scrollContainerRef.current.scrollLeft = Math.max(0, Math.min(totalWidth - containerWidth, targetScroll));
-    }, [isCurrentPlaying, followPlayhead, playProgress, totalWidth, containerWidth]);
-    const handleCueMouseDown = (e, idx) => {
-      e.stopPropagation();
-      e.preventDefault();
-      setDraggingCueIdx(idx);
-      if (onSelectCue && activeCues[idx]) {
-        onSelectCue(activeCues[idx].id !== void 0 ? activeCues[idx].id : idx + 1);
-      }
-    };
-    useEffect8(() => {
-      if (draggingCueIdx === null) return;
-      const handleMouseMove = (e) => {
-        if (!canvasRef.current) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const rawX = e.clientX - rect.left;
-        const rawPct = Math.max(0, Math.min(1, rawX / totalWidth));
-        const rawMs = rawPct * durMs;
-        let finalMs = rawMs;
-        if (snapToGrid) {
-          const beatOffset = Math.round((rawMs - downbeatMs) / beatMs);
-          finalMs = Math.max(0, Math.min(durMs, downbeatMs + beatOffset * beatMs));
-        }
-        const finalPct = durMs > 0 ? finalMs / durMs : 0;
-        const timeStr = formatMsToTime(finalMs);
-        const barNum = Math.max(1, Math.floor((finalMs - downbeatMs) / barMs) + 1);
-        const beatNum = Math.floor(Math.max(0, (finalMs - downbeatMs) % barMs) / beatMs) + 1;
-        const barStr = `Bar ${barNum}.${beatNum}`;
-        setDragInfo({
-          idx: draggingCueIdx,
-          pct: finalPct * 100,
-          time: timeStr,
-          bar: barStr,
-          posMs: Math.round(finalMs)
-        });
-        if (onUpdateCues) {
-          const updated = activeCues.map((c, i) => {
-            if (i === draggingCueIdx) {
-              return {
-                ...c,
-                pct: finalPct,
-                pos_ms: Math.round(finalMs),
-                time: timeStr,
-                bar: barNum,
-                bar_str: `Bar ${barNum}`
-              };
-            }
-            return c;
-          });
-          onUpdateCues(updated);
-        }
-      };
-      const handleMouseUp = () => {
-        setDraggingCueIdx(null);
-        setDragInfo(null);
-      };
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }, [draggingCueIdx, durMs, downbeatMs, beatMs, barMs, snapToGrid, activeCues, onUpdateCues, totalWidth]);
-    const [isScrubbing, setIsScrubbing] = useState6(false);
-    const handleSeekToX = (clientX) => {
-      if (!canvasRef.current || !onSeekTrack) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const rawX = clientX - rect.left;
-      const pct = Math.max(0, Math.min(1, rawX / totalWidth));
-      const targetSec = durMs * pct / 1e3;
-      onSeekTrack(track, pct, true, targetSec);
-    };
-    const handleCanvasMouseDown = (e) => {
-      if (draggingCueIdx !== null) return;
-      setIsScrubbing(true);
-      handleSeekToX(e.clientX);
-    };
-    useEffect8(() => {
-      if (!isScrubbing) return;
-      const handleMouseMove = (e) => {
-        handleSeekToX(e.clientX);
-      };
-      const handleMouseUp = () => {
-        setIsScrubbing(false);
-      };
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }, [isScrubbing, totalWidth, durMs, track, onSeekTrack]);
-    const handleCanvasClick = (e) => {
-      if (!canvasRef.current || !onSeekTrack || draggingCueIdx !== null) return;
-      handleSeekToX(e.clientX);
-    };
-    useEffect8(() => {
-      const canvas = minimapCanvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const mWidth = containerWidth;
-      const mHeight = 28;
-      canvas.width = mWidth * dpr;
-      canvas.height = mHeight * dpr;
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = "#07070b";
-      ctx.fillRect(0, 0, mWidth, mHeight);
-      const mCenterY = mHeight / 2;
-      for (let x = 0; x <= mWidth; x += 2) {
-        const xNorm = x / mWidth;
-        const { bass, drums, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
-        const h = mHeight * 0.42 * Math.max(0.1, (bass + drums) * 0.7);
-        ctx.fillStyle = isBreak ? "rgba(16, 185, 129, 0.4)" : "rgba(6, 182, 212, 0.75)";
-        ctx.fillRect(x, mCenterY - h, 1.8, h * 2);
-      }
-      activeCues.slice(0, 8).forEach((cue, idx) => {
-        const pct = cue.pct !== void 0 ? cue.pct : parseTimeToMs2(cue.time || "0") / durMs;
-        const cx = Math.max(0, Math.min(mWidth, pct * mWidth));
-        const color = cue.color || (NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#06b6d4");
-        ctx.fillStyle = color;
-        ctx.fillRect(cx - 1, 0, 2, mHeight);
-      });
-    }, [containerWidth, seed, durMs, activeCues, track]);
-    const handleMinimapInteraction = (e) => {
-      if (!minimapCanvasRef.current || !scrollContainerRef.current) return;
-      const rect = minimapCanvasRef.current.getBoundingClientRect();
-      const clickX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-      const pct = clickX / rect.width;
-      const targetScroll = pct * totalWidth - containerWidth / 2;
-      scrollContainerRef.current.scrollLeft = Math.max(0, Math.min(totalWidth - containerWidth, targetScroll));
-      if (onSeekTrack && track) {
-        const targetSec = durMs * pct / 1e3;
-        onSeekTrack(track, pct, true, targetSec);
-      }
-    };
-    useEffect8(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = totalWidth * dpr;
-      canvas.height = height * dpr;
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = "#030306";
-      ctx.fillRect(0, 0, totalWidth, height);
-      const centerY = height / 2;
-      if (showBeatgrid && bpm >= 40) {
-        for (let t = downbeatMs; t <= durMs; t += beatMs) {
-          const bx = t / durMs * totalWidth;
-          if (bx < 0 || bx > totalWidth) continue;
-          const bIdx = Math.round((t - downbeatMs) / beatMs);
-          const isBar = bIdx % 4 === 0;
-          const barNum = Math.floor(bIdx / 4) + 1;
-          const isPhrase16 = bIdx % 16 === 0;
-          ctx.beginPath();
-          if (isPhrase16) {
-            ctx.strokeStyle = "rgba(6, 182, 212, 0.75)";
-            ctx.lineWidth = 1.5;
-          } else if (isBar) {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-            ctx.lineWidth = 1;
-          } else {
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.10)";
-            ctx.lineWidth = 0.75;
-          }
-          ctx.moveTo(bx, 0);
-          ctx.lineTo(bx, height);
-          ctx.stroke();
-          if (isPhrase16) {
-            ctx.fillStyle = "#06b6d4";
-            ctx.fillRect(bx - 1, 0, 2.5, 10);
-            ctx.font = "bold 9px monospace";
-            ctx.fillText(`P${barNum}`, bx + 3, 11);
-          } else if (isBar && zoom >= 2) {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-            ctx.fillRect(bx - 0.5, 0, 1.5, 6);
-            if (zoom >= 4) {
-              ctx.font = "8px monospace";
-              ctx.fillText(`${barNum}`, bx + 2, 8);
-            }
-          }
-        }
-        for (let t = downbeatMs - beatMs; t >= 0; t -= beatMs) {
-          const bx = t / durMs * totalWidth;
-          if (bx < 0 || bx > totalWidth) continue;
-          const bIdx = Math.round((t - downbeatMs) / beatMs);
-          const isBar = bIdx % 4 === 0;
-          const isSilent = trimMs > 0 && t < trimMs;
-          ctx.beginPath();
-          ctx.strokeStyle = isSilent ? "rgba(255, 255, 255, 0.02)" : isBar ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.08)";
-          ctx.lineWidth = isBar ? 1 : 0.75;
-          ctx.moveTo(bx, 0);
-          ctx.lineTo(bx, height);
-          ctx.stroke();
-        }
-      }
-      if (trimMs > 0 && durMs > 0) {
-        const trimX = trimMs / durMs * totalWidth;
-        if (trimX > 0) {
-          ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
-          ctx.fillRect(0, 0, trimX, height);
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(trimX, 0);
-          ctx.lineTo(trimX, height);
-          ctx.stroke();
-          ctx.fillStyle = "#ef4444";
-          ctx.font = "bold 9px monospace";
-          ctx.fillText(`TRIM IN -${Math.round(trimMs)}ms`, Math.max(2, trimX - 70), 10);
-        }
-      }
-      if (trimEndMs > 0 && trimEndMs < durMs && durMs > 0) {
-        const trimEndX = trimEndMs / durMs * totalWidth;
-        if (trimEndX < totalWidth) {
-          ctx.fillStyle = "rgba(239, 68, 68, 0.15)";
-          ctx.fillRect(trimEndX, 0, totalWidth - trimEndX, height);
-          ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(trimEndX, 0);
-          ctx.lineTo(trimEndX, height);
-          ctx.stroke();
-          ctx.fillStyle = "#ef4444";
-          ctx.font = "bold 9px monospace";
-          ctx.fillText("TRIM OUT", trimEndX + 4, 10);
-        }
-      }
-      if (downbeatMs > 0 && durMs > 0) {
-        const dbX = downbeatMs / durMs * totalWidth;
-        if (dbX >= 0 && dbX <= totalWidth) {
-          ctx.strokeStyle = "#06b6d4";
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = "#06b6d4";
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.moveTo(dbX, 0);
-          ctx.lineTo(dbX, height);
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = "#06b6d4";
-          ctx.fillRect(dbX - 28, 0, 56, 13);
-          ctx.fillStyle = "#000000";
-          ctx.font = "bold 8.5px monospace";
-          ctx.textAlign = "center";
-          ctx.fillText("1.0.0 KICK", dbX, 9.5);
-          ctx.textAlign = "start";
-        }
-      }
-      for (let x = 0; x <= totalWidth; x += 1.5) {
-        const xNorm = x / totalWidth;
-        const { bass, drums, vocals, treble, isBreak } = computeTrackStructuralBands(xNorm, seed, track);
-        if (isBreak) {
-          ctx.fillStyle = "rgba(16, 185, 129, 0.08)";
-          ctx.fillRect(x, 0, 1.5, height);
-        }
-        const hBass = height * 0.44 * bass;
-        ctx.fillStyle = isBreak ? "rgba(30, 58, 138, 0.25)" : "rgba(37, 99, 235, 0.88)";
-        ctx.fillRect(x, centerY - hBass, 1.5, hBass * 2);
-        const hDrums = height * 0.38 * drums;
-        ctx.fillStyle = isBreak ? "rgba(153, 27, 27, 0.2)" : "rgba(239, 68, 68, 0.85)";
-        ctx.fillRect(x, centerY - hDrums, 1.5, hDrums * 2);
-        const hVocals = height * 0.3 * vocals;
-        ctx.fillStyle = isBreak ? "rgba(217, 119, 6, 0.85)" : "rgba(234, 179, 8, 0.88)";
-        ctx.fillRect(x, centerY - hVocals, 1.5, hVocals * 2);
-        const hTreble = height * 0.2 * treble;
-        ctx.fillStyle = isBreak ? "rgba(52, 211, 153, 0.6)" : "rgba(6, 182, 212, 0.95)";
-        ctx.fillRect(x, centerY - hTreble, 1.5, hTreble * 2);
-      }
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.20)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, centerY);
-      ctx.lineTo(totalWidth, centerY);
-      ctx.stroke();
-    }, [totalWidth, height, showBeatgrid, bpm, downbeatMs, durMs, beatMs, barMs, seed, zoom]);
-    const viewportLeftPct = totalWidth > 0 ? scrollLeft / totalWidth * 100 : 0;
-    const viewportWidthPct = totalWidth > 0 ? Math.min(100, containerWidth / totalWidth * 100) : 100;
-    const downbeatPct = downbeatMs > 0 ? downbeatMs / durMs * 100 : null;
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-1.5 w-full select-none" }, /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        className: "w-full relative h-7 bg-[#07070b] border border-djzinc-800 rounded overflow-hidden cursor-pointer shadow-inner",
-        onClick: handleMinimapInteraction,
-        onMouseDown: () => {
-          isMinimapDraggingRef.current = true;
-        },
-        onMouseMove: (e) => {
-          if (isMinimapDraggingRef.current) handleMinimapInteraction(e);
-        },
-        onMouseUp: () => {
-          isMinimapDraggingRef.current = false;
-        },
-        onMouseLeave: () => {
-          isMinimapDraggingRef.current = false;
-        },
-        title: "Minimapa de la pista completa. Haz clic o arrastra para desplazarte r\xE1pidamente."
-      },
-      /* @__PURE__ */ React.createElement("canvas", { ref: minimapCanvasRef, className: "w-full h-full block" }),
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          style: { left: `${viewportLeftPct}%`, width: `${viewportWidthPct}%` },
-          className: "absolute top-0 bottom-0 border-2 border-djcyan-400 bg-djcyan-500/20 backdrop-blur-[1px] pointer-events-none rounded shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-75"
-        }
-      ),
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          style: { left: `${playProgress * 100}%` },
-          className: "absolute top-0 bottom-0 w-[2px] bg-white pointer-events-none z-10 shadow-[0_0_5px_#fff]"
-        }
-      )
-    ), /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        ref: scrollContainerRef,
-        onScroll: handleScroll,
-        className: "w-full overflow-x-auto overflow-y-hidden relative select-none custom-scrollbar rounded-lg border border-djzinc-800 bg-[#030306] shadow-xl",
-        style: { height: `${height}px` }
-      },
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          style: { width: `${totalWidth}px`, height: `${height}px`, position: "relative" },
-          onMouseDown: handleCanvasMouseDown,
-          onClick: handleCanvasClick
-        },
-        /* @__PURE__ */ React.createElement(
-          "canvas",
-          {
-            ref: canvasRef,
-            className: "block cursor-crosshair",
-            style: { width: `${totalWidth}px`, height: `${height}px` }
-          }
-        ),
-        downbeatPct !== null && /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            style: { left: `${downbeatPct}%` },
-            className: "absolute top-0 bottom-0 pointer-events-none z-15 flex flex-col items-center"
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "w-[1.5px] h-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]" }),
-          /* @__PURE__ */ React.createElement("div", { className: "absolute top-1 -translate-x-1/2 bg-djcyan-500 text-black font-mono font-bold text-[8px] px-1 py-0.5 rounded shadow" }, "1.0.0")
-        ),
-        /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            style: { left: `${playProgress * 100}%` },
-            className: "absolute top-0 bottom-0 w-[2px] bg-white shadow-[0_0_12px_#fff,0_0_5px_#06b6d4] pointer-events-none z-20 flex flex-col items-center"
-          },
-          /* @__PURE__ */ React.createElement("div", { className: "w-2.5 h-2.5 -ml-[1px] bg-white rotate-45 border border-djcyan-400 shadow-[0_0_6px_#06b6d4]" })
-        ),
-        activeCues.map((cue, idx) => {
-          const padNum = cue.id !== void 0 ? cue.id : idx + 1;
-          const cuePct = cue.pct !== void 0 ? cue.pct * 100 : parseTimeToMs2(cue.time || "0") / durMs * 100;
-          const isSelected = selectedCueId === padNum;
-          const color = cue.color || (NV2_COLORS2[idx] ? NV2_COLORS2[idx].color : "#ef4444");
-          const staggerDelay = `${idx * 110}ms`;
-          return /* @__PURE__ */ React.createElement(
-            "div",
-            {
-              key: `${(track == null ? void 0 : track.id) || "trk"}_wave_cue_${idx}`,
-              style: {
-                left: `${cuePct}%`,
-                animation: "cuePointCascadeBeam 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
-                animationDelay: staggerDelay,
-                "--cue-color": color
-              },
-              onMouseDown: (e) => handleCueMouseDown(e, idx),
-              onClick: (e) => {
-                e.stopPropagation();
-                if (onSelectCue) onSelectCue(padNum);
-                if (onSeekTrack && track) {
-                  const cuePctRatio = cue.pct !== void 0 ? cue.pct : parseTimeToMs2(cue.time || "0") / durMs;
-                  const targetSec = durMs * cuePctRatio / 1e3;
-                  onSeekTrack(track, cuePctRatio, true, targetSec);
-                }
-              },
-              className: `absolute top-0 bottom-0 z-20 flex flex-col items-center cursor-ew-resize group select-none transition-transform duration-75`,
-              title: `Hot Cue ${padNum}: ${cue.name || "Cue"} (${cue.time || "00:00.00"}) - Arrastra para mover`
-            },
-            /* @__PURE__ */ React.createElement(
-              "div",
-              {
-                className: `w-[2px] h-full transition-all ${isSelected ? "w-[2.5px]" : "opacity-85 group-hover:opacity-100"}`,
-                style: {
-                  backgroundColor: color,
-                  color,
-                  boxShadow: isSelected ? `0 0 16px ${color}, 0 0 6px #ffffff` : `0 0 8px ${color}80`
-                }
-              }
-            ),
-            /* @__PURE__ */ React.createElement(
-              "div",
-              {
-                className: `absolute top-1 -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-[9px] font-bold text-white shadow-lg border cursor-ew-resize transition-all ${isSelected ? "scale-110 ring-2 ring-white shadow-[0_0_14px_rgba(255,255,255,0.9)]" : "opacity-90 group-hover:scale-105 group-hover:opacity-100"}`,
-                style: {
-                  backgroundColor: color,
-                  borderColor: isSelected ? "#ffffff" : "rgba(255,255,255,0.4)",
-                  boxShadow: `0 0 10px ${color}`
-                }
-              },
-              /* @__PURE__ */ React.createElement("span", null, "P", padNum),
-              zoom >= 2 && /* @__PURE__ */ React.createElement("span", { className: "text-[8px] opacity-90 truncate max-w-[50px]" }, cue.short_name || cue.name || "")
-            ),
-            /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-1 -translate-x-1/2 bg-black/85 px-1 py-0.2 rounded border border-djzinc-700 text-[8px] font-mono text-gray-300 pointer-events-none whitespace-nowrap shadow" }, cue.time || "00:00.00")
-          );
-        }),
-        dragInfo && /* @__PURE__ */ React.createElement(
-          "div",
-          {
-            className: "absolute -top-7 -translate-x-1/2 bg-djzinc-900 text-white px-2 py-0.5 rounded border border-djcyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)] flex items-center gap-1.5 pointer-events-none z-30 whitespace-nowrap",
-            style: { left: `${Math.min(92, Math.max(8, dragInfo.pct))}%` }
-          },
-          /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full", style: { backgroundColor: ((_a = activeCues[dragInfo.idx]) == null ? void 0 : _a.color) || "#ef4444" } }),
-          /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-white" }, "Pad ", ((_b = activeCues[dragInfo.idx]) == null ? void 0 : _b.id) || dragInfo.idx + 1, ":"),
-          /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-bold text-djcyan-400" }, dragInfo.time),
-          /* @__PURE__ */ React.createElement("span", { className: "text-[8px] font-mono text-gray-300" }, "(", dragInfo.bar, ")"),
-          snapToGrid && /* @__PURE__ */ React.createElement("span", { className: "text-[7px] font-bold text-emerald-400 uppercase bg-emerald-950/80 px-1 rounded" }, "Snap")
-        )
-      )
-    ));
-  };
-
-  // web/js/waveforms/FooterMasterWaveform.jsx
-  var { useEffect: useEffect9, useRef: useRef9, useCallback: useCallback3 } = React;
-  var FooterMasterWaveform = ({ track, isPlaying, playProgressRef, onSeek, cues = NV2_COLORS2, t = (k) => k }) => {
-    const canvasRef = useRef9(null);
-    const containerRef = useRef9(null);
-    const bitmapRef = useRef9(null);
-    const rafRef = useRef9(null);
+    const bitmapRef = useRef7(null);
+    const rafRef = useRef7(null);
     const seed = getTrackHash(track);
-    const buildBitmap = useCallback3((width) => {
+    const buildBitmap = useCallback((width) => {
       const height = 42;
       let offscreen;
       try {
@@ -5451,7 +4626,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         bitmapRef.current = offscreen;
       }
     }, [seed, track]);
-    useEffect9(() => {
+    useEffect7(() => {
       if (!track || !containerRef.current) {
         bitmapRef.current = null;
         return;
@@ -5467,7 +4642,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       ro.observe(el);
       return () => ro.disconnect();
     }, [track, buildBitmap]);
-    useEffect9(() => {
+    useEffect7(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       if (!track) {
@@ -5538,7 +4713,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
   };
 
   // web/js/waveforms/CopilotSeratoWaveform.jsx
-  var { useState: useState7, useEffect: useEffect10, useRef: useRef10, useMemo: useMemo2 } = React;
+  var { useState: useState5, useEffect: useEffect8, useRef: useRef8, useMemo } = React;
   var RB3BAND_HD_CACHE = /* @__PURE__ */ new Map();
   function decodeBase64ToU8(b64) {
     if (!b64 || typeof b64 !== "string") return null;
@@ -5586,42 +4761,44 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
     return [maxL / 255, maxM / 255, maxH / 255];
   }
   var CopilotSeratoWaveform2 = ({
-    deck,
+    deck = {},
     side = "1",
     antiMuddy = null,
     partnerDeck = null,
     isCompact = false
   }) => {
-    const canvasRef = useRef10(null);
-    const minimapRef = useRef10(null);
-    const minimapCacheRef = useRef10(null);
-    const [zoom, setZoom] = useState7(4);
-    const [showTacticalAids, setShowTacticalAids] = useState7(true);
-    const [hoveredMilestone, setHoveredMilestone] = useState7(null);
-    const [hdWave, setHdWave] = useState7(null);
-    const initialProgress = typeof deck.play_progress === "number" && !isNaN(deck.play_progress) ? deck.play_progress : 0;
-    const [progress, setProgress] = useState7(initialProgress);
-    const progressRef = useRef10(initialProgress);
-    const isPlayingRef = useRef10(Boolean(deck.is_playing));
-    const bpmRef = useRef10(deck.bpm || 130);
-    const durationSecRef = useRef10(deck.duration_sec || 390);
+    var _a, _b, _c, _d;
+    const canvasRef = useRef8(null);
+    const minimapRef = useRef8(null);
+    const minimapCacheRef = useRef8(null);
+    const [zoom, setZoom] = useState5(4);
+    const [showTacticalAids, setShowTacticalAids] = useState5(true);
+    const [hoveredMilestone, setHoveredMilestone] = useState5(null);
+    const [hdWave, setHdWave] = useState5(null);
+    const initialProgress = typeof ((_a = deck == null ? void 0 : deck.play_progress) != null ? _a : 0) === "number" && !isNaN((_b = deck == null ? void 0 : deck.play_progress) != null ? _b : 0) ? (_c = deck == null ? void 0 : deck.play_progress) != null ? _c : 0 : 0;
+    const [progress, setProgress] = useState5(initialProgress);
+    const progressRef = useRef8(initialProgress);
+    const isPlayingRef = useRef8(Boolean(deck == null ? void 0 : deck.is_playing));
+    const bpmRef = useRef8((deck == null ? void 0 : deck.bpm) || 130);
+    const durationSecRef = useRef8((deck == null ? void 0 : deck.duration_sec) || 390);
     const deckNum = side === "2" || side === 2 || (deck == null ? void 0 : deck.deck_num) === 2 ? 2 : 1;
     const trackFilePath = (deck == null ? void 0 : deck.filepath) || (deck == null ? void 0 : deck.file_path) || "";
-    const isEmptyDeck = !deck || !deck.title || !deck.bpm || Number(deck.bpm) <= 0 || deck.status === "STANDBY (VAC\xCDO)";
-    useEffect10(() => {
-      if (deck.play_progress !== void 0 && deck.play_progress !== null) {
-        const diff = Math.abs(progressRef.current - deck.play_progress);
-        if (diff > 2e-3 || !deck.is_playing || deck.play_progress === 0) {
-          progressRef.current = deck.play_progress;
-          setProgress(deck.play_progress);
+    const isEmptyDeck = !deck || !(deck == null ? void 0 : deck.title) || !(deck == null ? void 0 : deck.bpm) || Number(deck == null ? void 0 : deck.bpm) <= 0 || (deck == null ? void 0 : deck.status) === "STANDBY (VAC\xCDO)";
+    useEffect8(() => {
+      var _a2, _b2, _c2, _d2, _e, _f;
+      if (((_a2 = deck == null ? void 0 : deck.play_progress) != null ? _a2 : 0) !== void 0 && ((_b2 = deck == null ? void 0 : deck.play_progress) != null ? _b2 : 0) !== null) {
+        const diff = Math.abs(progressRef.current - ((_c2 = deck == null ? void 0 : deck.play_progress) != null ? _c2 : 0));
+        if (diff > 2e-3 || !(deck == null ? void 0 : deck.is_playing) || ((_d2 = deck == null ? void 0 : deck.play_progress) != null ? _d2 : 0) === 0) {
+          progressRef.current = (_e = deck == null ? void 0 : deck.play_progress) != null ? _e : 0;
+          setProgress((_f = deck == null ? void 0 : deck.play_progress) != null ? _f : 0);
         }
       }
-      isPlayingRef.current = Boolean(deck.is_playing);
-      bpmRef.current = parseFloat(deck.bpm) || 130;
-      durationSecRef.current = parseFloat(deck.duration_sec) || 390;
-    }, [deck.play_progress, deck.is_playing, deck.bpm, deck.duration_sec]);
-    const hdTrackKey = isEmptyDeck ? "" : `${deckNum}|${trackFilePath || deck.title}|${deck.artist || ""}|${deck.duration_sec || 0}`;
-    useEffect10(() => {
+      isPlayingRef.current = Boolean(deck == null ? void 0 : deck.is_playing);
+      bpmRef.current = parseFloat(deck == null ? void 0 : deck.bpm) || 130;
+      durationSecRef.current = parseFloat(deck == null ? void 0 : deck.duration_sec) || 390;
+    }, [(_d = deck == null ? void 0 : deck.play_progress) != null ? _d : 0, deck == null ? void 0 : deck.is_playing, deck == null ? void 0 : deck.bpm, deck == null ? void 0 : deck.duration_sec]);
+    const hdTrackKey = isEmptyDeck ? "" : `${deckNum}|${trackFilePath || (deck == null ? void 0 : deck.title)}|${(deck == null ? void 0 : deck.artist) || ""}|${(deck == null ? void 0 : deck.duration_sec) || 0}`;
+    useEffect8(() => {
       if (!hdTrackKey) {
         setHdWave(null);
         return;
@@ -5652,7 +4829,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
                 version: payload.version || "rb3b",
                 columns: payload.columns || Math.floor(bands.length / 3),
                 overviewColumns: payload.overview_columns || (overview ? Math.floor(overview.length / 3) : 0),
-                durationSec: payload.duration_sec || deck.duration_sec || 240,
+                durationSec: payload.duration_sec || (deck == null ? void 0 : deck.duration_sec) || 240,
                 bands,
                 overview,
                 realFft: Boolean(payload.real_fft)
@@ -5677,7 +4854,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         cancelled = true;
       };
     }, [deckNum, hdTrackKey]);
-    useEffect10(() => {
+    useEffect8(() => {
       let animId;
       let lastTime = performance.now();
       let lastUiUpdate = 0;
@@ -5703,32 +4880,32 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       return () => {
         if (animId) cancelAnimationFrame(animId);
       };
-    }, [deck.is_playing]);
-    const rawId = trackFilePath || deck.title || "1";
+    }, [deck == null ? void 0 : deck.is_playing]);
+    const rawId = trackFilePath || (deck == null ? void 0 : deck.title) || "1";
     const seed = rawId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
-    const durSec = deck.duration_sec || (hdWave == null ? void 0 : hdWave.durationSec) || 390;
+    const durSec = (deck == null ? void 0 : deck.duration_sec) || (hdWave == null ? void 0 : hdWave.durationSec) || 390;
     const elapsedSec = progress * durSec;
     const remainSec = Math.max(0, durSec - elapsedSec);
-    const overviewBytes = useMemo2(() => {
-      if (!deck.serato_overview) return null;
-      return decodeBase64ToU8(deck.serato_overview);
-    }, [deck.serato_overview]);
+    const overviewBytes = useMemo(() => {
+      if (!(deck == null ? void 0 : deck.serato_overview)) return null;
+      return decodeBase64ToU8(deck == null ? void 0 : deck.serato_overview);
+    }, [deck == null ? void 0 : deck.serato_overview]);
     const formatSec = (s) => {
       const m = Math.floor(s / 60);
       const sec = Math.floor(s % 60);
       return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
     };
-    const cues = deck.cues || [
+    const cues = (deck == null ? void 0 : deck.cues) || [
       { id: 1, name: "Downbeat 1.0.0", color: "#ef4444", pct: 0.04, time: "00:00.25", directive: "Punto de anclaje inicial. Arranca beatmatching aqu\xED." },
       { id: 2, name: "Intro Perc", color: "#f97316", pct: 0.16, time: "01:04.00", directive: "Entrada de caja y charles. Inicia subida gradual del fader." },
-      { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck." },
+      { id: 3, name: "Bassline In", color: "#eab308", pct: 0.32, time: "02:08.00", directive: "Aparecen graves dominantes. Revisa EQ Low del otro deck?." },
       { id: 4, name: "MAIN DROP", color: "#10b981", pct: 0.48, time: "03:12.00", directive: "Cl\xEDmax 100% de potencia. Corta totalmente los graves del deck saliente." },
       { id: 5, name: "Breakdown", color: "#06b6d4", pct: 0.62, time: "04:16.00", directive: "Par\xF3n mel\xF3dico sin bombo. Ventana id\xF3nea para transiciones vocales." },
       { id: 6, name: "Climax 2", color: "#22d3ee", pct: 0.74, time: "05:04.00", directive: "Segundo impacto de sala. Mant\xE9n energ\xEDa alta." },
       { id: 7, name: "Outro 32b", color: "#8b5cf6", pct: 0.86, time: "06:08.00", directive: "Se retiran capas r\xEDtmicas. Zona recomendada para mezclar track entrante." },
       { id: 8, name: "Cut / Fade", color: "#ec4899", pct: 0.96, time: "07:15.00", directive: "Final de pista. Fade-out o corte antes del silencio." }
     ];
-    const phases = deck.structural_phases || [
+    const phases = (deck == null ? void 0 : deck.structural_phases) || [
       { id: "intro", name: "Intro", start_pct: 0, end_pct: 0.16, type: "intro", label: "Intro 32b \u2022 Mezcla In", color: "#06b6d4", directive: "32 compases de entrada. Sincroniza beatgrid." },
       { id: "build", name: "Bassline In", start_pct: 0.16, end_pct: 0.35, type: "build", label: "Bassline Activa", color: "#eab308", directive: "Filtra frecuencias sub con filtro High-Pass." },
       { id: "break", name: "Breakdown", start_pct: 0.35, end_pct: 0.48, type: "break", label: "Breakdown (Sin Graves)", color: "#38bdf8", directive: "Sin bombo. Oportunidad para cruce de leads o acapellas." },
@@ -5737,12 +4914,12 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       { id: "outro", name: "Outro", start_pct: 0.82, end_pct: 1, type: "outro", label: "\u{1F7E2} MEZCLA SEGURA (Outro)", color: "#10b981", directive: "Zona segura de mezcla. Abre canal entrante." }
     ];
     const nextCue = cues.find((c) => (c.pct || 0) > progress);
-    const beatsToNextCue = nextCue && deck.bpm ? Math.round((nextCue.pct - progress) * durSec / (60 / deck.bpm)) : null;
+    const beatsToNextCue = nextCue && (deck == null ? void 0 : deck.bpm) ? Math.round((nextCue.pct - progress) * durSec / (60 / (deck == null ? void 0 : deck.bpm))) : null;
     const barsToNextCue = beatsToNextCue ? Math.max(1, Math.ceil(beatsToNextCue / 4)) : null;
     const timeToNextCue = nextCue ? Math.max(0, (nextCue.pct - progress) * durSec) : 0;
-    const bothPlaying = Boolean(deck.is_playing && partnerDeck && partnerDeck.is_playing);
-    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === "danger" && (deck.low_ratio || 0) >= 44;
-    useEffect10(() => {
+    const bothPlaying = Boolean((deck == null ? void 0 : deck.is_playing) && partnerDeck && (partnerDeck == null ? void 0 : partnerDeck.is_playing));
+    const isBassClashDanger = bothPlaying && antiMuddy && antiMuddy.status === "danger" && ((deck == null ? void 0 : deck.low_ratio) || 0) >= 44;
+    useEffect8(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -5869,9 +5046,9 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
           ctx.fillRect(x, midY - highAmp, colW + 0.15, highAmp * 2);
         }
       }
-      const bpm = deck.bpm || 130;
+      const bpm = (deck == null ? void 0 : deck.bpm) || 130;
       const beatSec = 60 / bpm;
-      const downbeatSec = deck && deck.first_downbeat_ms ? parseFloat(deck.first_downbeat_ms) / 1e3 : Array.isArray(deck.cues) && deck.cues.length > 0 && typeof deck.cues[0].pos_sec === "number" ? deck.cues[0].pos_sec : 0;
+      const downbeatSec = deck && (deck == null ? void 0 : deck.first_downbeat_ms) ? parseFloat(deck == null ? void 0 : deck.first_downbeat_ms) / 1e3 : Array.isArray(deck == null ? void 0 : deck.cues) && (deck == null ? void 0 : deck.cues.length) > 0 && typeof (deck == null ? void 0 : deck.cues[0].pos_sec) === "number" ? deck == null ? void 0 : deck.cues[0].pos_sec : 0;
       if (beatSec > 0) {
         const firstBeatIdx = Math.floor((startSec - downbeatSec) / beatSec);
         const lastBeatIdx = Math.ceil((endSec - downbeatSec) / beatSec);
@@ -6125,10 +5302,10 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
   };
 
   // web/js/shell/hooks.js
-  var { useState: useState8, useEffect: useEffect11, useRef: useRef11, useCallback: useCallback4 } = React;
+  var { useState: useState6, useEffect: useEffect9, useRef: useRef9, useCallback: useCallback2 } = React;
   function useVirtualRows(items, containerRef, rowHeight = 40, overscan = 10) {
-    const [range, setRange] = useState8({ start: 0, end: 60 });
-    useEffect11(() => {
+    const [range, setRange] = useState6({ start: 0, end: 60 });
+    useEffect9(() => {
       const el = containerRef.current;
       if (!el) return;
       let rafId = null;
@@ -6260,7 +5437,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
   }
 
   // web/js/workspaces/LibraryWorkspace.jsx
-  var { useState: useState9, useEffect: useEffect12, useRef: useRef12, useMemo: useMemo3, useCallback: useCallback5 } = React;
+  var { useState: useState7, useEffect: useEffect10, useRef: useRef10, useMemo: useMemo2, useCallback: useCallback3 } = React;
   var LibraryWorkspace = ({
     libraries: libraries2 = [],
     activeLibraryId,
@@ -6418,18 +5595,19 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       setFeedbackMsg2(shiftReorder2 ? "\u2713 Carpeta reordenada" : "\u2713 Carpeta anidada como subcarpeta");
       setTimeout(() => setFeedbackMsg2(""), 2500);
     };
-    const [editingFolderId, setEditingFolderId] = useState9(null);
-    const [editingFolderName, setEditingFolderName] = useState9("");
-    const [draggedFolderId, setDraggedFolderId] = useState9(null);
-    const [lastClickedRowIdx, setLastClickedRowIdx] = useState9(null);
-    const [activeLibId, setActiveLibId] = useState9(activeLibraryId || libraries2[0] && libraries2[0].id || "lib_default");
-    const [libNameInput, setLibNameInput] = useState9("");
-    const [newFolderName, setNewFolderName] = useState9("");
-    const [selectedFolderId, setSelectedFolderId] = useState9("__ALL__");
-    const [feedbackMsg, setFeedbackMsg2] = useState9("");
-    const [searchTrack, setSearchTrack] = useState9("");
-    const [tableFilter, setTableFilter] = useState9("all");
-    const [colFilters, setColFilters] = useState9({
+    const [editingFolderId, setEditingFolderId] = useState7(null);
+    const [editingFolderName, setEditingFolderName] = useState7("");
+    const [draggedFolderId, setDraggedFolderId] = useState7(null);
+    const [collapsedTrackFolders, setCollapsedTrackFolders] = useState7({});
+    const [lastClickedRowIdx, setLastClickedRowIdx] = useState7(null);
+    const [activeLibId, setActiveLibId] = useState7(activeLibraryId || libraries2[0] && libraries2[0].id || "lib_default");
+    const [libNameInput, setLibNameInput] = useState7("");
+    const [newFolderName, setNewFolderName] = useState7("");
+    const [selectedFolderId, setSelectedFolderId] = useState7("__ALL__");
+    const [feedbackMsg, setFeedbackMsg2] = useState7("");
+    const [searchTrack, setSearchTrack] = useState7("");
+    const [tableFilter, setTableFilter] = useState7("all");
+    const [colFilters, setColFilters] = useState7({
       file: "",
       artist: "",
       genre: "",
@@ -6440,22 +5618,22 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       dance: "",
       intensity: ""
     });
-    const [sortConfig, setSortConfig] = useState9({ key: null, dir: "asc" });
+    const [sortConfig, setSortConfig] = useState7({ key: null, dir: "asc" });
     const hasActiveColFilters = Object.entries(colFilters).some(([k, v]) => k === "format" ? v !== "ALL" : Boolean(String(v).trim()));
     const resetColFilters = () => setColFilters({ file: "", artist: "", genre: "", format: "ALL", bpm: "", key: "", energy: "", dance: "", intensity: "" });
     const toggleSort = (key) => setSortConfig((prev) => prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
-    const [dragOverFolderId, setDragOverFolderId] = useState9(null);
-    const [selectedTrackKeys, setSelectedTrackKeys] = useState9(/* @__PURE__ */ new Set());
-    const [fsBrowserOpen, setFsBrowserOpen] = useState9(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState9("/Users/admin/Music");
-    const [fsParentPath, setFsParentPath] = useState9("/Users/admin");
-    const [fsFolders, setFsFolders] = useState9([]);
-    const [fsFiles, setFsFiles] = useState9([]);
-    const [stagedFolders, setStagedFolders] = useState9([]);
-    const [stagedFiles, setStagedFiles] = useState9([]);
-    const [fsActiveTab, setFsActiveTab] = useState9("folders");
-    const [fsLoading, setFsLoading] = useState9(false);
-    const [leftColWidth, setLeftColWidth] = useState9(() => {
+    const [dragOverFolderId, setDragOverFolderId] = useState7(null);
+    const [selectedTrackKeys, setSelectedTrackKeys] = useState7(/* @__PURE__ */ new Set());
+    const [fsBrowserOpen, setFsBrowserOpen] = useState7(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState7("/Users/admin/Music");
+    const [fsParentPath, setFsParentPath] = useState7("/Users/admin");
+    const [fsFolders, setFsFolders] = useState7([]);
+    const [fsFiles, setFsFiles] = useState7([]);
+    const [stagedFolders, setStagedFolders] = useState7([]);
+    const [stagedFiles, setStagedFiles] = useState7([]);
+    const [fsActiveTab, setFsActiveTab] = useState7("folders");
+    const [fsLoading, setFsLoading] = useState7(false);
+    const [leftColWidth, setLeftColWidth] = useState7(() => {
       try {
         const saved = localStorage.getItem("bw_library_col_width");
         return saved ? Math.max(260, Math.min(680, parseInt(saved, 10))) : 360;
@@ -6463,7 +5641,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         return 360;
       }
     });
-    const [isResizing, setIsResizing] = useState9(false);
+    const [isResizing, setIsResizing] = useState7(false);
     const handleSplitterPointerDown = (e) => {
       e.preventDefault();
       setIsResizing(true);
@@ -6494,7 +5672,7 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
       tracks: [],
       folders: []
     };
-    useEffect12(() => {
+    useEffect10(() => {
       if (activeLibraryId && libraries2.some((l) => l.id === activeLibraryId)) {
         if (activeLibId !== activeLibraryId) {
           setActiveLibId(activeLibraryId);
@@ -6505,12 +5683,12 @@ Arrastra para mover en el Grid \u2022 Clic para editar \u2022 Doble clic para re
         setSelectedFolderId("__ALL__");
       }
     }, [activeLibraryId, libraries2]);
-    useEffect12(() => {
+    useEffect10(() => {
       if (currentLib2) {
         setLibNameInput(currentLib2.name || "");
       }
     }, [currentLib2 == null ? void 0 : currentLib2.id, currentLib2 == null ? void 0 : currentLib2.name]);
-    useEffect12(() => {
+    useEffect10(() => {
       setSelectedTrackKeys(/* @__PURE__ */ new Set());
     }, [selectedFolderId, activeLibId]);
     const handleCreateNewLibrary = () => {
@@ -7002,7 +6180,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
         setTimeout(() => setFeedbackMsg2(""), 3e3);
       }
     };
-    const allLibTracks = useMemo3(() => {
+    const allLibTracks = useMemo2(() => {
       const map = /* @__PURE__ */ new Map();
       (currentLib2.tracks || []).forEach((t) => {
         const k = t.id || t.path || t.file_path || t.f || t.filename;
@@ -7058,7 +6236,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
           return true;
       }
     };
-    const filterCounts = useMemo3(() => ({
+    const filterCounts = useMemo2(() => ({
       total: _filterSourceTracks.length,
       missing: _filterSourceTracks.filter((t) => matchesTableFilter(t, "missing")).length,
       missing_meta: _filterSourceTracks.filter((t) => matchesTableFilter(t, "missing_meta")).length,
@@ -7157,7 +6335,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
       return String(va).localeCompare(String(vb)) * dir;
     });
-    const availableFormats = useMemo3(() => {
+    const availableFormats = useMemo2(() => {
       const set = /* @__PURE__ */ new Set();
       _filterSourceTracks.forEach((t) => {
         const fmt = String(t.format || (t.filename || t.f || t.path || "").split(".").pop() || "").toUpperCase().trim();
@@ -7356,7 +6534,19 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
               className: `p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${isSelected ? "text-white shadow-md" : "text-gray-300 hover:border-zinc-600"}`,
               title: "Arrastra pistas (o varias con Shift/Cmd) aqu\xED, arrastra sobre otra carpeta para anidar o Shift+arrastra para reordenar"
             },
-            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: `shrink-0 ${isDropOver || isSelected ? "text-cyan-400" : "text-cyan-500/70"}` }), /* @__PURE__ */ React.createElement("div", { className: "truncate flex-1", onDoubleClick: (e) => {
+            /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0 flex-1" }, /* @__PURE__ */ React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  setCollapsedTrackFolders((prev) => ({ ...prev, [fld.id]: !prev[fld.id] }));
+                },
+                className: "w-5 h-5 flex items-center justify-center rounded bg-zinc-900/80 hover:bg-cyan-500/20 text-[11px] font-mono text-cyan-400 border border-zinc-700/70 shrink-0 cursor-pointer transition-colors",
+                title: collapsedTrackFolders[fld.id] ? "Desplegar pistas" : "Ocultar pistas"
+              },
+              collapsedTrackFolders[fld.id] ? "\u25B8" : "\u25BE"
+            ), /* @__PURE__ */ React.createElement(Icons.Folder, { size: 15, className: `shrink-0 ${isDropOver || isSelected ? "text-cyan-400" : "text-cyan-500/70"}` }), /* @__PURE__ */ React.createElement("div", { className: "truncate flex-1", onDoubleClick: (e) => {
               e.stopPropagation();
               setEditingFolderId(fld.id);
               setEditingFolderName(fld.name || "");
@@ -7430,7 +6620,47 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
               },
               /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" })
             ))
-          ), subs.map((sub) => renderFolderNode(sub, depth + 1)));
+          ), !collapsedTrackFolders[fld.id] && /* @__PURE__ */ React.createElement("div", { className: "ml-3 pl-2 border-l border-zinc-800/90 space-y-1 py-1" }, (fld.tracks || []).length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "px-2 py-1 text-[10px] font-mono text-gray-500 italic" }, "Carpeta vac\xEDa") : (fld.tracks || []).map((trk, tIdx) => {
+            var _a3;
+            const coverUrl = getValidCover(
+              trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : trk.f ? `/cover?path=${encodeURIComponent(trk.f)}` : null)
+            );
+            return /* @__PURE__ */ React.createElement(
+              "div",
+              {
+                key: (_a3 = trk.id) != null ? _a3 : `${fld.id}_tr_${tIdx}`,
+                draggable: true,
+                onDragStart: (e) => {
+                  e.stopPropagation();
+                  const payload = JSON.stringify(trk);
+                  e.dataTransfer.setData("text/plain", payload);
+                  e.dataTransfer.setData("application/json", payload);
+                  e.dataTransfer.effectAllowed = "copyMove";
+                },
+                onClick: (e) => {
+                  e.stopPropagation();
+                  setSelectedFolderId(fld.id);
+                  if (typeof setSelectedTrack === "function") setSelectedTrack(trk.id);
+                  if (typeof onPlayTrack === "function") onPlayTrack(trk, 0, false);
+                },
+                className: "px-2 py-1 rounded-lg bg-[#0d0d16] hover:bg-djcyan-950/40 border border-zinc-800/70 hover:border-cyan-500/50 flex items-center gap-2 cursor-grab active:cursor-grabbing transition-colors",
+                title: "Arrastra esta pista a otra carpeta o haz clic para seleccionarla"
+              },
+              /* @__PURE__ */ React.createElement(
+                "img",
+                {
+                  src: coverUrl,
+                  alt: "Cover",
+                  onError: (e) => {
+                    e.target.onerror = null;
+                    e.target.src = DEFAULT_VINYL_SVG2;
+                  },
+                  className: "w-7 h-7 rounded object-cover border border-djzinc-750 shrink-0 bg-black pointer-events-none"
+                }
+              ),
+              /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 pointer-events-none" }, /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-bold text-white truncate leading-tight" }, trk.title || trk.t || trk.filename || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 truncate leading-tight mt-0.5" }, trk.artist || trk.a || "Artista Desconocido"))
+            );
+          })), subs.map((sub) => renderFolderNode(sub, depth + 1)));
         };
         return renderFolderNode(f, 0);
       })),
@@ -7911,7 +7141,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
   };
 
   // web/js/modals/HotCueStudioModal.jsx
-  var { useState: useState10, useEffect: useEffect13, useRef: useRef13, useCallback: useCallback6 } = React;
+  var { useState: useState8, useEffect: useEffect11, useRef: useRef11, useCallback: useCallback4 } = React;
   var HotCueStudioModal = ({
     isOpen,
     onClose,
@@ -7940,13 +7170,13 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
     const downbeatMs = track && track.first_downbeat_ms ? parseFloat(track.first_downbeat_ms) : 0;
     const trimMs = track && track.trim_start_ms ? parseFloat(track.trim_start_ms) : 0;
     const trimEndMs = track && track.trim_end_ms ? parseFloat(track.trim_end_ms) : durMs;
-    const [snapToGrid, setSnapToGrid] = useState10(true);
-    const [showBeatgrid, setShowBeatgrid] = useState10(true);
-    const [timeInputValue, setTimeInputValue] = useState10(currentCue.time || "00:00.00");
-    const [nameInputValue, setNameInputValue] = useState10(currentCue.name || "");
-    const [isSavingLocal, setIsSavingLocal] = useState10(false);
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState10("");
-    useEffect13(() => {
+    const [snapToGrid, setSnapToGrid] = useState8(true);
+    const [showBeatgrid, setShowBeatgrid] = useState8(true);
+    const [timeInputValue, setTimeInputValue] = useState8(currentCue.time || "00:00.00");
+    const [nameInputValue, setNameInputValue] = useState8(currentCue.name || "");
+    const [isSavingLocal, setIsSavingLocal] = useState8(false);
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState8("");
+    useEffect11(() => {
       setTimeInputValue(currentCue.time || "00:00.00");
       setNameInputValue(currentCue.name || currentCue.short_name || `Cue ${currentCue.id || 1}`);
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -8129,7 +7359,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
       currentCue.id || 1,
       " en Playhead"
     ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
-      RekordboxWaveform,
+      CopilotSeratoWaveform2,
       {
         track,
         cues: activeCues,
@@ -8353,7 +7583,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
   };
 
   // web/js/modals/CamelotWheelModal.jsx
-  var { useState: useState11 } = React;
+  var { useState: useState9 } = React;
   var CamelotWheelModal = ({ isOpen, onClose, currentKey, onSelectKey }) => {
     if (!isOpen) return null;
     const currentData = CAMELOT_WHEEL_DATA[currentKey] || CAMELOT_WHEEL_DATA["8A"];
@@ -8417,9 +7647,9 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
   };
 
   // web/js/modals/BatchAuditorModal.jsx
-  var { useState: useState12 } = React;
+  var { useState: useState10 } = React;
   var BatchAuditorModal = ({ isOpen, onClose, onRunBatch, onSaveConfig }) => {
-    const [opts, setOpts] = useState12({
+    const [opts, setOpts] = useState10({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -8496,15 +7726,15 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
   };
 
   // web/js/modals/DuplicateComparisonModal.jsx
-  var { useState: useState13, useEffect: useEffect14 } = React;
+  var { useState: useState11, useEffect: useEffect12 } = React;
   var DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDeleted }) => {
-    const [dupData, setDupData] = useState13(null);
-    const [loading, setLoading] = useState13(false);
-    const [deleting, setDeleting] = useState13(false);
-    const [selectedToDelete, setSelectedToDelete] = useState13({});
-    const [statusMsg, setStatusMsg] = useState13("");
-    const [protectSisters, setProtectSisters] = useState13(true);
-    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState13(false);
+    const [dupData, setDupData] = useState11(null);
+    const [loading, setLoading] = useState11(false);
+    const [deleting, setDeleting] = useState11(false);
+    const [selectedToDelete, setSelectedToDelete] = useState11({});
+    const [statusMsg, setStatusMsg] = useState11("");
+    const [protectSisters, setProtectSisters] = useState11(true);
+    const [filterOnlyWithDups, setFilterOnlyWithDups] = useState11(false);
     const loadDups = async (protect = true) => {
       setLoading(true);
       setStatusMsg("Analizando biblioteca en busca de duplicados y calculando \xEDndice de calidad ac\xFAstica...");
@@ -8531,7 +7761,7 @@ Se eliminar\xE1n todas sus ${total} pista(s) y ${((_a2 = currentLib2.folders) ==
         setStatusMsg("");
       }
     };
-    useEffect14(() => {
+    useEffect12(() => {
       if (!isOpen) return;
       loadDups(protectSisters);
     }, [isOpen, tracks]);
@@ -8646,7 +7876,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
 
   // web/js/modals/UserAccountModal.jsx
-  var { useState: useState14, useEffect: useEffect15, useRef: useRef14, useCallback: useCallback7 } = React;
+  var { useState: useState12, useEffect: useEffect13, useRef: useRef12, useCallback: useCallback5 } = React;
   var UserAccountModal = ({
     isOpen,
     onClose,
@@ -8664,44 +7894,44 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_account_drawer_width", 540);
-    const [activeTab, setActiveTab] = useState14("profile");
-    const [alias, setAlias] = useState14(userProfile && userProfile.alias || "DJ Alex BeatWave");
-    const [fullName, setFullName] = useState14(userProfile && userProfile.fullName || "Alejandro Rueda");
-    const [email, setEmail] = useState14(userProfile && userProfile.email || "alex.dj@beatwave.pro");
-    const [address, setAddress] = useState14(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
-    const [city, setCity] = useState14(userProfile && userProfile.city || "Madrid");
-    const [country, setCountry] = useState14(userProfile && userProfile.country || "Espa\xF1a");
-    const [phone, setPhone] = useState14(userProfile && userProfile.phone || "+34 612 345 678");
-    const [avatarUrl, setAvatarUrl] = useState14(userProfile && userProfile.avatarUrl || "");
-    const [currentPassword, setCurrentPassword] = useState14("");
-    const [newPassword, setNewPassword] = useState14("");
-    const [confirmPassword, setConfirmPassword] = useState14("");
-    const [passwordMsg, setPasswordMsg] = useState14({ text: "", type: "" });
-    const [djSoftware, setDjSoftware] = useState14(userProfile && userProfile.djSoftware || "Serato DJ Pro");
-    const [audioInterface, setAudioInterface] = useState14(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
-    const [targetLufs, setTargetLufs] = useState14(userProfile && userProfile.targetLufs || -9);
-    const [autoSaveEnabled, setAutoSaveEnabled] = useState14(userProfile ? userProfile.autoSave !== false : true);
-    const [sessionNameInput, setSessionNameInput] = useState14("");
-    const [saveSuccessMsg, setSaveSuccessMsg] = useState14("");
-    const [savedPaymentMethods, setSavedPaymentMethods] = useState14([
+    const [activeTab, setActiveTab] = useState12("profile");
+    const [alias, setAlias] = useState12(userProfile && userProfile.alias || "DJ Alex BeatWave");
+    const [fullName, setFullName] = useState12(userProfile && userProfile.fullName || "Alejandro Rueda");
+    const [email, setEmail] = useState12(userProfile && userProfile.email || "alex.dj@beatwave.pro");
+    const [address, setAddress] = useState12(userProfile && userProfile.address || "Gran V\xEDa 28, 4\xBA B");
+    const [city, setCity] = useState12(userProfile && userProfile.city || "Madrid");
+    const [country, setCountry] = useState12(userProfile && userProfile.country || "Espa\xF1a");
+    const [phone, setPhone] = useState12(userProfile && userProfile.phone || "+34 612 345 678");
+    const [avatarUrl, setAvatarUrl] = useState12(userProfile && userProfile.avatarUrl || "");
+    const [currentPassword, setCurrentPassword] = useState12("");
+    const [newPassword, setNewPassword] = useState12("");
+    const [confirmPassword, setConfirmPassword] = useState12("");
+    const [passwordMsg, setPasswordMsg] = useState12({ text: "", type: "" });
+    const [djSoftware, setDjSoftware] = useState12(userProfile && userProfile.djSoftware || "Serato DJ Pro");
+    const [audioInterface, setAudioInterface] = useState12(userProfile && userProfile.audioInterface || "Focusrite Scarlett 2i2 / Serato Club Kit");
+    const [targetLufs, setTargetLufs] = useState12(userProfile && userProfile.targetLufs || -9);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState12(userProfile ? userProfile.autoSave !== false : true);
+    const [sessionNameInput, setSessionNameInput] = useState12("");
+    const [saveSuccessMsg, setSaveSuccessMsg] = useState12("");
+    const [savedPaymentMethods, setSavedPaymentMethods] = useState12([
       { id: "pm_card_main", type: "card", brand: "Mastercard", last4: "4242", exp: "08/29", holder: "Alejandro Rueda", isDefault: true },
       { id: "pm_applepay", type: "applepay", label: "Apple Pay (Wallet)", isDefault: false }
     ]);
-    const [showAddPaymentForm, setShowAddPaymentForm] = useState14(false);
-    const [newMethodType, setNewMethodType] = useState14("card");
-    const [newCardNumber, setNewCardNumber] = useState14("");
-    const [newCardExpiry, setNewCardExpiry] = useState14("");
-    const [newCardCvc, setNewCardCvc] = useState14("");
-    const [newCardHolder, setNewCardHolder] = useState14("Alejandro Rueda");
-    const [paypalEmail, setPaypalEmail] = useState14("");
-    const [demoFilled, setDemoFilled] = useState14(false);
-    const [billingMsg, setBillingMsg] = useState14({ text: "", type: "" });
-    const [fiscalName, setFiscalName] = useState14(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
-    const [fiscalTaxId, setFiscalTaxId] = useState14(userProfile && userProfile.taxId || "ES-48765432-W");
-    const [fiscalAddress, setFiscalAddress] = useState14(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
-    const [fiscalCity, setFiscalCity] = useState14(userProfile && userProfile.fiscalCity || "Madrid");
-    const [fiscalZip, setFiscalZip] = useState14(userProfile && userProfile.fiscalZip || "28013");
-    const [fiscalCountry, setFiscalCountry] = useState14(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
+    const [showAddPaymentForm, setShowAddPaymentForm] = useState12(false);
+    const [newMethodType, setNewMethodType] = useState12("card");
+    const [newCardNumber, setNewCardNumber] = useState12("");
+    const [newCardExpiry, setNewCardExpiry] = useState12("");
+    const [newCardCvc, setNewCardCvc] = useState12("");
+    const [newCardHolder, setNewCardHolder] = useState12("Alejandro Rueda");
+    const [paypalEmail, setPaypalEmail] = useState12("");
+    const [demoFilled, setDemoFilled] = useState12(false);
+    const [billingMsg, setBillingMsg] = useState12({ text: "", type: "" });
+    const [fiscalName, setFiscalName] = useState12(userProfile && userProfile.fiscalName || "Alejandro Rueda / BeatWave DJ");
+    const [fiscalTaxId, setFiscalTaxId] = useState12(userProfile && userProfile.taxId || "ES-48765432-W");
+    const [fiscalAddress, setFiscalAddress] = useState12(userProfile && userProfile.fiscalAddress || "Gran V\xEDa 28, 4\xBA B");
+    const [fiscalCity, setFiscalCity] = useState12(userProfile && userProfile.fiscalCity || "Madrid");
+    const [fiscalZip, setFiscalZip] = useState12(userProfile && userProfile.fiscalZip || "28013");
+    const [fiscalCountry, setFiscalCountry] = useState12(userProfile && userProfile.fiscalCountry || "Espa\xF1a");
     const fileInputRef = React.useRef(null);
     const handleAvatarUpload = (e) => {
       const file = e.target.files && e.target.files[0];
@@ -8777,7 +8007,7 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
       setSaveSuccessMsg(`\u2713 Sesi\xF3n "${name}" guardada con \xE9xito`);
       setTimeout(() => setSaveSuccessMsg(""), 3e3);
     };
-    useEffect15(() => {
+    useEffect13(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -9490,10 +8720,10 @@ Esta acci\xF3n mover\xE1 los archivos a la papelera o los eliminar\xE1 de forma 
   };
 
   // web/js/modals/BitacoraModal.jsx
-  var { useState: useState15, useEffect: useEffect16, useRef: useRef15 } = React;
+  var { useState: useState13, useEffect: useEffect14, useRef: useRef13 } = React;
   var BitacoraDetailContent = ({ entry, onBack, onClose, onOpenBeatgridStudio, tracks = [] }) => {
     if (!entry) return null;
-    const [copied, setCopied] = useState15(false);
+    const [copied, setCopied] = useState13(false);
     const handleCopy = () => {
       const fullText = `=== BIT\xC1CORA BEATWAVE PRO ===
 Operaci\xF3n: ${entry.action || "--"}
@@ -9647,10 +8877,10 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var BitacoraModal = ({ isOpen, onClose, entries = [], onClearEntries, onOpenBeatgridStudio, tracks = [] }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_bitacora_drawer_width", 540);
-    const [filterCategory, setFilterCategory] = useState15("all");
-    const [selectedIds, setSelectedIds] = useState15(() => new Set(entries.map((e) => e.id)));
-    const [searchTerm, setSearchTerm] = useState15("");
-    const [detailEntry, setDetailEntry] = useState15(null);
+    const [filterCategory, setFilterCategory] = useState13("all");
+    const [selectedIds, setSelectedIds] = useState13(() => new Set(entries.map((e) => e.id)));
+    const [searchTerm, setSearchTerm] = useState13("");
+    const [detailEntry, setDetailEntry] = useState13(null);
     const filteredEntries = entries.filter((e) => {
       const matchesCategory = filterCategory === "all" || e.category === filterCategory;
       const matchesSearch = !searchTerm || e.trackTitle && e.trackTitle.toLowerCase().includes(searchTerm.toLowerCase()) || e.action && e.action.toLowerCase().includes(searchTerm.toLowerCase()) || e.detailsAfter && e.detailsAfter.toLowerCase().includes(searchTerm.toLowerCase());
@@ -9884,7 +9114,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/DJShortcutsModal.jsx
-  var { useState: useState16, useEffect: useEffect17, useMemo: useMemo4 } = React;
+  var { useState: useState14, useEffect: useEffect15, useMemo: useMemo3 } = React;
   var detectClientOS = () => {
     var _a;
     if (typeof window === "undefined" || typeof navigator === "undefined") return "mac";
@@ -9896,8 +9126,8 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
   var DJShortcutsModal = ({ isOpen, onClose, clubMode, onToggleClubMode }) => {
     if (!isOpen) return null;
-    const detectedOS = useMemo4(() => detectClientOS(), []);
-    const [selectedOS, setSelectedOS] = useState16(() => detectedOS);
+    const detectedOS = useMemo3(() => detectClientOS(), []);
+    const [selectedOS, setSelectedOS] = useState14(() => detectedOS);
     const isMac = selectedOS === "mac";
     const modKey = isMac ? "\u2318" : "Ctrl";
     const altKey = isMac ? "\u2325" : "Alt";
@@ -10012,7 +9242,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/InteractiveManualModal.jsx
-  var { useState: useState17, useEffect: useEffect18, useRef: useRef16 } = React;
+  var { useState: useState15, useEffect: useEffect16, useRef: useRef14 } = React;
   var MANUAL_SECTIONS = {
     copilot: {
       id: "copilot",
@@ -10316,23 +9546,23 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   var InteractiveManualModal = ({ isOpen, onClose, initialSection = "audit", onNavigateTab, lang = "es" }) => {
     if (!isOpen) return null;
     const { width: drawerWidth, onPointerDown: onResizeDown, resetWidth: onResetWidth } = useDrawerResize("bw_manual_drawer_width", 540);
-    const [isFolded, setIsFolded] = useState17(false);
-    const [activeSectionKey, setActiveSectionKey] = useState17(initialSection || "audit");
+    const [isFolded, setIsFolded] = useState15(false);
+    const [activeSectionKey, setActiveSectionKey] = useState15(initialSection || "audit");
     const activeSec = MANUAL_SECTIONS[activeSectionKey] || MANUAL_SECTIONS.audit || {};
-    const [simStep, setSimStep] = useState17(0);
-    const [isSimPlaying, setIsSimPlaying] = useState17(true);
-    const [simSpeed, setSimSpeed] = useState17(1);
-    const [zoomFocus, setZoomFocus] = useState17(null);
-    const [activeManualTab, setActiveManualTab] = useState17("all");
-    const canvasRef = useRef16(null);
-    useEffect18(() => {
+    const [simStep, setSimStep] = useState15(0);
+    const [isSimPlaying, setIsSimPlaying] = useState15(true);
+    const [simSpeed, setSimSpeed] = useState15(1);
+    const [zoomFocus, setZoomFocus] = useState15(null);
+    const [activeManualTab, setActiveManualTab] = useState15("all");
+    const canvasRef = useRef14(null);
+    useEffect16(() => {
       if (initialSection && MANUAL_SECTIONS[initialSection]) {
         setActiveSectionKey(initialSection);
         setSimStep(0);
         setZoomFocus(null);
       }
     }, [initialSection]);
-    useEffect18(() => {
+    useEffect16(() => {
       if (!isSimPlaying) return;
       const interval = simSpeed === 2 ? 1500 : 3e3;
       const timer = setInterval(() => {
@@ -10340,7 +9570,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }, interval);
       return () => clearInterval(timer);
     }, [isSimPlaying, activeSectionKey, simSpeed]);
-    useEffect18(() => {
+    useEffect16(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") onClose();
       };
@@ -10358,7 +9588,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         window.removeEventListener("popstate", handlePopState);
       };
     }, [onClose]);
-    useEffect18(() => {
+    useEffect16(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -11247,10 +10477,10 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/modals/MixOracleModal.jsx
-  var { useState: useState18, useEffect: useEffect19, useMemo: useMemo5 } = React;
+  var { useState: useState16, useEffect: useEffect17, useMemo: useMemo4 } = React;
 
   // web/js/modals/UnifiedLibraryBrowserModal.jsx
-  var { useState: useState19, useEffect: useEffect20 } = React;
+  var { useState: useState17, useEffect: useEffect18 } = React;
   var UnifiedLibraryBrowserModal = ({
     isOpen = false,
     onClose = () => {
@@ -11268,15 +10498,15 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     isAppendMode = false
   }) => {
     if (!isOpen) return null;
-    const [currentPath, setCurrentPath] = useState19(initialPath || "");
-    const [parentPath, setParentPath] = useState19("");
-    const [folders, setFolders] = useState19([]);
-    const [files, setFiles] = useState19([]);
-    const [loading, setLoading] = useState19(false);
-    const [activeTab, setActiveTab] = useState19("folders");
-    const [stagedFolders, setStagedFolders] = useState19([]);
-    const [stagedFiles, setStagedFiles] = useState19([]);
-    const [selectedLibId, setSelectedLibId] = useState19(() => {
+    const [currentPath, setCurrentPath] = useState17(initialPath || "");
+    const [parentPath, setParentPath] = useState17("");
+    const [folders, setFolders] = useState17([]);
+    const [files, setFiles] = useState17([]);
+    const [loading, setLoading] = useState17(false);
+    const [activeTab, setActiveTab] = useState17("folders");
+    const [stagedFolders, setStagedFolders] = useState17([]);
+    const [stagedFiles, setStagedFiles] = useState17([]);
+    const [selectedLibId, setSelectedLibId] = useState17(() => {
       if (activeCustomLibId) return activeCustomLibId;
       if (customLibraries && customLibraries.length > 0) return customLibraries[0].id;
       return "";
@@ -11310,7 +10540,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       setLoading(false);
     };
-    useEffect20(() => {
+    useEffect18(() => {
       fetchDirectoryListing(initialPath);
     }, [initialPath]);
     const handleAbrirFinder = async () => {
@@ -11546,7 +10776,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
   };
 
   // web/js/workspaces/AuditWorkspace.jsx
-  var { useState: useState20, useEffect: useEffect21, useRef: useRef17, useCallback: useCallback8, useMemo: useMemo6 } = React;
+  var { useState: useState18, useEffect: useEffect19, useRef: useRef15, useCallback: useCallback6, useMemo: useMemo5 } = React;
   var CompactHotCuesSummary = ({ track, cues = NV2_COLORS2, onOpenStudio, onSelectCue, selectedCueId = 1, t = (k) => k }) => {
     const activeCues = cues && Array.isArray(cues) && cues.length > 0 ? cues.filter((c) => c && !c.is_empty && (c.pos_ms !== void 0 && c.pos_ms !== null || c.pct !== void 0 && c.pct !== null)) : [];
     return /* @__PURE__ */ React.createElement("div", { className: "bg-djzinc-950/90 border border-djzinc-800 rounded-lg p-2.5 flex flex-col gap-2 shadow-md" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800 pb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-djcyan-300 uppercase tracking-wider font-mono" }, "8 Hot Cues (Resumen)")), onOpenStudio && /* @__PURE__ */ React.createElement(
@@ -11614,31 +10844,31 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
     onOpenBeatgridStudio
   }) => {
     var _a;
-    const [localRutaOrigen, setLocalRutaOrigen] = useState20("");
+    const [localRutaOrigen, setLocalRutaOrigen] = useState18("");
     const rutaOrigen = currentFolder || localRutaOrigen;
     const setRutaOrigen = setCurrentFolder || setLocalRutaOrigen;
-    const [selectedLooseFiles, setSelectedLooseFiles] = useState20([]);
-    const [isAuditing, setIsAuditing] = useState20(false);
-    const [isLoadingDir, setIsLoadingDir] = useState20(false);
-    const [isExporting, setIsExporting] = useState20(false);
-    const [isInjecting, setIsInjecting] = useState20(false);
-    const [metrics, setMetrics] = useState20({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
-    const [filtro, setFiltro] = useState20("todos");
-    const [busqueda, setBusqueda] = useState20("");
-    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState20("ALL");
-    const [batchModalOpen, setBatchModalOpen] = useState20(false);
-    const [duplicateModalOpen, setDuplicateModalOpen] = useState20(false);
-    const [batchProgress, setBatchProgress] = useState20(0);
-    const [batchStatusMsg, setBatchStatusMsg] = useState20("");
-    const [saveFeedback, setSaveFeedback] = useState20("");
-    const [sidebarOpen, setSidebarOpen] = useState20(false);
+    const [selectedLooseFiles, setSelectedLooseFiles] = useState18([]);
+    const [isAuditing, setIsAuditing] = useState18(false);
+    const [isLoadingDir, setIsLoadingDir] = useState18(false);
+    const [isExporting, setIsExporting] = useState18(false);
+    const [isInjecting, setIsInjecting] = useState18(false);
+    const [metrics, setMetrics] = useState18({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
+    const [filtro, setFiltro] = useState18("todos");
+    const [busqueda, setBusqueda] = useState18("");
+    const [filterHeaderAcousticRole, setFilterHeaderAcousticRole] = useState18("ALL");
+    const [batchModalOpen, setBatchModalOpen] = useState18(false);
+    const [duplicateModalOpen, setDuplicateModalOpen] = useState18(false);
+    const [batchProgress, setBatchProgress] = useState18(0);
+    const [batchStatusMsg, setBatchStatusMsg] = useState18("");
+    const [saveFeedback, setSaveFeedback] = useState18("");
+    const [sidebarOpen, setSidebarOpen] = useState18(false);
     const { width: inspectorWidth, onPointerDown: onInspectorResizeDown, resetWidth: onInspectorResetWidth } = useDrawerResize("bw_inspector_drawer_width", 540);
     const { width: columnsDrawerWidth, onPointerDown: onColumnsResizeDown, resetWidth: onColumnsResetWidth } = useDrawerResize("bw_columns_drawer_width", 540);
-    const [exportDropdownOpen, setExportDropdownOpen] = useState20(false);
-    const [mobileWorkflowTab, setMobileWorkflowTab] = useState20("analizar");
-    const [batchConfigured, setBatchConfigured] = useState20(false);
-    const [isAppendMode, setIsAppendMode] = useState20(false);
-    const [batchConfigOpts, setBatchConfigOpts] = useState20({
+    const [exportDropdownOpen, setExportDropdownOpen] = useState18(false);
+    const [mobileWorkflowTab, setMobileWorkflowTab] = useState18("analizar");
+    const [batchConfigured, setBatchConfigured] = useState18(false);
+    const [isAppendMode, setIsAppendMode] = useState18(false);
+    const [batchConfigOpts, setBatchConfigOpts] = useState18({
       fftLossless: true,
       trimSilences: true,
       beatgrid: false,
@@ -11654,12 +10884,12 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       stripWhitespace: true,
       onlyIncomplete: false
     });
-    const [mixOracleOpen, setMixOracleOpen] = useState20(false);
-    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState20(null);
-    const [selectedAuditIds, setSelectedAuditIds] = useState20(/* @__PURE__ */ new Set());
-    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState20(false);
-    const [deleteModalState, setDeleteModalState] = useState20({ open: false, tracks: [], mode: "trash" });
-    const [saveModalState, setSaveModalState] = useState20({
+    const [mixOracleOpen, setMixOracleOpen] = useState18(false);
+    const [mixOracleTargetTrack, setMixOracleTargetTrack] = useState18(null);
+    const [selectedAuditIds, setSelectedAuditIds] = useState18(/* @__PURE__ */ new Set());
+    const [isSearchingSpotifyHD, setIsSearchingSpotifyHD] = useState18(false);
+    const [deleteModalState, setDeleteModalState] = useState18({ open: false, tracks: [], mode: "trash" });
+    const [saveModalState, setSaveModalState] = useState18({
       open: false,
       tracks: [],
       fields: {
@@ -11671,35 +10901,35 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         cover: true
       }
     });
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState20(() => {
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState18(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
         return false;
       }
     });
-    const [internalTracks, setInternalTracks] = useState20([]);
+    const [internalTracks, setInternalTracks] = useState18([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = setExternalTracks !== void 0 ? setExternalTracks : setInternalTracks;
-    const [fftModalOpen, setFftModalOpen] = useState20(false);
-    const [fftAnalysisData, setFftAnalysisData] = useState20(null);
-    const [isAnalyzingFft, setIsAnalyzingFft] = useState20(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState20("");
-    const [fsParentPath, setFsParentPath] = useState20("");
-    const [fsFolders, setFsFolders] = useState20([]);
-    const [fsFiles, setFsFiles] = useState20([]);
-    const [selectedFsFiles, setSelectedFsFiles] = useState20([]);
-    const [stagedFolders, setStagedFolders] = useState20([]);
-    const [stagedFiles, setStagedFiles] = useState20([]);
-    const [fsActiveTab, setFsActiveTab] = useState20("folders");
-    const [fsLoading, setFsLoading] = useState20(false);
-    const [camelotModalOpen, setCamelotModalOpen] = useState20(false);
-    const tapTimesRef = useRef17([]);
-    const tableScrollRef = useRef17(null);
-    const isProcessCancelledRef = useRef17(false);
-    const activeAbortControllerRef = useRef17(null);
-    const [metricsCollapsed, setMetricsCollapsed] = useState20(() => {
+    const [fftModalOpen, setFftModalOpen] = useState18(false);
+    const [fftAnalysisData, setFftAnalysisData] = useState18(null);
+    const [isAnalyzingFft, setIsAnalyzingFft] = useState18(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState18(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState18("");
+    const [fsParentPath, setFsParentPath] = useState18("");
+    const [fsFolders, setFsFolders] = useState18([]);
+    const [fsFiles, setFsFiles] = useState18([]);
+    const [selectedFsFiles, setSelectedFsFiles] = useState18([]);
+    const [stagedFolders, setStagedFolders] = useState18([]);
+    const [stagedFiles, setStagedFiles] = useState18([]);
+    const [fsActiveTab, setFsActiveTab] = useState18("folders");
+    const [fsLoading, setFsLoading] = useState18(false);
+    const [camelotModalOpen, setCamelotModalOpen] = useState18(false);
+    const tapTimesRef = useRef15([]);
+    const tableScrollRef = useRef15(null);
+    const isProcessCancelledRef = useRef15(false);
+    const activeAbortControllerRef = useRef15(null);
+    const [metricsCollapsed, setMetricsCollapsed] = useState18(() => {
       try {
         return localStorage.getItem("bw_metrics_collapsed") !== "false";
       } catch (e) {
@@ -11716,20 +10946,20 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         return next;
       });
     };
-    useEffect21(() => {
+    useEffect19(() => {
       const handleToggleEvent = () => toggleMetricsCollapsed();
       window.addEventListener("bw:toggle-metrics", handleToggleEvent);
       return () => window.removeEventListener("bw:toggle-metrics", handleToggleEvent);
     }, []);
-    useEffect21(() => {
+    useEffect19(() => {
       if (tracks && tracks.length > 0) {
         setMetricsCollapsed(false);
       }
     }, [tracks && tracks.length > 0]);
-    const [selectedCueId, setSelectedCueId] = useState20(1);
-    const [snapToGrid, setSnapToGrid] = useState20(true);
-    const [showBeatgrid, setShowBeatgrid] = useState20(true);
-    const [cueStudioModalOpen, setCueStudioModalOpen] = useState20(false);
+    const [selectedCueId, setSelectedCueId] = useState18(1);
+    const [snapToGrid, setSnapToGrid] = useState18(true);
+    const [showBeatgrid, setShowBeatgrid] = useState18(true);
+    const [cueStudioModalOpen, setCueStudioModalOpen] = useState18(false);
     const currentTrack = tracks.find((t2) => t2.id === selectedTrack) || tracks[0] || {};
     const resetAuditWorkspace = (keepFolder = false) => {
       if (!keepFolder) {
@@ -11769,7 +10999,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         onAuditProgressChange({ isAuditing: false, progress: 0, statusMsg: "" });
       }
     };
-    useEffect21(() => {
+    useEffect19(() => {
       const handleAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -11922,7 +11152,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       );
       setTimeout(() => setSaveFeedback(""), 4e3);
     };
-    useEffect21(() => {
+    useEffect19(() => {
       if (typeof onAuditProgressChange === "function") {
         onAuditProgressChange({
           isAuditing,
@@ -11931,7 +11161,7 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
         });
       }
     }, [isAuditing, batchProgress, batchStatusMsg, onAuditProgressChange]);
-    useEffect21(() => {
+    useEffect19(() => {
       if (!tracks || tracks.length === 0) {
         setMetrics({ total: 0, missing: 0, missing_title: 0, missing_artist: 0, missing_cover: 0, duplicates: 0, ready: 0, errors: 0 });
       } else {
@@ -12117,25 +11347,25 @@ ${entry.fullLog || entry.detailsAfter || "Sin informaci\xF3n adicional."}
       }
       return false;
     };
-    const badQualityTracks = useMemo6(() => {
+    const badQualityTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => isBadQualityTrack(t2));
     }, [tracks]);
-    const flacUpgradeTracks = useMemo6(() => {
+    const flacUpgradeTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => isFlacUpgradeCandidate(t2));
     }, [tracks]);
-    const missingMetaTracks = useMemo6(() => {
+    const missingMetaTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.title) || !(t2 == null ? void 0 : t2.t) || String((t2 == null ? void 0 : t2.title) || (t2 == null ? void 0 : t2.t)).toLowerCase().trim() === "untitled" || !(t2 == null ? void 0 : t2.artist) || !(t2 == null ? void 0 : t2.a) || String((t2 == null ? void 0 : t2.artist) || (t2 == null ? void 0 : t2.a)).toLowerCase().trim() === "desconocido");
     }, [tracks]);
-    const missingCuesTracks = useMemo6(() => {
+    const missingCuesTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => !(t2 == null ? void 0 : t2.cues) || Array.isArray(t2 == null ? void 0 : t2.cues) && (t2 == null ? void 0 : t2.cues.length) === 0 || !(t2 == null ? void 0 : t2.hotcues));
     }, [tracks]);
-    const trimmedSilenceTracks = useMemo6(() => {
+    const trimmedSilenceTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => Boolean((t2 == null ? void 0 : t2.trim_start_ms) && (t2 == null ? void 0 : t2.trim_start_ms) > 0 || (t2 == null ? void 0 : t2.silence_trimmed) || (t2 == null ? void 0 : t2.zero_cross_trim)));
     }, [tracks]);
-    const excellentQualityTracks = useMemo6(() => {
+    const excellentQualityTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => !isBadQualityTrack(t2) && ((t2 == null ? void 0 : t2.format) === "FLAC" || (t2 == null ? void 0 : t2.format) === "WAV" || (t2 == null ? void 0 : t2.format) === "AIFF" || (t2 == null ? void 0 : t2.bitrate_kbps) && (t2 == null ? void 0 : t2.bitrate_kbps) >= 320));
     }, [tracks]);
-    const highEnergyTracks = useMemo6(() => {
+    const highEnergyTracks = useMemo5(() => {
       return (tracks || []).filter((t2) => Number((t2 == null ? void 0 : t2.e) || (t2 == null ? void 0 : t2.energy) || 0) >= 75);
     }, [tracks]);
     const handleToggleSelectRow = (id, e) => {
@@ -13335,7 +12565,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
     };
     const handleInyectarSeratoLote = handleGuardarTodoEnFicheros;
-    const [isAuditPaused, setIsAuditPaused] = useState20(false);
+    const [isAuditPaused, setIsAuditPaused] = useState18(false);
     const handleTogglePausaProceso = async () => {
       const nextState = !isAuditPaused;
       setIsAuditPaused(nextState);
@@ -13391,28 +12621,28 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         }
       }, 2e3);
     };
-    const [auditSortField, setAuditSortField] = useState20("id");
-    const [auditSortDir, setAuditSortDir] = useState20("asc");
-    const [filterHeaderSearch, setFilterHeaderSearch] = useState20("");
-    const [filterHeaderArtist, setFilterHeaderArtist] = useState20("");
-    const [filterHeaderFormat, setFilterHeaderFormat] = useState20("ALL");
-    const [filterHeaderKhz, setFilterHeaderKhz] = useState20("ALL");
-    const [filterHeaderKbps, setFilterHeaderKbps] = useState20("ALL");
-    const [filterHeaderQuality, setFilterHeaderQuality] = useState20("ALL");
-    const [filterHeaderLoss, setFilterHeaderLoss] = useState20("ALL");
-    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState20("ALL");
-    const [filterHeaderLufs, setFilterHeaderLufs] = useState20("ALL");
-    const [filterHeaderDuration, setFilterHeaderDuration] = useState20("");
-    const [filterHeaderBpm, setFilterHeaderBpm] = useState20("");
-    const [filterHeaderKey, setFilterHeaderKey] = useState20("");
-    const [filterHeaderCues, setFilterHeaderCues] = useState20("ALL");
-    const [filterHeaderStatus, setFilterHeaderStatus] = useState20("ALL");
-    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState20("ALL");
-    const [filterHeaderDance, setFilterHeaderDance] = useState20("ALL");
-    const [filterHeaderPhase, setFilterHeaderPhase] = useState20("ALL");
-    const [filterHeaderGenre, setFilterHeaderGenre] = useState20("");
-    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState20("");
-    const [filterHeaderComment, setFilterHeaderComment] = useState20("");
+    const [auditSortField, setAuditSortField] = useState18("id");
+    const [auditSortDir, setAuditSortDir] = useState18("asc");
+    const [filterHeaderSearch, setFilterHeaderSearch] = useState18("");
+    const [filterHeaderArtist, setFilterHeaderArtist] = useState18("");
+    const [filterHeaderFormat, setFilterHeaderFormat] = useState18("ALL");
+    const [filterHeaderKhz, setFilterHeaderKhz] = useState18("ALL");
+    const [filterHeaderKbps, setFilterHeaderKbps] = useState18("ALL");
+    const [filterHeaderQuality, setFilterHeaderQuality] = useState18("ALL");
+    const [filterHeaderLoss, setFilterHeaderLoss] = useState18("ALL");
+    const [filterHeaderCutoff, setFilterHeaderCutoff] = useState18("ALL");
+    const [filterHeaderLufs, setFilterHeaderLufs] = useState18("ALL");
+    const [filterHeaderDuration, setFilterHeaderDuration] = useState18("");
+    const [filterHeaderBpm, setFilterHeaderBpm] = useState18("");
+    const [filterHeaderKey, setFilterHeaderKey] = useState18("");
+    const [filterHeaderCues, setFilterHeaderCues] = useState18("ALL");
+    const [filterHeaderStatus, setFilterHeaderStatus] = useState18("ALL");
+    const [filterHeaderEnergy, setFilterHeaderEnergy] = useState18("ALL");
+    const [filterHeaderDance, setFilterHeaderDance] = useState18("ALL");
+    const [filterHeaderPhase, setFilterHeaderPhase] = useState18("ALL");
+    const [filterHeaderGenre, setFilterHeaderGenre] = useState18("");
+    const [filterHeaderSubgenre, setFilterHeaderSubgenre] = useState18("");
+    const [filterHeaderComment, setFilterHeaderComment] = useState18("");
     const DEFAULT_AUDIT_COLUMNS = {
       id: true,
       waveform: true,
@@ -13505,7 +12735,7 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         ]
       }
     ];
-    const [visibleColumns, setVisibleColumns] = useState20(() => {
+    const [visibleColumns, setVisibleColumns] = useState18(() => {
       try {
         const saved = localStorage.getItem("bw_audit_visible_columns");
         if (saved) return { ...DEFAULT_AUDIT_COLUMNS, ...JSON.parse(saved) };
@@ -13513,10 +12743,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
       }
       return DEFAULT_AUDIT_COLUMNS;
     });
-    const [columnSelectorOpen, setColumnSelectorOpen] = useState20(false);
-    const [columnSearchText, setColumnSearchText] = useState20("");
-    const [isDragOver, setIsDragOver] = useState20(false);
-    const [libraryFolders, setLibraryFolders] = useState20(() => {
+    const [columnSelectorOpen, setColumnSelectorOpen] = useState18(false);
+    const [columnSearchText, setColumnSearchText] = useState18("");
+    const [isDragOver, setIsDragOver] = useState18(false);
+    const [libraryFolders, setLibraryFolders] = useState18(() => {
       try {
         const saved = localStorage.getItem("bw_library_folders_v2");
         if (saved) {
@@ -13532,10 +12762,10 @@ Beatgrid 1.0.0 Anti-Drift: ${opts.beatgrid ? "Activado (Autocorrelaci\xF3n 40-12
         { id: "f_close", name: "04 - Closing & Anthems", color: "cyan", collapsed: false, trackIds: [], subfolders: [] }
       ];
     });
-    const [selectedFolderId, setSelectedFolderId] = useState20("all");
-    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState20(true);
-    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState20(false);
-    const [cloudSyncStatus, setCloudSyncStatus] = useState20({ isSyncing: false, synced: false, lastSyncText: "" });
+    const [selectedFolderId, setSelectedFolderId] = useState18("all");
+    const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState18(true);
+    const [folderMoveMenuOpen, setFolderMoveMenuOpen] = useState18(false);
+    const [cloudSyncStatus, setCloudSyncStatus] = useState18({ isSyncing: false, synced: false, lastSyncText: "" });
     const handleCloudMetadataSync = async () => {
       setCloudSyncStatus({ isSyncing: true, synced: false, lastSyncText: "Sincronizando..." });
       try {
@@ -13778,7 +13008,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         }, 800);
       }
     };
-    const foldersFlatList = useMemo6(() => {
+    const foldersFlatList = useMemo5(() => {
       const list = [];
       libraryFolders.forEach((f) => {
         list.push({ id: f.id, name: f.name, color: f.color, isSub: false });
@@ -13790,7 +13020,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       });
       return list;
     }, [libraryFolders]);
-    const activeFolderMeta = useMemo6(() => {
+    const activeFolderMeta = useMemo5(() => {
       if (!selectedFolderId || selectedFolderId === "all") return null;
       const target = findFolderOrSub(libraryFolders, selectedFolderId);
       if (!target || !target.folder) return null;
@@ -13885,7 +13115,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       setFilterHeaderPhase("ALL");
       setFilterHeaderComment("");
     };
-    const searchIndex = useMemo6(() => {
+    const searchIndex = useMemo5(() => {
       if (!tracks || tracks.length === 0) return null;
       const tokenMap = /* @__PURE__ */ new Map();
       const tokenize = (str) => {
@@ -13915,8 +13145,8 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       return tokenMap;
     }, [tracks]);
-    const searchBenchmarkRef = useRef17(0.2);
-    const tracksFiltrados = useMemo6(() => {
+    const searchBenchmarkRef = useRef15(0.2);
+    const tracksFiltrados = useMemo5(() => {
       const benchStart = performance.now();
       const parsed = busqueda && busqueda.length > 2 ? parseAIDJQuery(busqueda) : null;
       let baseTracks = tracks;
@@ -15315,7 +14545,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" }),
         /* @__PURE__ */ React.createElement("span", null, isSearchingSpotifyHD ? "Buscando en Cat\xE1logo..." : "Buscar Reemplazo HD en Cat\xE1logo")
       )) : null, /* @__PURE__ */ React.createElement(
-        RekordboxWaveform2,
+        CopilotSeratoWaveform2,
         {
           track: currentTrack,
           cues: currentTrack && currentTrack.cues && currentTrack.cues.length > 0 ? currentTrack.cues : NV2_COLORS2,
@@ -16169,8 +15399,238 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     ));
   };
 
+  // web/js/shell/CollectionTreeSidebar.jsx
+  var { useState: useState19, useMemo: useMemo6 } = React;
+  var getTrackKey = (trk) => {
+    var _a, _b, _c, _d, _e, _f;
+    return String((_f = (_e = (_d = (_c = (_b = (_a = trk == null ? void 0 : trk.id) != null ? _a : trk == null ? void 0 : trk.path) != null ? _b : trk == null ? void 0 : trk.filepath) != null ? _c : trk == null ? void 0 : trk.file_path) != null ? _d : trk == null ? void 0 : trk.f) != null ? _e : trk == null ? void 0 : trk.filename) != null ? _f : "");
+  };
+  var countTracksRecursive = (folders = []) => folders.reduce((acc, f) => {
+    const own = Array.isArray(f.tracks) ? f.tracks.length : 0;
+    const sub = Array.isArray(f.subfolders) ? countTracksRecursive(f.subfolders) : 0;
+    return acc + own + sub;
+  }, 0);
+  var moveTrackInTree = (folders, sourceFolderId2, targetFolderId2, trackObj) => {
+    const tKey = getTrackKey(trackObj);
+    const updateNode = (node) => {
+      let nextTracks = Array.isArray(node.tracks) ? [...node.tracks] : [];
+      if (sourceFolderId2 && String(node.id) === String(sourceFolderId2) && String(sourceFolderId2) !== String(targetFolderId2)) {
+        nextTracks = nextTracks.filter((t) => getTrackKey(t) !== tKey);
+      }
+      if (String(node.id) === String(targetFolderId2)) {
+        if (!nextTracks.some((t) => getTrackKey(t) === tKey)) {
+          nextTracks.push(trackObj);
+        }
+      }
+      const nextSubs = Array.isArray(node.subfolders) ? node.subfolders.map(updateNode) : node.subfolders;
+      return { ...node, tracks: nextTracks, ...nextSubs !== void 0 ? { subfolders: nextSubs } : {} };
+    };
+    return (folders || []).map(updateNode);
+  };
+  var CollectionTreeSidebar = ({
+    tracks = [],
+    customLibraries = [],
+    activeCustomLibId = null,
+    onSaveCustomLibraries = null,
+    selectedTrackId = null,
+    onSelectTrack,
+    title = "Colecci\xF3n",
+    onExploreFolder = null,
+    className = "w-72"
+  }) => {
+    const [search, setSearch] = useState19("");
+    const [collapsedFolders, setCollapsedFolders] = useState19({});
+    const [dragOverFolderId, setDragOverFolderId] = useState19(null);
+    const activeLib = useMemo6(() => {
+      if (!Array.isArray(customLibraries) || customLibraries.length === 0) return null;
+      return customLibraries.find((l) => String(l.id) === String(activeCustomLibId)) || customLibraries[0];
+    }, [customLibraries, activeCustomLibId]);
+    const { rootFolders, totalTracksCount, isLibraryBacked } = useMemo6(() => {
+      if (activeLib && Array.isArray(activeLib.folders) && activeLib.folders.length > 0) {
+        return {
+          rootFolders: activeLib.folders,
+          totalTracksCount: countTracksRecursive(activeLib.folders),
+          isLibraryBacked: true
+        };
+      }
+      const map = /* @__PURE__ */ new Map();
+      (tracks || []).forEach((trk) => {
+        const rawPath = String(trk.path || trk.filepath || trk.file_path || trk.f || "");
+        let folderLabel = trk.folder || trk.crate || "";
+        if (!folderLabel && rawPath) {
+          const normalized = rawPath.replace(/\\/g, "/");
+          const parts = normalized.split("/").filter(Boolean);
+          if (parts.length >= 3) {
+            folderLabel = `${parts[parts.length - 3]} / ${parts[parts.length - 2]}`;
+          } else if (parts.length === 2) {
+            folderLabel = parts[0];
+          }
+        }
+        if (!folderLabel) folderLabel = trk.genre || "Colecci\xF3n General";
+        if (!map.has(folderLabel)) map.set(folderLabel, []);
+        map.get(folderLabel).push(trk);
+      });
+      const fallbackFolders = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([name, items], idx) => ({
+        id: `fs_${idx}_${name}`,
+        name,
+        tracks: items,
+        subfolders: []
+      }));
+      return {
+        rootFolders: fallbackFolders,
+        totalTracksCount: (tracks || []).length,
+        isLibraryBacked: false
+      };
+    }, [activeLib, tracks]);
+    const toggleFolder = (folderId) => {
+      setCollapsedFolders((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
+    };
+    const handleDropTrackOnFolder = (e, targetFolderId2) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOverFolderId(null);
+      if (!isLibraryBacked || !activeLib || typeof onSaveCustomLibraries !== "function") return;
+      try {
+        const raw = e.dataTransfer.getData("application/json") || e.dataTransfer.getData("text/plain");
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const trackObj = (parsed == null ? void 0 : parsed.track) ? parsed.track : parsed;
+        const sourceFolderId2 = (parsed == null ? void 0 : parsed.sourceFolderId) || null;
+        if (!trackObj || typeof trackObj !== "object") return;
+        const updatedLibs = customLibraries.map((lib) => {
+          if (String(lib.id) !== String(activeLib.id)) return lib;
+          return {
+            ...lib,
+            folders: moveTrackInTree(lib.folders, sourceFolderId2, targetFolderId2, trackObj)
+          };
+        });
+        onSaveCustomLibraries(updatedLibs, activeLib.id);
+      } catch (_) {
+      }
+    };
+    const q = search.trim().toLowerCase();
+    const renderFolderNode = (fld, depth = 0) => {
+      const folderName = String(fld.name || fld.title || "Carpeta");
+      const rawItems = Array.isArray(fld.tracks) ? fld.tracks : [];
+      const subs = Array.isArray(fld.subfolders) ? fld.subfolders : [];
+      const filteredItems = q ? rawItems.filter((trk) => {
+        const t = String(trk.title || trk.t || trk.filename || "").toLowerCase();
+        const a = String(trk.artist || trk.a || "").toLowerCase();
+        return t.includes(q) || a.includes(q) || folderName.toLowerCase().includes(q);
+      }) : rawItems;
+      const renderedSubs = subs.map((sub) => renderFolderNode(sub, depth + 1)).filter(Boolean);
+      if (q && filteredItems.length === 0 && renderedSubs.length === 0 && !folderName.toLowerCase().includes(q)) {
+        return null;
+      }
+      const isCollapsed = Boolean(collapsedFolders[fld.id]);
+      const isDropOver = dragOverFolderId === fld.id;
+      return /* @__PURE__ */ React.createElement("div", { key: fld.id, className: depth > 0 ? "ml-2.5 pl-2 border-l border-cyan-500/25 space-y-1 mt-1" : "space-y-1" }, /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          onDragOver: (e) => {
+            if (!isLibraryBacked) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (dragOverFolderId !== fld.id) setDragOverFolderId(fld.id);
+          },
+          onDragLeave: (e) => {
+            if (e.currentTarget.contains(e.relatedTarget)) return;
+            setDragOverFolderId(null);
+          },
+          onDrop: (e) => handleDropTrackOnFolder(e, fld.id),
+          className: `rounded-lg border overflow-hidden transition-colors ${isDropOver ? "border-cyan-400 bg-cyan-950/30 shadow-[0_0_12px_rgba(6,182,212,0.35)]" : "border-djzinc-800/70 bg-[#0b0b12]"}`
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            onClick: () => toggleFolder(fld.id),
+            className: "w-full px-2 py-1.5 flex items-center justify-between gap-1.5 bg-[#10101a] hover:bg-[#151524] cursor-pointer transition-colors"
+          },
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" }, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: (e) => {
+                e.stopPropagation();
+                toggleFolder(fld.id);
+              },
+              className: "w-5 h-5 flex items-center justify-center rounded bg-zinc-900/80 hover:bg-cyan-500/20 text-[11px] font-mono text-cyan-400 border border-zinc-700/70 shrink-0 cursor-pointer transition-colors",
+              title: isCollapsed ? "Desplegar pistas" : "Ocultar pistas"
+            },
+            isCollapsed ? "\u25B8" : "\u25BE"
+          ), /* @__PURE__ */ React.createElement(Icons.Folder, { size: 13, className: `shrink-0 ${isDropOver ? "text-cyan-300" : "text-amber-400/90"}` }), /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-bold text-gray-200 truncate", title: folderName }, folderName)),
+          /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-500 shrink-0" }, rawItems.length)
+        ),
+        !isCollapsed && /* @__PURE__ */ React.createElement("div", { className: "divide-y divide-djzinc-800/50" }, filteredItems.length === 0 ? renderedSubs.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "px-3 py-1.5 text-[10px] font-mono text-gray-600 italic" }, "Carpeta vac\xEDa") : filteredItems.map((trk, idx) => {
+          var _a;
+          const isSel = selectedTrackId !== null && String(selectedTrackId) === String(trk.id);
+          const coverUrl = getValidCover(
+            trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : trk.f ? `/cover?path=${encodeURIComponent(trk.f)}` : null)
+          );
+          return /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              key: (_a = trk.id) != null ? _a : `${fld.id}_${idx}`,
+              draggable: isLibraryBacked && typeof onSaveCustomLibraries === "function",
+              onDragStart: (e) => {
+                e.stopPropagation();
+                const payload = JSON.stringify({ track: trk, sourceFolderId: fld.id });
+                e.dataTransfer.setData("application/json", payload);
+                e.dataTransfer.setData("text/plain", JSON.stringify(trk));
+                e.dataTransfer.effectAllowed = "copyMove";
+              },
+              onClick: () => onSelectTrack && onSelectTrack(trk),
+              className: `w-full px-2 py-1.5 flex items-center gap-2 text-left transition-colors ${isLibraryBacked && typeof onSaveCustomLibraries === "function" ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${isSel ? "bg-djcyan-950/50 border-l-2 border-l-djcyan-400" : "hover:bg-djzinc-900/70 border-l-2 border-l-transparent"}`,
+              title: isLibraryBacked ? "Clic para cargar \xB7 Arrastra a otra carpeta para mover" : "Clic para cargar pista"
+            },
+            /* @__PURE__ */ React.createElement(
+              "img",
+              {
+                src: coverUrl,
+                alt: "Cover",
+                onError: (e) => {
+                  e.target.onerror = null;
+                  e.target.src = DEFAULT_VINYL_SVG2;
+                },
+                className: "w-8 h-8 rounded object-cover border border-djzinc-750 shrink-0 bg-black pointer-events-none"
+              }
+            ),
+            /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1 pointer-events-none" }, /* @__PURE__ */ React.createElement("div", { className: `text-[11px] font-bold truncate leading-tight ${isSel ? "text-djcyan-300" : "text-white"}` }, trk.title || trk.t || trk.filename || "Sin t\xEDtulo"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] text-gray-400 truncate leading-tight mt-0.5" }, trk.artist || trk.a || "Artista Desconocido"))
+          );
+        }))
+      ), !isCollapsed && renderedSubs.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "space-y-1" }, renderedSubs));
+    };
+    return /* @__PURE__ */ React.createElement("aside", { className: `${className} shrink-0 border-r border-djzinc-800 bg-[#09090f] flex flex-col min-h-0 overflow-hidden select-none` }, /* @__PURE__ */ React.createElement("div", { className: "px-3 py-2.5 border-b border-djzinc-800 bg-[#0c0c14] flex items-center justify-between gap-2 shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ React.createElement(Icons.Folder, { size: 14, className: "text-djcyan-400 shrink-0" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black uppercase tracking-wider text-white truncate", title: (activeLib == null ? void 0 : activeLib.name) || title }, (activeLib == null ? void 0 : activeLib.name) || title), /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-djzinc-900 border border-djzinc-750 text-[10px] font-mono text-djcyan-300 font-bold shrink-0" }, totalTracksCount)), onExploreFolder && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: onExploreFolder,
+        className: "p-1 rounded bg-djzinc-900 hover:bg-djzinc-800 text-gray-400 hover:text-djcyan-300 border border-djzinc-750 cursor-pointer transition-colors shrink-0",
+        title: "Cargar o cambiar carpeta"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Plus, { size: 12 })
+    )), /* @__PURE__ */ React.createElement("div", { className: "p-2 border-b border-djzinc-800/80 bg-[#08080e] shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(Icons.Search, { size: 12, className: "absolute left-2.5 top-2 text-gray-500 pointer-events-none" }), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "text",
+        value: search,
+        onChange: (e) => setSearch(e.target.value),
+        placeholder: "Filtrar carpeta, t\xEDtulo o autor...",
+        className: "w-full pl-7 pr-6 py-1 bg-[#11111a] border border-djzinc-800 rounded-lg text-[11px] font-mono text-gray-200 placeholder-gray-500 outline-none focus:border-djcyan-500/60"
+      }
+    ), search && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setSearch(""),
+        className: "absolute right-2 top-1.5 text-gray-500 hover:text-white cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(Icons.Close, { size: 11 })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 overflow-y-auto p-1.5 space-y-1" }, rootFolders.length === 0 ? /* @__PURE__ */ React.createElement("div", { className: "py-8 px-3 text-center text-[11px] font-mono text-gray-500" }, "Sin pistas en la colecci\xF3n") : rootFolders.map((fld) => renderFolderNode(fld, 0))));
+  };
+
   // web/js/workspaces/HotCuesWorkspace.jsx
-  var { useState: useState21, useEffect: useEffect22, useRef: useRef18, useCallback: useCallback9, useMemo: useMemo7 } = React;
+  var { useState: useState20, useEffect: useEffect20, useRef: useRef16, useCallback: useCallback7, useMemo: useMemo7 } = React;
   var HotCuesWorkspace = ({
     tracks = [],
     setTracks,
@@ -16195,11 +15655,39 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
-    const [studioMode, setStudioMode] = useState21(propsStudioMode || "cues");
-    useEffect22(() => {
+    var _a;
+    const [studioMode, setStudioMode] = useState20(propsStudioMode || "cues");
+    useEffect20(() => {
       if (propsStudioMode) setStudioMode(propsStudioMode);
     }, [propsStudioMode]);
-    const [tapTimes, setTapTimes] = useState21([]);
+    const [tapTimes, setTapTimes] = useState20([]);
+    const autoLoadedColRef = useRef16(false);
+    useEffect20(() => {
+      var _a2;
+      if (autoLoadedColRef.current) return;
+      if (tracks && tracks.length > 0) {
+        autoLoadedColRef.current = true;
+        return;
+      }
+      const activeLib = (customLibraries || []).find((l) => String(l.id) === String(activeCustomLibId)) || customLibraries && customLibraries[0];
+      if (!activeLib || !Array.isArray(activeLib.folders)) return;
+      const colTracks = [];
+      const seen = /* @__PURE__ */ new Set();
+      activeLib.folders.forEach((f) => {
+        (f.tracks || []).forEach((tr) => {
+          const key = tr.path || tr.filepath || tr.f || tr.id;
+          if (!seen.has(key)) {
+            seen.add(key);
+            colTracks.push(tr);
+          }
+        });
+      });
+      if (colTracks.length > 0 && setTracks) {
+        autoLoadedColRef.current = true;
+        setTracks(colTracks);
+        if (setSelectedTrack) setSelectedTrack(((_a2 = colTracks[0]) == null ? void 0 : _a2.id) || null);
+      }
+    }, [customLibraries, activeCustomLibId, tracks]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
     const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
     const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
@@ -16221,33 +15709,33 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
         setSelectedTrack(remaining.length > 0 ? remaining[0].id : null);
       }
     };
-    const [zoom, setZoom] = useState21(4);
-    const [snapToGrid, setSnapToGrid] = useState21(true);
-    const [showBeatgrid, setShowBeatgrid] = useState21(true);
-    const [followPlayhead, setFollowPlayhead] = useState21(true);
-    const [selectedCueId, setSelectedCueId] = useState21(1);
-    const [isRegeneratingMood, setIsRegeneratingMood] = useState21(false);
-    const [saveStatus, setSaveStatus] = useState21("");
-    const [isSavingBatch, setIsSavingBatch] = useState21(false);
-    const [filterQuery, setFilterQuery] = useState21("");
-    const [fsBrowserOpen, setFsBrowserOpen] = useState21(false);
-    const [carpetasSistema, setCarpetasSistema] = useState21([]);
-    const [rutaNavegacion, setRutaNavegacion] = useState21(currentFolder || "");
-    const [isLoadingDir, setIsLoadingDir] = useState21(false);
-    const [showTrackListDrawer, setShowTrackListDrawer] = useState21(false);
-    const [pitchPercent, setPitchPercent] = useState21(0);
-    const [pitchRange, setPitchRange] = useState21(8);
-    const [eqBass, setEqBass] = useState21(0);
-    const [eqMid, setEqMid] = useState21(0);
-    const [eqTreble, setEqTreble] = useState21(0);
-    const [mobileDeckMode, setMobileDeckMode] = useState21("pads");
-    const [autoMappingStatus, setAutoMappingStatus] = useState21("");
-    const [cuesVersionMode, setCuesVersionMode] = useState21("estandar");
-    const [cuesEstandar, setCuesEstandar] = useState21(null);
-    const [cuesAcustico, setCuesAcustico] = useState21(null);
-    const [isLoadingComparative, setIsLoadingComparative] = useState21(false);
-    const [showDiferenciasModal, setShowDiferenciasModal] = useState21(false);
-    const [diferenciasData, setDiferenciasData] = useState21(null);
+    const [zoom, setZoom] = useState20(4);
+    const [snapToGrid, setSnapToGrid] = useState20(true);
+    const [showBeatgrid, setShowBeatgrid] = useState20(true);
+    const [followPlayhead, setFollowPlayhead] = useState20(true);
+    const [selectedCueId, setSelectedCueId] = useState20(1);
+    const [isRegeneratingMood, setIsRegeneratingMood] = useState20(false);
+    const [saveStatus, setSaveStatus] = useState20("");
+    const [isSavingBatch, setIsSavingBatch] = useState20(false);
+    const [filterQuery, setFilterQuery] = useState20("");
+    const [fsBrowserOpen, setFsBrowserOpen] = useState20(false);
+    const [carpetasSistema, setCarpetasSistema] = useState20([]);
+    const [rutaNavegacion, setRutaNavegacion] = useState20(currentFolder || "");
+    const [isLoadingDir, setIsLoadingDir] = useState20(false);
+    const [showTrackListDrawer, setShowTrackListDrawer] = useState20(false);
+    const [pitchPercent, setPitchPercent] = useState20(0);
+    const [pitchRange, setPitchRange] = useState20(8);
+    const [eqBass, setEqBass] = useState20(0);
+    const [eqMid, setEqMid] = useState20(0);
+    const [eqTreble, setEqTreble] = useState20(0);
+    const [mobileDeckMode, setMobileDeckMode] = useState20("pads");
+    const [autoMappingStatus, setAutoMappingStatus] = useState20("");
+    const [cuesVersionMode, setCuesVersionMode] = useState20("estandar");
+    const [cuesEstandar, setCuesEstandar] = useState20(null);
+    const [cuesAcustico, setCuesAcustico] = useState20(null);
+    const [isLoadingComparative, setIsLoadingComparative] = useState20(false);
+    const [showDiferenciasModal, setShowDiferenciasModal] = useState20(false);
+    const [diferenciasData, setDiferenciasData] = useState20(null);
     const handleCargarComparativa = async (targetMode = "comparativa") => {
       if (!currentTrack) return;
       setIsLoadingComparative(true);
@@ -16574,15 +16062,15 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       };
     });
     const currentCue = activeCues.find((c) => (c.id !== void 0 ? c.id : 1) === selectedCueId) || activeCues[0] || {};
-    const [cueNameInput, setCueNameInput] = useState21(currentCue.name || "");
-    const [cueTimeInput, setCueTimeInput] = useState21(currentCue.time || "00:00.00");
-    const [tacticalComment, setTacticalComment] = useState21((currentTrack == null ? void 0 : currentTrack.comment) || "");
-    useEffect22(() => {
+    const [cueNameInput, setCueNameInput] = useState20(currentCue.name || "");
+    const [cueTimeInput, setCueTimeInput] = useState20(currentCue.time || "00:00.00");
+    const [tacticalComment, setTacticalComment] = useState20((currentTrack == null ? void 0 : currentTrack.comment) || "");
+    useEffect20(() => {
       if (currentTrack) {
         setTacticalComment(currentTrack.comment || "");
       }
     }, [currentTrack == null ? void 0 : currentTrack.id, currentTrack == null ? void 0 : currentTrack.comment]);
-    useEffect22(() => {
+    useEffect20(() => {
       setCueNameInput(currentCue.name || currentCue.short_name || `Cue ${selectedCueId}`);
       setCueTimeInput(currentCue.time || "00:00.00");
     }, [selectedCueId, currentCue.time, currentCue.name]);
@@ -16889,7 +16377,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
     };
     const handleCargarColeccionGuardada = (targetLibId = null) => {
-      var _a;
+      var _a2;
       const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
       const colTracks = [];
       const seenKeys = /* @__PURE__ */ new Set();
@@ -16906,7 +16394,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
       if (colTracks.length > 0) {
         if (setTracks) setTracks(colTracks);
-        if (setSelectedTrack) setSelectedTrack(((_a = colTracks[0]) == null ? void 0 : _a.id) || null);
+        if (setSelectedTrack) setSelectedTrack(((_a2 = colTracks[0]) == null ? void 0 : _a2.id) || null);
         setSaveStatus(lang === "en" ? `\u2713 Loaded ${colTracks.length} tracks from Colecci\xF3n` : `\u2713 Colecci\xF3n cargada (${colTracks.length} pistas)`);
       } else {
         setSaveStatus(lang === "en" ? "Your saved Colecci\xF3n is empty." : "Tu Colecci\xF3n guardada est\xE1 vac\xEDa.");
@@ -17021,34 +16509,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         title: "Recargar directorio actual"
       },
       /* @__PURE__ */ React.createElement(Icons.Refresh, { size: 14, className: "inline-block align-[-2px]" })
-    )), /* @__PURE__ */ React.createElement("div", { className: "w-full md:flex-1 md:min-w-0 md:max-w-xl flex items-center gap-2" }, filteredTracks && filteredTracks.length > 0 ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "relative flex-1 min-w-0" }, /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: currentTrack ? String(currentTrack.id) : "",
-        onChange: (e) => {
-          const targetId = e.target.value;
-          setSelectedTrack(targetId);
-          const found = tracks.find((t2) => String(t2.id) === String(targetId));
-          if (found && onPlayTrack) {
-            onPlayTrack(found, 0, false);
-          }
-        },
-        className: "w-full bg-djzinc-900 border border-djzinc-750 text-white text-xs font-mono rounded-lg px-2.5 py-1.5 outline-none focus:border-djcyan-500 cursor-pointer truncate shadow-sm",
-        title: "Selecciona la pista para editar sus Hot Cues"
-      },
-      filteredTracks.map((trk, idx) => /* @__PURE__ */ React.createElement("option", { key: trk.id, value: trk.id }, idx + 1, ". ", trk.artist || trk.a || "Artista", " - ", trk.title || trk.t || trk.filename, " (", trk.bpm || trk.b || "--", " BPM \u2022 ", trk.key || trk.k || "--", ")"))
-    )), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setShowTrackListDrawer((prev) => !prev),
-        className: `px-2.5 sm:px-3 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow ${showTrackListDrawer ? "bg-djcyan-500 text-black border-djcyan-400 font-black shadow-[0_0_10px_rgba(6,182,212,0.4)]" : "bg-djzinc-900 text-gray-300 border-djzinc-750 hover:bg-djzinc-850 hover:text-white"}`,
-        title: "Ver o esconder la tabla completa de pistas de la carpeta"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, showTrackListDrawer ? "Ocultar Lista" : `Ver Lista (${filteredTracks.length})`),
-      /* @__PURE__ */ React.createElement("span", { className: "sm:hidden" }, filteredTracks.length)
-    ), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", { className: "w-full md:flex-1 md:min-w-0 md:max-w-xl flex items-center gap-2" }, filteredTracks && filteredTracks.length > 0 ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -17096,7 +16557,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         className: "px-2.5 py-1 bg-djzinc-800 hover:bg-djzinc-750 text-djcyan-400 border border-djcyan-500/40 font-mono font-bold text-xs rounded-lg shadow-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1 shrink-0",
         title: "Auto-mapear los 8 pads con la Plantilla Club Extended"
       },
-      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
+      /* @__PURE__ */ React.createElement(Icons.Zap, { size: 11, className: "inline-block align-[-1px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Auto-Cues Club")
     ), saveStatus && /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-mono font-bold text-djcyan-400 animate-pulse bg-djcyan-950/80 px-2 py-0.5 rounded border border-djcyan-700/60 shadow shrink-0" }, saveStatus)), /* @__PURE__ */ React.createElement("div", { className: "hidden md:flex items-center gap-2 shrink-0" }, saveStatus && /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-bold text-djcyan-400 animate-pulse bg-djcyan-950/80 px-2.5 py-1 rounded border border-djcyan-700/60 shadow" }, saveStatus), /* @__PURE__ */ React.createElement(
       "button",
@@ -17119,81 +16580,26 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement(Icons.Package, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, t("save_all_disk") || "Guardar Lote")
-    ))), showTrackListDrawer && filteredTracks && filteredTracks.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "bg-[#08080d] border-b border-djzinc-800 p-4 shadow-2xl animate-fadeIn max-h-72 overflow-hidden flex flex-col shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between pb-2 mb-2 border-b border-djzinc-800/80" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("h3", { className: "text-xs font-bold text-white font-mono uppercase tracking-wider" }, "Pistas en Carpeta: ", filteredTracks.length, " archivos")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
-      "input",
+    ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex overflow-hidden" }, /* @__PURE__ */ React.createElement(
+      CollectionTreeSidebar,
       {
-        type: "text",
-        value: filterQuery,
-        onChange: (e) => setFilterQuery(e.target.value),
-        placeholder: "Filtrar por t\xEDtulo, artista, BPM...",
-        className: "w-56 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-gray-200 outline-none font-mono placeholder-gray-500"
-      }
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setShowTrackListDrawer(false),
-        className: "text-gray-400 hover:text-white text-xs font-mono px-2 py-1 bg-djzinc-900 rounded border border-djzinc-750 cursor-pointer"
-      },
-      /* @__PURE__ */ React.createElement(Icons.Close, { size: 14, className: "inline-block align-[-2px]" }),
-      " Cerrar"
-    ))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850/60 pr-1" }, /* @__PURE__ */ React.createElement("table", { className: "w-full text-left text-xs font-mono" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { className: "text-gray-500 border-b border-djzinc-800 text-[10px] uppercase" }, /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-10" }, "#"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-12" }, "Cover"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2" }, "T\xEDtulo / Artista"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-24 text-center" }, t("th_genre") || "G\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-28 text-center" }, t("th_subgenre") || "Subg\xE9nero"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-20" }, "BPM"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-16" }, "Tono"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-20" }, "Duraci\xF3n"), /* @__PURE__ */ React.createElement("th", { className: "py-1 px-2 w-24 text-right" }, "Acci\xF3n"))), /* @__PURE__ */ React.createElement("tbody", null, filteredTracks.map((trk, idx) => {
-      const isSel = currentTrack && String(currentTrack.id) === String(trk.id);
-      return /* @__PURE__ */ React.createElement(
-        "tr",
-        {
-          key: trk.id,
-          onClick: () => {
-            setSelectedTrack(trk.id);
-            if (onPlayTrack) onPlayTrack(trk, 0, false);
-          },
-          className: `hover:bg-djzinc-900/80 cursor-pointer transition-colors ${isSel ? "bg-djcyan-950/40 text-djcyan-300 font-bold" : "text-gray-300"}`
-        },
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-gray-500" }, idx + 1),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2" }, /* @__PURE__ */ React.createElement(
-          "img",
-          {
-            src: getValidCover(trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : null)),
-            alt: "Cover",
-            onError: (e) => {
-              e.target.onerror = null;
-              e.target.src = DEFAULT_VINYL_SVG;
-            },
-            className: "w-7 h-7 rounded object-cover border border-djzinc-750"
+        tracks,
+        customLibraries,
+        activeCustomLibId,
+        onSaveCustomLibraries,
+        selectedTrackId: (_a = currentTrack == null ? void 0 : currentTrack.id) != null ? _a : selectedTrack,
+        onSelectTrack: (trk) => {
+          if (setTracks && !(tracks || []).some((t2) => String(t2.id) === String(trk.id))) {
+            setTracks((prev) => [trk, ...prev || []]);
           }
-        )),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2" }, /* @__PURE__ */ React.createElement("div", { className: "truncate max-w-xs sm:max-w-md font-bold text-white" }, trk.title || trk.t || trk.filename), /* @__PURE__ */ React.createElement("div", { className: "truncate max-w-xs text-[11px] text-gray-400" }, trk.artist || trk.a || "Artista Desconocido")),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[9.5px] font-mono font-bold bg-purple-950/70 text-purple-300 border border-purple-800/60 truncate max-w-[85px] inline-block" }, trk.genre || "House")),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-center" }, /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[9.5px] font-mono text-gray-300 bg-djzinc-850 border border-djzinc-750 truncate max-w-[95px] inline-block" }, trk.subgenre || (TAXONOMY_TREE[trk.genre || "Tech House"] ? TAXONOMY_TREE[trk.genre || "Tech House"][0] : "Tech House"))),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 font-mono text-gray-300" }, trk.bpm || trk.b || "--"),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 font-mono text-djcyan-400" }, trk.key || trk.k || "--"),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-gray-400" }, trk.duration || "--"),
-        /* @__PURE__ */ React.createElement("td", { className: "py-1.5 px-2 text-right" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: (e) => {
-              e.stopPropagation();
-              setSelectedTrack(trk.id);
-              setShowTrackListDrawer(false);
-              if (onPlayTrack) onPlayTrack(trk, 0, true);
-            },
-            className: "px-2.5 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black text-[10px] font-mono font-bold rounded cursor-pointer shadow active:scale-95"
-          },
-          /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px]" }),
-          " Cargar"
-        ), /* @__PURE__ */ React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: (e) => handleRemoveTrackFromHotCues(trk.id, e),
-            className: "p-1 rounded text-gray-500 hover:text-red-400 hover:bg-red-950/50 border border-transparent hover:border-red-800/60 text-[11px] cursor-pointer transition-colors active:scale-90",
-            title: "Quitar pista del an\xE1lisis global"
-          },
-          /* @__PURE__ */ React.createElement(Icons.Trash, { size: 14, className: "inline-block align-[-2px]" })
-        )))
-      );
-    }))))), currentTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col p-4 overflow-y-auto custom-scrollbar gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-b from-[#181826] via-[#101018] to-[#0a0a0f] border-2 border-djzinc-800 rounded-2xl p-4 shadow-2xl relative" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-djcyan-500/40 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden items-center justify-between p-1 bg-[#090912] border border-djzinc-800 rounded-xl mb-4 gap-1" }, /* @__PURE__ */ React.createElement(
+          setSelectedTrack(trk.id);
+          if (onPlayTrack) onPlayTrack(trk, 0, false);
+        },
+        title: "Colecci\xF3n",
+        onExploreFolder: () => handleAbrirNavegador(currentFolder),
+        className: "hidden md:flex w-72"
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden" }, currentTrack ? /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-h-0 flex flex-col p-4 overflow-y-auto custom-scrollbar gap-4" }, /* @__PURE__ */ React.createElement("div", { className: "bg-gradient-to-b from-[#181826] via-[#101018] to-[#0a0a0f] border-2 border-djzinc-800 rounded-2xl p-4 shadow-2xl relative" }, /* @__PURE__ */ React.createElement("div", { className: "absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-djcyan-500/40 to-transparent" }), /* @__PURE__ */ React.createElement("div", { className: "flex md:hidden items-center justify-between p-1 bg-[#090912] border border-djzinc-800 rounded-xl mb-4 gap-1" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -17206,62 +16612,23 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       "button",
       {
         type: "button",
-        onClick: () => setMobileDeckMode("eq_pitch"),
-        className: `flex-1 py-2 rounded-lg text-xs font-mono font-black transition-all text-center cursor-pointer ${mobileDeckMode === "eq_pitch" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-md scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
-      },
-      /* @__PURE__ */ React.createElement(Icons.Sliders, { size: 14, className: "inline-block align-[-2px]" }),
-      " EQ & TEMPO"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
         onClick: () => setMobileDeckMode("vinyl"),
         className: `flex-1 py-2 rounded-lg text-xs font-mono font-black transition-all text-center cursor-pointer ${mobileDeckMode === "vinyl" ? "bg-gradient-to-r from-djcyan-400 to-djcyan-500 text-black shadow-md scale-[1.02]" : "text-gray-400 hover:text-white hover:bg-djzinc-850"}`
       },
       /* @__PURE__ */ React.createElement(Icons.Disc, { size: 14, className: "inline-block align-[-2px]" }),
-      ' VINILO 12"'
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col xl:flex-row items-center justify-between gap-6" }, /* @__PURE__ */ React.createElement("div", { className: `flex-wrap sm:flex-nowrap items-center gap-5 shrink-0 ${mobileDeckMode === "vinyl" ? "flex" : "hidden md:flex"}` }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: "w-44 h-44 sm:w-52 sm:h-52 md:w-56 md:h-56 rounded-full bg-gradient-to-tr from-[#0a0a0f] via-[#161622] to-[#0c0c14] border-4 border-[#2c2c3e] shadow-[0_12px_40px_rgba(0,0,0,0.85),inset_0_2px_6px_rgba(255,255,255,0.18)] p-2.5 flex items-center justify-center relative select-none" }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-1 rounded-full border border-dashed border-djzinc-650/40 pointer-events-none" }), /* @__PURE__ */ React.createElement(
-      "div",
+      " CAR\xC1TULA"
+    )), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col xl:flex-row items-center xl:items-stretch justify-between gap-3 xl:max-h-[200px]" }, /* @__PURE__ */ React.createElement("div", { className: `flex-wrap sm:flex-nowrap items-center gap-5 shrink-0 ${mobileDeckMode === "vinyl" ? "flex" : "hidden md:flex"}` }, /* @__PURE__ */ React.createElement("div", { className: "relative group shrink-0" }, /* @__PURE__ */ React.createElement("div", { className: `w-[165px] h-[165px] rounded-xl overflow-hidden relative bg-[#0a0a0f] border shadow-xl select-none transition-all ${isCurrentPlayingThis ? "border-djcyan-500/70 shadow-[0_0_16px_rgba(6,182,212,0.2)]" : "border-djzinc-750"}` }, /* @__PURE__ */ React.createElement(
+      "img",
       {
-        className: "w-full h-full rounded-full relative overflow-hidden flex items-center justify-center shadow-2xl select-none pointer-events-none",
-        title: "Plato de Vinilo Direct-Drive (Visual)",
-        style: {
-          background: "radial-gradient(circle, #22222a 0%, #121217 38%, #1a1a24 49%, #0d0d12 62%, #161620 78%, #08080c 100%)",
-          boxShadow: "inset 0 0 18px rgba(0,0,0,0.95), 0 0 15px rgba(0,0,0,0.8)",
-          animation: isCurrentPlayingThis ? "spinVinylContinuous 3s linear infinite" : "none"
-        }
-      },
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute inset-0 rounded-full pointer-events-none opacity-40",
-          style: {
-            background: "repeating-radial-gradient(circle, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3.5px)"
-          }
-        }
-      ),
-      /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: "absolute inset-0 rounded-full pointer-events-none opacity-25",
-          style: {
-            background: "conic-gradient(from 45deg, transparent 0deg, rgba(255,255,255,0.12) 60deg, transparent 120deg, transparent 180deg, rgba(255,255,255,0.12) 240deg, transparent 300deg)"
-          }
-        }
-      ),
-      /* @__PURE__ */ React.createElement("div", { className: "w-20 h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 rounded-full border-2 border-djzinc-500/80 shadow-[0_0_12px_rgba(0,0,0,0.8),inset_0_0_8px_rgba(0,0,0,0.6)] relative overflow-hidden flex items-center justify-center z-10 bg-black" }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null)),
-          alt: "Vinyl Label Cover",
-          onError: (e) => {
-            e.target.onerror = null;
-            e.target.src = DEFAULT_VINYL_SVG;
-          },
-          className: "w-full h-full object-cover rounded-full"
-        }
-      ), /* @__PURE__ */ React.createElement("div", { className: "absolute w-4 h-4 rounded-full bg-gradient-to-tr from-amber-700 via-amber-400 to-amber-200 border border-black shadow-[inset_0_1px_3px_rgba(0,0,0,0.9),0_0_4px_rgba(0,0,0,0.8)] z-20 flex items-center justify-center" }, /* @__PURE__ */ React.createElement("div", { className: "w-1.5 h-1.5 rounded-full bg-black" })))
-    ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-1.5 left-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-gray-300 border border-djzinc-750 flex items-center gap-1.5 shadow-lg" }, /* @__PURE__ */ React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${isCurrentPlayingThis ? "bg-emerald-400 shadow-[0_0_6px_#10b981] animate-pulse" : "bg-gray-500"}` }), /* @__PURE__ */ React.createElement("span", null, "33\u2153 RPM")), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-1.5 right-2 bg-black/85 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750 shadow-lg" }, currentTrack.format || "FLAC"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
+        src: getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null)),
+        alt: currentTrack.title || currentTrack.t || "Track Cover",
+        onError: (e) => {
+          e.target.onerror = null;
+          e.target.src = DEFAULT_VINYL_SVG;
+        },
+        className: "w-full h-full object-cover"
+      }
+    ), /* @__PURE__ */ React.createElement("div", { className: "absolute bottom-2 right-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded-md text-[9px] font-mono font-black text-djcyan-400 border border-djzinc-750/90 shadow-md" }, currentTrack.format || "FLAC"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 min-w-0" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -17279,27 +16646,18 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         title: "PLAY/PAUSE: Iniciar o pausar reproducci\xF3n"
       },
       isCurrentPlayingThis ? /* @__PURE__ */ React.createElement("span", { className: "text-black font-black text-base" }, "\u275A\u275A") : /* @__PURE__ */ React.createElement(Icons.Play, { size: 14, className: "inline-block align-[-2px] text-emerald-400 font-black  ml-0.5" })
-    ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[10px] font-mono font-black uppercase tracking-wider w-fit" }, "DECK 1 \u2022 MASTER"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, isCurrentPlayingThis ? "\u25CF REPRODUCIENDO" : "\u25CB EN ESPERA"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0 max-w-[240px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400 font-extrabold bg-[#0d0d16] px-2 py-0.5 rounded border border-djzinc-750" }, bpm.toFixed(1), " BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-300 font-extrabold bg-[#130d1e] px-2 py-0.5 rounded border border-purple-800/60" }, currentTrack.key || "8A")), /* @__PURE__ */ React.createElement("h3", { className: "text-sm sm:text-base font-black text-white truncate mt-1.5", title: currentTrack.title || currentTrack.t }, currentTrack.title || currentTrack.t || "Track"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-djcyan-400 font-bold truncate", title: currentTrack.artist || currentTrack.a }, currentTrack.artist || currentTrack.a || "Artista"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-1.5 text-xs font-mono font-bold" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 bg-djcyan-950/60 px-2 py-0.5 rounded border border-djcyan-800/40" }, formatMsToTime(playProgress * durMs)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "-", formatMsToTime(Math.max(0, durMs - playProgress * durMs)))))), /* @__PURE__ */ React.createElement("div", { className: `flex-col items-center justify-between bg-[#080811] p-2 rounded-xl border border-djzinc-800 shadow-inner shrink-0 ${mobileDeckMode === "eq_pitch" ? "flex w-full sm:w-auto" : "hidden md:flex"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "EQ 3-BAND"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: handleResetEQ,
-        className: "text-[8px] font-mono text-gray-400 hover:text-djcyan-400 px-1 py-0.5 rounded hover:bg-djzinc-800 transition-colors",
-        title: "Resetear EQ a 0.0 dB"
-      },
-      "FLAT"
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(RotaryKnob, { label: "HI", value: eqTreble, onChange: (v) => handleEqChange("treble", v), color: "#06b6d4" }), /* @__PURE__ */ React.createElement(RotaryKnob, { label: "MID", value: eqMid, onChange: (v) => handleEqChange("mid", v), color: "#f59e0b" }), /* @__PURE__ */ React.createElement(RotaryKnob, { label: "LOW", value: eqBass, onChange: (v) => handleEqChange("bass", v), color: "#ef4444" })))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 max-w-3xl flex flex-col md:flex-row items-stretch gap-3 w-full" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-hotcues-deck", className: `flex-1 min-w-0 bg-[#09090f] p-3 rounded-xl border border-djzinc-800 shadow-inner ${mobileDeckMode === "pads" ? "block" : "hidden md:block"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#12121c] px-2 py-0.5 rounded border border-djzinc-750" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono font-black text-white uppercase tracking-wider" }, "HOT CUE MODE")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, "8 Multi-Color Performance Pads \u2022 Halos RGB 1 a 1")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-0.5" }, /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-600/50 text-[10px] font-mono font-black uppercase tracking-wider w-fit" }, "DECK 1 \u2022 MASTER"), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono text-gray-400" }, isCurrentPlayingThis ? "\u25CF REPRODUCIENDO" : "\u25CB EN ESPERA"))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col min-w-0 max-w-[240px]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-djcyan-400 font-extrabold bg-[#0d0d16] px-2 py-0.5 rounded border border-djzinc-750" }, bpm.toFixed(1), " BPM"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-300 font-extrabold bg-[#130d1e] px-2 py-0.5 rounded border border-purple-800/60" }, currentTrack.key || "8A")), /* @__PURE__ */ React.createElement("h3", { className: "text-sm sm:text-base font-black text-white truncate mt-1.5", title: currentTrack.title || currentTrack.t }, currentTrack.title || currentTrack.t || "Track"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-djcyan-400 font-bold truncate", title: currentTrack.artist || currentTrack.a }, currentTrack.artist || currentTrack.a || "Artista"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mt-1.5 text-xs font-mono font-bold" }, /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 bg-djcyan-950/60 px-2 py-0.5 rounded border border-djcyan-800/40" }, formatMsToTime(playProgress * durMs)), /* @__PURE__ */ React.createElement("span", { className: "text-gray-500" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "-", formatMsToTime(Math.max(0, durMs - playProgress * durMs))))))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 max-w-3xl flex flex-col md:flex-row items-stretch gap-3 w-full" }, /* @__PURE__ */ React.createElement("div", { "data-tour": "tour-hotcues-deck", className: `flex-1 min-w-0 bg-[#09090f] p-1.5 rounded-xl border border-djzinc-800 shadow-inner flex flex-col justify-between min-h-0 overflow-hidden ${mobileDeckMode === "pads" ? "block" : "hidden md:block"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-1 mb-1.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-[#12121c] px-1.5 py-0 rounded border border-djzinc-750" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-djcyan-400 shadow-[0_0_8px_#06b6d4]" }), /* @__PURE__ */ React.createElement("span", { className: "text-[9px] font-mono font-black text-white uppercase tracking-wider" }, "HOT CUE MODE")), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-400" }, "8 Multi-Color Performance Pads \u2022 Halos RGB 1 a 1")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
         onClick: handleAutoGenerateClubTemplate,
-        className: "px-2.5 sm:px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded-lg text-xs font-mono font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0",
+        className: "px-2 py-0.5 bg-djcyan-500 hover:bg-djcyan-400 text-black rounded text-[10px] font-mono font-black flex items-center gap-1 shadow-sm cursor-pointer transition-all active:scale-95 shrink-0",
         title: "Auto-mapear los 8 pads con la Plantilla Club Extended (Intro, Beat, Break, Drop, Loops, Outro) cuantizados al beatgrid"
       },
       /* @__PURE__ */ React.createElement(Icons.Zap, { size: 14, className: "inline-block align-[-2px]" }),
-      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Auto-Generate Cues (Club Template)"),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "Auto-Cues (Club)"),
       /* @__PURE__ */ React.createElement("span", { className: "sm:hidden" }, "Auto-Cues Club")
-    ), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold shrink-0" }, isCurrentPlayingThis ? `\u25CF CUE ${activePlayingCueId}` : "PAUSA"))), autoMappingStatus && /* @__PURE__ */ React.createElement("div", { className: "mb-2 px-3 py-1 bg-emerald-950/80 border border-emerald-500/60 rounded text-[10px] font-mono text-emerald-300 font-bold flex items-center gap-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, autoMappingStatus)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2" }, activeCues.map((cue, idx) => {
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-djcyan-400 font-bold shrink-0" }, isCurrentPlayingThis ? `\u25CF CUE ${activePlayingCueId}` : "PAUSA"))), autoMappingStatus && /* @__PURE__ */ React.createElement("div", { className: "mb-2 px-3 py-1 bg-emerald-950/80 border border-emerald-500/60 rounded text-[10px] font-mono text-emerald-300 font-bold flex items-center gap-2 animate-fadeIn" }, /* @__PURE__ */ React.createElement(Icons.Check, { size: 14, className: "inline-block align-[-2px]" }), /* @__PURE__ */ React.createElement("span", null, autoMappingStatus)), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-1 flex-1 min-h-0" }, activeCues.map((cue, idx) => {
       const padNum = cue.id !== void 0 ? cue.id : idx + 1;
       const isSelected = selectedCueId === padNum;
       const isPlayingThisCue = activePlayingCueId === padNum && isCurrentPlayingThis;
@@ -17313,12 +16671,12 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
           {
             key: `${(currentTrack == null ? void 0 : currentTrack.id) || "cue"}_pad_${idx}`,
             onClick: () => setSelectedCueId(padNum),
-            className: `p-2 pt-2.5 select-none rounded-xl border border-dashed border-djzinc-800 bg-[#07070b]/60 flex flex-col justify-between min-h-[68px] opacity-40 hover:opacity-75 transition-all cursor-pointer ${isSelected ? "ring-1 ring-gray-500 opacity-80" : ""}`,
+            className: `px-1.5 py-1 select-none rounded-lg border border-dashed border-djzinc-800 bg-[#07070b]/60 flex flex-col justify-between min-h-0 leading-tight opacity-40 hover:opacity-75 transition-all cursor-pointer ${isSelected ? "ring-1 ring-gray-500 opacity-80" : ""}`,
             title: `PAD ${padNum}: Libre (sin asignar)`
           },
           /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-gray-500 font-bold" }, "PAD ", padNum), /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full bg-gray-700/60" })),
-          /* @__PURE__ */ React.createElement("div", { className: "text-center my-1 text-[11px] font-mono text-gray-500 font-bold tracking-wider" }, "[ LIBRE ]"),
-          /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[9px] font-mono text-gray-600 border-t border-djzinc-800/50 pt-1" }, /* @__PURE__ */ React.createElement("span", null, "--:--.--"), /* @__PURE__ */ React.createElement("span", null, "Paso ", padNum))
+          /* @__PURE__ */ React.createElement("div", { className: "text-center my-0.5 text-[10px] font-mono text-gray-500 font-bold tracking-wider" }, "[ LIBRE ]"),
+          /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[8.5px] font-mono text-gray-600 border-t border-djzinc-800/50 pt-0.5" }, /* @__PURE__ */ React.createElement("span", null, "--:--.--"), /* @__PURE__ */ React.createElement("span", null, "Paso ", padNum))
         );
       }
       return /* @__PURE__ */ React.createElement(
@@ -17329,7 +16687,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
             setSelectedCueId(padNum);
             handleJumpToCue(cue);
           },
-          className: `ws-pad p-2 pt-2.5 cursor-pointer select-none group min-h-[68px] ${isPlayingThisCue ? "ws-pad-on ws-pad-live" : isSelected ? "ws-pad-on" : "ws-pad-set"}`,
+          className: `ws-pad px-1.5 py-1 cursor-pointer select-none group flex flex-col justify-between min-h-0 leading-tight ${isPlayingThisCue ? "ws-pad-on ws-pad-live" : isSelected ? "ws-pad-on" : "ws-pad-set"}`,
           style: {
             animation: "padHaloIgnite 0.65s cubic-bezier(0.16, 1, 0.3, 1) both",
             animationDelay: staggerDelay,
@@ -17337,75 +16695,17 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
             "--cue-color": color
           }
         },
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-0.5 relative z-10" }, /* @__PURE__ */ React.createElement("span", { className: `ws-pad-num ${isPlayingThisCue ? "ws-pad-num-on" : ""}` }, "PAD ", padNum), /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between relative z-10" }, /* @__PURE__ */ React.createElement("span", { className: `ws-pad-num ${isPlayingThisCue ? "ws-pad-num-on" : ""}` }, "PAD ", padNum), /* @__PURE__ */ React.createElement(
           "span",
           {
             className: `w-2.5 h-2.5 rounded-full transition-all ${isPlayingThisCue ? "scale-125 animate-ping" : "shadow-[0_0_8px_currentColor]"}`,
             style: { backgroundColor: color, color }
           }
         )),
-        /* @__PURE__ */ React.createElement("div", { className: "my-1 truncate relative z-10" }, /* @__PURE__ */ React.createElement("span", { className: "text-[11px] font-bold text-gray-200 block truncate group-hover:text-white", title: cue.name || cue.short_name }, cue.name || cue.short_name || `Cue ${padNum}`)),
-        /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono pt-1 border-t border-djzinc-800/80 relative z-10" }, /* @__PURE__ */ React.createElement("span", { className: "font-extrabold text-djcyan-300" }, cue.time || "00:00.00"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[9px] font-semibold" }, "Bar ", barNum))
+        /* @__PURE__ */ React.createElement("div", { className: "my-0.5 truncate relative z-10" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-bold text-gray-200 block truncate group-hover:text-white", title: cue.name || cue.short_name }, cue.name || cue.short_name || `Cue ${padNum}`)),
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between text-[9px] font-mono pt-0.5 border-t border-djzinc-800/80 relative z-10" }, /* @__PURE__ */ React.createElement("span", { className: "font-extrabold text-djcyan-300" }, cue.time || "00:00.00"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-400 text-[9px] font-semibold" }, "Bar ", barNum))
       );
-    }))), /* @__PURE__ */ React.createElement("div", { className: `flex-col items-center bg-[#07070c] p-2.5 rounded-xl border border-djzinc-800 shadow-inner shrink-0 justify-between w-full md:w-28 ${mobileDeckMode === "eq_pitch" ? "flex" : "hidden md:flex"}` }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between w-full border-b border-djzinc-800/80 pb-1 mb-1 text-[9px] font-mono font-bold" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "TEMPO"), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setPitchRange((r) => r === 8 ? 16 : 8),
-        className: "text-[8px] px-1 rounded bg-[#151522] border border-djzinc-700 text-djcyan-400 hover:text-white cursor-pointer",
-        title: "Alternar rango de pitch"
-      },
-      "\xB1",
-      pitchRange,
-      "%"
-    )), /* @__PURE__ */ React.createElement("div", { className: "text-center my-0.5" }, /* @__PURE__ */ React.createElement("div", { className: "text-[11px] font-mono font-black text-djcyan-300 tracking-tight" }, pitchPercent > 0 ? `+${pitchPercent.toFixed(2)}` : pitchPercent.toFixed(2), "%"), /* @__PURE__ */ React.createElement("div", { className: "text-[10px] font-mono font-extrabold text-amber-400" }, (bpm * (1 + pitchPercent / 100)).toFixed(1), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[7.5px] text-gray-500 font-normal" }, "BPM"))), /* @__PURE__ */ React.createElement("div", { className: "relative flex items-center justify-center my-1 h-24" }, /* @__PURE__ */ React.createElement("div", { className: "absolute w-5 h-0.5 bg-djcyan-500/60 top-1/2 -translate-y-1/2 pointer-events-none z-10 shadow-[0_0_6px_#06b6d4]" }), /* @__PURE__ */ React.createElement(
-      "input",
-      {
-        type: "range",
-        min: -pitchRange,
-        max: pitchRange,
-        step: 0.05,
-        value: pitchPercent,
-        onChange: (e) => handlePitchChange(parseFloat(e.target.value)),
-        className: "pitch-slider-vertical",
-        style: {
-          writingMode: "vertical-lr",
-          direction: "rtl",
-          height: "95px",
-          width: "18px",
-          accentColor: "#06b6d4",
-          cursor: "pointer"
-        },
-        title: "Pitch Fader: Ajusta velocidad y tempo din\xE1micamente"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 w-full pt-1.5 border-t border-djzinc-800/80 justify-center" }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleNudgePitch(-0.1),
-        className: "w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer",
-        title: "Nudge BPM -"
-      },
-      "-"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handlePitchChange(0),
-        className: "px-1.5 h-5 rounded bg-[#141420] hover:bg-djcyan-950 text-gray-400 hover:text-djcyan-300 font-mono font-bold text-[8px] flex items-center justify-center border border-djzinc-750 active:scale-95 shadow cursor-pointer",
-        title: "Reset Tempo (0.0%)"
-      },
-      "0%"
-    ), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => handleNudgePitch(0.1),
-        className: "w-6 h-5 rounded bg-djzinc-850 hover:bg-djzinc-750 text-gray-300 font-mono font-black text-[10px] flex items-center justify-center border border-djzinc-700 active:scale-95 shadow cursor-pointer",
-        title: "Nudge BPM +"
-      },
-      "+"
-    )))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-2.5 sm:px-3 py-2 rounded-lg gap-2 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold font-mono text-gray-300 uppercase flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(Icons.ZoomIn, null), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("zoom_level") || "Zoom", ":")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-800 text-xs font-mono shrink-0" }, [
+    })))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-djzinc-950/80 border border-djzinc-850 px-2.5 sm:px-3 py-2 rounded-lg gap-2 overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-bold font-mono text-gray-300 uppercase flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ React.createElement(Icons.ZoomIn, null), /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, t("zoom_level") || "Zoom", ":")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center bg-djzinc-900 p-0.5 rounded-lg border border-djzinc-800 text-xs font-mono shrink-0" }, [
       { z: 1, label: "1x (Total)" },
       { z: 2, label: "2x" },
       { z: 4, label: "4x (DJ)" },
@@ -17516,7 +16816,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       /* @__PURE__ */ React.createElement(Icons.Save, { size: 13, className: "inline-block" }),
       /* @__PURE__ */ React.createElement("span", null, "Guardar Versi\xF3n Est\xE1ndar")
     )), /* @__PURE__ */ React.createElement(
-      ZoomableRekordboxWaveform,
+      CopilotSeratoWaveform2,
       {
         track: currentTrack,
         cues: cuesEstandar || activeCues,
@@ -17545,7 +16845,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       /* @__PURE__ */ React.createElement(Icons.Save, { size: 13, className: "inline-block" }),
       /* @__PURE__ */ React.createElement("span", null, "Guardar Versi\xF3n Ac\xFAstica")
     )), /* @__PURE__ */ React.createElement(
-      ZoomableRekordboxWaveform,
+      CopilotSeratoWaveform2,
       {
         track: currentTrack,
         cues: cuesAcustico || activeCues,
@@ -17564,7 +16864,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         lang
       }
     ))) : /* @__PURE__ */ React.createElement(
-      ZoomableRekordboxWaveform,
+      CopilotSeratoWaveform2,
       {
         track: currentTrack,
         cues: cuesVersionMode === "estandar" ? cuesEstandar || activeCues : cuesAcustico || activeCues,
@@ -17875,10 +17175,10 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar biblioteca..."),
       customLibraries.map((lib) => {
-        var _a;
-        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
-          var _a2;
-          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        var _a2;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.reduce((acc, f) => {
+          var _a3;
+          return acc + (((_a3 = f.tracks) == null ? void 0 : _a3.length) || 0);
         }, 0)) || 0, " pistas)");
       })
     ))), tracks && tracks.length > 0 ? /* @__PURE__ */ React.createElement("div", { className: "w-full bg-[#09090f] p-4 rounded-xl border border-djzinc-800 shadow-inner my-2" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-2" }, /* @__PURE__ */ React.createElement(Icons.Music, { size: 14, className: "inline-block align-[-2px]" }), " Pistas disponibles en la carpeta (", tracks.length, ")"), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-gray-400" }, "Haz clic en cualquier pista para cargarla en el Deck")), /* @__PURE__ */ React.createElement("div", { className: "max-h-60 overflow-y-auto custom-scrollbar divide-y divide-djzinc-850" }, tracks.map((trk, idx) => /* @__PURE__ */ React.createElement(
@@ -17970,10 +17270,10 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement("option", { value: "", disabled: true }, "Seleccionar biblioteca..."),
       customLibraries.map((lib) => {
-        var _a;
-        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a = lib.folders) == null ? void 0 : _a.reduce((acc, f) => {
-          var _a2;
-          return acc + (((_a2 = f.tracks) == null ? void 0 : _a2.length) || 0);
+        var _a2;
+        return /* @__PURE__ */ React.createElement("option", { key: lib.id, value: lib.id }, lib.name, " (", ((_a2 = lib.folders) == null ? void 0 : _a2.reduce((acc, f) => {
+          var _a3;
+          return acc + (((_a3 = f.tracks) == null ? void 0 : _a3.length) || 0);
         }, 0)) || 0, " pistas)");
       })
     )), /* @__PURE__ */ React.createElement(
@@ -17985,7 +17285,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       },
       /* @__PURE__ */ React.createElement(Icons.Copy, { size: 14, className: "inline-block align-[-2px]" }),
       /* @__PURE__ */ React.createElement("span", null, "Ir a Auditor\xEDa de Archivos")
-    )))), /* @__PURE__ */ React.createElement(
+    )))))), /* @__PURE__ */ React.createElement(
       UnifiedLibraryBrowserModal,
       {
         isOpen: fsBrowserOpen,
@@ -18027,7 +17327,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
   };
 
   // web/js/workspaces/SpotifyWorkspace.jsx
-  var { useState: useState22, useEffect: useEffect23, useRef: useRef19, useCallback: useCallback10, useMemo: useMemo8 } = React;
+  var { useState: useState21, useEffect: useEffect21, useRef: useRef17, useCallback: useCallback8, useMemo: useMemo8 } = React;
   var SpotifyWorkspace = ({
     tracks: externalTracks,
     setTracks: externalSetTracks,
@@ -18042,7 +17342,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
     onSaveCustomLibraries = null
   }) => {
     var _a, _b;
-    const [internalTracks, setInternalTracks] = useState22([]);
+    const [internalTracks, setInternalTracks] = useState21([]);
     const tracks = externalTracks !== void 0 ? externalTracks : internalTracks;
     const setTracks = externalSetTracks !== void 0 ? externalSetTracks : setInternalTracks;
     const handleCargarColeccion = (targetLibId = null) => {
@@ -18072,10 +17372,10 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         setTracks(colTracks);
       }
     };
-    const [spotifyUrl, setSpotifyUrl] = useState22("");
-    const [isAnalyzing, setIsAnalyzing] = useState22(false);
-    const [destDir, setDestDir] = useState22("/Users/admin/Music/mi musica");
-    useEffect23(() => {
+    const [spotifyUrl, setSpotifyUrl] = useState21("");
+    const [isAnalyzing, setIsAnalyzing] = useState21(false);
+    const [destDir, setDestDir] = useState21("/Users/admin/Music/mi musica");
+    useEffect21(() => {
       fetch("/api/directorio_descarga").then((r) => r.json()).then((data) => {
         if (data && data.path && typeof data.path === "string" && data.path.startsWith("/") && !data.path.includes('"') && !data.path.includes(":")) {
           setDestDir(data.path);
@@ -18083,23 +17383,23 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }).catch(() => {
       });
     }, []);
-    const [selectedFormat, setSelectedFormat] = useState22("flac");
-    const [downloadingMsg, setDownloadingMsg] = useState22("");
-    const [downloadProgress, setDownloadProgress] = useState22(0);
-    const [isDownloading, setIsDownloading] = useState22(false);
-    const [isAuditingFft, setIsAuditingFft] = useState22(false);
-    const [fftProgress, setFftProgress] = useState22(0);
-    const [fftMsg, setFftMsg] = useState22("");
-    const [selectedId, setSelectedId] = useState22(null);
-    const [spInspectorOpen, setSpInspectorOpen] = useState22(false);
+    const [selectedFormat, setSelectedFormat] = useState21("flac");
+    const [downloadingMsg, setDownloadingMsg] = useState21("");
+    const [downloadProgress, setDownloadProgress] = useState21(0);
+    const [isDownloading, setIsDownloading] = useState21(false);
+    const [isAuditingFft, setIsAuditingFft] = useState21(false);
+    const [fftProgress, setFftProgress] = useState21(0);
+    const [fftMsg, setFftMsg] = useState21("");
+    const [selectedId, setSelectedId] = useState21(null);
+    const [spInspectorOpen, setSpInspectorOpen] = useState21(false);
     const { width: spInspectorWidth, onPointerDown: onSpResizeDown, resetWidth: onSpResetWidth } = useDrawerResize("bw_sp_inspector_drawer_width", 540);
     const { width: poolColumnsDrawerWidth, onPointerDown: onPoolColumnsResizeDown, resetWidth: onPoolColumnsResetWidth } = useDrawerResize("bw_pool_columns_drawer_width", 540);
-    const [downloadSession, setDownloadSession] = useState22({ downloaded: [], failed: [] });
-    const [spSubView, setSpSubView] = useState22("catalog");
-    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState22(/* @__PURE__ */ new Set());
-    const [isExportingXls, setIsExportingXls] = useState22(false);
-    const [xlsToast, setXlsToast] = useState22("");
-    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState22(() => {
+    const [downloadSession, setDownloadSession] = useState21({ downloaded: [], failed: [] });
+    const [spSubView, setSpSubView] = useState21("catalog");
+    const [selectedDownloadedIds, setSelectedDownloadedIds] = useState21(/* @__PURE__ */ new Set());
+    const [isExportingXls, setIsExportingXls] = useState21(false);
+    const [xlsToast, setXlsToast] = useState21("");
+    const [deleteOriginalsOnUpgrade, setDeleteOriginalsOnUpgrade] = useState21(() => {
       try {
         return localStorage.getItem("dj_metatagger_delete_originals") === "true";
       } catch (e) {
@@ -18113,7 +17413,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (e) {
       }
     };
-    const [candidateModal, setCandidateModal] = useState22({
+    const [candidateModal, setCandidateModal] = useState21({
       open: false,
       targetTrack: null,
       candidates: [],
@@ -18204,12 +17504,12 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }));
       setCandidateModal((prev) => ({ ...prev, open: false }));
     };
-    const [fsBrowserOpen, setFsBrowserOpen] = useState22(false);
-    const [fsCurrentPath, setFsCurrentPath] = useState22("");
-    const [fsParentPath, setFsParentPath] = useState22("");
-    const [fsFolders, setFsFolders] = useState22([]);
-    const [fsLoading, setFsLoading] = useState22(false);
-    useEffect23(() => {
+    const [fsBrowserOpen, setFsBrowserOpen] = useState21(false);
+    const [fsCurrentPath, setFsCurrentPath] = useState21("");
+    const [fsParentPath, setFsParentPath] = useState21("");
+    const [fsFolders, setFsFolders] = useState21([]);
+    const [fsLoading, setFsLoading] = useState21(false);
+    useEffect21(() => {
       if (window.eel && typeof window.eel.expose === "function") {
         const updateDownload = (pct, msg) => {
           if (!msg || msg.includes("detenid") || msg.includes("cancelad") || msg.includes("CANCELAD")) {
@@ -18520,7 +17820,7 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       } catch (_) {
       }
     };
-    const [poolVisibleColumns, setPoolVisibleColumns] = useState22(() => {
+    const [poolVisibleColumns, setPoolVisibleColumns] = useState21(() => {
       try {
         const saved = localStorage.getItem("bw_pool_visible_columns");
         if (saved) return { ...DEFAULT_POOL_COLUMNS, ...JSON.parse(saved) };
@@ -18528,9 +17828,9 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
       }
       return DEFAULT_POOL_COLUMNS;
     });
-    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState22(false);
-    const [poolColumnSearchText, setPoolColumnSearchText] = useState22("");
-    useEffect23(() => {
+    const [poolColumnSelectorOpen, setPoolColumnSelectorOpen] = useState21(false);
+    const [poolColumnSearchText, setPoolColumnSearchText] = useState21("");
+    useEffect21(() => {
       if (!poolColumnSelectorOpen) return;
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
@@ -18593,26 +17893,26 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         return next;
       });
     };
-    const [spSortField, setSpSortField] = useState22("title");
-    const [spSortDir, setSpSortDir] = useState22("asc");
-    const [spFilterSearch, setSpFilterSearch] = useState22("");
-    const [spFilterArtist, setSpFilterArtist] = useState22("");
-    const [spFilterGenre, setSpFilterGenre] = useState22("ALL");
-    const [spFilterSubgenre, setSpFilterSubgenre] = useState22("");
-    const [spFilterOrigin, setSpFilterOrigin] = useState22("ALL");
-    const [spFilterMatch, setSpFilterMatch] = useState22("ALL");
-    const [spFilterPreQuality, setSpFilterPreQuality] = useState22("ALL");
-    const [spFilterFormat, setSpFilterFormat] = useState22("ALL");
-    const [spFilterKhz, setSpFilterKhz] = useState22("ALL");
-    const [spFilterKbps, setSpFilterKbps] = useState22("ALL");
-    const [spFilterQuality, setSpFilterQuality] = useState22("ALL");
-    const [spFilterCutoff, setSpFilterCutoff] = useState22("ALL");
-    const [spFilterDuration, setSpFilterDuration] = useState22("");
-    const [spFilterBpm, setSpFilterBpm] = useState22("");
-    const [spFilterKey, setSpFilterKey] = useState22("ALL");
-    const [spFilterEnergy, setSpFilterEnergy] = useState22("ALL");
-    const [spFilterDance, setSpFilterDance] = useState22("ALL");
-    const [spFilterStatus, setSpFilterStatus] = useState22("ALL");
+    const [spSortField, setSpSortField] = useState21("title");
+    const [spSortDir, setSpSortDir] = useState21("asc");
+    const [spFilterSearch, setSpFilterSearch] = useState21("");
+    const [spFilterArtist, setSpFilterArtist] = useState21("");
+    const [spFilterGenre, setSpFilterGenre] = useState21("ALL");
+    const [spFilterSubgenre, setSpFilterSubgenre] = useState21("");
+    const [spFilterOrigin, setSpFilterOrigin] = useState21("ALL");
+    const [spFilterMatch, setSpFilterMatch] = useState21("ALL");
+    const [spFilterPreQuality, setSpFilterPreQuality] = useState21("ALL");
+    const [spFilterFormat, setSpFilterFormat] = useState21("ALL");
+    const [spFilterKhz, setSpFilterKhz] = useState21("ALL");
+    const [spFilterKbps, setSpFilterKbps] = useState21("ALL");
+    const [spFilterQuality, setSpFilterQuality] = useState21("ALL");
+    const [spFilterCutoff, setSpFilterCutoff] = useState21("ALL");
+    const [spFilterDuration, setSpFilterDuration] = useState21("");
+    const [spFilterBpm, setSpFilterBpm] = useState21("");
+    const [spFilterKey, setSpFilterKey] = useState21("ALL");
+    const [spFilterEnergy, setSpFilterEnergy] = useState21("ALL");
+    const [spFilterDance, setSpFilterDance] = useState21("ALL");
+    const [spFilterStatus, setSpFilterStatus] = useState21("ALL");
     const poolUniqueGenres = useMemo8(() => {
       const set = /* @__PURE__ */ new Set();
       (tracks || []).forEach((t2) => {
@@ -19968,7 +19268,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-4 space-y-4" }, /* @__PURE__ */ React.createElement("div", { className: "w-full aspect-video bg-[#050508] rounded-lg border border-djzinc-800 overflow-hidden relative shadow-inner flex items-center justify-center" }, /* @__PURE__ */ React.createElement("img", { src: getValidCover(currentTrack.cover), alt: "Cover", onError: (e) => {
         e.target.onerror = null;
         e.target.src = DEFAULT_VINYL_SVG2;
-      }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(RekordboxWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk, null, pct) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }), " Pre-Auditor\xEDa Ac\xFAstica"), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${currentTrack.pre_quality_tier === "HI_RES_24B" || !currentTrack.pre_quality_tier && String(currentTrack.title || "").toLowerCase().includes("extended") ? "bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_8px_rgba(6,182,212,0.35)]" : currentTrack.pre_worth_it === false ? "bg-red-950/70 text-red-300 border-red-800" : "bg-emerald-950/70 text-emerald-300 border-emerald-600/70"}` }, currentTrack.pre_badge || (String(currentTrack.title || "").toLowerCase().includes("extended") ? "\u{1F48E} Hi-Res 24b" : "\u{1F4BD} Lossless 16b"))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xBFVale la pena?:"), /* @__PURE__ */ React.createElement("span", { className: `font-bold flex items-center gap-1 ${currentTrack.pre_worth_it === false ? "text-amber-400" : "text-emerald-400"}` }, /* @__PURE__ */ React.createElement("span", null, currentTrack.pre_worth_it === false ? "\u{1F7E1}" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("span", null, currentTrack.pre_verdict || (currentTrack.pre_worth_it === false ? "Calidad est\xE1ndar" : "\u2B50 IMPRESCINDIBLE")))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Corte Previsto:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, currentTrack.pre_cutoff_est || "> 24.0 kHz (FLAC)")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-relaxed font-sans pt-1 border-t border-djzinc-850" }, currentTrack.pre_detail || "Master de estudio oficial sin p\xE9rdidas destructivas. 100% apto para directo y sistemas de alta potencia.")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))),
+      }, className: "w-full h-full object-cover" }), /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700" }, "HD Cover 640px")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-sm text-djcyan-400 truncate", title: currentTrack.title }, currentTrack.title || "Selecciona una pista"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-gray-400 truncate" }, currentTrack.artist || "--")), /* @__PURE__ */ React.createElement("button", { onClick: (e) => handlePlayPreview(currentTrack, e), className: "px-3 py-1 bg-djcyan-500 hover:bg-djcyan-400 text-black font-mono font-bold text-[10px] rounded shadow cursor-pointer shrink-0" }, nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.title === currentTrack.title) && isPlaying ? "\u275A\u275A PAUSE" : "\u25B6 PRE-ESCUCHA")), /* @__PURE__ */ React.createElement(CopilotSeratoWaveform, { track: currentTrack, duration: currentTrack.duration || "03:30", onSeekTrack: (trk, pct) => handlePlayPreview(trk, null, pct) }), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2 text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Tempo"), /* @__PURE__ */ React.createElement("span", { className: "text-white font-bold" }, currentTrack.bpm ? `${currentTrack.bpm} BPM` : "--")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-2.5 rounded border border-djzinc-800" }, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] text-gray-500 block uppercase" }, "Clave Camelot"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 font-bold" }, currentTrack.key || "--"))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded-xl border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-djzinc-800/80 pb-1.5" }, /* @__PURE__ */ React.createElement("span", { className: "font-mono font-bold text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1.5" }, /* @__PURE__ */ React.createElement(Icons.Gem, { size: 14, className: "inline-block align-[-2px]" }), " Pre-Auditor\xEDa Ac\xFAstica"), /* @__PURE__ */ React.createElement("span", { className: `px-2 py-0.5 rounded text-[9.5px] font-mono font-bold border ${currentTrack.pre_quality_tier === "HI_RES_24B" || !currentTrack.pre_quality_tier && String(currentTrack.title || "").toLowerCase().includes("extended") ? "bg-djcyan-950 text-djcyan-300 border-djcyan-500 shadow-[0_0_8px_rgba(6,182,212,0.35)]" : currentTrack.pre_worth_it === false ? "bg-red-950/70 text-red-300 border-red-800" : "bg-emerald-950/70 text-emerald-300 border-emerald-600/70"}` }, currentTrack.pre_badge || (String(currentTrack.title || "").toLowerCase().includes("extended") ? "\u{1F48E} Hi-Res 24b" : "\u{1F4BD} Lossless 16b"))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between items-center text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xBFVale la pena?:"), /* @__PURE__ */ React.createElement("span", { className: `font-bold flex items-center gap-1 ${currentTrack.pre_worth_it === false ? "text-amber-400" : "text-emerald-400"}` }, /* @__PURE__ */ React.createElement("span", null, currentTrack.pre_worth_it === false ? "\u{1F7E1}" : "\u{1F7E2}"), /* @__PURE__ */ React.createElement("span", null, currentTrack.pre_verdict || (currentTrack.pre_worth_it === false ? "Calidad est\xE1ndar" : "\u2B50 IMPRESCINDIBLE")))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between text-[11px] font-mono" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Corte Previsto:"), /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-300 font-bold" }, currentTrack.pre_cutoff_est || "> 24.0 kHz (FLAC)")), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-gray-400 leading-relaxed font-sans pt-1 border-t border-djzinc-850" }, currentTrack.pre_detail || "Master de estudio oficial sin p\xE9rdidas destructivas. 100% apto para directo y sistemas de alta potencia.")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#050508] p-3 rounded border border-djzinc-800 space-y-2 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "\xC1lbum:"), /* @__PURE__ */ React.createElement("span", { className: "text-gray-200 truncate max-w-[200px]" }, currentTrack.album || "--")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "ISRC:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-gray-300" }, currentTrack.isrc || "Auto-Tag")), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "text-gray-400" }, "Formato Destino:"), /* @__PURE__ */ React.createElement("span", { className: "font-mono text-djcyan-400 font-bold uppercase" }, ".", selectedFormat, " Lossless")))),
       /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-djzinc-950 border-t border-djzinc-800 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
         "button",
         {
@@ -20307,7 +19607,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/TaxonomyWorkspace.jsx
-  var { useState: useState23, useEffect: useEffect24, useRef: useRef20, useMemo: useMemo9, useCallback: useCallback11 } = React;
+  var { useState: useState22, useEffect: useEffect22, useRef: useRef18, useMemo: useMemo9, useCallback: useCallback9 } = React;
   var TaxonomyWorkspace = ({
     tracks = [],
     onTracksUpdated,
@@ -20323,21 +19623,21 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onAddTracksToSpotify,
     onRemoveTrack
   }) => {
-    const [activeSubView, setActiveSubView] = useState23("search");
-    const [searchScope, setSearchScope] = useState23("all");
-    const [isSearchingOnline, setIsSearchingOnline] = useState23(false);
-    const [onlineResults, setOnlineResults] = useState23([]);
-    const [searchLocalResults, setSearchLocalResults] = useState23([]);
-    const [hasExecutedSearch, setHasExecutedSearch] = useState23(false);
-    const [selectedTaxIds, setSelectedTaxIds] = useState23(/* @__PURE__ */ new Set());
-    const [displayMode, setDisplayMode] = useState23("table");
-    const [taxSortField, setTaxSortField] = useState23("matchScore");
-    const [taxSortDir, setTaxSortDir] = useState23("desc");
-    const [taxFilterSearch, setTaxFilterSearch] = useState23("");
-    const [taxFilterGenre, setTaxFilterGenre] = useState23("ALL");
-    const [taxFilterOrigin, setTaxFilterOrigin] = useState23("ALL");
-    const [taxFilterEnergy, setTaxFilterEnergy] = useState23("ALL");
-    const [taxFilterDance, setTaxFilterDance] = useState23("ALL");
+    const [activeSubView, setActiveSubView] = useState22("search");
+    const [searchScope, setSearchScope] = useState22("all");
+    const [isSearchingOnline, setIsSearchingOnline] = useState22(false);
+    const [onlineResults, setOnlineResults] = useState22([]);
+    const [searchLocalResults, setSearchLocalResults] = useState22([]);
+    const [hasExecutedSearch, setHasExecutedSearch] = useState22(false);
+    const [selectedTaxIds, setSelectedTaxIds] = useState22(/* @__PURE__ */ new Set());
+    const [displayMode, setDisplayMode] = useState22("table");
+    const [taxSortField, setTaxSortField] = useState22("matchScore");
+    const [taxSortDir, setTaxSortDir] = useState22("desc");
+    const [taxFilterSearch, setTaxFilterSearch] = useState22("");
+    const [taxFilterGenre, setTaxFilterGenre] = useState22("ALL");
+    const [taxFilterOrigin, setTaxFilterOrigin] = useState22("ALL");
+    const [taxFilterEnergy, setTaxFilterEnergy] = useState22("ALL");
+    const [taxFilterDance, setTaxFilterDance] = useState22("ALL");
     const handleSortTax = (field) => {
       setTaxSortDir((prev) => taxSortField === field && prev === "asc" ? "desc" : "asc");
       setTaxSortField(field);
@@ -20346,18 +19646,18 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       if (taxSortField !== field) return /* @__PURE__ */ React.createElement("span", { className: "text-gray-600 ml-1 text-[9px]" }, "\u2195");
       return /* @__PURE__ */ React.createElement("span", { className: "text-djcyan-400 ml-1 font-bold text-[10px]" }, taxSortDir === "asc" ? "\u25B2" : "\u25BC");
     };
-    const [aiQuery, setAiQuery] = useState23("");
-    const [selectedGenreFilter, setSelectedGenreFilter] = useState23("ALL");
-    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState23("ALL");
-    const [selectedVersionFilter, setSelectedVersionFilter] = useState23("ALL");
-    const [selectedBpmFilter, setSelectedBpmFilter] = useState23("ALL");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState23("ALL");
-    const [selectedMoodFilter, setSelectedMoodFilter] = useState23("ALL");
-    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState23(false);
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState23(false);
-    const [feedbackMsg, setFeedbackMsg2] = useState23("");
-    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState23(false);
-    const [activeTagTab, setActiveTagTab] = useState23("bpm");
+    const [aiQuery, setAiQuery] = useState22("");
+    const [selectedGenreFilter, setSelectedGenreFilter] = useState22("ALL");
+    const [selectedSubgenreFilterUI, setSelectedSubgenreFilterUI] = useState22("ALL");
+    const [selectedVersionFilter, setSelectedVersionFilter] = useState22("ALL");
+    const [selectedBpmFilter, setSelectedBpmFilter] = useState22("ALL");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState22("ALL");
+    const [selectedMoodFilter, setSelectedMoodFilter] = useState22("ALL");
+    const [isCamelotModalOpen, setIsCamelotModalOpen] = useState22(false);
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState22(false);
+    const [feedbackMsg, setFeedbackMsg2] = useState22("");
+    const [isAddTagMenuOpen, setIsAddTagMenuOpen] = useState22(false);
+    const [activeTagTab, setActiveTagTab] = useState22("bpm");
     const handleRemoveToken = (tok) => {
       if (!tok) return;
       let newQuery = aiQuery;
@@ -20378,16 +19678,16 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setIsAddTagMenuOpen(false);
       handleEjecutarBusqueda(newQuery);
     };
-    const [rutaBase, setRutaBase] = useState23("/Users/admin/Music/mi musica");
-    const [modo, setModo] = useState23("copy");
-    const [isRouting, setIsRouting] = useState23(false);
-    const [routeProgress, setRouteProgress] = useState23(0);
-    const [routeStatusMsg, setRouteStatusMsg] = useState23("");
-    const [resultSummary, setResultSummary] = useState23(null);
-    const [expandedGenre, setExpandedGenre] = useState23("Techno");
-    const [searchTerm, setSearchTerm] = useState23("");
-    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState23(null);
-    useEffect24(() => {
+    const [rutaBase, setRutaBase] = useState22("/Users/admin/Music/mi musica");
+    const [modo, setModo] = useState22("copy");
+    const [isRouting, setIsRouting] = useState22(false);
+    const [routeProgress, setRouteProgress] = useState22(0);
+    const [routeStatusMsg, setRouteStatusMsg] = useState22("");
+    const [resultSummary, setResultSummary] = useState22(null);
+    const [expandedGenre, setExpandedGenre] = useState22("Techno");
+    const [searchTerm, setSearchTerm] = useState22("");
+    const [selectedSubgenreFilter, setSelectedSubgenreFilter] = useState22(null);
+    useEffect22(() => {
       handleEjecutarBusqueda("");
     }, []);
     const parsedQuery = useMemo9(() => parseAIDJQuery(aiQuery), [aiQuery]);
@@ -21895,7 +21195,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
   };
 
   // web/js/workspaces/ShazamWorkspace.jsx
-  var { useState: useState24, useEffect: useEffect25, useRef: useRef21, useCallback: useCallback12 } = React;
+  var { useState: useState23, useEffect: useEffect23, useRef: useRef19, useCallback: useCallback10 } = React;
   var MAX_UPLOAD_BYTES = 45 * 1024 * 1024;
   var ShazamWorkspace = ({
     onSendToSpotify,
@@ -21906,56 +21206,56 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
     onSaveCustomLibraries = null
   }) => {
     var _a, _b;
-    const [isListening, setIsListening] = useState24(false);
-    const [countdown, setCountdown] = useState24(10);
-    const [isAnalyzing, setIsAnalyzing] = useState24(false);
-    const [statusMsg, setStatusMsg] = useState24("");
-    const [identifiedTrack, setIdentifiedTrack] = useState24(null);
-    const [history, setHistory] = useState24([]);
-    const [previewPlaying, setPreviewPlaying] = useState24(false);
-    const [micLevel, setMicLevel] = useState24(0);
-    const audioRef = useRef21(new Audio());
-    const mediaRecorderRef = useRef21(null);
-    const audioStreamRef = useRef21(null);
-    const fileInputRef = useRef21(null);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState24(false);
-    const timerRef = useRef21(null);
-    const animFrameRef = useRef21(null);
-    const audioCtxRef = useRef21(null);
-    const [dragOver, setDragOver] = useState24(false);
-    const [selectedEngine, setSelectedEngine] = useState24(() => {
+    const [isListening, setIsListening] = useState23(false);
+    const [countdown, setCountdown] = useState23(10);
+    const [isAnalyzing, setIsAnalyzing] = useState23(false);
+    const [statusMsg, setStatusMsg] = useState23("");
+    const [identifiedTrack, setIdentifiedTrack] = useState23(null);
+    const [history, setHistory] = useState23([]);
+    const [previewPlaying, setPreviewPlaying] = useState23(false);
+    const [micLevel, setMicLevel] = useState23(0);
+    const audioRef = useRef19(new Audio());
+    const mediaRecorderRef = useRef19(null);
+    const audioStreamRef = useRef19(null);
+    const fileInputRef = useRef19(null);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState23(false);
+    const timerRef = useRef19(null);
+    const animFrameRef = useRef19(null);
+    const audioCtxRef = useRef19(null);
+    const [dragOver, setDragOver] = useState23(false);
+    const [selectedEngine, setSelectedEngine] = useState23(() => {
       try {
         return localStorage.getItem("bw_radar_engine") || "hybrid";
       } catch (e) {
         return "hybrid";
       }
     });
-    const [radarEnvironment, setRadarEnvironment] = useState24(() => {
+    const [radarEnvironment, setRadarEnvironment] = useState23(() => {
       try {
         return localStorage.getItem("bw_radar_env") || "club";
       } catch (e) {
         return "club";
       }
     });
-    const [radarEvent, setRadarEvent] = useState24(null);
-    const recognizerRef = useRef21(null);
-    const [auddToken, setAuddToken] = useState24(() => {
+    const [radarEvent, setRadarEvent] = useState23(null);
+    const recognizerRef = useRef19(null);
+    const [auddToken, setAuddToken] = useState23(() => {
       try {
         return localStorage.getItem("bw_audd_token") || "";
       } catch (e) {
         return "";
       }
     });
-    const [showConfig, setShowConfig] = useState24(false);
-    const [micCaptureMode, setMicCaptureMode] = useState24("auto");
-    const [micPermissionError, setMicPermissionError] = useState24(null);
-    useEffect25(() => {
+    const [showConfig, setShowConfig] = useState23(false);
+    const [micCaptureMode, setMicCaptureMode] = useState23("auto");
+    const [micPermissionError, setMicPermissionError] = useState23(null);
+    useEffect23(() => {
       try {
         localStorage.setItem("bw_radar_engine", selectedEngine);
       } catch (e) {
       }
     }, [selectedEngine]);
-    useEffect25(() => {
+    useEffect23(() => {
       try {
         localStorage.setItem("bw_radar_env", radarEnvironment);
       } catch (e) {
@@ -21964,7 +21264,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         recognizerRef.current.setEnvironment(radarEnvironment);
       }
     }, [radarEnvironment]);
-    useEffect25(() => {
+    useEffect23(() => {
       recognizerRef.current = new Phase1FastRecognizer({
         workerGatewayUrl: "https://beatwave-radar-gateway.workers.dev",
         environment: radarEnvironment,
@@ -22012,13 +21312,13 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       });
     }, []);
-    useEffect25(() => {
+    useEffect23(() => {
       try {
         localStorage.setItem("bw_audd_token", auddToken);
       } catch (e) {
       }
     }, [auddToken]);
-    const [notebookTracks, setNotebookTracks] = useState24(() => {
+    const [notebookTracks, setNotebookTracks] = useState23(() => {
       try {
         const saved = localStorage.getItem("beatwave_shazam_notebook");
         return saved ? JSON.parse(saved) : [];
@@ -22026,8 +21326,8 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         return [];
       }
     });
-    const [notebookFeedback, setNotebookFeedback] = useState24("");
-    useEffect25(() => {
+    const [notebookFeedback, setNotebookFeedback] = useState23("");
+    useEffect23(() => {
       try {
         localStorage.setItem("beatwave_shazam_notebook", JSON.stringify(notebookTracks));
       } catch (e) {
@@ -22136,7 +21436,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
       setNotebookFeedback(`\u2713 Archivo TXT descargado: ${filename}`);
       setTimeout(() => setNotebookFeedback(""), 4e3);
     };
-    useEffect25(() => {
+    useEffect23(() => {
       const audio = audioRef.current;
       const handleEnded = () => setPreviewPlaying(false);
       const handlePause = () => setPreviewPlaying(false);
@@ -22176,7 +21476,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         }
       };
     }, []);
-    const togglePlayPreview = useCallback12((url) => {
+    const togglePlayPreview = useCallback10((url) => {
       if (!url) return;
       const audio = audioRef.current;
       if (previewPlaying && audio.src === url) {
@@ -22187,7 +21487,7 @@ ${deleteOriginalsOnUpgrade ? "\u2713 Se sustituir\xE1 el archivo anterior elimin
         audio.play().then(() => setPreviewPlaying(true)).catch((e) => console.error("Error reproduciendo preview:", e));
       }
     }, [previewPlaying]);
-    const handleRecognitionResponse = useCallback12((res, elapsedMs = null) => {
+    const handleRecognitionResponse = useCallback10((res, elapsedMs = null) => {
       setIsAnalyzing(false);
       if (res && res.status === "ok") {
         const engineTag = res.motor_usado ? ` [v\xEDa ${res.motor_usado}]` : "";
@@ -23194,12 +22494,12 @@ ${text}`);
   };
 
   // web/js/workspaces/LogsWorkspace.jsx
-  var { useState: useState25 } = React;
+  var { useState: useState24 } = React;
 
   // web/js/workspaces/TrendsWorkspace.jsx
-  var { useState: useState26, useEffect: useEffect26, useMemo: useMemo10 } = React;
+  var { useState: useState25, useEffect: useEffect24, useMemo: useMemo10 } = React;
   var TrendsWorkspace = ({ lang = "es" }) => {
-    const [trendsData, setTrendsData] = useState26({
+    const [trendsData, setTrendsData] = useState25({
       last_crawled_at: "Sincronizando...",
       next_scheduled_run: "Martes 23:00",
       items: [],
@@ -23211,14 +22511,14 @@ ${text}`);
       dj_gear: [],
       trends_radar: []
     });
-    const [loading, setLoading] = useState26(true);
-    const [isCrawling, setIsCrawling] = useState26(false);
-    const [selectedCategory, setSelectedCategory] = useState26("todas");
-    const [selectedCity, setSelectedCity] = useState26("Madrid");
-    const [searchQuery, setSearchQuery] = useState26("");
-    const [dateFilter, setDateFilter] = useState26("all");
-    const [readingArticle, setReadingArticle] = useState26(null);
-    const [copiedRef, setCopiedRef] = useState26(false);
+    const [loading, setLoading] = useState25(true);
+    const [isCrawling, setIsCrawling] = useState25(false);
+    const [selectedCategory, setSelectedCategory] = useState25("todas");
+    const [selectedCity, setSelectedCity] = useState25("Madrid");
+    const [searchQuery, setSearchQuery] = useState25("");
+    const [dateFilter, setDateFilter] = useState25("all");
+    const [readingArticle, setReadingArticle] = useState25(null);
+    const [copiedRef, setCopiedRef] = useState25(false);
     const categories = [
       { id: "todas", label: lang === "en" ? "All Trends" : "Todas las Novedades", icon: "\u{1F310}" },
       { id: "Festivales & Eventos", label: lang === "en" ? "Events (Time To House)" : "Eventos & Clubs (Time To House)", icon: "\u{1F3AA}" },
@@ -23250,7 +22550,7 @@ ${text}`);
         setLoading(false);
       }
     };
-    useEffect26(() => {
+    useEffect24(() => {
       fetchTrends();
     }, []);
     const handleRunCrawler = async () => {
@@ -23654,7 +22954,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/SetBuilderWorkspace.jsx
-  var { useState: useState27, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo11, useCallback: useCallback13 } = React;
+  var { useState: useState26, useEffect: useEffect25, useRef: useRef20, useMemo: useMemo11, useCallback: useCallback11 } = React;
   function parseCamelotKey(keyStr) {
     if (!keyStr || keyStr === "--" || keyStr === "?") return null;
     const match = String(keyStr).trim().toUpperCase().match(/^(\d{1,2})([AB])$/);
@@ -23673,7 +22973,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     }
     return null;
   }
-  function getTrackKey(t) {
+  function getTrackKey2(t) {
     if (!t) return null;
     for (const k of [t.key, t.k, t.tonalidad, t.initial_key]) {
       if (k && k !== "--" && k !== "?" && k !== "N/D") {
@@ -23849,24 +23149,24 @@ Respuesta: ${qa.a}`).join("\n\n"),
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
-    const [setName, setSetName] = useState27("BeatWave_Mainstage_Set");
-    const [selectedTrackIdx, setSelectedTrackIdx] = useState27(null);
-    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState27(false);
-    const [fsBrowserOpen, setFsBrowserOpen] = useState27(false);
-    const [searchAddQuery, setSearchAddQuery] = useState27("");
-    const [exportStatus, setExportStatus] = useState27(null);
-    const [isExporting, setIsExporting] = useState27(false);
-    const [isAuditingSet, setIsAuditingSet] = useState27(false);
-    const [auditSetProgress, setAuditSetProgress] = useState27(0);
-    const [folderLoading, setFolderLoading] = useState27(false);
-    const [folderProgress, setFolderProgress] = useState27({ pct: 0, msg: "" });
-    const [viewMode, setViewMode] = useState27("list");
-    const [graphData, setGraphData] = useState27({ nodes: [], edges: [] });
-    const [isLoadingGraph, setIsLoadingGraph] = useState27(false);
-    const [aiAuditResult, setAiAuditResult] = useState27(null);
-    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState27(false);
-    const [hoveredFlowIdx, setHoveredFlowIdx] = useState27(null);
-    useEffect27(() => {
+    const [setName, setSetName] = useState26("BeatWave_Mainstage_Set");
+    const [selectedTrackIdx, setSelectedTrackIdx] = useState26(null);
+    const [isAddDrawerOpen, setIsAddDrawerOpen] = useState26(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState26(false);
+    const [searchAddQuery, setSearchAddQuery] = useState26("");
+    const [exportStatus, setExportStatus] = useState26(null);
+    const [isExporting, setIsExporting] = useState26(false);
+    const [isAuditingSet, setIsAuditingSet] = useState26(false);
+    const [auditSetProgress, setAuditSetProgress] = useState26(0);
+    const [folderLoading, setFolderLoading] = useState26(false);
+    const [folderProgress, setFolderProgress] = useState26({ pct: 0, msg: "" });
+    const [viewMode, setViewMode] = useState26("list");
+    const [graphData, setGraphData] = useState26({ nodes: [], edges: [] });
+    const [isLoadingGraph, setIsLoadingGraph] = useState26(false);
+    const [aiAuditResult, setAiAuditResult] = useState26(null);
+    const [isLoadingAiAudit, setIsLoadingAiAudit] = useState26(false);
+    const [hoveredFlowIdx, setHoveredFlowIdx] = useState26(null);
+    useEffect25(() => {
       if (!auditTracks || auditTracks.length === 0 || !setTracks || setTracks.length === 0) return;
       let hasChanges = false;
       const updated = setTracks.map((st) => {
@@ -23929,7 +23229,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       for (let i = 0; i < setTracks.length - 1; i++) {
         const trkA = setTracks[i];
         const trkB = setTracks[i + 1];
-        const harm = evaluateHarmonicTransition(getTrackKey(trkA), getTrackKey(trkB));
+        const harm = evaluateHarmonicTransition(getTrackKey2(trkA), getTrackKey2(trkB));
         totalScore += harm.score;
       }
       const harmonicScore = setTracks.length <= 1 ? 100 : Math.round(totalScore / transitionsCount);
@@ -23971,7 +23271,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         artist: track.artist || track.a || "Artista",
         a: track.artist || track.a || "Artista",
         bpm: getTrackBpm(track) || track.bpm || track.b,
-        key: getTrackKey(track) || track.key || track.k,
+        key: getTrackKey2(track) || track.key || track.k,
         lufs: getTrackLufs(track),
         acoustic_role: track.acoustic_role || "Balanced Full-Range",
         low_ratio: track.low_ratio || 33.3,
@@ -23997,7 +23297,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         artist: t.artist || t.a || "Artista",
         a: t.artist || t.a || "Artista",
         bpm: getTrackBpm(t) || t.bpm || t.b,
-        key: getTrackKey(t) || t.key || t.k,
+        key: getTrackKey2(t) || t.key || t.k,
         lufs: getTrackLufs(t),
         acoustic_role: t.acoustic_role || "Balanced Full-Range",
         low_ratio: t.low_ratio || 33.3,
@@ -24028,7 +23328,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         artist: t.artist || t.a || "Artista",
         a: t.artist || t.a || "Artista",
         bpm: getTrackBpm(t) || t.bpm || t.b,
-        key: getTrackKey(t) || t.key || t.k,
+        key: getTrackKey2(t) || t.key || t.k,
         lufs: getTrackLufs(t),
         acoustic_role: t.acoustic_role || "Balanced Full-Range",
         low_ratio: t.low_ratio || 33.3,
@@ -24067,7 +23367,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
           artist: t.artist || t.a || "Artista",
           a: t.artist || t.a || "Artista",
           bpm: getTrackBpm(t) || t.bpm || t.b,
-          key: getTrackKey(t) || t.key || t.k,
+          key: getTrackKey2(t) || t.key || t.k,
           lufs: getTrackLufs(t),
           acoustic_role: t.acoustic_role || "Balanced Full-Range",
           low_ratio: t.low_ratio || 33.3,
@@ -24131,7 +23431,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
             artist: t.artist || t.a || "Artista",
             a: t.artist || t.a || "Artista",
             bpm: getTrackBpm(t) || t.bpm || t.b,
-            key: getTrackKey(t) || t.key || t.k,
+            key: getTrackKey2(t) || t.key || t.k,
             lufs: getTrackLufs(t),
             acoustic_role: t.acoustic_role || "Balanced Full-Range",
             low_ratio: t.low_ratio || 33.3,
@@ -24350,13 +23650,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       while (remaining.length > 0) {
         const current = optimized[optimized.length - 1];
         const curBpm = getTrackBpm(current) || 126;
-        const curKey = getTrackKey(current) || "";
+        const curKey = getTrackKey2(current) || "";
         let bestIdx = 0;
         let bestScore = -9999;
         for (let i = 0; i < remaining.length; i++) {
           const candidate = remaining[i];
           const candBpm = getTrackBpm(candidate) || curBpm || 126;
-          const candKey = getTrackKey(candidate) || "";
+          const candKey = getTrackKey2(candidate) || "";
           const harm = evaluateHarmonicTransition(curKey, candKey);
           const bpmDiff = Math.abs(candBpm - curBpm);
           const bpmScore = Math.max(0, 100 - bpmDiff * 15);
@@ -24551,7 +23851,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const isSelected = selectedTrackIdx === idx;
         const isCurPlaying = isThisTrack(p.track) && isPlaying;
         const isHovered = hoveredFlowIdx === idx;
-        const keyStr = getTrackKey(p.track);
+        const keyStr = getTrackKey2(p.track);
         const nodeRadius = isSelected || isCurPlaying ? 11 : isHovered ? 8.5 : 6.5;
         return /* @__PURE__ */ React.createElement(
           "g",
@@ -24636,7 +23936,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         const tipH = 38;
         const tipX = Math.min(Math.max(hp.x - tipW / 2, 4), width - tipW - 4);
         const tipY = hp.y - tipH - 22 < 0 ? hp.y + 18 : hp.y - tipH - 22;
-        const keyLabel = getTrackKey(hp.track) || "--";
+        const keyLabel = getTrackKey2(hp.track) || "--";
         return /* @__PURE__ */ React.createElement("g", { pointerEvents: "none" }, /* @__PURE__ */ React.createElement("rect", { x: tipX, y: tipY, width: tipW, height: tipH, rx: "8", fill: "#0e0e11", stroke: "rgba(34,211,238,0.45)" }), /* @__PURE__ */ React.createElement("text", { x: tipX + 10, y: tipY + 15, fill: "#fafafa", fontSize: "10", fontWeight: "bold", fontFamily: "monospace" }, `#${hoveredFlowIdx + 1} ${title}`), /* @__PURE__ */ React.createElement("text", { x: tipX + 10, y: tipY + 29, fill: "#a1a1aa", fontSize: "9", fontFamily: "monospace" }, `BPM ${hp.hasRealBpm ? hp.bpm : "--"} \xB7 Key ${keyLabel} \xB7 Clic: reproducir`));
       })())));
     };
@@ -24667,7 +23967,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         /* @__PURE__ */ React.createElement("span", null, isLoadingGraph ? "Calculando Grafo..." : "Regenerar Grafo")
       ))), isLoadingGraph ? /* @__PURE__ */ React.createElement("div", { className: "py-20 flex flex-col items-center justify-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" }), /* @__PURE__ */ React.createElement("span", { className: "text-xs font-mono text-purple-300" }, "Explorando compatibilidades y ramificaciones en tu biblioteca musical...")) : /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "space-y-4" }, setTracks.map((trk, idx) => {
         const nextTrack = idx < setTracks.length - 1 ? setTracks[idx + 1] : null;
-        const trkKey = getTrackKey(trk) || "8A";
+        const trkKey = getTrackKey2(trk) || "8A";
         const trkBpm = getTrackBpm(trk) || 126;
         const isCurPlaying = isThisTrack(trk) && isPlaying;
         const stepAlts = altNodes.filter((an) => an.step === idx + 1);
@@ -25051,9 +24351,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
       const isSelected = selectedTrackIdx === idx;
       const nextTrack = idx < setTracks.length - 1 ? setTracks[idx + 1] : null;
       const trackBpm = getTrackBpm(track);
-      const trackKey = getTrackKey(track);
+      const trackKey = getTrackKey2(track);
       const trackLufs = getTrackLufs(track);
-      const harmTrans = nextTrack ? evaluateHarmonicTransition(trackKey, getTrackKey(nextTrack)) : null;
+      const harmTrans = nextTrack ? evaluateHarmonicTransition(trackKey, getTrackKey2(nextTrack)) : null;
       const lufsTrans = nextTrack ? evaluateLufsTransition(trackLufs, getTrackLufs(nextTrack)) : null;
       const antiMuddyTrans = nextTrack ? evaluateAntiMuddyTransition(track, nextTrack) : null;
       return /* @__PURE__ */ React.createElement(React.Fragment, { key: `set_trk_${track.id || idx}_${idx}` }, /* @__PURE__ */ React.createElement(
@@ -25268,7 +24568,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/MapWorkspace.jsx
-  var { useState: useState28, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo12, useCallback: useCallback14 } = React;
+  var { useState: useState27, useEffect: useEffect26, useRef: useRef21, useMemo: useMemo12, useCallback: useCallback12 } = React;
   var MAP_CAMELOT_COLORS2 = {
     "1A": "#00e5ff",
     "1B": "#00b4d8",
@@ -25398,9 +24698,9 @@ Respuesta: ${qa.a}`).join("\n\n"),
     activeCustomLibId = null,
     onSaveCustomLibraries = null
   }) => {
-    const [useDemo, setUseDemo] = useState28(false);
+    const [useDemo, setUseDemo] = useState27(false);
     const activeTracks = rawTracks && rawTracks.length > 0 ? rawTracks : useDemo ? DEMO_MAP_TRACKS2 : [];
-    const [fsBrowserOpen, setFsBrowserOpen] = useState28(false);
+    const [fsBrowserOpen, setFsBrowserOpen] = useState27(false);
     const handleCargarColeccion = (targetLibId = null) => {
       const activeLib = targetLibId && (customLibraries || []).find((l) => l.id === targetLibId) || (customLibraries || []).find((l) => l.id === activeCustomLibId) || customLibraries && customLibraries[0];
       const colTracks = [];
@@ -25444,35 +24744,35 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onSelectDirectory(targetPath);
       }
     };
-    const [projectionMode, setProjectionMode] = useState28("energy_dance");
-    const [colorMode, setColorMode] = useState28("genre");
-    const [toolMode, setToolMode] = useState28("pan");
-    const [searchQuery, setSearchQuery] = useState28("");
-    const [selectedKeyFilter, setSelectedKeyFilter] = useState28("ALL");
-    const [showHarmonicPaths, setShowHarmonicPaths] = useState28(true);
-    const [selectedTrack, setSelectedTrack] = useState28(null);
-    const [selectedMapTracks, setSelectedMapTracks] = useState28([]);
-    const [hoveredTrack, setHoveredTrack] = useState28(null);
-    const tooltipRef = useRef23(null);
-    const mousePosRef = useRef23({ x: -100, y: -100 });
-    const zoomThrottleRef = useRef23(null);
-    const zoomTrailingRef = useRef23(null);
-    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState28(true);
-    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState28(true);
-    const [zoomDisplay, setZoomDisplay] = useState28(1);
-    const [isPanning, setIsPanning] = useState28(false);
-    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState28(true);
+    const [projectionMode, setProjectionMode] = useState27("energy_dance");
+    const [colorMode, setColorMode] = useState27("genre");
+    const [toolMode, setToolMode] = useState27("pan");
+    const [searchQuery, setSearchQuery] = useState27("");
+    const [selectedKeyFilter, setSelectedKeyFilter] = useState27("ALL");
+    const [showHarmonicPaths, setShowHarmonicPaths] = useState27(true);
+    const [selectedTrack, setSelectedTrack] = useState27(null);
+    const [selectedMapTracks, setSelectedMapTracks] = useState27([]);
+    const [hoveredTrack, setHoveredTrack] = useState27(null);
+    const tooltipRef = useRef21(null);
+    const mousePosRef = useRef21({ x: -100, y: -100 });
+    const zoomThrottleRef = useRef21(null);
+    const zoomTrailingRef = useRef21(null);
+    const [isCamelotWheelOpen, setIsCamelotWheelOpen] = useState27(true);
+    const [isNavOverlayOpen, setIsNavOverlayOpen] = useState27(true);
+    const [zoomDisplay, setZoomDisplay] = useState27(1);
+    const [isPanning, setIsPanning] = useState27(false);
+    const [isMapConsoleOpen, setIsMapConsoleOpen] = useState27(true);
     const {
       width: mapConsoleWidth,
       onPointerDown: onMapConsoleResizeDown,
       resetWidth: onResetMapConsoleWidth
     } = useDrawerResize("bw_map_console_width", 270, 220, 520, true);
-    const [filterMinEnergy, setFilterMinEnergy] = useState28(0);
-    const [filterMinDance, setFilterMinDance] = useState28(0);
-    const [filterMinIntensity, setFilterMinIntensity] = useState28(0);
-    const [filterMinValence, setFilterMinValence] = useState28(0);
-    const [filterQualityMode, setFilterQualityMode] = useState28("ALL");
-    const handleResetAcousticFilters = useCallback14(() => {
+    const [filterMinEnergy, setFilterMinEnergy] = useState27(0);
+    const [filterMinDance, setFilterMinDance] = useState27(0);
+    const [filterMinIntensity, setFilterMinIntensity] = useState27(0);
+    const [filterMinValence, setFilterMinValence] = useState27(0);
+    const [filterQualityMode, setFilterQualityMode] = useState27("ALL");
+    const handleResetAcousticFilters = useCallback12(() => {
       setFilterMinEnergy(0);
       setFilterMinDance(0);
       setFilterMinIntensity(0);
@@ -25480,22 +24780,22 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setFilterQualityMode("ALL");
       setSelectedKeyFilter("ALL");
     }, []);
-    useEffect28(() => {
+    useEffect26(() => {
       return () => {
         if (zoomThrottleRef.current) clearTimeout(zoomThrottleRef.current);
         if (zoomTrailingRef.current) clearTimeout(zoomTrailingRef.current);
       };
     }, []);
     const hasActiveFilters = filterMinEnergy > 0 || filterMinDance > 0 || filterMinIntensity > 0 || filterMinValence > 0 || filterQualityMode !== "ALL" || selectedKeyFilter !== "ALL" || Boolean(searchQuery);
-    const canvasRef = useRef23(null);
-    const containerRef = useRef23(null);
-    const animRef = useRef23(null);
-    const imageCacheRef = useRef23(/* @__PURE__ */ new Map());
-    const panTimerRef = useRef23(null);
-    const spatialGridRef = useRef23(/* @__PURE__ */ new Map());
-    const mouseRafRef = useRef23(null);
-    const activeLoadingCountRef = useRef23(0);
-    const pendingLoadQueueRef = useRef23([]);
+    const canvasRef = useRef21(null);
+    const containerRef = useRef21(null);
+    const animRef = useRef21(null);
+    const imageCacheRef = useRef21(/* @__PURE__ */ new Map());
+    const panTimerRef = useRef21(null);
+    const spatialGridRef = useRef21(/* @__PURE__ */ new Map());
+    const mouseRafRef = useRef21(null);
+    const activeLoadingCountRef = useRef21(0);
+    const pendingLoadQueueRef = useRef21([]);
     const processCoverQueue = () => {
       const MAX_CONCURRENT = 8;
       while (activeLoadingCountRef.current < MAX_CONCURRENT && pendingLoadQueueRef.current.length > 0) {
@@ -25541,7 +24841,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       processCoverQueue();
     };
     const radialView = projectionMode === "camelot_wheel" || projectionMode === "acoustic_clusters";
-    const transformRef = useRef23({
+    const transformRef = useRef21({
       scale: 1,
       panX: 0,
       panY: 0,
@@ -25611,7 +24911,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setZoomDisplay(clamped);
       }
     };
-    const handleAutoFrame = useCallback14((targetZoom = null) => {
+    const handleAutoFrame = useCallback12((targetZoom = null) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -25687,13 +24987,13 @@ Respuesta: ${qa.a}`).join("\n\n"),
       tr.isContinuousPanning = false;
       setZoomDisplay(finalScale);
     }, [radialView, selectedKeyFilter, searchQuery, hoveredTrack, selectedTrack, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
-    const selectionRef = useRef23({
+    const selectionRef = useRef21({
       isSelecting: false,
       points: [],
       boxStart: null
     });
-    const nodesRef = useRef23([]);
-    useEffect28(() => {
+    const nodesRef = useRef21([]);
+    useEffect26(() => {
       const bpms = activeTracks.map((t) => parseFloat(t.bpm || t.b) || 126).filter((b) => b > 40 && b < 250);
       const minBpm = bpms.length > 0 ? Math.min(...bpms) : 120;
       const maxBpm = bpms.length > 0 ? Math.max(...bpms) : 150;
@@ -25787,7 +25087,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       spatialGridRef.current = grid;
       nodesRef.current = updatedNodes;
     }, [activeTracks, projectionMode]);
-    useEffect28(() => {
+    useEffect26(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
@@ -26363,7 +25663,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         selectionRef.current.boxStart = null;
       }
     };
-    const handleWheel = useCallback14((e) => {
+    const handleWheel = useCallback12((e) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -26394,7 +25694,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }, 80);
       }
     }, []);
-    useEffect28(() => {
+    useEffect26(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const onWheelNative = (e) => {
@@ -26415,7 +25715,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const handleResetZoom = () => {
       handleAutoFrame(1);
     };
-    useEffect28(() => {
+    useEffect26(() => {
       const timer = setTimeout(() => {
         handleAutoFrame();
       }, 120);
@@ -26865,20 +26165,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/workspaces/KnowledgeWorkspace.jsx
-  var { useState: useState29, useEffect: useEffect29, useRef: useRef24, useMemo: useMemo13 } = React;
+  var { useState: useState28, useEffect: useEffect27, useRef: useRef22, useMemo: useMemo13 } = React;
   var KnowledgeWorkspace = ({ lang = "es" }) => {
-    const [activeSection, setActiveSection] = useState29("courses");
-    const [knowledgeData, setKnowledgeData] = useState29({
+    const [activeSection, setActiveSection] = useState28("courses");
+    const [knowledgeData, setKnowledgeData] = useState28({
       courses: [],
       videos: [],
       manuals: [],
       tricks: [],
       glossary: []
     });
-    const [loading, setLoading] = useState29(true);
-    const [expandedCourseId, setExpandedCourseId] = useState29("course_01");
-    const [glossarySearch, setGlossarySearch] = useState29("");
-    const [glossaryCategory, setGlossaryCategory] = useState29("all");
+    const [loading, setLoading] = useState28(true);
+    const [expandedCourseId, setExpandedCourseId] = useState28("course_01");
+    const [glossarySearch, setGlossarySearch] = useState28("");
+    const [glossaryCategory, setGlossaryCategory] = useState28("all");
     const fetchKnowledge = async () => {
       try {
         setLoading(true);
@@ -26898,7 +26198,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         setLoading(false);
       }
     };
-    useEffect29(() => {
+    useEffect27(() => {
       fetchKnowledge();
     }, []);
     const filteredGlossary = useMemo13(() => {
@@ -27420,7 +26720,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   });
 
   // web/js/workspaces/CopilotCenterMixer.jsx
-  var { useState: useState30, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo14, memo: memo3 } = React;
+  var { useState: useState29, useEffect: useEffect28, useRef: useRef23, useMemo: useMemo14, memo: memo3 } = React;
   var HardwareKnob = memo3(({
     value = 0.5,
     color = "#00F0FF",
@@ -27510,11 +26810,11 @@ Respuesta: ${qa.a}`).join("\n\n"),
     // HUD integrado en la mesa central slim
   }) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p;
-    const [d1ActiveHito, setD1ActiveHito] = useState30(0);
-    const [d2ActiveHito, setD2ActiveHito] = useState30(2);
-    const [pflState, setPflState] = useState30({ ch1: false, ch2: true });
-    const [currentBeat, setCurrentBeat] = useState30(1);
-    useEffect30(() => {
+    const [d1ActiveHito, setD1ActiveHito] = useState29(0);
+    const [d2ActiveHito, setD2ActiveHito] = useState29(2);
+    const [pflState, setPflState] = useState29({ ch1: false, ch2: true });
+    const [currentBeat, setCurrentBeat] = useState29(1);
+    useEffect28(() => {
       const bpm = Number((deck1 == null ? void 0 : deck1.bpm) || (deck2 == null ? void 0 : deck2.bpm) || 136);
       const beatMs = Math.round(60 / bpm * 1e3);
       const interval = setInterval(() => {
@@ -27560,19 +26860,19 @@ Respuesta: ${qa.a}`).join("\n\n"),
     };
     const d1Duration = Number(deck1 == null ? void 0 : deck1.duration_sec) || 240;
     const d2Duration = Number(deck2 == null ? void 0 : deck2.duration_sec) || 240;
-    const [d1PlayPos, setD1PlayPos] = useState30(() => (typeof (deck1 == null ? void 0 : deck1.play_progress) === "number" ? deck1.play_progress : 0.15) * d1Duration);
-    const [d2PlayPos, setD2PlayPos] = useState30(() => (typeof (deck2 == null ? void 0 : deck2.play_progress) === "number" ? deck2.play_progress : 0) * d2Duration);
-    useEffect30(() => {
+    const [d1PlayPos, setD1PlayPos] = useState29(() => (typeof (deck1 == null ? void 0 : deck1.play_progress) === "number" ? deck1.play_progress : 0.15) * d1Duration);
+    const [d2PlayPos, setD2PlayPos] = useState29(() => (typeof (deck2 == null ? void 0 : deck2.play_progress) === "number" ? deck2.play_progress : 0) * d2Duration);
+    useEffect28(() => {
       if (typeof (deck1 == null ? void 0 : deck1.play_progress) === "number") {
         setD1PlayPos(deck1.play_progress * d1Duration);
       }
     }, [deck1 == null ? void 0 : deck1.play_progress, d1Duration]);
-    useEffect30(() => {
+    useEffect28(() => {
       if (typeof (deck2 == null ? void 0 : deck2.play_progress) === "number") {
         setD2PlayPos(deck2.play_progress * d2Duration);
       }
     }, [deck2 == null ? void 0 : deck2.play_progress, d2Duration]);
-    useEffect30(() => {
+    useEffect28(() => {
       if (!isAppOpen) return;
       const interval = setInterval(() => {
         if (deck1 == null ? void 0 : deck1.is_playing) {
@@ -27764,7 +27064,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   });
 
   // web/js/workspaces/CopilotWorkspace.jsx
-  var { useState: useState31, useEffect: useEffect31, useRef: useRef26, useMemo: useMemo15, useCallback: useCallback15 } = React;
+  var { useState: useState30, useEffect: useEffect29, useRef: useRef24, useMemo: useMemo15, useCallback: useCallback13 } = React;
   var MASTER_TRACKS_POOL = [
     {
       id: "rec_1",
@@ -28366,17 +27666,17 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })(), /* @__PURE__ */ React.createElement("div", { className: "mt-2 p-2 rounded-xl bg-black/50 border border-zinc-800/80 flex items-start gap-2" }, /* @__PURE__ */ React.createElement(Icons.MessageSquare, { size: 13, className: "inline-block text-emerald-400 shrink-0 mt-0.5" }), /* @__PURE__ */ React.createElement("div", { className: "min-w-0 flex-1" }, /* @__PURE__ */ React.createElement("div", { className: "text-[8px] font-mono uppercase text-zinc-500 tracking-wider" }, "Comentario T\xE1ctico DJ (Tag ID3)"), /* @__PURE__ */ React.createElement("div", { className: "font-mono text-[11px] text-zinc-200 whitespace-normal break-words leading-snug", title: deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : "--"} BPM | ${deck.camelot}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b` }, deck.comment || deck.tactical_comment || `[${deck.bpm ? Number(deck.bpm).toFixed(1) : "--"} BPM | ${deck.camelot}] Intro 32b \u2022 Drop contundente \u2022 Outro 64b`))));
   };
   var CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
-    const [state, setState] = useState31(DEFAULT_COPILOT_STATE);
-    const [clock, setClock] = useState31("");
-    const [latency, setLatency] = useState31(2);
-    const [visibleCount, setVisibleCount] = useState31(4);
-    const [tracksList, setTracksList] = useState31(DEFAULT_COPILOT_STATE.recommendations);
-    const [draggedIdx, setDraggedIdx] = useState31(null);
-    const [transitionAnalysis, setTransitionAnalysis] = useState31(null);
-    const [lowEqApplied, setLowEqApplied] = useState31(false);
-    const [manualPickerOpen, setManualPickerOpen] = useState31(false);
-    const [manualSearchQuery, setManualSearchQuery] = useState31("");
-    const wsRef = useRef26(null);
+    const [state, setState] = useState30(DEFAULT_COPILOT_STATE);
+    const [clock, setClock] = useState30("");
+    const [latency, setLatency] = useState30(2);
+    const [visibleCount, setVisibleCount] = useState30(4);
+    const [tracksList, setTracksList] = useState30(DEFAULT_COPILOT_STATE.recommendations);
+    const [draggedIdx, setDraggedIdx] = useState30(null);
+    const [transitionAnalysis, setTransitionAnalysis] = useState30(null);
+    const [lowEqApplied, setLowEqApplied] = useState30(false);
+    const [manualPickerOpen, setManualPickerOpen] = useState30(false);
+    const [manualSearchQuery, setManualSearchQuery] = useState30("");
+    const wsRef = useRef24(null);
     const handleApplyCorrection = () => {
       setLowEqApplied((prev) => {
         const next = !prev;
@@ -28422,14 +27722,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       setVisibleCount((v) => Math.max(v, Math.min(8, tracksList.length + 1)));
       setManualPickerOpen(false);
     };
-    const [controllerState, setControllerState] = useState31({
+    const [controllerState, setControllerState] = useState30({
       detected: false,
       name: "",
       status: "SIN CONEXI\xD3N"
     });
-    const [testDisconnectSkin, setTestDisconnectSkin] = useState31(false);
-    const [forceLiveStage, setForceLiveStage] = useState31(false);
-    useEffect31(() => {
+    const [testDisconnectSkin, setTestDisconnectSkin] = useState30(false);
+    const [forceLiveStage, setForceLiveStage] = useState30(false);
+    useEffect29(() => {
       if (typeof navigator !== "undefined" && navigator.requestMIDIAccess) {
         navigator.requestMIDIAccess({ sysex: false }).then((access) => {
           const checkDevices = () => {
@@ -28466,14 +27766,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         });
       }
     }, []);
-    useEffect31(() => {
+    useEffect29(() => {
       const timer = setInterval(() => {
         const now = /* @__PURE__ */ new Date();
         setClock(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       }, 1e3);
       return () => clearInterval(timer);
     }, []);
-    useEffect31(() => {
+    useEffect29(() => {
       let isMounted = true;
       let ws = null;
       let fallbackInterval = null;
@@ -28611,7 +27911,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         };
       });
     };
-    const toggleDeckPlay = useCallback15(async (deckTarget) => {
+    const toggleDeckPlay = useCallback13(async (deckTarget) => {
       const deckNum = deckTarget === "2" || deckTarget === 2 ? 2 : 1;
       const dKey = deckNum === 1 ? "deck_1" : "deck_2";
       setState((prev) => {
@@ -28641,7 +27941,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (_) {
       }
     }, []);
-    const cueDeck = useCallback15(async (deckTarget) => {
+    const cueDeck = useCallback13(async (deckTarget) => {
       const deckNum = deckTarget === "2" || deckTarget === 2 ? 2 : 1;
       const dKey = deckNum === 1 ? "deck_1" : "deck_2";
       setState((prev) => {
@@ -28675,7 +27975,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       } catch (_) {
       }
     }, []);
-    useEffect31(() => {
+    useEffect29(() => {
       const handleKeyDown = (e) => {
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable)) return;
         if (e.key === "m" || e.key === "M") {
@@ -28701,7 +28001,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [setMasterDeck, toggleDeckPlay, cueDeck, state]);
-    useEffect31(() => {
+    useEffect29(() => {
       const isLocalHost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
       if (isLocalHost) return;
       if (typeof navigator === "undefined" || !navigator.requestMIDIAccess) return;
@@ -28861,8 +28161,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
     const isStandby = state.source && state.source.endsWith("_STANDBY");
     const displayRecommendations = tracksList.length > 0 ? tracksList : state.recommendations || [];
     const isAnyDeckPlaying = Boolean((deck_1 == null ? void 0 : deck_1.is_playing) || (deck_2 == null ? void 0 : deck_2.is_playing));
-    const [liveStageSticky, setLiveStageSticky] = useState31(false);
-    useEffect31(() => {
+    const [liveStageSticky, setLiveStageSticky] = useState30(false);
+    useEffect29(() => {
       if (isAnyDeckPlaying) {
         setLiveStageSticky(true);
         return;
@@ -29099,10 +28399,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     })))));
   };
   var CopilotLaunchModal = ({ isOpen, onClose, onSelectEmbedded }) => {
-    const [copilotInfo, setCopilotInfo] = useState31({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
-    const [copied, setCopied] = useState31(false);
-    const [qrShown, setQrShown] = useState31(false);
-    useEffect31(() => {
+    const [copilotInfo, setCopilotInfo] = useState30({ local_ip: "127.0.0.1", companion_url: "/copilot.html", simulation_mode: false, platform_mode: "auto", platforms: [] });
+    const [copied, setCopied] = useState30(false);
+    const [qrShown, setQrShown] = useState30(false);
+    useEffect29(() => {
       if (isOpen) {
         fetch("/api/copilot/info").then((r) => r.json()).then((data) => setCopilotInfo(data)).catch(() => {
         });
@@ -29329,18 +28629,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
   ];
   var GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+/<>[]=";
   var CleanLineKineticStudioStage = () => {
-    const [currentIndex, setCurrentIndex] = useState31(0);
-    const [isHovered, setIsHovered] = useState31(false);
-    const slideRef = useRef26(null);
-    const titleRef = useRef26(null);
-    const subtitleRef = useRef26(null);
-    const badgeRef = useRef26(null);
-    const trailRef = useRef26(null);
-    const timersRef = useRef26([]);
-    const intervalsRef = useRef26([]);
-    const isHoveredRef = useRef26(false);
+    const [currentIndex, setCurrentIndex] = useState30(0);
+    const [isHovered, setIsHovered] = useState30(false);
+    const slideRef = useRef24(null);
+    const titleRef = useRef24(null);
+    const subtitleRef = useRef24(null);
+    const badgeRef = useRef24(null);
+    const trailRef = useRef24(null);
+    const timersRef = useRef24([]);
+    const intervalsRef = useRef24([]);
+    const isHoveredRef = useRef24(false);
     isHoveredRef.current = isHovered;
-    const isTransitioningRef = useRef26(false);
+    const isTransitioningRef = useRef24(false);
     const clearAsync = () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       intervalsRef.current.forEach((i) => clearInterval(i));
@@ -29467,7 +28767,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         transitionToSlide(nextIdx, false);
       }, 4200);
     };
-    useEffect31(() => {
+    useEffect29(() => {
       transitionToSlide(0, true);
       return () => clearAsync();
     }, []);
@@ -29542,7 +28842,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
   var AppCinematicIntro = ({ isOpen, onClose, onOpenLogin, onOpenRegister, onOpenTour, onOpenPricing }) => {
     if (!isOpen) return null;
-    const [phase, setPhase] = useState31(() => {
+    const [phase, setPhase] = useState30(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("portal") === "1" || p.get("phase") === "portal") return "portal";
@@ -29550,20 +28850,20 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "video";
     });
-    const [videoOpacity, setVideoOpacity] = useState31(1);
-    const [isTransitioning, setIsTransitioning] = useState31(false);
-    const [selectedAlpha, setSelectedAlpha] = useState31(0.85);
-    const [isMuted, setIsMuted] = useState31(false);
-    const [isBassShaking, setIsBassShaking] = useState31(false);
-    const videoRef = useRef26(null);
-    const canvasRef = useRef26(null);
-    useEffect31(() => {
+    const [videoOpacity, setVideoOpacity] = useState30(1);
+    const [isTransitioning, setIsTransitioning] = useState30(false);
+    const [selectedAlpha, setSelectedAlpha] = useState30(0.85);
+    const [isMuted, setIsMuted] = useState30(false);
+    const [isBassShaking, setIsBassShaking] = useState30(false);
+    const videoRef = useRef24(null);
+    const canvasRef = useRef24(null);
+    useEffect29(() => {
       const timer = setTimeout(() => {
         setVideoOpacity(1);
       }, 50);
       return () => clearTimeout(timer);
     }, []);
-    useEffect31(() => {
+    useEffect29(() => {
       const vid = videoRef.current;
       if (!vid) return;
       vid.currentTime = 0;
@@ -29645,7 +28945,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         onClose();
       }
     };
-    useEffect31(() => {
+    useEffect29(() => {
       if (phase !== "portal" && !isTransitioning) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -29791,7 +29091,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
   };
 
   // web/js/app.jsx
-  var { useState: useState32, useEffect: useEffect32, useRef: useRef27, useMemo: useMemo16, useCallback: useCallback16, createContext, useContext } = React;
+  var { useState: useState31, useEffect: useEffect30, useRef: useRef25, useMemo: useMemo16, useCallback: useCallback14, createContext, useContext } = React;
   var PlayerContext = createContext({
     playProgressRef: { current: 0 },
     isPlaying: false,
@@ -29805,10 +29105,10 @@ Respuesta: ${qa.a}`).join("\n\n"),
     return null;
   };
   var App = () => {
-    const [pricingOpen, setPricingOpen] = useState32(false);
-    const [registerModalOpen, setRegisterModalOpen] = useState32(false);
-    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState32("pro");
-    const [cinematicIntroOpen, setCinematicIntroOpen] = useState32(() => {
+    const [pricingOpen, setPricingOpen] = useState31(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState31(false);
+    const [selectedPlanForRegister, setSelectedPlanForRegister] = useState31("pro");
+    const [cinematicIntroOpen, setCinematicIntroOpen] = useState31(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         if (p.get("intro") === "1" || p.get("portal") === "1") return true;
@@ -29818,7 +29118,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
         return false;
       }
     });
-    const [lang, setLang] = useState32(() => {
+    const [lang, setLang] = useState31(() => {
       try {
         return localStorage.getItem("beatwave_lang") || "es";
       } catch (e) {
@@ -29833,7 +29133,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
     };
     const t = (k) => I18N_TRANSLATIONS[lang] && I18N_TRANSLATIONS[lang][k] || I18N_TRANSLATIONS["es"][k] || k;
-    const [activeTab, setActiveTab] = useState32(() => {
+    const [activeTab, setActiveTab] = useState31(() => {
       try {
         const p = new URLSearchParams(window.location.search);
         const q = p.get("tab") || window.location.hash.replace("#", "");
@@ -29871,18 +29171,18 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return "library";
     });
-    const [isSimulationMode, setIsSimulationMode] = useState32(false);
-    const [currentFolder, setCurrentFolder] = useState32("");
-    const [studioMode, setStudioMode] = useState32("cues");
-    const [auditTracks, setAuditTracks] = useState32([]);
-    const [setBuilderTracks, setSetBuilderTracks] = useState32([]);
-    const [spotifyTracks, setSpotifyTracks] = useState32([]);
-    const [selectedTrack, setSelectedTrack] = useState32(null);
+    const [isSimulationMode, setIsSimulationMode] = useState31(false);
+    const [currentFolder, setCurrentFolder] = useState31("");
+    const [studioMode, setStudioMode] = useState31("cues");
+    const [auditTracks, setAuditTracks] = useState31([]);
+    const [setBuilderTracks, setSetBuilderTracks] = useState31([]);
+    const [spotifyTracks, setSpotifyTracks] = useState31([]);
+    const [selectedTrack, setSelectedTrack] = useState31(null);
     const currentTrack = selectedTrack ? auditTracks.find((t2) => t2.id === selectedTrack) || null : null;
-    const [nowPlayingTrack, setNowPlayingTrack] = useState32(null);
-    const [isPlaying, setIsPlaying] = useState32(false);
-    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState32(false);
-    const localAudioInputRef = useRef27(null);
+    const [nowPlayingTrack, setNowPlayingTrack] = useState31(null);
+    const [isPlaying, setIsPlaying] = useState31(false);
+    const [loadTrackMenuOpen, setLoadTrackMenuOpen] = useState31(false);
+    const localAudioInputRef = useRef25(null);
     const handleLoadLocalAudioFile = (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -29922,21 +29222,21 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       setLoadTrackMenuOpen(false);
     };
-    const playProgressRef = useRef27(0);
-    const setPlayProgress = useCallback16((pct) => {
+    const playProgressRef = useRef25(0);
+    const setPlayProgress = useCallback14((pct) => {
       const safe = Math.max(0, Math.min(1, typeof pct === "number" ? pct : 0));
       playProgressRef.current = safe;
       window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: safe } }));
     }, []);
-    const audioRef = useRef27(null);
-    const [mobileProgress, setMobileProgress] = useState32(0);
-    useEffect32(() => {
+    const audioRef = useRef25(null);
+    const [mobileProgress, setMobileProgress] = useState31(0);
+    useEffect30(() => {
       const onProgress = (e) => setMobileProgress(e.detail.pct);
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [playProgress, setPlayProgressForWorkspaces] = useState32(0);
-    useEffect32(() => {
+    const [playProgress, setPlayProgressForWorkspaces] = useState31(0);
+    useEffect30(() => {
       let lastUpdate = 0;
       const THROTTLE_MS = 100;
       const onProgress = (e) => {
@@ -29949,8 +29249,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       window.addEventListener("bw:progress", onProgress);
       return () => window.removeEventListener("bw:progress", onProgress);
     }, []);
-    const [globalAuditInfo, setGlobalAuditInfo] = useState32({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
-    useEffect32(() => {
+    const [globalAuditInfo, setGlobalAuditInfo] = useState31({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: "" });
+    useEffect30(() => {
       fetch("/api/warmup/status").then((res) => res.json()).then((data) => {
         if (data && data.ready) {
           console.log(`[RAM WARM-UP] Cat\xE1logo precalentado: ${data.total_cached} pistas en memoria RAM.`);
@@ -29958,7 +29258,7 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }).catch(() => {
       });
     }, []);
-    useEffect32(() => {
+    useEffect30(() => {
       const handleGlobalAuditEvt = (e) => {
         if (!e.detail) return;
         const { pct, msg } = e.detail;
@@ -29991,14 +29291,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
       }
       return () => window.removeEventListener("bw:audit_progress", handleGlobalAuditEvt);
     }, []);
-    const [tutorialOpen, setTutorialOpen] = useState32(false);
-    const [tutorialInitialMode, setTutorialInitialMode] = useState32("launcher");
-    const [mobileDrawerOpen, setMobileDrawerOpen] = useState32(false);
-    const [railExpanded, setRailExpanded] = useState32(true);
+    const [tutorialOpen, setTutorialOpen] = useState31(false);
+    const [tutorialInitialMode, setTutorialInitialMode] = useState31("launcher");
+    const [mobileDrawerOpen, setMobileDrawerOpen] = useState31(false);
+    const [railExpanded, setRailExpanded] = useState31(true);
     const toggleRailExpanded = () => {
       setRailExpanded((prev) => !prev);
     };
-    useEffect32(() => {
+    useEffect30(() => {
       if (!railExpanded) return;
       const handleAutoCollapse = (e) => {
         const isToggleBtn = e.target && e.target.closest && e.target.closest('[data-rail-toggle="true"]');
@@ -30013,8 +29313,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
         window.removeEventListener("pointerdown", handleAutoCollapse, true);
       };
     }, [railExpanded]);
-    const [copilotModalOpen, setCopilotModalOpen] = useState32(false);
-    const [customLibraries, setCustomLibraries] = useState32(() => {
+    const [copilotModalOpen, setCopilotModalOpen] = useState31(false);
+    const [customLibraries, setCustomLibraries] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_user_custom_libraries");
         if (saved) {
@@ -30042,14 +29342,14 @@ Respuesta: ${qa.a}`).join("\n\n"),
         }
       ];
     });
-    const [activeCustomLibId, setActiveCustomLibId] = useState32(() => {
+    const [activeCustomLibId, setActiveCustomLibId] = useState31(() => {
       try {
         return localStorage.getItem("bw_user_active_library_id") || "lib_default";
       } catch (_) {
         return "lib_default";
       }
     });
-    useEffect32(() => {
+    useEffect30(() => {
       const loadSavedLibraryFromBackend = async () => {
         try {
           const r = await fetch("/api/biblioteca/cargar");
@@ -30076,8 +29376,8 @@ Respuesta: ${qa.a}`).join("\n\n"),
       };
       loadSavedLibraryFromBackend();
     }, []);
-    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState32(false);
-    const [activeCrateFilter, setActiveCrateFilter] = useState32(null);
+    const [isLibraryDrawerOpen, setIsLibraryDrawerOpen] = useState31(false);
+    const [activeCrateFilter, setActiveCrateFilter] = useState31(null);
     const handleAuditarCrateDesdeModal = (folder, lib) => {
       if (!folder) return;
       const keys = new Set((folder.tracks || []).map((t2) => t2.id !== void 0 ? t2.id : t2.file_path || t2.filename || t2.path));
@@ -30138,8 +29438,8 @@ ${res.path}`);
         }
       }
     };
-    const [manualModalOpen, setManualModalOpen] = useState32(false);
-    const [manualSection, setManualSection] = useState32("audit");
+    const [manualModalOpen, setManualModalOpen] = useState31(false);
+    const [manualSection, setManualSection] = useState31("audit");
     const handleOpenManual = (section = null) => {
       const secMap = {
         "audit": "audit",
@@ -30165,8 +29465,8 @@ ${res.path}`);
         setManualModalOpen(true);
       }
     };
-    const [userModalOpen, setUserModalOpen] = useState32(false);
-    const [userProfile, setUserProfile] = useState32(() => {
+    const [userModalOpen, setUserModalOpen] = useState31(false);
+    const [userProfile, setUserProfile] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_user_profile");
         if (saved) return JSON.parse(saved);
@@ -30199,7 +29499,7 @@ ${res.path}`);
         activeTab: "audit"
       }
     ];
-    const [savedSessions, setSavedSessions] = useState32(() => {
+    const [savedSessions, setSavedSessions] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_saved_sessions");
         if (saved) return JSON.parse(saved);
@@ -30301,8 +29601,8 @@ ${res.path}`);
         status: "\u2713 Sincronizado"
       }
     ];
-    const [bitacoraModalOpen, setBitacoraModalOpen] = useState32(false);
-    const [bitacoraEntries, setBitacoraEntries] = useState32(() => {
+    const [bitacoraModalOpen, setBitacoraModalOpen] = useState31(false);
+    const [bitacoraEntries, setBitacoraEntries] = useState31(() => {
       try {
         const saved = localStorage.getItem("bw_audit_bitacora");
         if (saved) return JSON.parse(saved);
@@ -30317,7 +29617,7 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect32(() => {
+    useEffect30(() => {
       const handleBitacoraSync = (e) => {
         if (e && e.detail && Array.isArray(e.detail)) {
           setBitacoraEntries(e.detail);
@@ -30326,7 +29626,7 @@ ${res.path}`);
       window.addEventListener("bw_bitacora_updated", handleBitacoraSync);
       return () => window.removeEventListener("bw_bitacora_updated", handleBitacoraSync);
     }, []);
-    useEffect32(() => {
+    useEffect30(() => {
       if (userProfile && userProfile.autoSave !== false) {
         try {
           const autoSession = {
@@ -30340,7 +29640,7 @@ ${res.path}`);
         }
       }
     }, [currentFolder, activeTab, selectedTrack, userProfile]);
-    const [clubMode, setClubMode] = useState32(() => {
+    const [clubMode, setClubMode] = useState31(() => {
       try {
         return localStorage.getItem("bw_club_mode") === "true";
       } catch (e) {
@@ -30357,8 +29657,8 @@ ${res.path}`);
         return next;
       });
     };
-    const [shortcutsModalOpen, setShortcutsModalOpen] = useState32(false);
-    const [speakerLogoMode, setSpeakerLogoMode] = useState32(() => {
+    const [shortcutsModalOpen, setShortcutsModalOpen] = useState31(false);
+    const [speakerLogoMode, setSpeakerLogoMode] = useState31(() => {
       try {
         return localStorage.getItem("cleandjmix_speaker_logo_mode") || "neon";
       } catch (e) {
@@ -30372,15 +29672,15 @@ ${res.path}`);
       } catch (e) {
       }
     };
-    useEffect32(() => {
+    useEffect30(() => {
       window.setSpeakerLogoMode = handleSetSpeakerLogoMode;
       window.toggleSpeakerLogoMode = () => {
         handleSetSpeakerLogoMode(speakerLogoMode === "neon" ? "original" : "neon");
       };
     }, [speakerLogoMode]);
-    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState32(false);
-    const logoTechnoTimerRef = useRef27(null);
-    const initialTechnoPlayedRef = useRef27(false);
+    const [isLogoTechnoActive, setIsLogoTechnoActive] = useState31(false);
+    const logoTechnoTimerRef = useRef25(null);
+    const initialTechnoPlayedRef = useRef25(false);
     const triggerLogoTechno = () => {
       setIsLogoTechnoActive(true);
       if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
@@ -30388,13 +29688,13 @@ ${res.path}`);
         setIsLogoTechnoActive(false);
       }, 1e4);
     };
-    useEffect32(() => {
+    useEffect30(() => {
       if (tutorialOpen || copilotModalOpen) {
         if (logoTechnoTimerRef.current) clearTimeout(logoTechnoTimerRef.current);
         setIsLogoTechnoActive(false);
       }
     }, [tutorialOpen, copilotModalOpen]);
-    useEffect32(() => {
+    useEffect30(() => {
       window.abrirIntroCinematica = () => {
         setCinematicIntroOpen(true);
       };
@@ -30464,14 +29764,14 @@ ${res.path}`);
       setActiveTab("spotify");
     };
     const handleAddTrackToSpotify = handleAddTracksToSpotify;
-    const [logs, setLogs] = useState32([
+    const [logs, setLogs] = useState31([
       { type: "info", text: "> CleanDJmix PRO v2.0 - Core Engine Initialized" },
       { type: "divider", text: "--------------------------------------------------" },
       { type: "success", text: "[ OK ] Audio Engine & Stream Router Online." },
       { type: "success", text: "[ OK ] Serato Database XML Link Ready." }
     ]);
-    const synthAudioCtxRef = useRef27(null);
-    const synthIntervalRef = useRef27(null);
+    const synthAudioCtxRef = useRef25(null);
+    const synthIntervalRef = useRef25(null);
     const stopSynthPreview = () => {
       if (synthIntervalRef.current) {
         clearInterval(synthIntervalRef.current);
@@ -30489,7 +29789,7 @@ ${res.path}`);
       stopSynthPreview();
       setIsPlaying(false);
     };
-    useEffect32(() => {
+    useEffect30(() => {
       const audio = new Audio();
       audio.preload = "auto";
       audio.onended = () => {
@@ -30691,7 +29991,7 @@ ${res.path}`);
         window.eel.cue_audio_mac(trk.path || trk.f || "")();
       }
     };
-    useEffect32(() => {
+    useEffect30(() => {
       const handleKeyDown = (e) => {
         const active = document.activeElement;
         const tag = active ? active.tagName.toLowerCase() : "";
