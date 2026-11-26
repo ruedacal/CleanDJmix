@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { TableHarmonicWaveform, formatMsToTime } from '../waveforms/index.js';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
@@ -531,9 +532,9 @@ export const SetBuilderWorkspace = ({
                 }
             } catch (e) {}
 
-            if ((!rawTracks || rawTracks.length === 0) && window.eel && window.eel.cargar_metadatos_directorio) {
+            if ((!rawTracks || rawTracks.length === 0) && true) {
                 try {
-                    const resEel = await window.eel.cargar_metadatos_directorio(targets)();
+                    const resEel = await apiClient.rpc('cargar_metadatos_directorio', targets);
                     if (resEel && Array.isArray(resEel.tracks)) rawTracks = resEel.tracks;
                 } catch (e) {}
             }
@@ -586,8 +587,8 @@ export const SetBuilderWorkspace = ({
         if (!setTracks || setTracks.length === 0) return;
         setIsLoadingGraph(true);
         try {
-            if (window.eel && window.eel.generar_grafo_playlist) {
-                const res = await window.eel.generar_grafo_playlist(setTracks, auditTracks)();
+            if (true) {
+                const res = await apiClient.rpc('generar_grafo_playlist', setTracks, auditTracks);
                 if (res) setGraphData(res);
             } else {
                 const resp = await fetch('/api/session/graph', {
@@ -615,8 +616,8 @@ export const SetBuilderWorkspace = ({
         }
         setIsLoadingAiAudit(true);
         try {
-            if (window.eel && window.eel.auditar_calidad_sesion_ai) {
-                const res = await window.eel.auditar_calidad_sesion_ai(setTracks, auditTracks)();
+            if (true) {
+                const res = await apiClient.rpc('auditar_calidad_sesion_ai', setTracks, auditTracks);
                 if (res) setAiAuditResult(res);
             } else {
                 const resp = await fetch('/api/session/audit_ai', {
@@ -834,8 +835,8 @@ export const SetBuilderWorkspace = ({
         setExportStatus({ type: 'loading', msg: `Iniciando auditoría acústica DSP de ${paths.length} pistas del set...` });
 
         try {
-            if (window.eel && window.eel.iniciar_auditoria) {
-                const res = await window.eel.iniciar_auditoria(paths)();
+            if (true) {
+                const res = await apiClient.rpc('iniciar_auditoria', paths);
                 if (res && res.tracks) {
                     const mapRes = {};
                     res.tracks.forEach(tr => {
@@ -884,8 +885,8 @@ export const SetBuilderWorkspace = ({
         }
         setExportStatus({ type: 'loading', msg: `Auditando "${track.title || track.t || 'pista'}"...` });
         try {
-            if (window.eel && window.eel.iniciar_auditoria) {
-                const res = await window.eel.iniciar_auditoria([pth])();
+            if (true) {
+                const res = await apiClient.rpc('iniciar_auditoria', [pth]);
                 if (res && res.tracks && res.tracks.length > 0) {
                     const audited = res.tracks[0];
                     setSetTracks(prev => prev.map(t => (t.id === track.id || t.path === pth) ? { ...t, ...audited } : t));
@@ -913,8 +914,8 @@ export const SetBuilderWorkspace = ({
 
         try {
             let res = null;
-            if (window.eel && window.eel.exportar_set_m3u) {
-                res = await window.eel.exportar_set_m3u(setTracks, setName, "/Users/admin/Music/mi musica")();
+            if (true) {
+                res = await apiClient.rpc('exportar_set_m3u', setTracks, setName, "/Users/admin/Music/mi musica");
             } else {
                 const resp = await fetch('/api/setbuilder/export_m3u', {
                     method: 'POST',
@@ -2294,10 +2295,10 @@ export const SetBuilderWorkspace = ({
                                     <button
                                         type="button"
                                         onClick={async () => {
-                                            if (window.eel && window.eel.cargar_metadatos_directorio) {
+                                            if (true) {
                                                 setExportStatus({ type: 'loading', msg: 'Cargando pistas de "mi musica"...' });
                                                 try {
-                                                    const res = await window.eel.cargar_metadatos_directorio("/Users/admin/Music/mi musica")();
+                                                    const res = await apiClient.rpc('cargar_metadatos_directorio', "/Users/admin/Music/mi musica");
                                                     if (res && res.tracks && setAuditTracks) {
                                                         setAuditTracks(res.tracks);
                                                         setExportStatus({ type: 'success', msg: `✓ ${res.tracks.length} pistas cargadas desde "mi musica".` });

@@ -1,4 +1,5 @@
 import { FilterMenu } from '../shell/workspace-ui.jsx';
+import { apiClient } from '../services/apiClient.js';
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons } from '../shell/icons.jsx';
 import { TableHarmonicWaveform, formatMsToTime, parseDurationMs } from '../waveforms/index.js';
@@ -1211,9 +1212,9 @@ export const LibraryWorkspace = ({
                 if (data && (data.folders || data.files || data.current)) return data;
             }
         } catch (_) {}
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        if (true) {
             try {
-                const res = await window.eel.listar_subcarpetas_sistema(path)();
+                const res = await apiClient.rpc('listar_subcarpetas_sistema', path);
                 if (res && (res.folders || res.files || res.current)) return res;
             } catch (_) {}
         }

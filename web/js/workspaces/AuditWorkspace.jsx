@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons, PlatformRekordboxLogo, PlatformSeratoLogo, PlatformTraktorLogo, PlatformVirtualDjLogo } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { 
     TableHarmonicWaveform, 
     CopilotSeratoWaveform, 
@@ -805,12 +806,12 @@ export const AuditWorkspace = ({
         };
         window.addEventListener('bw:audit_progress', handleAuditEvt);
 
-        if (window.eel && typeof window.eel.expose === 'function') {
+        if (true) {
             window.actualizar_progreso_batch = (pct, msg) => {
                 window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
             };
             try {
-                window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+                apiClient.registerCallback("actualizar_progreso_batch", window.actualizar_progreso_batch);
             } catch (err) {}
         }
         return () => window.removeEventListener('bw:audit_progress', handleAuditEvt);
@@ -1019,8 +1020,8 @@ export const AuditWorkspace = ({
         if (modo === 'trash' || modo === 'permanent') {
             const permanente = (modo === 'permanent');
             try {
-                if (window.eel && window.eel.eliminar_pistas_disco) {
-                    await window.eel.eliminar_pistas_disco(pathsToRemove, permanente)();
+                if (true) {
+                    await apiClient.rpc('eliminar_pistas_disco', pathsToRemove, permanente);
                 } else {
                     await fetch('/api/eliminar_pistas_disco', {
                         method: 'POST',
@@ -1279,9 +1280,9 @@ export const AuditWorkspace = ({
 
         try {
             let rawRes = null;
-            if (window.eel && window.eel.buscar_reemplazos_spotify_batch) {
+            if (true) {
                 try {
-                    rawRes = await window.eel.buscar_reemplazos_spotify_batch(targetTracks)();
+                    rawRes = await apiClient.rpc('buscar_reemplazos_spotify_batch', targetTracks);
                 } catch (eelErr) {
                     console.warn("[REEMPLAZOS] Fallo llamada Eel, recurriendo a HTTP:", eelErr);
                 }
@@ -1463,8 +1464,8 @@ export const AuditWorkspace = ({
         setBatchProgress(25);
         setBatchStatusMsg(`Calculando Zero-Crossing y Beat 1.0.0 en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
         try {
-            if (window.eel && window.eel.calcular_trim_downbeat_track) {
-                const res = await window.eel.calcular_trim_downbeat_track(targetPath, currentTrack.id)();
+            if (true) {
+                const res = await apiClient.rpc('calcular_trim_downbeat_track', targetPath, currentTrack.id);
                 if (res && res.status === 'ok') {
                     updateCurrentTrackField('trim_start_ms', res.trim_start_ms);
                     updateCurrentTrackField('first_downbeat_ms', res.first_downbeat_ms);
@@ -1497,8 +1498,8 @@ export const AuditWorkspace = ({
         setBatchProgress(40);
         setBatchStatusMsg(`Calculando 8 Hot Cues por frases musicales (16/32b) para ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
         try {
-            if (window.eel && window.eel.calcular_hot_cues_fraseo) {
-                const res = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, downbeatMs)();
+            if (true) {
+                const res = await apiClient.rpc('calcular_hot_cues_fraseo', durMs, bpm, downbeatMs);
                 if (res && Array.isArray(res) && res.length > 0) {
                     updateCurrentTrackField('cues', res);
                     setBatchProgress(100);
@@ -1529,12 +1530,10 @@ export const AuditWorkspace = ({
         setBatchProgress(40);
         setBatchStatusMsg(`Enrutando ${currentTrack.t || currentTrack.title} a crate /${gen}/${subg}...`);
         try {
-            if (window.eel && window.eel.organizar_pista_en_crate) {
-                const res = await window.eel.organizar_pista_en_crate(
-                    { ...currentTrack, genre: gen, subgenre: subg },
+            if (true) {
+                const res = await apiClient.rpc('organizar_pista_en_crate', { ...currentTrack, genre: gen, subgenre: subg },
                     destinoDescarga || "/Users/admin/Music/mi musica",
-                    "copy"
-                )();
+                    "copy");
                 if (res && res.status === 'ok') {
                     setBatchProgress(100);
                     setBatchStatusMsg(`✓ Archivo enrutado con éxito a /${gen}/${subg}`);
@@ -1581,9 +1580,9 @@ export const AuditWorkspace = ({
         }
 
         // 2. Fallback a Eel con timeout para evitar cuelgues si el websocket no responde
-        if (window.eel && window.eel.listar_subcarpetas_sistema) {
+        if (true) {
             try {
-                const eelPromise = window.eel.listar_subcarpetas_sistema(path)();
+                const eelPromise = apiClient.rpc('listar_subcarpetas_sistema', path);
                 const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Eel timeout")), 1500));
                 const res = await Promise.race([eelPromise, timeoutPromise]);
                 if (res && (res.folders || res.files || res.current)) return res;
@@ -1614,9 +1613,9 @@ export const AuditWorkspace = ({
     const handleAbrirDialogoNativo = async () => {
         try {
             let target = null;
-            if (window.eel && window.eel.seleccionar_directorio) {
+            if (true) {
                 try {
-                    target = await window.eel.seleccionar_directorio()();
+                    target = await apiClient.rpc('seleccionar_directorio');
                 } catch (e) {}
             }
             if (!target || target === 'cancelado') {
@@ -1811,14 +1810,14 @@ export const AuditWorkspace = ({
             // Reiniciar estado anterior y limpiar valores cacheados
             resetAuditWorkspace(true);
         }
-        if (window.eel && window.eel.cargar_metadatos_directorio) {
+        if (true) {
             setIsLoadingDir(true);
             setBatchProgress(0);
             startProgressPolling();
             const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : `archivos en ${target}`;
             setBatchStatusMsg(isAppend ? `Añadiendo metadatos de ${targetDesc}...` : `Leyendo metadatos de ${targetDesc}...`);
             try {
-                const res = await window.eel.cargar_metadatos_directorio(target)();
+                const res = await apiClient.rpc('cargar_metadatos_directorio', target);
                 if (res && Array.isArray(res.tracks)) {
                     if (isAppend) {
                         const existingPaths = new Set((tracks || []).map(t => String(t.path || t.f || t.id)));
@@ -1884,14 +1883,14 @@ export const AuditWorkspace = ({
             alert("Por favor selecciona una carpeta o carga pistas sueltas primero.");
             return;
         }
-        if (window.eel && window.eel.iniciar_auditoria && !isAuditing) {
+        if (true && !isAuditing) {
             setIsAuditing(true);
             setBatchProgress(0);
             startProgressPolling();
             const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
             setBatchStatusMsg(`Iniciando auditoría acústica avanzada en ${targetDesc}...`);
             try {
-                const res = await window.eel.iniciar_auditoria(target)();
+                const res = await apiClient.rpc('iniciar_auditoria', target);
                 if (res && Array.isArray(res.tracks)) {
                     setTracks(res.tracks);
                     if (res.tracks.length > 0) {
@@ -1956,8 +1955,8 @@ export const AuditWorkspace = ({
         const targetDesc = Array.isArray(target) ? `${target.length} pistas seleccionadas` : target;
         setBatchStatusMsg(`Ejecutando auditoría avanzada con ajustes seleccionados en ${targetDesc}...`);
         try {
-            if (window.eel && window.eel.ejecutar_auditoria_lote) {
-                const res = await window.eel.ejecutar_auditoria_lote(target, opts)();
+            if (true) {
+                const res = await apiClient.rpc('ejecutar_auditoria_lote', target, opts);
                 if (res && res.tracks) {
                     setTracks(res.tracks);
                     const badDetected = res.tracks.filter(t => isBadQualityTrack(t));
@@ -1976,15 +1975,15 @@ export const AuditWorkspace = ({
                     });
                     if (opts.injectCovers && window.eel.inyectar_caratulas_lote) {
                         setBatchStatusMsg("Inyectando carátulas 1:1 en archivos físicos...");
-                        await window.eel.inyectar_caratulas_lote(res.tracks)();
+                        await apiClient.rpc('inyectar_caratulas_lote', res.tracks);
                     }
                     if (opts.tacticalComments && window.eel.inyectar_lote_metadatos) {
                         setBatchStatusMsg("Inyectando comentarios tácticos y tags en archivos físicos...");
-                        await window.eel.inyectar_lote_metadatos(res.tracks)();
+                        await apiClient.rpc('inyectar_lote_metadatos', res.tracks);
                     }
                     if (opts.normalizeNames && window.eel.sanitizar_metadatos_pistas) {
                         setBatchStatusMsg("Normalizando nombres de archivo y títulos...");
-                        await window.eel.sanitizar_metadatos_pistas(res.tracks, false)();
+                        await apiClient.rpc('sanitizar_metadatos_pistas', res.tracks, false);
                     }
                     setBatchProgress(100);
                     setSaveFeedback(`✓ Análisis completado con éxito (${res.tracks.length} pistas)`);
@@ -2025,12 +2024,12 @@ export const AuditWorkspace = ({
         }
         const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar el Informe Excel (.xlsx):");
         if (!destino) return;
-        if (window.eel && window.eel.exportar_auditoria_xls) {
+        if (true) {
             setIsExporting(true);
             setBatchProgress(25);
             setBatchStatusMsg("Generando reporte de auditoría en formato Excel (XLSX)...");
             try {
-                const res = await window.eel.exportar_auditoria_xls(tracks, destino)();
+                const res = await apiClient.rpc('exportar_auditoria_xls', tracks, destino);
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     const nombreArchivo = res.path ? res.path.split('/').pop() : "CleanDJmix_Audit_Respaldo.xlsx";
@@ -2065,8 +2064,8 @@ export const AuditWorkspace = ({
         setBatchProgress(15);
         setBatchStatusMsg("Inyectando configuración y metadatos nativos para Serato DJ Pro en los archivos...");
         try {
-            if (window.eel && window.eel.inyectar_lote_metadatos) {
-                const res = await window.eel.inyectar_lote_metadatos(tracks)();
+            if (true) {
+                const res = await apiClient.rpc('inyectar_lote_metadatos', tracks);
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     const total = res.total_inyectadas || tracks.length;
@@ -2097,12 +2096,12 @@ export const AuditWorkspace = ({
         }
         const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar colección Traktor (.nml):");
         if (!destino) return;
-        if (window.eel && window.eel.exportar_traktor_nml) {
+        if (true) {
             setIsExporting(true);
             setBatchProgress(40);
             setBatchStatusMsg("Generando colección Traktor Pro (.nml)...");
             try {
-                const res = await window.eel.exportar_traktor_nml(tracks, destino)();
+                const res = await apiClient.rpc('exportar_traktor_nml', tracks, destino);
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setBatchStatusMsg(`✓ Traktor NML generado en ${res.path}`);
@@ -2134,8 +2133,8 @@ export const AuditWorkspace = ({
         setBatchProgress(40);
         setBatchStatusMsg("Generando lista y metadatos para VirtualDJ...");
         try {
-            if (window.eel && window.eel.exportar_set_m3u) {
-                const res = await window.eel.exportar_set_m3u(tracks, "VirtualDJ_Coleccion", destino)();
+            if (true) {
+                const res = await apiClient.rpc('exportar_set_m3u', tracks, "VirtualDJ_Coleccion", destino);
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setSaveFeedback(`✓ Colección VirtualDJ guardada en ${destino}`);
@@ -2163,12 +2162,12 @@ export const AuditWorkspace = ({
         }
         const destino = await solicitarCarpetaDestino("Selecciona la carpeta donde guardar rekordbox.xml:");
         if (!destino) return;
-        if (window.eel && window.eel.exportar_rekordbox_xml) {
+        if (true) {
             setIsExporting(true);
             setBatchProgress(40);
             setBatchStatusMsg("Generando archivo rekordbox.xml estándar Pioneer DJ...");
             try {
-                const res = await window.eel.exportar_rekordbox_xml(tracks, destino, "rekordbox.xml")();
+                const res = await apiClient.rpc('exportar_rekordbox_xml', tracks, destino, "rekordbox.xml");
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setBatchStatusMsg(`✓ rekordbox.xml generado exitosamente (${res.total_tracks} pistas, ${res.playlists} playlists)`);
@@ -2203,8 +2202,8 @@ export const AuditWorkspace = ({
         setBatchStatusMsg("Ejecutando Pasaporte Universal: Serato, Rekordbox, Traktor y VirtualDJ...");
         try {
             let res = null;
-            if (window.eel && window.eel.sincronizar_pasaporte_universal) {
-                res = await window.eel.sincronizar_pasaporte_universal(tracks, destino)();
+            if (true) {
+                res = await apiClient.rpc('sincronizar_pasaporte_universal', tracks, destino);
             } else {
                 const resp = await fetch('/api/export/universal_sync', {
                     method: 'POST',
@@ -2243,9 +2242,9 @@ export const AuditWorkspace = ({
         setFftModalOpen(true);
         setIsAnalyzingFft(true);
         setFftAnalysisData(null);
-        if (window.eel && window.eel.analizar_espectro_fft) {
+        if (true) {
             try {
-                const res = await window.eel.analizar_espectro_fft(targetPath, trk.id)();
+                const res = await apiClient.rpc('analizar_espectro_fft', targetPath, trk.id);
                 setFftAnalysisData(res);
                 if (res && res.cutoff_khz !== undefined) {
                     updateCurrentTrackField('cutoff_khz', res.cutoff_khz);
@@ -2269,8 +2268,8 @@ export const AuditWorkspace = ({
         setBatchProgress(30);
         setBatchStatusMsg(`Inyectando tags ID3v2.4 y marcas Serato en ${currentTrack.t || currentTrack.title || currentTrack.f}...`);
         try {
-            if (window.eel && window.eel.guardar_cambios_track) {
-                const res = await window.eel.guardar_cambios_track(currentTrack)();
+            if (true) {
+                const res = await apiClient.rpc('guardar_cambios_track', currentTrack);
                 if (res && res.status === 'ok') {
                     setBatchProgress(100);
                     setBatchStatusMsg("✓ Inyección completada y guardada en disco.");
@@ -2301,8 +2300,8 @@ export const AuditWorkspace = ({
         setBatchProgress(5);
         setBatchStatusMsg(`Buscando e inyectando carátulas 1:1 en ${tracks.length} pistas...`);
         try {
-            if (window.eel && window.eel.inyectar_caratulas_lote) {
-                const res = await window.eel.inyectar_caratulas_lote(tracks)();
+            if (true) {
+                const res = await apiClient.rpc('inyectar_caratulas_lote', tracks);
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setBatchStatusMsg(`✓ Carátulas actualizadas: ${res.actualizadas} pistas con artwork.`);
@@ -2334,8 +2333,8 @@ export const AuditWorkspace = ({
         setBatchStatusMsg(`Higienizando metadatos, eliminando spam promocional y normalizando feats en ${tracks.length} pistas...`);
         try {
             let res = null;
-            if (window.eel && window.eel.sanitizar_metadatos_pistas) {
-                res = await window.eel.sanitizar_metadatos_pistas(tracks, false)();
+            if (true) {
+                res = await apiClient.rpc('sanitizar_metadatos_pistas', tracks, false);
             } else {
                 const resp = await fetch('/api/sanitizar_metadatos', {
                     method: 'POST',
@@ -2509,9 +2508,9 @@ export const AuditWorkspace = ({
             fetch(endpoint, { method: 'POST' }).catch(() => {});
             if (window.eel) {
                 if (nextState && window.eel.pausar_auditoria) {
-                    await window.eel.pausar_auditoria()();
+                    await apiClient.rpc('pausar_auditoria');
                 } else if (!nextState && window.eel.reanudar_auditoria) {
-                    await window.eel.reanudar_auditoria()();
+                    await apiClient.rpc('reanudar_auditoria');
                 }
             }
         } catch (e) {
@@ -2539,9 +2538,9 @@ export const AuditWorkspace = ({
         try {
             fetch('/api/cancelar_procesos', { method: 'POST' }).catch(() => {});
         } catch (e) {}
-        if (window.eel && window.eel.cancelar_procesos_activos) {
+        if (true) {
             try {
-                window.eel.cancelar_procesos_activos()();
+                apiClient.rpc('cancelar_procesos_activos');
             } catch (e) {}
         }
         setTimeout(() => {
@@ -2934,8 +2933,8 @@ export const AuditWorkspace = ({
         setBatchProgress(20);
         setBatchStatusMsg(`Copiando biblioteca estructurada en disco...`);
         try {
-            if (window.eel && window.eel.crear_biblioteca_en_disco) {
-                const res = await window.eel.crear_biblioteca_en_disco("Coleccion_Organizada", estructura, destino)();
+            if (true) {
+                const res = await apiClient.rpc('crear_biblioteca_en_disco', "Coleccion_Organizada", estructura, destino);
                 setBatchProgress(100);
                 if (res && res.status === 'ok') {
                     setBatchStatusMsg(`✓ Creada en: ${res.base_dir}`);

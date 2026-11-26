@@ -1,6 +1,7 @@
 const { useState, useEffect } = React;
 import { Icons } from '../shell/icons.jsx';
 
+import { apiClient } from '../services/apiClient.js';
 // Modal de Comparación Cara a Cara & Eliminación de Duplicados
 export const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDuplicatesDeleted }) => {
     const [dupData, setDupData] = useState(null);
@@ -15,8 +16,8 @@ export const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDupli
         setLoading(true);
         setStatusMsg('Analizando biblioteca en busca de duplicados y calculando índice de calidad acústica...');
         try {
-            if (window.eel && window.eel.detectar_duplicados_biblioteca) {
-                const res = await window.eel.detectar_duplicados_biblioteca(tracks, protect)();
+            if (true) {
+                const res = await apiClient.rpc('detectar_duplicados_biblioteca', tracks, protect);
                 setDupData(res);
                 const initialSel = {};
                 if (res && res.grupos) {
@@ -95,8 +96,8 @@ export const DuplicateComparisonModal = ({ isOpen, onClose, tracks = [], onDupli
         setDeleting(true);
         setStatusMsg(`Eliminando ${pathsToDelete.length} archivos duplicados del disco...`);
         try {
-            if (window.eel && window.eel.eliminar_pistas_duplicadas) {
-                const res = await window.eel.eliminar_pistas_duplicadas(pathsToDelete)();
+            if (true) {
+                const res = await apiClient.rpc('eliminar_pistas_duplicadas', pathsToDelete);
                 if (res && res.status === 'ok') {
                     alert(`✓ Se eliminaron ${res.eliminados || pathsToDelete.length} pistas duplicadas con éxito.`);
                     if (onDuplicatesDeleted) {

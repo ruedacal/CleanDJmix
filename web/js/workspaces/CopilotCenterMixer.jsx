@@ -1,3 +1,4 @@
+import { useWorkspaceActive } from '../shell/WorkspaceSlot.jsx';
 const { useState, useEffect, useRef, useMemo, memo } = React;
 
 /**
@@ -94,6 +95,7 @@ export const CopilotCenterMixer = memo(({
     isAppOpen = true,
     showInlineHud = true // HUD integrado en la mesa central slim
 }) => {
+    const isWorkspaceActive = useWorkspaceActive();
     // Selección interactiva de hitos en cliente
     const [d1ActiveHito, setD1ActiveHito] = useState(0); // INTRO activo en DK 1
     const [d2ActiveHito, setD2ActiveHito] = useState(2); // BUILD UP activo en DK 2
@@ -102,13 +104,14 @@ export const CopilotCenterMixer = memo(({
     // Pulso rítmico de compases [1][2][3][4]
     const [currentBeat, setCurrentBeat] = useState(1);
     useEffect(() => {
+        if (!isWorkspaceActive) return;
         const bpm = Number(deck1?.bpm || deck2?.bpm || 136);
         const beatMs = Math.round((60 / bpm) * 1000);
         const interval = setInterval(() => {
             setCurrentBeat(b => (b % 4) + 1);
         }, beatMs);
         return () => clearInterval(interval);
-    }, [deck1?.bpm, deck2?.bpm]);
+    }, [isWorkspaceActive, deck1?.bpm, deck2?.bpm]);
 
     // Hitos sincronizados con la pista
     const hitosD1 = useMemo(() => {
@@ -166,7 +169,7 @@ export const CopilotCenterMixer = memo(({
 
     // Timer en tiempo real para avance de reproducción
     useEffect(() => {
-        if (!isAppOpen) return;
+        if (!isAppOpen || !isWorkspaceActive) return;
         const interval = setInterval(() => {
             if (deck1?.is_playing) {
                 setD1PlayPos(p => (p + 1 > d1Duration ? 0 : p + 1));
@@ -176,7 +179,7 @@ export const CopilotCenterMixer = memo(({
             }
         }, 1000);
         return () => clearInterval(interval);
-    }, [isAppOpen, deck1?.is_playing, deck2?.is_playing, d1Duration, d2Duration]);
+    }, [isWorkspaceActive, isAppOpen, deck1?.is_playing, deck2?.is_playing, d1Duration, d2Duration]);
 
     // Cálculos rítmicos y de compás
     const d1Bpm = Number(deck1?.bpm) || 136;

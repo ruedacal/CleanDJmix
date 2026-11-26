@@ -107,7 +107,19 @@ export const TableHarmonicWaveform = React.memo(
     }, [isCurrentPlaying, seed]);
 
     // ── Paso 4: Sincronizar ref de progreso sin provocar renders ─────────────
-    useEffect(() => { progressRef.current = playProgress; }, [playProgress]);
+    useEffect(() => {
+        if (!isCurrentPlaying) {
+            progressRef.current = 0;
+            return;
+        }
+        const onProgress = (e) => {
+            if (e && e.detail && typeof e.detail.pct === 'number') {
+                progressRef.current = e.detail.pct;
+            }
+        };
+        window.addEventListener("bw:progress", onProgress);
+        return () => window.removeEventListener("bw:progress", onProgress);
+    }, [isCurrentPlaying]);
 
     return (
         <div onClick={handleClickScrub} className="ws-wave w-28 h-7 relative overflow-hidden group cursor-pointer flex items-center justify-center">

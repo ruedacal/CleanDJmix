@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons, ShellIcons } from '../shell/icons.jsx';
+import { useWorkspaceActive } from '../shell/WorkspaceSlot.jsx';
 import { MapCamelotOverlay, MapNavOverlay, MapStatsHud, MapAcousticConsole, MAP_ZOOM_MIN, MAP_ZOOM_MAX } from '../shell/map-overlays.jsx';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
 import { useDrawerResize } from '../shell/hooks.js';
@@ -137,6 +138,7 @@ export const MapWorkspace = ({
     activeCustomLibId = null,
     onSaveCustomLibraries = null
 }) => {
+    const isWorkspaceActive = useWorkspaceActive();
     // Si no hay pistas cargadas en audit, ofrecer catálogo demo interactivo
     const [useDemo, setUseDemo] = useState(false);
     const activeTracks = (rawTracks && rawTracks.length > 0) ? rawTracks : (useDemo ? DEMO_MAP_TRACKS : []);
@@ -589,6 +591,7 @@ export const MapWorkspace = ({
 
     // Bucle de renderizado Canvas en 60 FPS
     useEffect(() => {
+        if (!isWorkspaceActive) return;
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -1115,7 +1118,7 @@ export const MapWorkspace = ({
             isRunning = false;
             if (animRef.current) cancelAnimationFrame(animRef.current);
         };
-    }, [projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
+    }, [isWorkspaceActive, projectionMode, colorMode, toolMode, hoveredTrack, selectedTrack, nowPlayingTrack, showHarmonicPaths, searchQuery, selectedKeyFilter, selectedMapTracks, filterMinEnergy, filterMinDance, filterMinIntensity, filterMinValence, filterQualityMode]);
 
     // Función auxiliar para punto dentro de polígono (Ray Casting)
     const isPointInPoly = (px, py, poly) => {

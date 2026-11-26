@@ -1,4 +1,5 @@
 import { ShellIcons } from './shell/icons.jsx';
+import { apiClient } from './services/apiClient.js';
 import { SideRail } from './shell/SideRail.jsx';
 import { TopBar } from './shell/TopBar.jsx';
 import { MobileTabBar, MoreSheet } from './shell/MobileNav.jsx';
@@ -23,6 +24,7 @@ import {
     parseCuencaDJQuery 
 } from './data/djCatalog.js';
 import { BEATWAVE_MASTER_GLOSSARY } from './data/glossary.js';
+import { WorkspaceSlot } from './shell/WorkspaceSlot.jsx';
 import {
     LibraryWorkspace,
     CustomLibraryModal,
@@ -240,20 +242,11 @@ const App = () => {
     // PERF: playProgress para workspaces — se actualiza cada ~100ms via CustomEvent
     // (throttle), evitando re-renders a 60 fps. Los workspaces usan este valor
     // solo para el playhead de la fila activa, no en cada frame de audio.
-    const [playProgress, setPlayProgressForWorkspaces] = useState(0);
-    useEffect(() => {
-        let lastUpdate = 0;
-        const THROTTLE_MS = 100;
-        const onProgress = (e) => {
-            const now = Date.now();
-            if (now - lastUpdate >= THROTTLE_MS) {
-                lastUpdate = now;
-                setPlayProgressForWorkspaces(e.detail.pct);
-            }
-        };
-        window.addEventListener("bw:progress", onProgress);
-        return () => window.removeEventListener("bw:progress", onProgress);
-    }, []);
+    const playProgress = 0;
+    const selectedAuditTrackIds = useMemo(
+        () => new Set((auditTracks || []).filter(t => t.selected).map(t => t.id)),
+        [auditTracks]
+    );
 
     // Estado Global de Tareas en Background & Tutorial de Bienvenida (Deshabilitado a petición)
     const [globalAuditInfo, setGlobalAuditInfo] = useState({ isAuditing: false, isLoadingDir: false, progress: 0, statusMsg: '' });
@@ -299,9 +292,9 @@ const App = () => {
             window.dispatchEvent(new CustomEvent('bw:audit_progress', { detail: { pct, msg } }));
         };
 
-        if (window.eel && typeof window.eel.expose === 'function') {
+        if (true) {
             try {
-                window.eel.expose(window.actualizar_progreso_batch, "actualizar_progreso_batch");
+                apiClient.registerCallback("actualizar_progreso_batch", window.actualizar_progreso_batch);
             } catch (err) {}
         }
 
@@ -436,16 +429,16 @@ const App = () => {
             alert("Crea al menos una carpeta y asigna pistas para materializar en disco.");
             return;
         }
-        if (window.eel && window.eel.seleccionar_directorio) {
+        if (true) {
             try {
-                const destino = await window.eel.seleccionar_directorio(`Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`)();
+                const destino = await apiClient.rpc('seleccionar_directorio', `Selecciona la carpeta base donde crear la biblioteca "${lib.name}":`);
                 if (!destino) return;
                 const estructura = lib.folders.map(f => ({
                     folder_name: f.name,
                     track_paths: (f.tracks || []).map(t => t.file_path || t.path || t.filepath).filter(Boolean)
                 }));
                 if (window.eel.exportar_biblioteca_a_disco) {
-                    const res = await window.eel.exportar_biblioteca_a_disco(destino, lib.name, estructura)();
+                    const res = await apiClient.rpc('exportar_biblioteca_a_disco', destino, lib.name, estructura);
                     if (res && res.success) {
                         alert(`✓ Biblioteca "${lib.name}" creada con éxito en:\n${res.path}`);
                     } else {
@@ -844,11 +837,11 @@ const App = () => {
 
         audioRef.current = audio;
 
-        if (window.eel && typeof window.eel.expose === 'function') {
+        if (true) {
             window.log_to_console = (msg) => {
                 setLogs(prev => [...prev, { type: 'info', text: `[${new Date().toLocaleTimeString()}] ${msg}` }]);
             };
-            window.eel.expose(window.log_to_console, "log_to_console");
+            apiClient.registerCallback("log_to_console", window.log_to_console);
 
             window.notificar_archivo_original_eliminado_global = (info) => {
                 if (info && info.original_path) {
@@ -859,7 +852,7 @@ const App = () => {
                     }));
                 }
             };
-            window.eel.expose(window.notificar_archivo_original_eliminado_global, "notificar_archivo_original_eliminado_global");
+            apiClient.registerCallback("notificar_archivo_original_eliminado_global", window.notificar_archivo_original_eliminado_global);
         }
 
         return () => {
@@ -967,8 +960,8 @@ const App = () => {
                         }
                     }
                 } else if (track.path || track.f) {
-                    if (window.eel && window.eel.reproducir_pista_mac) {
-                        window.eel.reproducir_pista_mac(track.path || track.f)();
+                    if (true) {
+                        apiClient.rpc('reproducir_pista_mac', track.path || track.f);
                         setIsPlaying(true);
                     }
                 } else {
@@ -1000,8 +993,8 @@ const App = () => {
             }
             stopSynthPreview();
             setIsPlaying(false);
-            if (window.eel && window.eel.detener_audio_mac) {
-                window.eel.detener_audio_mac()();
+            if (true) {
+                apiClient.rpc('detener_audio_mac');
             }
         } else {
             if (audio && audio.src && audio.src !== window.location.href && !audio.src.endsWith("/") && !audio.ended && nowPlayingTrack) {
@@ -1029,9 +1022,9 @@ const App = () => {
         }
         setIsPlaying(false);
         setPlayProgress(0);
-        if (window.eel && window.eel.cue_audio_mac) {
+        if (true) {
             const trk = window.__bwCurrentTrack || nowPlayingTrack || {};
-            window.eel.cue_audio_mac(trk.path || trk.f || "")();
+            apiClient.rpc('cue_audio_mac', trk.path || trk.f || "");
         }
     };
 
@@ -1293,9 +1286,9 @@ const App = () => {
         try {
             let target = pathOverride;
             if (!target) {
-                if (window.eel && window.eel.seleccionar_directorio) {
+                if (true) {
                     try {
-                        target = await window.eel.seleccionar_directorio()();
+                        target = await apiClient.rpc('seleccionar_directorio');
                     } catch (e) {}
                 }
                 if (!target || target === 'cancelado') {
@@ -1318,9 +1311,9 @@ const App = () => {
             setGlobalAuditInfo({ isAuditing: false, isLoadingDir: true, progress: 3, statusMsg: 'Iniciando lectura de archivos en carpeta...' });
 
             let res = null;
-            if (window.eel && window.eel.cargar_metadatos_directorio) {
+            if (true) {
                 try {
-                    res = await window.eel.cargar_metadatos_directorio(target)();
+                    res = await apiClient.rpc('cargar_metadatos_directorio', target);
                 } catch (e) {}
             }
             if (!res) {
@@ -1551,14 +1544,14 @@ const App = () => {
 
             {/* MAIN WORKSPACES: Persistencia Total de Estado Manteniendo Todo Montado */}
             <main className="flex-1 min-h-0 w-full overflow-hidden relative">
-                <div style={{ display: activeTab === 'library' ? 'flex' : 'none' }} className="w-full h-full flex flex-col">
+                <WorkspaceSlot isActive={activeTab === 'library'} className="w-full h-full flex flex-col">
                     <LibraryWorkspace 
                         libraries={customLibraries}
                         activeLibraryId={activeCustomLibId}
                         onSaveLibraries={(updatedLibs, newActiveId) => saveCustomLibraries(updatedLibs, newActiveId)}
                         onSelectLibrary={(id) => saveCustomLibraries(customLibraries, id)}
                         currentTracks={auditTracks}
-                        selectedTrackIds={new Set((auditTracks || []).filter(t => t.selected).map(t => t.id))}
+                        selectedTrackIds={selectedAuditTrackIds}
                         onMaterializarEnDisco={handleMaterializarBibliotecaEnDisco}
                         onAuditarCrate={(folder, lib) => {
                             handleAuditarCrateDesdeModal(folder, lib);
@@ -1575,8 +1568,8 @@ const App = () => {
                         setAuditTracks={setAuditTracks}
                         setSelectedTrack={setSelectedTrack}
                     />
-                </div>
-                <div style={{ display: activeTab === 'audit' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'audit'} className="w-full h-full">
                     <AuditWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1608,8 +1601,8 @@ const App = () => {
                         onClearCrateFilter={() => setActiveCrateFilter(null)}
                         onOpenBeatgridStudio={handleOpenBeatgridStudio}
                     />
-                </div>
-                <div style={{ display: activeTab === 'hotcues' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'hotcues'} className="w-full h-full">
                     <HotCuesWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1635,8 +1628,8 @@ const App = () => {
                         studioMode={studioMode}
                         onSetStudioMode={setStudioMode}
                     />
-                </div>
-                <div style={{ display: activeTab === 'spotify' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'spotify'} className="w-full h-full">
                     <SpotifyWorkspace 
                         tracks={spotifyTracks}
                         setTracks={setSpotifyTracks}
@@ -1650,8 +1643,8 @@ const App = () => {
                         lang={lang}
                         t={t}
                     />
-                </div>
-                <div style={{ display: activeTab === 'shazam' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'shazam'} className="w-full h-full">
                     <ShazamWorkspace 
                         customLibraries={customLibraries}
                         onSaveCustomLibraries={saveCustomLibraries}
@@ -1672,8 +1665,8 @@ const App = () => {
                         onLoadFolderFromDisk={() => handleCargarDirectorioGlobal()}
                         currentFolder={currentFolder}
                     />
-                </div>
-                <div style={{ display: activeTab === 'taxonomy' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'taxonomy'} className="w-full h-full">
                     <TaxonomyWorkspace 
                         tracks={auditTracks} 
                         onTracksUpdated={setAuditTracks} 
@@ -1707,11 +1700,11 @@ const App = () => {
                         onAddTrackToSpotify={handleAddTracksToSpotify}
                         onAddTracksToSpotify={handleAddTracksToSpotify}
                     />
-                </div>
-                <div style={{ display: activeTab === 'trends' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'trends'} className="w-full h-full">
                     <TrendsWorkspace lang={lang} />
-                </div>
-                <div style={{ display: activeTab === 'setbuilder' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'setbuilder'} className="w-full h-full">
                     <SetBuilderWorkspace 
                         setTracks={setBuilderTracks}
                         setSetTracks={setSetBuilderTracks}
@@ -1727,8 +1720,8 @@ const App = () => {
                         onNavigateTab={setActiveTab}
                         lang={lang}
                     />
-                </div>
-                <div style={{ display: activeTab === 'map' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'map'} className="w-full h-full">
                     <MapWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1748,10 +1741,10 @@ const App = () => {
                         onSelectDirectory={() => handleCargarDirectorioGlobal()}
                         lang={lang}
                     />
-                </div>
-                <div style={{ display: activeTab === 'knowledge' ? 'flex' : 'none' }} className="w-full h-full">
+                </WorkspaceSlot>
+                <WorkspaceSlot isActive={activeTab === 'knowledge'} className="w-full h-full">
                     <KnowledgeWorkspace lang={lang} />
-                </div>
+                </WorkspaceSlot>
                 {activeTab === 'copilot' && (
                     <div className="w-full h-full">
                         <CopilotWorkspace 

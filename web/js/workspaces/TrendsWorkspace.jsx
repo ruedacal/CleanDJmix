@@ -1,5 +1,6 @@
 const { useState, useEffect, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
 
 // =========================================================================
@@ -43,8 +44,8 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
     const fetchTrends = async () => {
         try {
             setLoading(true);
-            if (window.eel && window.eel.obtener_tendencias_web) {
-                const res = await window.eel.obtener_tendencias_web()();
+            if (true) {
+                const res = await apiClient.rpc('obtener_tendencias_web');
                 if (res && res.items) setTrendsData(res);
             } else {
                 const resp = await fetch('/api/trends');
@@ -67,8 +68,8 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
     const handleRunCrawler = async () => {
         setIsCrawling(true);
         try {
-            if (window.eel && window.eel.ejecutar_crawler_tendencias) {
-                const res = await window.eel.ejecutar_crawler_tendencias()();
+            if (true) {
+                const res = await apiClient.rpc('ejecutar_crawler_tendencias');
                 if (res && res.items) setTrendsData(res);
             } else {
                 const resp = await fetch('/api/trends/crawl', { method: 'POST' });

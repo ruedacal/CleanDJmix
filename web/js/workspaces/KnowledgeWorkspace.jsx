@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useMemo } = React;
 import { Icons, PlatformLogos, renderPlatformLogo } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { BEATWAVE_MASTER_GLOSSARY } from '../data/glossary.js';
 import { SectionTitle } from '../shell/workspace-ui.jsx';
 import { DEFAULT_VINYL_SVG, getValidCover } from '../data/constants.js';
@@ -24,8 +25,8 @@ export const KnowledgeWorkspace = ({ lang = "es" }) => {
     const fetchKnowledge = async () => {
         try {
             setLoading(true);
-            if (window.eel && window.eel.obtener_recursos_conocimiento) {
-                const res = await window.eel.obtener_recursos_conocimiento()();
+            if (true) {
+                const res = await apiClient.rpc('obtener_recursos_conocimiento');
                 if (res) setKnowledgeData(res);
             } else {
                 const resp = await fetch('/api/knowledge');

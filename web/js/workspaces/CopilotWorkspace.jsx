@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 import { Icons, renderPlatformLogo } from '../shell/icons.jsx';
+import { useWorkspaceActive } from '../shell/WorkspaceSlot.jsx';
 import { CopilotSeratoWaveform, computeTrackStructuralBands } from '../waveforms/index.js';
 import { CopilotMixerMirror } from './CopilotMixerMirror.jsx';
 import { CopilotCleanMixBanner } from './CopilotCleanMixBanner.jsx';
@@ -950,6 +951,7 @@ export const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partne
 };
 
 export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
+    const isWorkspaceActive = useWorkspaceActive();
     const [state, setState] = useState(DEFAULT_COPILOT_STATE);
     const [clock, setClock] = useState('');
     const [latency, setLatency] = useState(2);
@@ -1061,15 +1063,23 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
     }, []);
 
     useEffect(() => {
+        if (!isWorkspaceActive) return;
         const timer = setInterval(() => {
             const now = new Date();
             setClock(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
+    }, [isWorkspaceActive]);
 
     // Conexión en tiempo real: WebSocket nativo 60 FPS (<25ms) con fallback a Polling reactivo
     useEffect(() => {
+        if (!isWorkspaceActive) {
+            if (wsRef.current) {
+                try { wsRef.current.close(); } catch (_) {}
+                wsRef.current = null;
+            }
+            return;
+        }
         let isMounted = true;
         let ws = null;
         let fallbackInterval = null;
@@ -1165,6 +1175,16 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             }
         };
 
+        fetch('/api/copilot/status')
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => {
+                if (!isMounted || !data) return;
+                setState(data);
+                if (data.controller && data.controller.name) {
+                    setControllerState(data.controller);
+                }
+            })
+            .catch(() => {});
         connectWebSocket();
 
         return () => {
@@ -1172,7 +1192,7 @@ export const CopilotWorkspace = ({ onOpenPopOut, onOpenQr }) => {
             if (ws) ws.close();
             if (fallbackInterval) clearInterval(fallbackInterval);
         };
-    }, []);
+    }, [isWorkspaceActive]);
 
     const setMasterDeck = async (deckTarget) => {
         const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');

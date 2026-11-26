@@ -1,5 +1,6 @@
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 import { Icons } from '../shell/icons.jsx';
+import { apiClient } from '../services/apiClient.js';
 import { CopilotSeratoWaveform, parseDurationMs, formatMsToTime, parseTimeToMs } from '../waveforms/index.js';
 import { NV2_COLORS, getValidCover } from '../data/constants.js';
 import { SectionTitle, InfoTip, RotaryKnob, getAudioEQNodes } from '../shell/workspace-ui.jsx';
@@ -141,8 +142,8 @@ export const HotCuesWorkspace = ({
         try {
             const trackPath = currentTrack.path || currentTrack.f || "";
             let res = null;
-            if (window.eel && window.eel.calcular_comparativa_hot_cues) {
-                res = await window.eel.calcular_comparativa_hot_cues(trackPath, currentTrack.id)();
+            if (true) {
+                res = await apiClient.rpc('calcular_comparativa_hot_cues', trackPath, currentTrack.id);
             } else {
                 const r = await fetch('/api/rpc/calcular_comparativa_hot_cues', {
                     method: 'POST',
@@ -184,8 +185,8 @@ export const HotCuesWorkspace = ({
             const trackPath = currentTrack.path || currentTrack.f || "";
             const cuesToSave = modo === 'acustico' ? (cuesAcustico || activeCues) : (cuesEstandar || activeCues);
             let res = null;
-            if (window.eel && window.eel.guardar_modo_hot_cues) {
-                res = await window.eel.guardar_modo_hot_cues(trackPath, modo, cuesToSave, currentTrack)();
+            if (true) {
+                res = await apiClient.rpc('guardar_modo_hot_cues', trackPath, modo, cuesToSave, currentTrack);
             } else {
                 const r = await fetch('/api/rpc/guardar_modo_hot_cues', {
                     method: 'POST',
@@ -648,9 +649,9 @@ export const HotCuesWorkspace = ({
         if (!currentTrack) return;
         try {
             let calculated = null;
-            if (window.eel && window.eel.calcular_hot_cues_fraseo) {
+            if (true) {
                 try {
-                    calculated = await window.eel.calcular_hot_cues_fraseo(durMs, bpm, Math.round(downbeatMs))();
+                    calculated = await apiClient.rpc('calcular_hot_cues_fraseo', durMs, bpm, Math.round(downbeatMs));
                 } catch (_) {}
             }
             if (!calculated || !Array.isArray(calculated) || calculated.length === 0) {
@@ -696,8 +697,8 @@ export const HotCuesWorkspace = ({
                 bpm: bpm
             };
             let res = null;
-            if (window.eel && window.eel.guardar_cambios_track) {
-                res = await window.eel.guardar_cambios_track(trackToSave)();
+            if (true) {
+                res = await apiClient.rpc('guardar_cambios_track', trackToSave);
             } else {
                 const r = await fetch('/api/rpc/guardar_cambios_track', {
                     method: 'POST',
@@ -768,8 +769,8 @@ export const HotCuesWorkspace = ({
             }));
 
             let res = null;
-            if (window.eel && window.eel.inyectar_lote_metadatos) {
-                res = await window.eel.inyectar_lote_metadatos(sanitizedTracks)();
+            if (true) {
+                res = await apiClient.rpc('inyectar_lote_metadatos', sanitizedTracks);
             } else {
                 const response = await fetch('/api/metadata/save_batch', {
                     method: 'POST',
@@ -810,8 +811,8 @@ export const HotCuesWorkspace = ({
         if (!currentTrack) return;
         setIsRegeneratingMood(true);
         try {
-            if (window.eel && window.eel.regenerar_mood_y_comentario) {
-                const res = await window.eel.regenerar_mood_y_comentario(currentTrack, lang)();
+            if (true) {
+                const res = await apiClient.rpc('regenerar_mood_y_comentario', currentTrack, lang);
                 if (res && res.status === "ok") {
                     updateCurrentTrackField('mood', res.mood);
                     updateCurrentTrackField('mood_subtag', res.mood_subtag);
@@ -877,8 +878,8 @@ export const HotCuesWorkspace = ({
         if (setSelectedTrack) setSelectedTrack(null);
         setIsLoadingDir(true);
         try {
-            if (window.eel && window.eel.cargar_metadatos_directorio) {
-                const res = await window.eel.cargar_metadatos_directorio(nuevaRuta)();
+            if (true) {
+                const res = await apiClient.rpc('cargar_metadatos_directorio', nuevaRuta);
                 if (res && Array.isArray(res.tracks)) {
                     if (setTracks) setTracks(res.tracks);
                     if (res.tracks.length > 0 && setSelectedTrack) {
