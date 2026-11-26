@@ -115,17 +115,17 @@ export const CopilotSeratoWaveform = ({
     const isEmptyDeck = !deck || !deck?.title || !deck?.bpm || Number(deck?.bpm) <= 0 || deck?.status === 'STANDBY (VACÍO)';
 
     useEffect(() => {
-        if ((deck?.play_progress ?? 0) !== undefined && (deck?.play_progress ?? 0) !== null) {
-            const diff = Math.abs(progressRef.current - (deck?.play_progress ?? 0));
-            if (diff > 0.002 || !deck?.is_playing || (deck?.play_progress ?? 0) === 0) {
-                progressRef.current = (deck?.play_progress ?? 0);
-                setProgress((deck?.play_progress ?? 0));
-            }
+        const nextProg = typeof playProgress === 'number' && !isNaN(playProgress)
+            ? playProgress
+            : (deck?.play_progress ?? 0);
+        if (nextProg !== undefined && nextProg !== null) {
+            progressRef.current = nextProg;
+            setProgress(nextProg);
         }
         isPlayingRef.current = Boolean(deck?.is_playing);
         bpmRef.current = parseFloat(deck?.bpm) || 130.0;
         durationSecRef.current = parseFloat(deck?.duration_sec) || 390.0;
-    }, [(deck?.play_progress ?? 0), deck?.is_playing, deck?.bpm, deck?.duration_sec]);
+    }, [playProgress, (deck?.play_progress ?? 0), deck?.is_playing, deck?.bpm, deck?.duration_sec]);
 
     // Descarga no bloqueante de picos reales 3Band HD (400 cols/s) desde el backend local
     const hdTrackKey = (isEmptyDeck || isStandaloneTrack)
@@ -497,7 +497,7 @@ export const CopilotSeratoWaveform = ({
         }
 
         // 4. Banderas de Hot Cues (1 a 8) estilo Rekordbox
-        if (showTacticalAids) {
+        if (true) {
             cues.forEach(cue => {
                 const cueSec = typeof cue.pos_sec === 'number'
                     ? cue.pos_sec
@@ -681,6 +681,9 @@ export const CopilotSeratoWaveform = ({
         const newPct = Math.max(0, Math.min(1, clickX / rect.width));
         progressRef.current = newPct;
         setProgress(newPct);
+        if (typeof onSeekTrack === 'function' && track) {
+            onSeekTrack(track, newPct, Boolean(deck?.is_playing), newPct * durSec);
+        }
     };
 
     return (
@@ -792,21 +795,7 @@ export const CopilotSeratoWaveform = ({
             {/* Barra de Control del Waveform + LEYENDA REKORDBOX 3BAND */}
             <div className="flex items-center justify-between gap-2 flex-wrap text-xs font-mono">
                 <div className="flex items-center gap-2 flex-wrap">
-                    {!isCompact && (
-                        <button
-                            type="button"
-                            onClick={() => setShowTacticalAids(!showTacticalAids)}
-                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${
-                                showTacticalAids
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
-                                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'
-                            }`}
-                            title="Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
-                        >
-                            <span>{showTacticalAids ? '🎯' : '⚪'}</span>
-                            <span>{showTacticalAids ? 'Ayudas DJ' : 'Puro Wave'}</span>
-                        </button>
-                    )}
+
 
                     {/* BADGE INDEPENDIENTE 3BAND HD + LEYENDA COMPACTA SIN HERCIOS */}
                     <div className="hidden sm:flex items-center gap-2 shrink-0">

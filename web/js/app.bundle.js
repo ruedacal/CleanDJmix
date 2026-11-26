@@ -4942,18 +4942,16 @@
     const trackFilePath = (deck == null ? void 0 : deck.filepath) || (deck == null ? void 0 : deck.file_path) || "";
     const isEmptyDeck = !deck || !(deck == null ? void 0 : deck.title) || !(deck == null ? void 0 : deck.bpm) || Number(deck == null ? void 0 : deck.bpm) <= 0 || (deck == null ? void 0 : deck.status) === "STANDBY (VAC\xCDO)";
     useEffect8(() => {
-      var _a2, _b2, _c2, _d2, _e, _f;
-      if (((_a2 = deck == null ? void 0 : deck.play_progress) != null ? _a2 : 0) !== void 0 && ((_b2 = deck == null ? void 0 : deck.play_progress) != null ? _b2 : 0) !== null) {
-        const diff = Math.abs(progressRef.current - ((_c2 = deck == null ? void 0 : deck.play_progress) != null ? _c2 : 0));
-        if (diff > 2e-3 || !(deck == null ? void 0 : deck.is_playing) || ((_d2 = deck == null ? void 0 : deck.play_progress) != null ? _d2 : 0) === 0) {
-          progressRef.current = (_e = deck == null ? void 0 : deck.play_progress) != null ? _e : 0;
-          setProgress((_f = deck == null ? void 0 : deck.play_progress) != null ? _f : 0);
-        }
+      var _a2;
+      const nextProg = typeof playProgress === "number" && !isNaN(playProgress) ? playProgress : (_a2 = deck == null ? void 0 : deck.play_progress) != null ? _a2 : 0;
+      if (nextProg !== void 0 && nextProg !== null) {
+        progressRef.current = nextProg;
+        setProgress(nextProg);
       }
       isPlayingRef.current = Boolean(deck == null ? void 0 : deck.is_playing);
       bpmRef.current = parseFloat(deck == null ? void 0 : deck.bpm) || 130;
       durationSecRef.current = parseFloat(deck == null ? void 0 : deck.duration_sec) || 390;
-    }, [(_d = deck == null ? void 0 : deck.play_progress) != null ? _d : 0, deck == null ? void 0 : deck.is_playing, deck == null ? void 0 : deck.bpm, deck == null ? void 0 : deck.duration_sec]);
+    }, [playProgress, (_d = deck == null ? void 0 : deck.play_progress) != null ? _d : 0, deck == null ? void 0 : deck.is_playing, deck == null ? void 0 : deck.bpm, deck == null ? void 0 : deck.duration_sec]);
     const hdTrackKey = isEmptyDeck || isStandaloneTrack ? "" : `${deckNum}|${trackFilePath || (deck == null ? void 0 : deck.title)}|${(deck == null ? void 0 : deck.artist) || ""}|${(deck == null ? void 0 : deck.duration_sec) || 0}`;
     useEffect8(() => {
       if (!hdTrackKey) {
@@ -5257,7 +5255,7 @@
           }
         }
       }
-      if (showTacticalAids) {
+      if (true) {
         cues.forEach((cue) => {
           const cueSec = typeof cue.pos_sec === "number" ? cue.pos_sec : (cue.pct !== void 0 ? cue.pct : 0) * durSec;
           if (cueSec >= startSec && cueSec <= endSec) {
@@ -5414,18 +5412,11 @@
       const newPct = Math.max(0, Math.min(1, clickX / rect.width));
       progressRef.current = newPct;
       setProgress(newPct);
+      if (typeof onSeekTrack === "function" && track) {
+        onSeekTrack(track, newPct, Boolean(deck == null ? void 0 : deck.is_playing), newPct * durSec);
+      }
     };
-    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner" }, false, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 flex-wrap text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, !isCompact && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setShowTacticalAids(!showTacticalAids),
-        className: `flex items-center gap-1.5 px-2 py-0.5 rounded-lg font-bold uppercase transition-all cursor-pointer border text-[10px] sm:text-[11px] ${showTacticalAids ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.25)]" : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"}`,
-        title: "Habilitar/Deshabilitar ayudas visuales (Drops, Cues, Zonas Seguras y Anti-Muddy) en el waveform"
-      },
-      /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "\u{1F3AF}" : "\u26AA"),
-      /* @__PURE__ */ React.createElement("span", null, showTacticalAids ? "Ayudas DJ" : "Puro Wave")
-    ), /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-2 shrink-0" }, (hdWave == null ? void 0 : hdWave.realFft) && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-2 p-2 sm:p-2.5 rounded-2xl bg-[#030308] border border-zinc-800/90 shadow-inner" }, false, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-2 flex-wrap text-xs font-mono" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("div", { className: "hidden sm:flex items-center gap-2 shrink-0" }, (hdWave == null ? void 0 : hdWave.realFft) && /* @__PURE__ */ React.createElement(
       "span",
       {
         className: "flex items-center gap-1.5 font-mono font-black px-2 py-0.5 rounded-md shrink-0",
@@ -16154,19 +16145,23 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const handleDeckTogglePlay = () => {
       if (!currentTrack) return;
-      if (isCurrentPlayingThis) {
-        if (onTogglePlay) onTogglePlay();
-      } else {
-        if (onPlayTrack) {
-          onPlayTrack(currentTrack, playProgress > 0 ? playProgress : 0, true);
+      const isSameLoaded = nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path && nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f && nowPlayingTrack.f === currentTrack.f);
+      if (isCurrentPlayingThis || isSameLoaded) {
+        if (onTogglePlay) {
+          onTogglePlay();
+          return;
         }
+      }
+      if (onPlayTrack) {
+        const startPct = isSameLoaded && playProgress > 0 ? playProgress : 0;
+        onPlayTrack(currentTrack, startPct, true, startPct * durMs / 1e3);
       }
     };
     const handleDeckCue = () => {
       if (!currentTrack) return;
       const targetCue = currentCue && currentCue.pos_ms !== void 0 ? currentCue : activeCues[0] || {};
       const cueMs = targetCue.pos_ms !== void 0 ? targetCue.pos_ms : downbeatMs || 0;
-      const cuePct = durMs > 0 ? Math.max(0, Math.min(0.99, cueMs / durMs)) : 0;
+      const cuePct = durMs > 0 ? Math.max(0, Math.min(0.99, cueMs / durMs)) : targetCue.pct !== void 0 ? targetCue.pct : 0;
       if (onPlayTrack) {
         onPlayTrack(currentTrack, cuePct, true, cueMs / 1e3);
       }
@@ -16354,22 +16349,24 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const handleJumpToCue = (cue) => {
       if (!currentTrack || !onPlayTrack) return;
+      const cueId = cue.id !== void 0 ? cue.id : null;
+      if (cueId !== null) setSelectedCueId(cueId);
+      const posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs2(cue.time || "00:00.00");
+      const baseDurSec = durMs > 0 ? durMs / 1e3 : 0;
+      let pct = baseDurSec > 0 ? Math.max(0, Math.min(0.99, posMs / 1e3 / baseDurSec)) : cue.pct !== void 0 ? Math.max(0, Math.min(0.99, cue.pct)) : 0;
+      let targetSec = baseDurSec > 0 ? pct * baseDurSec : posMs / 1e3;
       const audio = audioRef == null ? void 0 : audioRef.current;
-      const audioDur = audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5 ? audio.duration : durMs / 1e3;
-      let posMs = cue.pos_ms !== void 0 ? cue.pos_ms : parseTimeToMs2(cue.time || "00:00.00");
-      let targetSec = posMs / 1e3;
-      if (audioDur > 0 && targetSec >= audioDur - 0.25) {
-        const cuePct = cue.pct !== void 0 ? cue.pct : Math.min(0.95, posMs / (durMs || 3e5));
-        targetSec = Math.max(0, Math.min(audioDur - 0.25, audioDur * cuePct));
-      }
-      const pct = audioDur > 0 ? targetSec / audioDur : 0;
-      onPlayTrack(currentTrack, pct, true, targetSec);
-      if (audio && audio.readyState >= 1 && !audio.src.includes("/stream_audio")) {
-        try {
-          audio.currentTime = Math.max(0, Math.min((audio.duration || targetSec + 1) - 0.25, targetSec));
-        } catch (_) {
+      const isSameAudio = nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path && nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f && nowPlayingTrack.f === currentTrack.f);
+      if (isSameAudio && audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5) {
+        targetSec = Math.max(0, Math.min(audio.duration - 0.25, audio.duration * pct));
+        if (audio.readyState >= 1) {
+          try {
+            audio.currentTime = targetSec;
+          } catch (_) {
+          }
         }
       }
+      onPlayTrack(currentTrack, pct, true, targetSec);
     };
     const handleSetCueAtPlayhead = () => {
       if (!currentTrack) return;

@@ -411,12 +411,20 @@ export const HotCuesWorkspace = ({
     // Control Seguro y Robusto de Reproducción en Deck Hot Cues
     const handleDeckTogglePlay = () => {
         if (!currentTrack) return;
-        if (isCurrentPlayingThis) {
-            if (onTogglePlay) onTogglePlay();
-        } else {
-            if (onPlayTrack) {
-                onPlayTrack(currentTrack, playProgress > 0 ? playProgress : 0, true);
+        const isSameLoaded = nowPlayingTrack && (
+            String(nowPlayingTrack.id) === String(currentTrack.id) ||
+            (nowPlayingTrack.path && nowPlayingTrack.path === currentTrack.path) ||
+            (nowPlayingTrack.f && nowPlayingTrack.f === currentTrack.f)
+        );
+        if (isCurrentPlayingThis || isSameLoaded) {
+            if (onTogglePlay) {
+                onTogglePlay();
+                return;
             }
+        }
+        if (onPlayTrack) {
+            const startPct = isSameLoaded && playProgress > 0 ? playProgress : 0;
+            onPlayTrack(currentTrack, startPct, true, (startPct * durMs) / 1000.0);
         }
     };
 
@@ -424,7 +432,9 @@ export const HotCuesWorkspace = ({
         if (!currentTrack) return;
         const targetCue = currentCue && currentCue.pos_ms !== undefined ? currentCue : (activeCues[0] || {});
         const cueMs = targetCue.pos_ms !== undefined ? targetCue.pos_ms : (downbeatMs || 0);
-        const cuePct = durMs > 0 ? Math.max(0, Math.min(0.99, cueMs / durMs)) : 0;
+        const cuePct = durMs > 0
+            ? Math.max(0, Math.min(0.99, cueMs / durMs))
+            : (targetCue.pct !== undefined ? targetCue.pct : 0);
         if (onPlayTrack) {
             onPlayTrack(currentTrack, cuePct, true, cueMs / 1000.0);
         }
@@ -633,30 +643,35 @@ export const HotCuesWorkspace = ({
         });
     };
 
-    // Salto directo en reproducción al Hot Cue pulsado con protección de duración y arranque instantáneo
+    // Salto directo en reproducción al Hot Cue pulsado con sincronización inmediata en waveform
     const handleJumpToCue = (cue) => {
         if (!currentTrack || !onPlayTrack) return;
-        const audio = audioRef?.current;
-        const audioDur = (audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5)
-            ? audio.duration
-            : (durMs / 1000.0);
-        let posMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
-        let targetSec = posMs / 1000.0;
-        // Si el archivo en reproducción es un preview corto o dura menos que posMs,
-        // escalar proporcionalmente al ratio del pad para evitar salto fuera de rango (EOF)
-        if (audioDur > 0 && targetSec >= (audioDur - 0.25)) {
-            const cuePct = cue.pct !== undefined ? cue.pct : Math.min(0.95, posMs / (durMs || 300000));
-            targetSec = Math.max(0, Math.min(audioDur - 0.25, audioDur * cuePct));
-        }
-        const pct = audioDur > 0 ? (targetSec / audioDur) : 0;
-        onPlayTrack(currentTrack, pct, true, targetSec);
+        const cueId = cue.id !== undefined ? cue.id : null;
+        if (cueId !== null) setSelectedCueId(cueId);
 
-        // Solo ajustar currentTime directamente si el medio ya está listo y coincide la pista
-        if (audio && audio.readyState >= 1 && !audio.src.includes("/stream_audio")) {
-            try {
-                audio.currentTime = Math.max(0, Math.min((audio.duration || targetSec + 1) - 0.25, targetSec));
-            } catch (_) {}
+        const posMs = cue.pos_ms !== undefined ? cue.pos_ms : parseTimeToMs(cue.time || "00:00.00");
+        const baseDurSec = durMs > 0 ? (durMs / 1000.0) : 0;
+        let pct = baseDurSec > 0
+            ? Math.max(0, Math.min(0.99, (posMs / 1000.0) / baseDurSec))
+            : (cue.pct !== undefined ? Math.max(0, Math.min(0.99, cue.pct)) : 0);
+        let targetSec = baseDurSec > 0 ? (pct * baseDurSec) : (posMs / 1000.0);
+
+        const audio = audioRef?.current;
+        const isSameAudio = nowPlayingTrack && (
+            String(nowPlayingTrack.id) === String(currentTrack.id) ||
+            (nowPlayingTrack.path && nowPlayingTrack.path === currentTrack.path) ||
+            (nowPlayingTrack.f && nowPlayingTrack.f === currentTrack.f)
+        );
+        if (isSameAudio && audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0.5) {
+            targetSec = Math.max(0, Math.min(audio.duration - 0.25, audio.duration * pct));
+            if (audio.readyState >= 1) {
+                try {
+                    audio.currentTime = targetSec;
+                } catch (_) {}
+            }
         }
+
+        onPlayTrack(currentTrack, pct, true, targetSec);
     };
 
     // Fijar el Hot Cue seleccionado exactamente en la aguja de reproducción actual
