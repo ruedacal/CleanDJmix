@@ -16272,19 +16272,42 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       });
       updateCues(newCues);
     };
-    const handleTimeInputChange = (e) => {
-      const val = e.target.value;
-      setCueTimeInput(val);
+    const commitCueTimeValue = (rawVal) => {
+      const val = String(rawVal || "").trim();
+      if (!val) return;
       const ms = parseTimeToMs2(val);
-      const newPct = durMs > 0 ? Math.max(0, Math.min(1, ms / durMs)) : 0;
-      const barNum = Math.max(1, Math.floor((ms - downbeatMs) / barMs) + 1);
+      if (isNaN(ms) || ms < 0) return;
+      const clampedMs = Math.max(0, Math.min(durMs, ms));
+      const formatted = formatMsToTime(clampedMs);
+      const newPct = durMs > 0 ? Math.max(0, Math.min(1, clampedMs / durMs)) : 0;
+      const barNum = Math.max(1, Math.floor((clampedMs - downbeatMs) / barMs) + 1);
+      setCueTimeInput(formatted);
       updateSingleCue({
-        time: val,
-        pos_ms: Math.round(ms),
+        time: formatted,
+        pos_ms: Math.round(clampedMs),
         pct: newPct,
         bar: barNum,
         bar_str: `Bar ${barNum}`
       });
+    };
+    const handleTimeInputChange = (e) => {
+      const val = e.target.value;
+      setCueTimeInput(val);
+      if (/^\d{1,2}:\d{2}(?:\.\d{1,3})?$/.test(val.trim())) {
+        const ms = parseTimeToMs2(val.trim());
+        if (!isNaN(ms) && ms >= 0) {
+          const clampedMs = Math.max(0, Math.min(durMs, ms));
+          const newPct = durMs > 0 ? Math.max(0, Math.min(1, clampedMs / durMs)) : 0;
+          const barNum = Math.max(1, Math.floor((clampedMs - downbeatMs) / barMs) + 1);
+          updateSingleCue({
+            time: val.trim(),
+            pos_ms: Math.round(clampedMs),
+            pct: newPct,
+            bar: barNum,
+            bar_str: `Bar ${barNum}`
+          });
+        }
+      }
     };
     const handleNudgeMs = (deltaMs) => {
       const currentMs2 = currentCue.pos_ms !== void 0 ? currentCue.pos_ms : parseTimeToMs2(currentCue.time || "00:00.00");
@@ -17197,6 +17220,14 @@ Compatibilidad: Serato DJ Pro (.crate & GEOB) + Pioneer Rekordbox XML`
         type: "text",
         value: cueTimeInput,
         onChange: handleTimeInputChange,
+        onBlur: (e) => commitCueTimeValue(e.target.value),
+        onKeyDown: (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitCueTimeValue(e.currentTarget.value);
+            e.currentTarget.blur();
+          }
+        },
         placeholder: "00:00.00",
         className: "w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
       }
@@ -30097,7 +30128,15 @@ ${res.path}`);
                   setIsPlaying(true);
                   applyPosition();
                 }).catch((err) => {
-                  if (err && err.name !== "AbortError" && err.name !== "NotSupportedError") console.warn("Audio HTML5 play error:", err);
+                  if (err && err.name === "NotSupportedError") {
+                    const localPath = track.path || track.f;
+                    if (localPath && typeof apiClient !== "undefined" && apiClient.rpc) {
+                      apiClient.rpc("reproducir_pista_mac", localPath).catch(() => {
+                      });
+                    }
+                    return;
+                  }
+                  if (err && err.name !== "AbortError") console.warn("Audio HTML5 play error:", err);
                 });
               }
             }

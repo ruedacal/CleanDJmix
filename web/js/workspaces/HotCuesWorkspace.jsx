@@ -564,20 +564,44 @@ export const HotCuesWorkspace = ({
         updateCues(newCues);
     };
 
-    // Ajuste directo del tiempo desde el input de texto
-    const handleTimeInputChange = (e) => {
-        const val = e.target.value;
-        setCueTimeInput(val);
+    // Ajuste directo del tiempo desde el input de texto (actualiza texto al escribir y consolida en blur/Enter)
+    const commitCueTimeValue = (rawVal) => {
+        const val = String(rawVal || "").trim();
+        if (!val) return;
         const ms = parseTimeToMs(val);
-        const newPct = durMs > 0 ? Math.max(0, Math.min(1, ms / durMs)) : 0;
-        const barNum = Math.max(1, Math.floor((ms - downbeatMs) / barMs) + 1);
+        if (isNaN(ms) || ms < 0) return;
+        const clampedMs = Math.max(0, Math.min(durMs, ms));
+        const formatted = formatMsToTime(clampedMs);
+        const newPct = durMs > 0 ? Math.max(0, Math.min(1, clampedMs / durMs)) : 0;
+        const barNum = Math.max(1, Math.floor((clampedMs - downbeatMs) / barMs) + 1);
+        setCueTimeInput(formatted);
         updateSingleCue({
-            time: val,
-            pos_ms: Math.round(ms),
+            time: formatted,
+            pos_ms: Math.round(clampedMs),
             pct: newPct,
             bar: barNum,
             bar_str: `Bar ${barNum}`
         });
+    };
+
+    const handleTimeInputChange = (e) => {
+        const val = e.target.value;
+        setCueTimeInput(val);
+        if (/^\d{1,2}:\d{2}(?:\.\d{1,3})?$/.test(val.trim())) {
+            const ms = parseTimeToMs(val.trim());
+            if (!isNaN(ms) && ms >= 0) {
+                const clampedMs = Math.max(0, Math.min(durMs, ms));
+                const newPct = durMs > 0 ? Math.max(0, Math.min(1, clampedMs / durMs)) : 0;
+                const barNum = Math.max(1, Math.floor((clampedMs - downbeatMs) / barMs) + 1);
+                updateSingleCue({
+                    time: val.trim(),
+                    pos_ms: Math.round(clampedMs),
+                    pct: newPct,
+                    bar: barNum,
+                    bar_str: `Bar ${barNum}`
+                });
+            }
+        }
     };
 
     // Nudge micro-ajustes (-10ms, +10ms, compases, tiempos)
@@ -1837,6 +1861,14 @@ export const HotCuesWorkspace = ({
                                     type="text"
                                     value={cueTimeInput}
                                     onChange={handleTimeInputChange}
+                                    onBlur={(e) => commitCueTimeValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            commitCueTimeValue(e.currentTarget.value);
+                                            e.currentTarget.blur();
+                                        }
+                                    }}
                                     placeholder="00:00.00"
                                     className="w-20 sm:w-24 bg-djzinc-900 border border-djzinc-750 rounded-lg px-2.5 py-1 text-xs text-djcyan-400 font-mono font-bold outline-none text-center shrink-0"
                                 />

@@ -956,7 +956,14 @@ const App = () => {
                                 setIsPlaying(true);
                                 applyPosition();
                             }).catch((err) => {
-                                if (err && err.name !== 'AbortError' && err.name !== 'NotSupportedError') console.warn("Audio HTML5 play error:", err);
+                                if (err && err.name === 'NotSupportedError') {
+                                    const localPath = track.path || track.f;
+                                    if (localPath && typeof apiClient !== 'undefined' && apiClient.rpc) {
+                                        apiClient.rpc('reproducir_pista_mac', localPath).catch(() => {});
+                                    }
+                                    return;
+                                }
+                                if (err && err.name !== 'AbortError') console.warn("Audio HTML5 play error:", err);
                             });
                         }
                     }
