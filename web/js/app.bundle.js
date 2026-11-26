@@ -16310,11 +16310,9 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
       const pct = audioDur > 0 ? targetSec / audioDur : 0;
       onPlayTrack(currentTrack, pct, true, targetSec);
-      if (audio) {
+      if (audio && audio.readyState >= 1 && !audio.src.includes("/stream_audio")) {
         try {
-          audio.currentTime = targetSec;
-          audio.play().catch(() => {
-          });
+          audio.currentTime = Math.max(0, Math.min((audio.duration || targetSec + 1) - 0.25, targetSec));
         } catch (_) {
         }
       }
