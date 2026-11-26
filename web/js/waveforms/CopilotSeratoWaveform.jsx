@@ -58,7 +58,7 @@ function sample3BandHD(bands, totalCols, fStart, fEnd) {
 export const CopilotSeratoWaveform = ({
     deck: rawDeck = null,
     track = null,
-    cues = null,
+    cues: propCues = null,
     duration = null,
     playProgress = null,
     isCurrentPlaying = null,
@@ -88,10 +88,10 @@ export const CopilotSeratoWaveform = ({
             duration_sec: durSec,
             play_progress: typeof playProgress === 'number' ? playProgress : (track.play_progress ?? 0),
             is_playing: isCurrentPlaying !== null ? Boolean(isCurrentPlaying) : Boolean(track.is_playing),
-            hot_cues: Array.isArray(cues) ? cues : (track.hot_cues || track.cues || []),
-            cues: Array.isArray(cues) ? cues : (track.cues || track.hot_cues || []),
+            hot_cues: Array.isArray(propCues) ? propCues : (track.hot_cues || track.cues || []),
+            cues: Array.isArray(propCues) ? propCues : (track.cues || track.hot_cues || []),
         };
-    }, [rawDeck, track, cues, duration, playProgress, isCurrentPlaying]);
+    }, [rawDeck, track, propCues, duration, playProgress, isCurrentPlaying]);
     const canvasRef = useRef(null);
     const minimapRef = useRef(null);
     const minimapCacheRef = useRef(null);

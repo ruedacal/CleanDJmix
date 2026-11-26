@@ -4761,13 +4761,44 @@
     return [maxL / 255, maxM / 255, maxH / 255];
   }
   var CopilotSeratoWaveform2 = ({
-    deck = {},
+    deck: rawDeck = null,
+    track = null,
+    cues: propCues = null,
+    duration = null,
+    playProgress = null,
+    isCurrentPlaying = null,
     side = "1",
     antiMuddy = null,
     partnerDeck = null,
     isCompact = false
   }) => {
     var _a, _b, _c, _d;
+    const isStandaloneTrack = Boolean(track && !rawDeck);
+    const deck = useMemo(() => {
+      var _a2;
+      if (rawDeck) return rawDeck;
+      if (!track) return {};
+      const parseDurSec = (d) => {
+        if (typeof d === "number" && Number.isFinite(d) && d > 0) return d;
+        if (typeof d === "string" && d.includes(":")) {
+          const parts = d.split(":").map(Number);
+          if (parts.length === 2 && !parts.some(isNaN)) return parts[0] * 60 + parts[1];
+          if (parts.length === 3 && !parts.some(isNaN)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+        return 300;
+      };
+      const durSec2 = Number(track.duration_sec) || parseDurSec(duration || track.duration);
+      return {
+        ...track,
+        title: track.title || track.filename || track.name || "Track",
+        bpm: Number(track.bpm) > 0 ? Number(track.bpm) : 128,
+        duration_sec: durSec2,
+        play_progress: typeof playProgress === "number" ? playProgress : (_a2 = track.play_progress) != null ? _a2 : 0,
+        is_playing: isCurrentPlaying !== null ? Boolean(isCurrentPlaying) : Boolean(track.is_playing),
+        hot_cues: Array.isArray(propCues) ? propCues : track.hot_cues || track.cues || [],
+        cues: Array.isArray(propCues) ? propCues : track.cues || track.hot_cues || []
+      };
+    }, [rawDeck, track, propCues, duration, playProgress, isCurrentPlaying]);
     const canvasRef = useRef8(null);
     const minimapRef = useRef8(null);
     const minimapCacheRef = useRef8(null);
@@ -4797,7 +4828,7 @@
       bpmRef.current = parseFloat(deck == null ? void 0 : deck.bpm) || 130;
       durationSecRef.current = parseFloat(deck == null ? void 0 : deck.duration_sec) || 390;
     }, [(_d = deck == null ? void 0 : deck.play_progress) != null ? _d : 0, deck == null ? void 0 : deck.is_playing, deck == null ? void 0 : deck.bpm, deck == null ? void 0 : deck.duration_sec]);
-    const hdTrackKey = isEmptyDeck ? "" : `${deckNum}|${trackFilePath || (deck == null ? void 0 : deck.title)}|${(deck == null ? void 0 : deck.artist) || ""}|${(deck == null ? void 0 : deck.duration_sec) || 0}`;
+    const hdTrackKey = isEmptyDeck || isStandaloneTrack ? "" : `${deckNum}|${trackFilePath || (deck == null ? void 0 : deck.title)}|${(deck == null ? void 0 : deck.artist) || ""}|${(deck == null ? void 0 : deck.duration_sec) || 0}`;
     useEffect8(() => {
       if (!hdTrackKey) {
         setHdWave(null);
