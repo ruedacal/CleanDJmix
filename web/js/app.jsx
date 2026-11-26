@@ -1580,6 +1580,7 @@ const App = () => {
                         </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'audit'} className="w-full h-full">
+                    <FeatureErrorBoundary feature="audit">
                     <AuditWorkspace 
                         tracks={auditTracks}
                         setTracks={setAuditTracks}
@@ -1611,6 +1612,7 @@ const App = () => {
                         onClearCrateFilter={() => setActiveCrateFilter(null)}
                         onOpenBeatgridStudio={handleOpenBeatgridStudio}
                     />
+                    </FeatureErrorBoundary>
                 </WorkspaceSlot>
                 <WorkspaceSlot isActive={activeTab === 'hotcues'} className="w-full h-full">
                     <FeatureErrorBoundary feature="hotcues">

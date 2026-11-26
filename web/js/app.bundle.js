@@ -30706,7 +30706,7 @@ ${res.path}`);
         setAuditTracks,
         setSelectedTrack
       }
-    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "audit", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "audit", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "audit" }, /* @__PURE__ */ React.createElement(
       AuditWorkspace,
       {
         tracks: auditTracks,
@@ -30739,7 +30739,7 @@ ${res.path}`);
         onClearCrateFilter: () => setActiveCrateFilter(null),
         onOpenBeatgridStudio: handleOpenBeatgridStudio
       }
-    )), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "hotcues", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "hotcues" }, /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement(WorkspaceSlot, { isActive: activeTab === "hotcues", className: "w-full h-full" }, /* @__PURE__ */ React.createElement(FeatureErrorBoundary, { feature: "hotcues" }, /* @__PURE__ */ React.createElement(
       HotCuesWorkspace,
       {
         tracks: auditTracks,
