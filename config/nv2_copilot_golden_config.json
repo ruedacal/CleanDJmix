@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0.0",
+  "saved_at": "2026-11-26T20:10:00+01:00",
+  "project": "BEATWAVE PRO (DJ_MetaTagger)",
+  "hardware": {
+    "controller": "Numark NV II",
+    "midi_port_name": "NV mkII Control"
+  },
+  "decks_midi": {
+    "channel_to_deck": {
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 4
+    },
+    "transport_notes": {
+      "play": 33,
+      "cue": 32,
+      "shift": 13
+    },
+    "jog_cc": {
+      "lsb": 0,
+      "msb": 32
+    }
+  },
+  "mixer_14bit_midi": {
+    "channel": 0,
+    "lsb_offset": 32,
+    "msb_map": {
+      "deck_1": {
+        "gain": 12,
+        "low_bass": 9,
+        "mid": 10,
+        "high_treb": 11,
+        "filter": 91,
+        "volume": 8
+      },
+      "deck_2": {
+        "gain": 17,
+        "low_bass": 14,
+        "mid": 15,
+        "high_treb": 16,
+        "filter": 92,
+        "volume": 13
+      },
+      "master": {
+        "crossfader": 7
+      }
+    },
+    "touch_notes_ch0": {
+      "69": "deck_1.high",
+      "70": "deck_1.mid",
+      "95": "deck_1.filter",
+      "96": "deck_2.filter"
+    },
+    "state_cache_file": "~/.beatwave_cache/nv2_mixer_state.json"
+  },
+  "backend_api": {
+    "server": "server_api.py (FastAPI)",
+    "endpoints": [
+      "GET /api/copilot/status",
+      "GET /api/copilot/waveform/{deck_id}"
+    ],
+    "mixer_module": "services/copilot/mixer_audit.py",
+    "engine_module": "services/copilot/engine.py"
+  },
+  "frontend_ui": {
+    "center_mixer_component": "web/js/workspaces/CopilotCenterMixer.jsx",
+    "mixer_data_source": "state.mixer.deck_1 / state.mixer.deck_2 (keys: gain, high, mid, low, filter, volume, crossfader)",
+    "knob_zero_guard": "Number.isFinite(parsedVal) ? clamp(0..1) : 0.5",
+    "eq_row_order": ["GAIN", "TREB", "MID", "BASS", "FLTR"],
+    "hot_cues": {
+      "components": [
+        "web/js/workspaces/CopilotWorkspace.jsx",
+        "web/js/copilot.jsx"
+      ],
+      "css_marker": "/* COMPACT-HOTCUES-SINGLE-ROW */ in web/css/beatwave.css",
+      "time_format": "MM:SS (00:00)",
+      "layout": "single-row compact"
+    }
+  }
+}
