@@ -36,7 +36,7 @@ CAMELOT_PALETTE = {
 }
 
 # Mapa verificado por captura CoreMIDI real sobre Numark NV II (NV mkII Control)
-NV2_CHANNEL_TO_DECK: Dict[int, int] = {0: 1, 1: 2, 2: 3, 3: 4}
+NV2_CHANNEL_TO_DECK: Dict[int, int] = {1: 1, 2: 2, 3: 3, 4: 4}
 NV2_NOTE_CUE: int = 32           # 0x20
 NV2_NOTE_PLAY: int = 33          # 0x21
 NV2_HOT_CUE_BASE_NOTE: int = 71  # 0x47 (Pads 1..8 -> notas 71..78)
