@@ -381,6 +381,57 @@ def get_cover(request: Request, path: str = Query(...)):
     return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
+
+def _get_browser_safe_audio_path(path: str) -> str:
+    """Devuelve una copia cacheada MP3 CBR 320k para formatos que rompen el FFmpegDemuxer de Chromium (FLAC/AIFF)."""
+    import hashlib
+    import shutil
+    import subprocess
+    import tempfile
+
+    ext = os.path.splitext(path)[1].lower()
+    if ext not in (".flac", ".aif", ".aiff"):
+        return path
+    ffmpeg_bin = shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        return path
+
+    st = os.stat(path)
+    key = hashlib.sha1(f"{path}|{st.st_size}|{st.st_mtime_ns}".encode("utf-8")).hexdigest()
+    cache_dir = os.path.join(tempfile.gettempdir(), "beatwave_stream_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    cached_mp3 = os.path.join(cache_dir, f"{key}.mp3")
+
+    if os.path.exists(cached_mp3) and os.path.getsize(cached_mp3) > 1024:
+        return cached_mp3
+
+    tmp_mp3 = f"{cached_mp3}.{os.getpid()}.tmp.mp3"
+    try:
+        subprocess.run(
+            [
+                ffmpeg_bin, "-y", "-v", "error",
+                "-i", path,
+                "-vn", "-map_metadata", "-1",
+                "-c:a", "libmp3lame", "-b:a", "320k",
+                tmp_mp3,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            timeout=45,
+        )
+        os.replace(tmp_mp3, cached_mp3)
+        return cached_mp3
+    except Exception as e:
+        try:
+            if os.path.exists(tmp_mp3):
+                os.remove(tmp_mp3)
+        except Exception:
+            pass
+        print(f"[stream_audio] Fallback a archivo original ({e})")
+        return path
+
+
 @app.get("/stream_audio")
 @app.get("/api/stream_audio")
 async def stream_audio(request: Request, path: str = Query(...)):
@@ -388,6 +439,7 @@ async def stream_audio(request: Request, path: str = Query(...)):
     if not os.path.exists(path) or not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Pista no encontrada en disco local")
 
+    path = _get_browser_safe_audio_path(path)
     file_size = os.path.getsize(path)
     range_header = request.headers.get("range")
 
