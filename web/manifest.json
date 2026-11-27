@@ -9,13 +9,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "assets/favicon.png",
+      "src": "assets/favicon.png?v=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/beatwave_wave_icon.png",
+      "src": "assets/beatwave_wave_icon.png?v=3",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
