@@ -20,7 +20,7 @@ export const HotCuesWorkspace = ({
     nowPlayingTrack,
     isPlaying,
     onTogglePlay,
-    playProgress = 0,
+    playProgress: playProgressProp = 0,
     onNavigateTab,
     onRemoveTrack,
     onRemoveMultipleTracks,
@@ -74,7 +74,38 @@ export const HotCuesWorkspace = ({
         ? (tracks.find(t => String(t.id) === String(selectedTrack)) || tracks[0])
         : null;
 
-    const audioDurMs = (audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
+    const isSameTrackLoaded = Boolean(
+        currentTrack && nowPlayingTrack && (
+            String(nowPlayingTrack.id) === String(currentTrack.id) ||
+            (nowPlayingTrack.path && nowPlayingTrack.path === currentTrack.path) ||
+            (nowPlayingTrack.f && nowPlayingTrack.f === currentTrack.f)
+        )
+    );
+    const [playProgress, setLocalPlayProgress] = useState(playProgressProp || 0);
+
+    useEffect(() => {
+        const onProgress = (ev) => {
+            const detail = ev?.detail || {};
+            const p = typeof detail.pct === 'number' ? detail.pct : detail.progress;
+            if (typeof p !== 'number' || isNaN(p)) return;
+            if (detail.trackId != null && currentTrack?.id != null && String(detail.trackId) !== String(currentTrack.id)) {
+                return;
+            }
+            setLocalPlayProgress(p);
+        };
+        window.addEventListener('bw:progress', onProgress);
+        return () => window.removeEventListener('bw:progress', onProgress);
+    }, [currentTrack?.id]);
+
+    useEffect(() => {
+        if (!currentTrack) return;
+        if (!isSameTrackLoaded) {
+            setLocalPlayProgress(0);
+            window.dispatchEvent(new CustomEvent('bw:progress', { detail: { pct: 0, progress: 0, trackId: currentTrack.id } }));
+        }
+    }, [currentTrack?.id]);
+
+    const audioDurMs = (isSameTrackLoaded && audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5)
         ? Math.round(audioRef.current.duration * 1000)
         : null;
     const durMs = audioDurMs || parseDurationMs(currentTrack?.duration || "05:00");
@@ -430,13 +461,10 @@ export const HotCuesWorkspace = ({
 
     const handleDeckCue = () => {
         if (!currentTrack) return;
-        const targetCue = currentCue && currentCue.pos_ms !== undefined ? currentCue : (activeCues[0] || {});
-        const cueMs = targetCue.pos_ms !== undefined ? targetCue.pos_ms : (downbeatMs || 0);
-        const cuePct = durMs > 0
-            ? Math.max(0, Math.min(0.99, cueMs / durMs))
-            : (targetCue.pct !== undefined ? targetCue.pct : 0);
+        setLocalPlayProgress(0);
+        window.dispatchEvent(new CustomEvent('bw:progress', { detail: { pct: 0, progress: 0, trackId: currentTrack.id } }));
         if (onPlayTrack) {
-            onPlayTrack(currentTrack, cuePct, true, cueMs / 1000.0);
+            onPlayTrack(currentTrack, 0, false, 0);
         }
     };
 

@@ -15820,7 +15820,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     nowPlayingTrack,
     isPlaying,
     onTogglePlay,
-    playProgress = 0,
+    playProgress: playProgressProp = 0,
     onNavigateTab,
     onRemoveTrack,
     onRemoveMultipleTracks,
@@ -15869,7 +15869,31 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
       }
     }, [customLibraries, activeCustomLibId, tracks]);
     const currentTrack = tracks && tracks.length > 0 ? tracks.find((t2) => String(t2.id) === String(selectedTrack)) || tracks[0] : null;
-    const audioDurMs = audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
+    const isSameTrackLoaded = Boolean(
+      currentTrack && nowPlayingTrack && (String(nowPlayingTrack.id) === String(currentTrack.id) || nowPlayingTrack.path && nowPlayingTrack.path === currentTrack.path || nowPlayingTrack.f && nowPlayingTrack.f === currentTrack.f)
+    );
+    const [playProgress, setLocalPlayProgress] = useState20(playProgressProp || 0);
+    useEffect20(() => {
+      const onProgress = (ev) => {
+        const detail = (ev == null ? void 0 : ev.detail) || {};
+        const p = typeof detail.pct === "number" ? detail.pct : detail.progress;
+        if (typeof p !== "number" || isNaN(p)) return;
+        if (detail.trackId != null && (currentTrack == null ? void 0 : currentTrack.id) != null && String(detail.trackId) !== String(currentTrack.id)) {
+          return;
+        }
+        setLocalPlayProgress(p);
+      };
+      window.addEventListener("bw:progress", onProgress);
+      return () => window.removeEventListener("bw:progress", onProgress);
+    }, [currentTrack == null ? void 0 : currentTrack.id]);
+    useEffect20(() => {
+      if (!currentTrack) return;
+      if (!isSameTrackLoaded) {
+        setLocalPlayProgress(0);
+        window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: 0, progress: 0, trackId: currentTrack.id } }));
+      }
+    }, [currentTrack == null ? void 0 : currentTrack.id]);
+    const audioDurMs = isSameTrackLoaded && audioRef && audioRef.current && audioRef.current.duration && !isNaN(audioRef.current.duration) && audioRef.current.duration > 0.5 ? Math.round(audioRef.current.duration * 1e3) : null;
     const durMs = audioDurMs || parseDurationMs((currentTrack == null ? void 0 : currentTrack.duration) || "05:00");
     const bpm = currentTrack && (currentTrack.bpm || currentTrack.b) ? Math.max(30, parseFloat(currentTrack.bpm || currentTrack.b) || 128) : 128;
     const beatMs = 6e4 / bpm;
@@ -16176,11 +16200,10 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
     };
     const handleDeckCue = () => {
       if (!currentTrack) return;
-      const targetCue = currentCue && currentCue.pos_ms !== void 0 ? currentCue : activeCues[0] || {};
-      const cueMs = targetCue.pos_ms !== void 0 ? targetCue.pos_ms : downbeatMs || 0;
-      const cuePct = durMs > 0 ? Math.max(0, Math.min(0.99, cueMs / durMs)) : targetCue.pct !== void 0 ? targetCue.pct : 0;
+      setLocalPlayProgress(0);
+      window.dispatchEvent(new CustomEvent("bw:progress", { detail: { pct: 0, progress: 0, trackId: currentTrack.id } }));
       if (onPlayTrack) {
-        onPlayTrack(currentTrack, cuePct, true, cueMs / 1e3);
+        onPlayTrack(currentTrack, 0, false, 0);
       }
     };
     const CLUB_CUE_RATIOS = [5e-3, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 0.94];
