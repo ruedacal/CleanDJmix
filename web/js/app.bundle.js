@@ -5119,7 +5119,7 @@
       ctx.fillStyle = "#050507";
       ctx.fillRect(0, 0, w, h);
       const midY = h / 2;
-      const playheadX = w / 2;
+      const playheadX = w * 0.25;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.10)";
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -5154,10 +5154,11 @@
         return;
       }
       const windowSec = 64 / zoom;
-      const halfWindowSec = windowSec / 2;
+      const leftWindowSec = windowSec * 0.25;
+      const rightWindowSec = windowSec * 0.75;
       const currentSec = progress * durSec;
-      const startSec = currentSec - halfWindowSec;
-      const endSec = currentSec + halfWindowSec;
+      const startSec = currentSec - leftWindowSec;
+      const endSec = currentSec + rightWindowSec;
       if (showTacticalAids) {
         phases.forEach((ph) => {
           const phStartSec = ph.start_pct * durSec;

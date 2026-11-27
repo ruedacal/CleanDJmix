@@ -326,7 +326,7 @@ export const CopilotSeratoWaveform = ({
         ctx.fillRect(0, 0, w, h);
 
         const midY = h / 2;
-        const playheadX = w / 2;
+        const playheadX = w * 0.25;
 
         // Línea horizontal central sutil
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
@@ -366,10 +366,11 @@ export const CopilotSeratoWaveform = ({
 
         // Ventana calibrada a escala Rekordbox CDJ-3000: 2x=32s, 4x=16s, 8x=8s, 16x=4s
         const windowSec = 64.0 / zoom;
-        const halfWindowSec = windowSec / 2;
+        const leftWindowSec = windowSec * 0.25;
+        const rightWindowSec = windowSec * 0.75;
         const currentSec = progress * durSec;
-        const startSec = currentSec - halfWindowSec;
-        const endSec = currentSec + halfWindowSec;
+        const startSec = currentSec - leftWindowSec;
+        const endSec = currentSec + rightWindowSec;
 
         // 1. Zonas de fases tácticas (tintado discreto superior cuando Ayudas DJ está activo)
         if (showTacticalAids) {
