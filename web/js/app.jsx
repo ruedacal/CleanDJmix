@@ -953,9 +953,10 @@ const App = () => {
                             });
                         }
                     } else {
-                        audio.pause();
+                        if (!audio.paused) audio.pause();
                         audio.preload = "auto";
                         audio.src = targetSrc;
+                        audio.load();
                         const onReady = () => {
                             applyPosition();
                             audio.removeEventListener('canplay', onReady);
