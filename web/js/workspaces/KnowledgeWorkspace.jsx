@@ -201,7 +201,7 @@ export const KnowledgeWorkspace = ({ lang = "es" }) => {
                                         className="bg-[#0e0e16] border border-djzinc-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between"
                                     >
                                         <div className="h-40 relative bg-djzinc-900">
-                                            <img
+                                            <img loading="lazy" decoding="async"
                                                 src={course.image_url}
                                                 alt={course.title}
                                                 className="w-full h-full object-cover"
@@ -279,7 +279,7 @@ export const KnowledgeWorkspace = ({ lang = "es" }) => {
                                 className="bg-[#0e0e16] border border-djzinc-800 hover:border-djcyan-500/50 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group"
                             >
                                 <div className="h-36 relative bg-djzinc-900 overflow-hidden">
-                                    <img
+                                    <img loading="lazy" decoding="async"
                                         src={vid.thumbnail}
                                         alt={vid.title}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -1495,7 +1495,7 @@ const CopilotDeckCard = ({ deck, side, isMaster, antiMuddy = null, partnerDeck =
                         className="relative rounded-xl overflow-hidden shrink-0 border border-zinc-700/70 shadow-md bg-black group flex-none"
                         style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
                     >
-                        <img 
+                        <img loading="lazy" decoding="async" 
                             src={getValidCover(deck.cover)} 
                             alt="Carátula" 
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 

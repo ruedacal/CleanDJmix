@@ -1868,7 +1868,7 @@ const App = () => {
                     </div>
                 ) : (
                     <div className="flex items-center gap-3 min-w-0 flex-1 md:w-72 md:flex-initial">
-                        <img
+                        <img loading="lazy" decoding="async"
                             src={getValidCover(nowPlayingTrack.cover || (nowPlayingTrack.path ? `/cover?path=${encodeURIComponent(nowPlayingTrack.path)}` : (nowPlayingTrack.f ? `/cover?path=${encodeURIComponent(nowPlayingTrack.f)}` : null)))}
                             alt=""
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}

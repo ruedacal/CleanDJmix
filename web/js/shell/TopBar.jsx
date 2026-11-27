@@ -180,7 +180,7 @@ export const TopBar = ({
                 <button type="button" onClick={onOpenUser} className="bw-user-chip shrink-0" title="Centro de control DJ: perfil, sesiones y preferencias">
                     <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/15">
                         {userProfile && userProfile.avatarUrl ? (
-                            <img src={userProfile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                            <img loading="lazy" decoding="async" src={userProfile.avatarUrl} alt="" className="h-full w-full object-cover" />
                         ) : (
                             <ShellIcons.User size={14} className="text-zinc-300" />
                         )}

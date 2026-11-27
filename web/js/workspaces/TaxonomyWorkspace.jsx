@@ -1483,7 +1483,7 @@ export const TaxonomyWorkspace = ({
                                                     </td>
                                                     <td className="py-2 px-3">
                                                         <div className="flex items-center gap-3">
-                                                            <img src={getValidCover(trk.displayCover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
+                                                            <img loading="lazy" decoding="async" src={getValidCover(trk.displayCover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
                                                             <div className="flex flex-col min-w-0">
                                                                 <span className="font-semibold text-djcyan-400 text-xs truncate max-w-sm" title={trk.displayTitle}>{trk.displayTitle}</span>
                                                                 <span className="text-[10px] text-gray-500 font-mono truncate max-w-sm" title={trk.displayAlbum}>{trk.displayAlbum || '--'}</span>
@@ -1700,7 +1700,7 @@ export const TaxonomyWorkspace = ({
                                             {/* CABECERA DE LA PISTA */}
                                             <div className="flex items-start gap-3 min-w-0">
                                                 <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-djzinc-800 shadow">
-                                                    <img
+                                                    <img loading="lazy" decoding="async"
                                                         src={getValidCover(trk.displayCover)}
                                                         alt="Cover"
                                                         onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
@@ -1943,7 +1943,7 @@ export const TaxonomyWorkspace = ({
                                     }`}
                                     title="Exporta archivos .crate oficiales a ~/Music/_Serato_/Subcrates para importación instantánea en Serato DJ Pro"
                                 >
-                                    <img src="/assets/logos/serato.png" alt="Serato" className="h-3.5 w-auto object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    <img loading="lazy" decoding="async" src="/assets/logos/serato.png" alt="Serato" className="h-3.5 w-auto object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
                                     <span>Exportar Serato (.crate)</span>
                                 </button>
 
@@ -1958,7 +1958,7 @@ export const TaxonomyWorkspace = ({
                                     }`}
                                     title="Genera archivo rekordbox.xml estándar Pioneer DJ con Hot Cues y playlists"
                                 >
-                                    <img src="/assets/logos/rekordbox.png" alt="Rekordbox" className="h-3.5 w-auto object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
+                                    <img loading="lazy" decoding="async" src="/assets/logos/rekordbox.png" alt="Rekordbox" className="h-3.5 w-auto object-contain shrink-0" onError={(e) => { e.target.style.display = 'none'; }} />
                                     <span>Exportar Rekordbox XML</span>
                                 </button>
 

@@ -69,7 +69,7 @@ export function MetaInspector({ track, candidates, selectedId, onSelectCandidate
                                 active ? "border-cyan-400/60 bg-cyan-400/5" : "border-zinc-900 bg-zinc-950 hover:border-zinc-700"
                             )}
                         >
-                            <img src={c.cover} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" crossOrigin="anonymous" />
+                            <img loading="lazy" decoding="async" src={c.cover} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" crossOrigin="anonymous" />
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate text-sm font-medium text-zinc-100">{c.title}</span>
                                 <span className="block truncate text-xs text-zinc-500">

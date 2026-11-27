@@ -1298,7 +1298,7 @@ export const ShazamWorkspace = ({
                     <div className="flex flex-col md:flex-row items-center gap-6">
                         {/* Artwork con Reproductor DJ Integrado */}
                         <div className="relative group shrink-0">
-                            <img
+                            <img loading="lazy" decoding="async"
                                 src={getValidCover(identifiedTrack.cover)}
                                 alt="Track Artwork"
                                 className="w-40 h-40 rounded-xl object-cover border border-[var(--bw-line-strong)] shadow-xl"
@@ -1566,7 +1566,7 @@ export const ShazamWorkspace = ({
                                             </td>
                                             <td className="py-2 px-3">
                                                 <div className="flex items-center gap-2.5">
-                                                    <img
+                                                    <img loading="lazy" decoding="async"
                                                         src={getValidCover(row.cover)}
                                                         alt=""
                                                         onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
@@ -1657,7 +1657,7 @@ export const ShazamWorkspace = ({
                                 key={hIdx}
                                 className="ws-card p-3 flex items-center gap-3"
                             >
-                                <img
+                                <img loading="lazy" decoding="async"
                                     src={getValidCover(trk.cover)}
                                     alt=""
                                     className="w-12 h-12 rounded-lg object-cover border border-[var(--bw-line-strong)] shrink-0"

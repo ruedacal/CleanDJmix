@@ -425,7 +425,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                                     })}
                                 >
                                     <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                        <img 
+                                        <img loading="lazy" decoding="async" 
                                             src={fest.image_url} 
                                             alt={fest.name} 
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
@@ -535,7 +535,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                         {controllers.map(item => (
                             <div key={item.id} className="bg-[#0e0f1c] border border-djzinc-800 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
                                 <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img loading="lazy" decoding="async" src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent"></div>
                                     <div className="absolute top-3 left-3">
                                         <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-cyan-300 border border-cyan-500/50">
@@ -619,7 +619,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                         {gadgets.map(item => (
                             <div key={item.id} className="bg-[#0e0f1c] border border-djzinc-800 hover:border-emerald-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
                                 <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img loading="lazy" decoding="async" src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent"></div>
                                     <div className="absolute top-3 left-3">
                                         <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-emerald-300 border border-emerald-500/50">
@@ -689,7 +689,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                         {djGear.map(item => (
                             <div key={item.id} className="bg-[#0e0f1c] border border-djzinc-800 hover:border-purple-500/60 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
                                 <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img loading="lazy" decoding="async" src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0e0f1c] via-black/30 to-transparent"></div>
                                     <div className="absolute top-3 left-3">
                                         <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-black uppercase bg-black/85 text-purple-300 border border-purple-500/50">
@@ -785,7 +785,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 border border-djzinc-700 bg-djzinc-900">
-                                        <img src={sb.image_url} alt={sb.artist} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                        <img loading="lazy" decoding="async" src={sb.image_url} alt={sb.artist} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 text-[10px] font-mono text-purple-400 font-bold mb-1">
@@ -879,7 +879,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                                 })}
                             >
                                 <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                    <img src={it.image_url} alt={it.artist} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img loading="lazy" decoding="async" src={it.image_url} alt={it.artist} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e16] via-transparent to-black/30"></div>
                                     <div className="absolute top-3 left-3">
                                         <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-black uppercase bg-black/80 text-rose-300 border border-rose-500/50">
@@ -982,7 +982,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                                 >
                                     {/* Imagen de Cabecera con Badge de Categoría */}
                                     <div className="h-44 w-full relative overflow-hidden bg-djzinc-900">
-                                        <img
+                                        <img loading="lazy" decoding="async"
                                             src={item.image_url}
                                             alt={item.title}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -1057,7 +1057,7 @@ export const TrendsWorkspace = ({ lang = "es" }) => {
                         </button>
 
                         <div className="h-56 w-full rounded-xl overflow-hidden relative">
-                            <img
+                            <img loading="lazy" decoding="async"
                                 src={readingArticle.image_url}
                                 alt={readingArticle.title}
                                 className="w-full h-full object-cover"

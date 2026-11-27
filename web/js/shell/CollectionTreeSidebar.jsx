@@ -240,7 +240,7 @@ export const CollectionTreeSidebar = ({
                                             }`}
                                             title={isLibraryBacked ? "Clic para cargar · Arrastra a otra carpeta para mover" : "Clic para cargar pista"}
                                         >
-                                            <img
+                                            <img loading="lazy" decoding="async"
                                                 src={coverUrl}
                                                 alt="Cover"
                                                 onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}

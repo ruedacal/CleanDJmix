@@ -10,7 +10,7 @@ export function InspectorHeader({ track, match, isMaster }) {
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
-                <img src={track.cover} alt={`Carátula de ${track.title}`} className="h-16 w-16 shrink-0 rounded-lg object-cover ring-1 ring-zinc-800" crossOrigin="anonymous" />
+                <img loading="lazy" decoding="async" src={track.cover} alt={`Carátula de ${track.title}`} className="h-16 w-16 shrink-0 rounded-lg object-cover ring-1 ring-zinc-800" crossOrigin="anonymous" />
                 <div className="min-w-0 flex-1">
                     <h2 className="truncate text-base font-semibold text-white">{track.title}</h2>
                     <p className="truncate text-sm text-cyan-300">{track.artist}</p>

@@ -2307,7 +2307,7 @@ export const SpotifyWorkspace = ({
                                         {poolVisibleColumns.title !== false && (
                                             <td className="py-2 px-3">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={getValidCover(row.cover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
+                                                    <img loading="lazy" decoding="async" src={getValidCover(row.cover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-9 h-9 rounded object-cover border border-djzinc-700 shrink-0 shadow-sm" />
                                                     <div className="flex flex-col min-w-0">
                                                         <div className="flex items-center gap-1.5 min-w-0">
                                                             {isAuditUpgrade && (
@@ -2770,7 +2770,7 @@ export const SpotifyWorkspace = ({
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         <div className="w-full aspect-video bg-[#050508] rounded-lg border border-djzinc-800 overflow-hidden relative shadow-inner flex items-center justify-center">
-                            <img src={getValidCover(currentTrack.cover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-full h-full object-cover" />
+                            <img loading="lazy" decoding="async" src={getValidCover(currentTrack.cover)} alt="Cover" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} className="w-full h-full object-cover" />
                             <span className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] text-gray-300 font-mono border border-djzinc-700">HD Cover 640px</span>
                         </div>
 
@@ -3058,7 +3058,7 @@ export const SpotifyWorkspace = ({
                                                 {/* Cover */}
                                                 <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/50 shadow">
                                                     {cand.cover ? (
-                                                        <img src={cand.cover} alt="Cover" className="w-full h-full object-cover" />
+                                                        <img loading="lazy" decoding="async" src={cand.cover} alt="Cover" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-lg text-gray-500"><Icons.Music size={14} className="inline-block align-[-2px]" /></div>
                                                     )}

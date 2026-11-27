@@ -270,7 +270,7 @@ export function StudioApp() {
 
                 {master && (
                     <div className="ml-2 hidden min-w-0 items-center gap-2.5 rounded-lg border border-zinc-900 bg-zinc-950 py-1 pl-1 pr-3 md:flex">
-                        <img src={master.cover} alt="" className="h-8 w-8 rounded-md object-cover" crossOrigin="anonymous" />
+                        <img loading="lazy" decoding="async" src={master.cover} alt="" className="h-8 w-8 rounded-md object-cover" crossOrigin="anonymous" />
                         <div className="min-w-0 leading-tight">
                             <p className="font-mono text-[9px] uppercase tracking-widest text-cyan-400">Deck Master</p>
                             <p className="max-w-[200px] truncate text-xs text-zinc-200">{master.title}</p>
@@ -333,7 +333,7 @@ export function StudioApp() {
                         onClick={() => setMobileTab("cues")}
                         className="flex items-center gap-3 border-t border-zinc-900 bg-zinc-950 px-3 py-2 text-left"
                     >
-                        <img src={selected.cover} alt="" className="h-9 w-9 rounded-md object-cover" crossOrigin="anonymous" />
+                        <img loading="lazy" decoding="async" src={selected.cover} alt="" className="h-9 w-9 rounded-md object-cover" crossOrigin="anonymous" />
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm text-white">{selected.title}</span>
                             <span className="block truncate text-xs text-zinc-500">{selected.artist}</span>

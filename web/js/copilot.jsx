@@ -2005,7 +2005,7 @@ function LiveCopilotApp() {
                             <div key={slot} className="p-3 rounded-2xl bg-[#080811] border border-zinc-800/80 flex flex-col justify-between opacity-50">
                                 <div className="flex items-start gap-2.5 mb-2">
                                     <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-800 bg-black flex items-center justify-center">
-                                        <img src={DEFAULT_VINYL_SVG} alt="Standby" className="w-6 h-6 opacity-25" />
+                                        <img loading="lazy" decoding="async" src={DEFAULT_VINYL_SVG} alt="Standby" className="w-6 h-6 opacity-25" />
                                         <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded bg-black/80 text-[8px] font-mono font-bold text-zinc-600 flex items-center justify-center">
                                             #{slot}
                                         </span>
@@ -2067,7 +2067,7 @@ function LiveCopilotApp() {
                                     >
                                         <div className="flex items-start gap-2.5 mb-1.5">
                                             <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-zinc-700/60 bg-black">
-                                                <img 
+                                                <img loading="lazy" decoding="async" 
                                                     src={getValidCover(rec.cover)} 
                                                     alt="Cover" 
                                                     onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 
@@ -2130,7 +2130,7 @@ function LiveCopilotApp() {
                             Escanea con la cámara de tu tablet o móvil estando conectado al mismo Wi-Fi:
                         </p>
                         <div className="p-3 bg-white rounded-2xl shadow-lg mb-4">
-                            <img 
+                            <img loading="lazy" decoding="async" 
                                 src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(companionUrl)}`} 
                                 alt="Código QR iPad"
                                 className="w-44 h-44 object-contain"
@@ -2204,7 +2204,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                             className="relative rounded-xl overflow-hidden shrink-0 border border-zinc-800 bg-zinc-950 flex items-center justify-center"
                             style={{ width: '68px', height: '68px', minWidth: '68px', minHeight: '68px', aspectRatio: '1 / 1' }}
                         >
-                            <img src={DEFAULT_VINYL_SVG} alt="Sin pista" className="w-10 h-10 opacity-30" />
+                            <img loading="lazy" decoding="async" src={DEFAULT_VINYL_SVG} alt="Sin pista" className="w-10 h-10 opacity-30" />
                             <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/85 text-[8px] font-mono text-zinc-500">--:--</span>
                         </div>
                         <div className="min-w-0 flex-1 flex flex-col justify-center">
@@ -2304,7 +2304,7 @@ function DeckCard({ deck, side, isMaster, antiMuddy = null, partnerDeck = null, 
                         title={!isEmptyDeck ? `Reproducir / Pausar DECK ${side}` : ''}
                     >
                         {deck.cover && !isEmptyDeck ? (
-                            <img 
+                            <img loading="lazy" decoding="async" 
                                 src={getValidCover(deck.cover)} 
                                 alt="Cover" 
                                 onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }} 

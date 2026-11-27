@@ -4642,7 +4642,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                         {visibleColumns.title && (
                                             <td className="py-2 px-3">
                                                 <div className="flex items-center gap-3">
-                                                    <img 
+                                                    <img loading="lazy" decoding="async" 
                                                         src={coverUrl} 
                                                         className="w-9 h-9 rounded bg-djzinc-800 object-cover shrink-0 border border-djzinc-700 shadow-sm" 
                                                         alt="cover" 
@@ -5125,7 +5125,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
                                     <div className="flex items-center gap-3">
                                         {/* Mini Cover con Play Button Táctil */}
                                         <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-                                            <img 
+                                            <img loading="lazy" decoding="async" 
                                                 src={coverUrl} 
                                                 className="w-12 h-12 rounded-lg bg-djzinc-800 object-cover border border-djzinc-700 shadow-md" 
                                                 alt="cover" 
@@ -5351,7 +5351,7 @@ Tus archivos originales de respaldo permanecen 100% intactos.`);
 
                         {/* Carátula Replicada en el Inspector */}
                     <div className="w-full aspect-video bg-djzinc-950 rounded-lg border border-djzinc-800 relative group overflow-hidden flex items-center justify-center shadow-inner">
-                        <img 
+                        <img loading="lazy" decoding="async" 
                             src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : (currentTrack.f ? `/cover?path=${encodeURIComponent(currentTrack.f)}` : null)))} 
                             alt="Cover Art" 
                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}

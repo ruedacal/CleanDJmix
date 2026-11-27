@@ -171,7 +171,7 @@ export const HotCueStudioModal = ({
                 {/* Cabecera del Estudio */}
                 <div className="px-5 py-3.5 bg-djzinc-950 border-b border-djzinc-800 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-3 min-w-0">
-                        <img 
+                        <img loading="lazy" decoding="async" 
                             src={getValidCover(track.cover || (track.path ? `/cover?path=${encodeURIComponent(track.path)}` : null))} 
                             alt="Cover" 
                             className="w-12 h-12 rounded border border-djzinc-700 object-cover shrink-0 shadow"

@@ -1242,7 +1242,7 @@ export const HotCuesWorkspace = ({
                                 {/* CARÁTULA CUADRADA ESTÁNDAR DE LA APLICACIÓN (165x165px) */}
                                 <div className="relative group shrink-0">
                                     <div className={`w-[165px] h-[165px] rounded-xl overflow-hidden relative bg-[#0a0a0f] border shadow-xl select-none transition-all ${isCurrentPlayingThis ? 'border-djcyan-500/70 shadow-[0_0_16px_rgba(6,182,212,0.2)]' : 'border-djzinc-750'}`}>
-                                        <img
+                                        <img loading="lazy" decoding="async"
                                             src={getValidCover(currentTrack.cover || (currentTrack.path ? `/cover?path=${encodeURIComponent(currentTrack.path)}` : null))}
                                             alt={currentTrack.title || currentTrack.t || "Track Cover"}
                                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
@@ -2163,7 +2163,7 @@ export const HotCuesWorkspace = ({
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <span className="text-gray-500 w-6">{idx + 1}</span>
-                                                <img
+                                                <img loading="lazy" decoding="async"
                                                     src={getValidCover(trk.cover || (trk.path ? `/cover?path=${encodeURIComponent(trk.path)}` : null))}
                                                     alt="Cover"
                                                     onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}

@@ -1719,7 +1719,7 @@ export const MapWorkspace = ({
                         <div className="flex items-center gap-2.5 mb-2">
                             <div className="w-10 h-10 rounded-lg overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700/60 shadow">
                                 {hoveredTrack.cover ? (
-                                    <img src={hoveredTrack.cover} alt="Cover" className="w-full h-full object-cover" />
+                                    <img loading="lazy" decoding="async" src={hoveredTrack.cover} alt="Cover" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs"><Icons.Music size={14} className="inline-block align-[-2px]" /></div>
                                 )}
@@ -1783,7 +1783,7 @@ export const MapWorkspace = ({
                         <div className="flex items-center gap-3 mb-3">
                             <div className="w-12 h-12 rounded-xl overflow-hidden bg-djzinc-800 shrink-0 border border-djzinc-700 shadow-md">
                                 {(selectedTrack.cover || selectedTrack.cover_url || selectedTrack.path) ? (
-                                    <img 
+                                    <img loading="lazy" decoding="async" 
                                         src={selectedTrack.cover || selectedTrack.cover_url || `/cover?path=${encodeURIComponent(selectedTrack.path)}`} 
                                         alt="Cover" 
                                         className="w-full h-full object-cover" 

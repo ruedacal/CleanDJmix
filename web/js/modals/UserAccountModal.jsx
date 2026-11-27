@@ -235,7 +235,7 @@ export const UserAccountModal = ({
                         <div className="relative group shrink-0">
                             <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-cyan-400 bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-xl shadow-[0_0_20px_rgba(6,182,212,0.5)]">
                                 {avatarUrl ? (
-                                    <img src={avatarUrl} alt="Avatar DJ" className="w-full h-full object-cover" />
+                                    <img loading="lazy" decoding="async" src={avatarUrl} alt="Avatar DJ" className="w-full h-full object-cover" />
                                 ) : (
                                     <Icons.Headphones size={14} className="inline-block align-[-2px]" />
                                 )}

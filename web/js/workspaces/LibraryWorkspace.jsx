@@ -1865,7 +1865,7 @@ export const LibraryWorkspace = ({
                                                                     className="px-2 py-1 rounded-lg bg-[#0d0d16] hover:bg-djcyan-950/40 border border-zinc-800/70 hover:border-cyan-500/50 flex items-center gap-2 cursor-grab active:cursor-grabbing transition-colors"
                                                                     title="Arrastra esta pista a otra carpeta o haz clic para seleccionarla"
                                                                 >
-                                                                    <img
+                                                                    <img loading="lazy" decoding="async"
                                                                         src={coverUrl}
                                                                         alt="Cover"
                                                                         onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_VINYL_SVG; }}
@@ -2315,7 +2315,7 @@ export const LibraryWorkspace = ({
                                                 {/* 2. File / Título */}
                                                 <td className="py-2 px-3">
                                                     <div className="flex items-center gap-2.5">
-                                                        <img 
+                                                        <img loading="lazy" decoding="async" 
                                                             src={coverSrc} 
                                                             className="w-8 h-8 rounded bg-zinc-800 object-cover shrink-0 border border-zinc-700 shadow-sm" 
                                                             alt="cover" 

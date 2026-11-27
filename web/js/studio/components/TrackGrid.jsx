@@ -123,7 +123,7 @@ export function TrackGrid({ rows, masterId, selectedId, sort, onSort, onSelect, 
                                         }}
                                         className="flex w-full min-w-0 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
                                     >
-                                        <img src={track.cover} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" crossOrigin="anonymous" />
+                                        <img loading="lazy" decoding="async" src={track.cover} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" crossOrigin="anonymous" />
                                         <span className="min-w-0">
                                             <span className={cx("block truncate font-medium", selected ? "text-cyan-200" : "text-zinc-100")}>{track.title}</span>
                                             <span className="block truncate text-xs text-zinc-500">
@@ -166,7 +166,7 @@ export function TrackGrid({ rows, masterId, selectedId, sort, onSort, onSelect, 
                                 aria-current={selected ? "true" : undefined}
                                 className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 py-2 pl-3 pr-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-400"
                             >
-                                <img src={track.cover} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" crossOrigin="anonymous" />
+                                <img loading="lazy" decoding="async" src={track.cover} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" crossOrigin="anonymous" />
                                 <span className="min-w-0 flex-1">
                                     <span className="flex items-center gap-1.5">
                                         <span className={cx("truncate text-sm font-medium", selected ? "text-cyan-200" : "text-zinc-100")}>{track.title}</span>

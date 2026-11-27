@@ -683,7 +683,7 @@ export const MapAcousticConsole = ({
 
                             <div className="flex items-start gap-2.5">
                                 <div className="w-11 h-11 rounded-lg overflow-hidden bg-zinc-900 shrink-0 border border-zinc-700/60 shadow relative">
-                                    <img
+                                    <img loading="lazy" decoding="async"
                                         src={selectedTrack.cover || selectedTrack.cover_url || (selectedTrack.path ? `/cover?path=${encodeURIComponent(selectedTrack.path)}&thumb=96` : null)}
                                         alt="Cover"
                                         onError={(e) => { e.target.style.display = 'none'; }}
