@@ -1,0 +1,27 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bw-bg-grad" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#050508" />
+    </radialGradient>
+    <linearGradient id="bw-bar-cyan-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a5f3fc" />
+      <stop offset="25%" stop-color="#67e8f9" />
+      <stop offset="55%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#0891b2" />
+    </linearGradient>
+    <filter id="bw-bar-glow-fx" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2.5" flood-color="#06b6d4" flood-opacity="0.95" />
+    </filter>
+  </defs>
+
+  <circle cx="50" cy="50" r="47" fill="url(#bw-bg-grad)" stroke="#22d3ee" stroke-opacity="0.35" stroke-width="2.5" />
+
+  <g transform="translate(13, 13) scale(0.74)" filter="url(#bw-bar-glow-fx)">
+    <rect x="13.3" y="40.3" width="11.8" height="35.9" rx="5.9" ry="5.9" fill="url(#bw-bar-cyan-grad)" />
+    <rect x="28.7" y="27.1" width="11.8" height="53.8" rx="5.9" ry="5.9" fill="url(#bw-bar-cyan-grad)" />
+    <rect x="44.1" y="17.0" width="11.8" height="66.0" rx="5.9" ry="5.9" fill="url(#bw-bar-cyan-grad)" />
+    <rect x="59.5" y="30.0" width="11.8" height="50.1" rx="5.9" ry="5.9" fill="url(#bw-bar-cyan-grad)" />
+    <rect x="74.9" y="44.2" width="11.8" height="32.0" rx="5.9" ry="5.9" fill="url(#bw-bar-cyan-grad)" />
+  </g>
+</svg>
