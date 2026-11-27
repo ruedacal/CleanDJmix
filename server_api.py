@@ -382,12 +382,20 @@ def get_cover(request: Request, path: str = Query(...)):
 
 
 
+_STREAM_CACHE_LOCKS = {}
+_STREAM_CACHE_LOCKS_GUARD = None
+
 def _get_browser_safe_audio_path(path: str) -> str:
-    """Devuelve una copia cacheada MP3 CBR 320k para formatos que rompen el FFmpegDemuxer de Chromium (FLAC/AIFF)."""
+    """Decodifica FLAC/AIFF a WAV (pcm_s16le) en caché temporal con lock por archivo (~150ms, lossless, Range 206 seguro)."""
     import hashlib
     import shutil
     import subprocess
     import tempfile
+    import threading
+
+    global _STREAM_CACHE_LOCKS_GUARD
+    if _STREAM_CACHE_LOCKS_GUARD is None:
+        _STREAM_CACHE_LOCKS_GUARD = threading.Lock()
 
     ext = os.path.splitext(path)[1].lower()
     if ext not in (".flac", ".aif", ".aiff"):
@@ -400,37 +408,43 @@ def _get_browser_safe_audio_path(path: str) -> str:
     key = hashlib.sha1(f"{path}|{st.st_size}|{st.st_mtime_ns}".encode("utf-8")).hexdigest()
     cache_dir = os.path.join(tempfile.gettempdir(), "beatwave_stream_cache")
     os.makedirs(cache_dir, exist_ok=True)
-    cached_mp3 = os.path.join(cache_dir, f"{key}.mp3")
+    cached_wav = os.path.join(cache_dir, f"{key}.wav")
 
-    if os.path.exists(cached_mp3) and os.path.getsize(cached_mp3) > 1024:
-        return cached_mp3
+    if os.path.exists(cached_wav) and os.path.getsize(cached_wav) > 1024:
+        return cached_wav
 
-    tmp_mp3 = f"{cached_mp3}.{os.getpid()}.tmp.mp3"
-    try:
-        subprocess.run(
-            [
-                ffmpeg_bin, "-y", "-v", "error",
-                "-i", path,
-                "-vn", "-map_metadata", "-1",
-                "-c:a", "libmp3lame", "-b:a", "320k",
-                tmp_mp3,
-            ],
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            timeout=45,
-        )
-        os.replace(tmp_mp3, cached_mp3)
-        return cached_mp3
-    except Exception as e:
+    with _STREAM_CACHE_LOCKS_GUARD:
+        lock = _STREAM_CACHE_LOCKS.setdefault(key, threading.Lock())
+
+    with lock:
+        if os.path.exists(cached_wav) and os.path.getsize(cached_wav) > 1024:
+            return cached_wav
+
+        tmp_wav = f"{cached_wav}.{os.getpid()}.{threading.get_ident()}.tmp.wav"
         try:
-            if os.path.exists(tmp_mp3):
-                os.remove(tmp_mp3)
-        except Exception:
-            pass
-        print(f"[stream_audio] Fallback a archivo original ({e})")
-        return path
-
+            subprocess.run(
+                [
+                    ffmpeg_bin, "-y", "-v", "error",
+                    "-i", path,
+                    "-vn", "-map_metadata", "-1",
+                    "-c:a", "pcm_s16le",
+                    tmp_wav,
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                timeout=30,
+            )
+            os.replace(tmp_wav, cached_wav)
+            return cached_wav
+        except Exception as e:
+            try:
+                if os.path.exists(tmp_wav):
+                    os.remove(tmp_wav)
+            except Exception:
+                pass
+            print(f"[stream_audio] Fallback a archivo original ({e})")
+            return path
 
 @app.get("/stream_audio")
 @app.get("/api/stream_audio")
