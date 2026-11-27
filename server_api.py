@@ -19,6 +19,7 @@ if BASE_DIR not in sys.path:
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -41,6 +42,7 @@ app = FastAPI(
     description="Motor omnichannel de metadatos, análisis de señal FFT, Radar acústico y streaming para BeatWave PRO",
     version="2.4.1"
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 from routers.copilot import router as copilot_router
 app.include_router(copilot_router)
